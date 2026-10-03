@@ -18,7 +18,7 @@
     canyon:   { ground: ['technical', 'rocketTruck', 'buggy', 'tank', 'sam', 'buggy'], air: ['heli'] },          // v096
     banquise: { ground: ['snowcat', 'arcticSam', 'apc', 'radar', 'tank', 'arcticSam'], air: ['heli'] },
     eolien:   { ground: ['boat', 'hover', 'rib', 'rib', 'aaturret'], air: ['heli', 'jet', 'quad'] },
-    carrier:  { ground: ['aaturret', 'truck', 'jeep', 'radar', 'sam'], air: ['jet', 'jet', 'heli'] },
+    carrier:  { ground: ['tug', 'crashTender', 'aaturret', 'radar', 'sam', 'tug'], air: ['jet', 'jet', 'heli', 'quad'] },
     volcan:   { ground: ['apc', 'rocketTruck', 'mortar', 'tank', 'mortar'], air: ['heli'] },          // v097
     jungle:   { ground: ['technical', 'recon', 'sam', 'apc', 'recon'], air: ['heli', 'quad'] },
     barrage:  { ground: ['aaturret', 'dozer', 'apc', 'sam', 'dozer'], air: ['heli', 'jet'] },
@@ -29,9 +29,9 @@
     autoroute: { ground: ['tanker', 'rocketTruck', 'apc', 'technical', 'tanker'], air: ['heli'] },
   };
   const FORM = { city: 'heli', forest: 'jeep', port: 'truck', usine: 'truck', tour: 'jet', sky: 'jet', metro: 'jeep', mini: 'jeep', eau: 'mine', chute: 'jet' };
-  const TL = { buggy: 1, arcticSam: 1, mortar: 1, recon: 1, dozer: 1, haul: 1, tel: 1, tanker: 1, rib: 1, apc: 1, snowcat: 1, technical: 1, rocketTruck: 1, hover: 1, tank: 1, ifv: 1, spg: 1, mlrs: 1, aagun: 1, jeep: 1, aaturret: 1, boat: 1, destroyer: 1, train: 1 };   // engins « comme le char » : le modèle regarde vers −Z → on les retourne
-  const SCALE = { buggy: 2.5, arcticSam: 2.1, mortar: 2.3, recon: 2.2, dozer: 2.0, haul: 1.7, tel: 2.0, tanker: 2.1, rib: 2.3, quad: 2.4, apc: 2.2, snowcat: 2.3, technical: 2.5, rocketTruck: 2.1, hover: 2.1, tank: 2.4, truck: 2.4, sam: 2.4, heli: 2.2, gunship: 1.8, ifv: 2.4, jeep: 2.5, aagun: 2.2, aaturret: 2.2, boat: 2.2, radar: 2.2, jet: 1.5, sub: 1.5, mine: 2.2, spg: 2.0, mlrs: 2.0 };
-  R.RAD = { buggy: 4.8, arcticSam: 6.4, mortar: 6, recon: 6.2, dozer: 6.5, haul: 8, tel: 7, tanker: 6.5, rib: 6, quad: 5, apc: 6.5, snowcat: 6.2, technical: 4.8, rocketTruck: 7, hover: 8, tank: 5.5, truck: 5.5, sam: 4.5, heli: 8, gunship: 9, ifv: 6, jeep: 4.5, aagun: 6.5, aaturret: 7, boat: 8, radar: 6, jet: 10, sub: 8, mine: 6 };
+  const TL = { tug: 1, crashTender: 1, buggy: 1, arcticSam: 1, mortar: 1, recon: 1, dozer: 1, haul: 1, tel: 1, tanker: 1, rib: 1, apc: 1, snowcat: 1, technical: 1, rocketTruck: 1, hover: 1, tank: 1, ifv: 1, spg: 1, mlrs: 1, aagun: 1, jeep: 1, aaturret: 1, boat: 1, destroyer: 1, train: 1 };   // engins « comme le char » : le modèle regarde vers −Z → on les retourne
+  const SCALE = { tug: 2.5, crashTender: 1.9, buggy: 2.5, arcticSam: 2.1, mortar: 2.3, recon: 2.2, dozer: 2.0, haul: 1.7, tel: 2.0, tanker: 2.1, rib: 2.3, quad: 2.4, apc: 2.2, snowcat: 2.3, technical: 2.5, rocketTruck: 2.1, hover: 2.1, tank: 2.4, truck: 2.4, sam: 2.4, heli: 2.2, gunship: 1.8, ifv: 2.4, jeep: 2.5, aagun: 2.2, aaturret: 2.2, boat: 2.2, radar: 2.2, jet: 1.5, sub: 1.5, mine: 2.2, spg: 2.0, mlrs: 2.0 };
+  R.RAD = { tug: 5, crashTender: 7, buggy: 4.8, arcticSam: 6.4, mortar: 6, recon: 6.2, dozer: 6.5, haul: 8, tel: 7, tanker: 6.5, rib: 6, quad: 5, apc: 6.5, snowcat: 6.2, technical: 4.8, rocketTruck: 7, hover: 8, tank: 5.5, truck: 5.5, sam: 4.5, heli: 8, gunship: 9, ifv: 6, jeep: 4.5, aagun: 6.5, aaturret: 7, boat: 8, radar: 6, jet: 10, sub: 8, mine: 6 };
   // v095 : KITS d'ennemis - chaque niveau en recoit un (8 variantes) qui s'ajoute au tableau de la zone : memes lieux, adversaires differents
   R.KITS = [{ name: 'STANDARD' }, { name: 'ARTILLERIE', g: ['spg', 'mlrs', 'spg'] }, { name: 'DEFENSE AERIENNE', g: ['aagun', 'aaturret', 'radar'] }, { name: 'BLINDES LOURDS', g: ['tank', 'spg', 'tank'] },
     { name: 'ESCADRILLE', g: [], a: ['jet', 'gunship', 'heli'] }, { name: 'LOGISTIQUE', g: ['truck', 'truck', 'jeep'] }, { name: 'PATROUILLE', g: ['jeep', 'ifv', 'jeep'], a: ['gunship'] }, { name: 'ASSAUT LOURD', g: ['ifv', 'mlrs', 'aagun'], a: ['gunship'] }];
@@ -50,7 +50,7 @@
   R.scale = (type) => SCALE[type] || 2.4;
   R.opts = (type, extra) => Object.assign({ scale: R.scale(type) * (extra && extra.gold ? 1.12 : 1), drift: R.isAir(type) ? (type === 'jet' ? 16 : type === 'sub' ? 9 : 5) : (type === 'boat' ? 3 : 2.2), driftSpeed: type === 'jet' ? 0.6 : 0.45 }, extra || {});
   // ennemis de garde (qui tirent) autorisés par zone, dérivés du tableau : tank = un engin au sol « comme le char », sam = lance-missiles ou site antiaérien, heli = avion, hélicoptère ou sous-marin
-  const GT = { buggy: 1, arcticSam: 1, mortar: 1, recon: 1, dozer: 1, haul: 1, tel: 1, tanker: 1, rib: 1, apc: 1, snowcat: 1, technical: 1, rocketTruck: 1, hover: 1, tank: 1, ifv: 1, jeep: 1, aagun: 1, spg: 1, mlrs: 1 }, GA = { quad: 1, heli: 1, jet: 1, sub: 1 };
+  const GT = { tug: 1, crashTender: 1, buggy: 1, arcticSam: 1, mortar: 1, recon: 1, dozer: 1, haul: 1, tel: 1, tanker: 1, rib: 1, apc: 1, snowcat: 1, technical: 1, rocketTruck: 1, hover: 1, tank: 1, ifv: 1, jeep: 1, aagun: 1, spg: 1, mlrs: 1 }, GA = { quad: 1, heli: 1, jet: 1, sub: 1 };
   R.enemies = (zone) => { const z = R.zone(zone); return { tank: z.ground.some((t) => GT[t]) ? 1 : 0, sam: z.ground.some((t) => t === 'sam' || t === 'aaturret') ? 1 : 0, heli: z.air.some((t) => GA[t]) ? 1 : 0 }; };
   R.guardType = (kind, zone, r) => { const z = R.zone(zone), pool = kind === 'tank' ? z.ground.filter((t) => GT[t]) : kind === 'sam' ? z.ground.filter((t) => t === 'sam' || t === 'aaturret') : z.air.filter((t) => GA[t]); return pool.length ? pool[Math.floor(r() * pool.length)] : kind; };
   if (CC.Zones) CC.Zones.enemies = (zone) => R.enemies(zone);
