@@ -119,9 +119,9 @@
     const pgl = (pg + 1) + ' / ' + pages; text(ctx, pgl, W / 2, yb + bh / 2 - ui.fitPx([pgl], W * 0.2, u * 0.004) * 3.6, ui.fitPx([pgl], W * 0.2, u * 0.004), '#8a96a8', { align: 'center' });
     // zone du niveau choisi
     const def = CC.LM.def(cur), zn = (CC.Zones.meta[def.zone] && CC.Zones.meta[def.zone].label) || def.zone.toUpperCase();
-    const info = 'NIVEAU ' + cur + '   ' + zn, ip = ui.fitPx([info], W * 0.86, u * 0.0042), iy = yb + bh + u * 0.025;
+    const info = 'NIVEAU ' + cur + '   ' + zn + (CC.Look && CC.Look.LOOKS[def.look] ? ' ' + CC.Look.LOOKS[def.look].name : ''), ip = ui.fitPx([info], W * 0.86, u * 0.0042), iy = yb + bh + u * 0.025;
     text(ctx, info, W / 2, iy, ip, '#c8d0dc', { align: 'center' });
-    text(ctx, def.theme.name, W / 2, iy + ip * 9, ui.fitPx([def.theme.name], W * 0.86, u * 0.0034), GOLD, { align: 'center' });
+    text(ctx, (CC.Roster && CC.Roster.KITS[def.kit] ? CC.Roster.KITS[def.kit].name : def.theme.name), W / 2, iy + ip * 9, ui.fitPx([def.theme.name], W * 0.86, u * 0.0034), GOLD, { align: 'center' });
     if (game.meta && game.meta.rec(cur)) { const q = game.meta.rec(cur), rs = 'RECORD ' + q.score + ' PTS' + (q.time ? '  ' + q.time + ' S' : ''); text(ctx, rs, W / 2, iy + ip * 14, ui.fitPx([rs], W * 0.8, u * 0.003), '#8fd0ff', { align: 'center' }); }
     if (game.meta) { const st = 'ETOILES ' + game.meta.total() + ' / ' + CC.LM.count * 3; text(ctx, st, W / 2, iy + ip * 18, ui.fitPx([st], W * 0.7, u * 0.003), '#ffd23a', { align: 'center' }); }
     Home.backButton(ui, ctx, L, ui.key('RETOUR', 'ESC'), () => { ui.overlay = null; ui.mapPage = null; });

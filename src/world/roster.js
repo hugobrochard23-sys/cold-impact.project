@@ -18,9 +18,17 @@
   };
   const FORM = { city: 'heli', forest: 'jeep', port: 'truck', usine: 'truck', tour: 'jet', sky: 'jet', metro: 'jeep', mini: 'jeep', eau: 'mine', chute: 'jet' };
   const TL = { tank: 1, ifv: 1, spg: 1, mlrs: 1, aagun: 1, jeep: 1, aaturret: 1, boat: 1, destroyer: 1, train: 1 };   // engins « comme le char » : le modèle regarde vers −Z → on les retourne
-  const SCALE = { tank: 2.4, truck: 2.4, sam: 2.4, heli: 2.2, ifv: 2.4, jeep: 2.5, aagun: 2.2, aaturret: 2.2, boat: 2.2, radar: 2.2, jet: 1.5, sub: 1.5, mine: 2.2, spg: 2.0, mlrs: 2.0 };
-  R.RAD = { tank: 5.5, truck: 5.5, sam: 4.5, heli: 8, ifv: 6, jeep: 4.5, aagun: 6.5, aaturret: 7, boat: 8, radar: 6, jet: 10, sub: 8, mine: 6 };
-  R.zone = (z) => R.ZONE[z] || R.ZONE.city;
+  const SCALE = { tank: 2.4, truck: 2.4, sam: 2.4, heli: 2.2, gunship: 1.8, ifv: 2.4, jeep: 2.5, aagun: 2.2, aaturret: 2.2, boat: 2.2, radar: 2.2, jet: 1.5, sub: 1.5, mine: 2.2, spg: 2.0, mlrs: 2.0 };
+  R.RAD = { tank: 5.5, truck: 5.5, sam: 4.5, heli: 8, gunship: 9, ifv: 6, jeep: 4.5, aagun: 6.5, aaturret: 7, boat: 8, radar: 6, jet: 10, sub: 8, mine: 6 };
+  // v095 : KITS d'ennemis - chaque niveau en recoit un (8 variantes) qui s'ajoute au tableau de la zone : memes lieux, adversaires differents
+  R.KITS = [{ name: 'STANDARD' }, { name: 'ARTILLERIE', g: ['spg', 'mlrs', 'spg'] }, { name: 'DEFENSE AERIENNE', g: ['aagun', 'aaturret', 'radar'] }, { name: 'BLINDES LOURDS', g: ['tank', 'spg', 'tank'] },
+    { name: 'ESCADRILLE', g: [], a: ['jet', 'gunship', 'heli'] }, { name: 'LOGISTIQUE', g: ['truck', 'truck', 'jeep'] }, { name: 'PATROUILLE', g: ['jeep', 'ifv', 'jeep'], a: ['gunship'] }, { name: 'ASSAUT LOURD', g: ['ifv', 'mlrs', 'aagun'], a: ['gunship'] }];
+  R.kit = 0; const cache = {};
+  R.zone = (z) => {
+    const b = R.ZONE[z] || R.ZONE.city, k = R.KITS[R.kit | 0] || R.KITS[0]; if ((!k.g && !k.a) || z === 'eau') return b;
+    const key = z + ':' + (R.kit | 0); if (cache[key]) return cache[key];
+    return (cache[key] = { ground: b.ground.length ? b.ground.concat(k.g || []) : [], air: b.air.concat(k.a || []) });
+  };
   R.isAir = (type) => !!R.AIR[type];
   R.face = (type) => (TL[type] ? 180 : 0);
   // choisit un engin pour la zone : wantAir = le thème demande un engin volant (sinon, au sol) ; si la zone n'a que l'un des deux, on prend celui-là

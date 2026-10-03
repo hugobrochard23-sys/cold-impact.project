@@ -121,3 +121,6 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 
 ## v094
 - Graphismes HIGH par défaut (quality adaptative baisse si ça rame). Icône réglages refaite (engrenage plein). Modules : écran refait + explication. Profil -> ROUTE DU PILOTE (src/ui/pro.js, P.road, une récompense par niveau de pilote). Conditions d utilisation à la 1re ouverture (settings.termsOk ; CONFIG.legal.termsUrl/privacyUrl vides).
+
+## v095
+- 300 niveaux (LM.count) : longueur variable par chapitre (LENV), difficulté en vagues (HARDV, plafond difK 6), coffre plafonné, boss de chapitre. 18 looks (12 nouveaux + 6 ambiances), 8 kits d ennemis (Roster.KITS, Roster.kit posé au lancement). Balayage 4..299 sans erreur.
