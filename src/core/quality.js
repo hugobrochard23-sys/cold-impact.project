@@ -18,7 +18,7 @@
     initial() {
       const s = this.game.settings.graphics || 'auto';
       if (s !== 'auto') return s;
-      return CC.Touch && CC.Touch.active ? 'medium' : 'high';
+      return 'high';   // v094 : graphismes élevés dès le départ (la qualité adaptative baisse toute seule si ça rame)
     }
 
     apply(tier) {

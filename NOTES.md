@@ -118,3 +118,6 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 
 ## v093
 - Niveaux 1-2 : longueur 900/1200, bouclier permanent ; niveaux 1-3 : crash = relance immédiate (pas d écran). Victoire épurée (plus de score/record/XP pass). Réglage SENSIBILITE (touchSens). Le +1 grossit avec la série, ralenti de crash 0,6 s.
+
+## v094
+- Graphismes HIGH par défaut (quality adaptative baisse si ça rame). Icône réglages refaite (engrenage plein). Modules : écran refait + explication. Profil -> ROUTE DU PILOTE (src/ui/pro.js, P.road, une récompense par niveau de pilote). Conditions d utilisation à la 1re ouverture (settings.termsOk ; CONFIG.legal.termsUrl/privacyUrl vides).

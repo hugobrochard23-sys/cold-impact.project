@@ -59,7 +59,7 @@
       ctx.fillStyle = EDGE; ctx.fillRect(Math.round(xx - 2), Math.round(by - 2), Math.round(bw + 4), Math.round(bh2 + 4)); ctx.fillStyle = DARK; ctx.fillRect(Math.round(xx), Math.round(by), Math.round(bw), Math.round(bh2));
       ctx.fillStyle = GOLD; ctx.fillRect(Math.round(xx), Math.round(by), Math.round(k * bw), Math.round(bh2));
       txt(ctx, prog.xp + ' / ' + prog.need(prog.level), xx, by + bh2 + hh * 0.07, bw, 1, DIM);
-      hit(ui, ax, T, bw + s + u * 0.05, hh, () => { ui.overlay = 'garage'; });
+      hit(ui, ax, T, bw + s + u * 0.05, hh, () => { ui.overlay = 'road'; });   // v094 : le profil mène à la ROUTE DU PILOTE
       return T + hh;
     }
     // sous-écran : retour + distance totale

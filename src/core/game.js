@@ -1160,7 +1160,8 @@
       this.watchVisibility();
       this.toMenu();
       // v091 : tout premier lancement (ou après RÉINITIALISER) : on est jeté directement dans le niveau 1, sans menu — le tutoriel commence aussitôt
-      if (!((this.settings.tutStep || 0) >= 4) && ((this.save.lvl && this.save.lvl.max) || 1) <= 1 && this.pad) this.pad.queued = true;
+      if (!((this.settings.tutStep || 0) >= 4) && ((this.save.lvl && this.save.lvl.max) || 1) <= 1 && this.pad && (this.settings.termsOk || this.testMode)) this.pad.queued = true;
+      if (!this.settings.termsOk && !this.testMode) this.ui.overlay = 'terms';   // v094 : conditions d'utilisation à la première ouverture
       // v032 : lien partagé ?mission=<graine>&diff=<difficulté> → écran du générateur avec cette graine
       const ms = CC.Gen.parseSeed(this.params.get('mission'));
       if (ms !== null) { this.ui.overlay = 'missions'; this.ui.seedChoice = ms; this.ui.diffChoice = this.params.get('diff'); }

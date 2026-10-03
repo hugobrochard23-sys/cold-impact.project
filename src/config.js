@@ -178,6 +178,7 @@ CC.CONFIG = {
   // regardant une minute de publicité en entier. Au retour du paiement, Stripe renvoie vers le jeu (réglage du lien dans le
   // Dashboard : redirection vers l'adresse du jeu + « ?paid=1&session_id={CHECKOUT_SESSION_ID} ») en y ajoutant
   // utm_content = identifiant du cosmétique ; le jeu le débloque et l'équipe (src/ui/shop.js).
+  legal: { termsUrl: '', privacyUrl: '' },   // v094 : adresses des pages « Conditions d'utilisation » et « Confidentialité » (À RENSEIGNER)
   shop: {
     priceCents: 229,             // prix unique de tous les cosmétiques (2,29 €)
     noAdsLink: '',               // v083 : lien de paiement Stripe « sans publicité » (achat unique) — À RENSEIGNER

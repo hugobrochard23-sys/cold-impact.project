@@ -34,15 +34,16 @@
     coin(11, 6); coin(11, 11); coin(11, 16);
     px(5, 4, 3, 1, '#fffbe0'); px(5, 9, 2, 1, '#fffbe0');
   }, true);
-  // engrenage acier à trois tons
-  const gearSprite = () => sprite('gear', 26, 26, (px) => {
-    const c = 12.5, n = 8, mask = (x, y) => { const dx = x - c, dy = y - c, r = Math.hypot(dx, dy); if (r < 3.4) return 0; const a = Math.atan2(dy, dx), tooth = Math.cos(a * n) > 0.15 ? 1 : 0; return r < 7.7 + 3.4 * tooth ? 1 : 0; };
-    for (let y = 0; y < 26; y++) for (let x = 0; x < 26; x++) {
+  // engrenage acier plein (v094 : corps plein + 8 dents carrées + moyeu — l'ancien ressemblait à un squelette)
+  const gearSprite = () => sprite('gear2', 28, 28, (px) => {
+    const c = 13.5, TEETH = 8, P2 = Math.PI * 2 / TEETH;
+    const mask = (x, y) => { const dx = x - c, dy = y - c, r = Math.hypot(dx, dy); if (r < 3.7) return 0; if (r <= 8.8) return 1; if (r > 12.6) return 0; const k = (((Math.atan2(dy, dx) / P2) % 1) + 1) % 1; return Math.min(k, 1 - k) * P2 * r < 2.7 ? 1 : 0; };
+    for (let y = 0; y < 28; y++) for (let x = 0; x < 28; x++) {
       if (!mask(x, y)) continue;
-      const edge = !mask(x - 1, y) || !mask(x + 1, y) || !mask(x, y - 1) || !mask(x, y + 1), dx = x - c, dy = y - c, lit = dx + dy < -2, dark = dx + dy > 4, r = Math.hypot(dx, dy);
-      px(x, y, 1, 1, edge ? '#1d2b53' : r < 5.4 ? '#83769c' : lit ? '#f4f6f8' : dark ? '#7d8795' : '#c2c3c7');
+      const dx = x - c, dy = y - c, r = Math.hypot(dx, dy), edge = !mask(x - 1, y) || !mask(x + 1, y) || !mask(x, y - 1) || !mask(x, y + 1), lit = dx + dy < -3, dark = dx + dy > 5;
+      px(x, y, 1, 1, edge ? '#1d2b53' : (r > 6.3 && r < 7.2) ? '#7d8795' : lit ? '#f4f6f8' : dark ? '#8a93a1' : '#c2c3c7');
     }
-    for (let y = 8; y <= 17; y++) for (let x = 8; x <= 17; x++) { const r = Math.hypot(x - c, y - c); if (r < 3.4 && r > 2.4) px(x, y, 1, 1, '#1d2b53'); else if (r <= 2.4) px(x, y, 1, 1, '#0c1220'); }
+    for (let y = 0; y < 28; y++) for (let x = 0; x < 28; x++) { const r = Math.hypot(x - c, y - c); if (r < 3.7) px(x, y, 1, 1, r < 2.6 ? '#0c1220' : '#1d2b53'); }
   });
   Home.drawCoinIcon = (ctx, cx, cy, size) => blit(ctx, coinSprite(), cx, cy, size);
   Home.drawGearIcon = (ctx, cx, cy, size, hover) => { if (hover) ctx.globalAlpha = 1; blit(ctx, gearSprite(), cx, cy, size); };
