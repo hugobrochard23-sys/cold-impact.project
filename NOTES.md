@@ -128,3 +128,6 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 ## v096
 - 4 nouvelles zones (src/world/zones_e.js) : CANYON (niveaux 12, 32, 52...), BANQUISE (17, 37...), EOLIEN (22, 42...), PORTE-AVIONS (27, 47...). Chaque zone : décor, scènes, ennemis (roster), boss (POOL).
 - MODE TEST TEMPORAIRE : CONFIG.dev.unlockAll = true ouvre tous les niveaux et fonctions. A METTRE A false EN PRODUCTION.
+
+## v097
+- 4 zones de plus (zones_f.js) : VOLCAN (niv 14,34..), JUNGLE (19,39..), BARRAGE (24,44..), NEON (29,49..). Effets de terrain (Zones.field : lift/boost/gust) dans les 8 zones nouvelles. Boss/mini-boss : recul croissant avec les PV + bossKeepAhead (restent devant la fusée).

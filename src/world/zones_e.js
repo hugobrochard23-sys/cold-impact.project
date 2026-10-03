@@ -182,4 +182,58 @@
     S.item(dc, (r) => { const L = S.lane(dc), tot = 2 * 40 + 2 * Math.abs(L.lx); S.frame(dc, L.lx, L.y, 56, 30, tot, L.y + 42, 22, 'metal', '#8a9098', 0); S.bx(dc, L.lx, L.y + 44, 62, 4, 22, 'hazard', undefined, false); S.bx(dc, L.lx - 40, 12, 18, 24, 20, 'metal', '#a0a6ae'); S.bx(dc, L.lx + 40, 12, 18, 24, 20, 'metal', '#a0a6ae'); S.gate(dc - 30, L.lx, L.y); S.gate(dc, L.lx, L.y); S.gate(dc + 30, L.lx, L.y); });
     S.reserve(dc, 0, 2 * S.vol(dc), 30);
   } };
+  Z.kit = { sideWalls, farShapes, arch, span, pick };   // v097 : briques réutilisées par zones_f.js
+})();
+
+/* v097 : EFFETS DE TERRAIN propres à chaque zone — des « champs » invisibles à effet doux et lisible (une colonne colorée + des chevrons les montrent) :
+ *   lift  : courant ascendant (canyon : thermiques ; volcan : geysers ; jungle : brume de cascade)
+ *   boost : accélération vers l'avant (banquise : crevasse bleue ; porte-avions : catapulte ; barrage : conduite forcée)
+ *   gust  : rafale latérale (parc éolien ; mégapole : couloirs de vent) — les chevrons montrent le sens */
+(function () {
+  const Z = CC.Zones, V = THREE.Vector3, _r = new V();
+  const SPEC = { lift: { str: 30, col: '#ffb060' }, boost: { str: 42, col: '#6af0ff' }, gust: { str: 16, col: '#e8f4ff' } };
+  Z.field = function (S, dc, spec) {
+    S.item(dc, () => {
+      const T = S.T, L = S.lane(dc), kind = SPEC[spec.type], lx = L.lx + (spec.lxo || 0), y = L.y + (spec.yo || 0), p = T.at(dc, lx, y), yaw = S.yaw(dc);
+      const f0 = T.at(dc + 6, lx, y), fwd = new V(f0[0] - p[0], 0, f0[2] - p[2]).normalize(), a0 = T.at(dc, lx + 6, y), across = new V(a0[0] - p[0], 0, a0[2] - p[2]).normalize();
+      const dir = spec.type === 'lift' ? new V(0, 1, 0) : spec.type === 'boost' ? fwd : across.clone().multiplyScalar(spec.dir || 1), col = spec.color || kind.col;
+      const g = new THREE.Group(); g.position.set(p[0], p[1], p[2]);
+      const mat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.13, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false });
+      const box = new THREE.Mesh(new THREE.BoxGeometry(spec.w, spec.h, spec.dd), mat); box.rotation.y = yaw; g.add(box);
+      const arrows = [], n = 4;
+      for (let i = 0; i < n; i++) { const a = CC.Models.guideArrow(); a.traverse((o) => { if (o.material) { o.material = o.material.clone(); o.material.color.set(col); o.material.opacity = 0.7; } }); a.scale.setScalar(Math.max(2.2, Math.min(spec.w, spec.h) * 0.11)); a.lookAt(dir.clone().add(a.position)); g.add(a); arrows.push(a); }
+      const cos = Math.cos(yaw), sin = Math.sin(yaw), center = new V(p[0], p[1], p[2]); let inside = false, t0 = Math.random() * 6;
+      S.b.entity({ object: g, update(dt, game) {
+        t0 += dt;
+        for (let i = 0; i < n; i++) { const k = (t0 * 0.5 + i / n) % 1, q = (k - 0.5); a_(arrows[i], q, i); }
+        const rk = game.rocket; if (!rk.active || game.state !== 'FLIGHT') { inside = false; return; }
+        _r.copy(rk.pos).sub(center); const xl = _r.x * cos - _r.z * sin, zl = _r.x * sin + _r.z * cos;
+        const now = Math.abs(xl) < spec.w / 2 && Math.abs(_r.y) < spec.h / 2 && Math.abs(zl) < spec.dd / 2;
+        if (now) {
+          rk.vel.addScaledVector(dir, (spec.str || kind.str) * dt);
+          if (spec.type === 'boost') { const sp = rk.vel.length(); if (sp > 95) rk.vel.multiplyScalar(95 / sp); }
+          if (!inside && game.audio) { game.audio.play('whoosh', rk.pos); if (CC.Haptics) CC.Haptics.tick('touch'); }
+        }
+        inside = now; mat.opacity = now ? 0.26 : 0.13;
+      } });
+      function a_(a, q, i) {   // chevrons qui défilent dans le sens de l'effet
+        const off = spec.type === 'lift' ? [(i % 2 - 0.5) * spec.w * 0.4, q * spec.h, ((i >> 1) % 2 - 0.5) * spec.dd * 0.4] : spec.type === 'boost' ? [(i % 2 - 0.5) * spec.w * 0.5, 0, q * spec.dd] : [q * spec.w, (i % 2 - 0.5) * spec.h * 0.4, ((i >> 1) % 2 - 0.5) * spec.dd * 0.4];
+        const v = new V(off[0], off[1], off[2]); if (spec.type !== 'lift') v.applyAxisAngle(new V(0, 1, 0), yaw); a.position.copy(v);
+      }
+    });
+  };
+  // les effets des quatre premières zones : on réutilise les scènes déjà écrites en leur ajoutant des champs
+  const D = Z.defs, wrap = (zone, scene, fn) => { const sc = D[zone].scenes[scene], b0 = sc.build; sc.build = function (S) { b0.call(this, S); fn(S); }; };
+  wrap('canyon', 'hoodoos', (S) => { for (let i = 1; i <= 3; i++) Z.field(S, S.d0 + S.len * i / 4, { type: 'lift', w: 40, h: 64, dd: 34, yo: 6 }); });
+  wrap('canyon', 'arches', (S) => { const n = S.len > 290 ? 3 : 2; for (let i = 0; i < n; i++) Z.field(S, S.d0 + S.len * (i + 1) / (n + 1) - 50, { type: 'lift', w: 44, h: 60, dd: 36, yo: 4 }); });
+  wrap('canyon', 'pontsRoche', (S) => { Z.field(S, S.d0 + S.len * 0.5, { type: 'lift', w: 40, h: 60, dd: 34, yo: 6 }); });
+  wrap('eolien', 'champ', (S) => { Z.field(S, S.d0 + S.len * 0.3, { type: 'gust', dir: 1, w: 80, h: 56, dd: 60 }); Z.field(S, S.d0 + S.len * 0.7, { type: 'gust', dir: -1, w: 80, h: 56, dd: 60 }); });
+  wrap('eolien', 'champDense', (S) => { Z.field(S, S.d0 + S.len * 0.35, { type: 'gust', dir: -1, w: 80, h: 56, dd: 60 }); Z.field(S, S.d0 + S.len * 0.75, { type: 'gust', dir: 1, w: 80, h: 56, dd: 60 }); });
+  wrap('carrier', 'catapultes', (S) => { for (let i = 1; i <= 3; i++) Z.field(S, S.d0 + S.len * i / 4, { type: 'boost', w: 30, h: 44, dd: 38, color: '#ffd23a' }); });
+  // BANQUISE : la CREVASSE — un couloir de glace bleue (parois de chaque côté) dont l'intérieur accélère
+  D.banquise.scenes.crevasse = { len: [200, 260], build(S) {
+    const a = S.d0 + 40, b = S.d1 - 40;
+    for (let dc = a; dc < b; dc += 12) S.item(dc + 6, (r) => { const L = S.lane(dc + 6), h = 46 + r() * 22; for (const s of [-1, 1]) { S.bx(dc + 6, L.lx + s * 17, h / 2, 5, h, 12.6, 'white', r() < 0.5 ? '#9ac8f0' : '#bcd8f4'); S.bx(dc + 6, L.lx + s * 14.4, L.y, 0.3, 40, 12.4, 'basic:#5ad0ff', undefined, false, { shadow: false }); } S.gate(dc + 6, L.lx, L.y); });
+    Z.field(S, (a + b) / 2, { type: 'boost', w: 26, h: 44, dd: b - a, color: '#6af0ff' }); S.reserve((a + b) / 2, 0, 2 * S.vol((a + b) / 2), b - a);
+  } };
 })();

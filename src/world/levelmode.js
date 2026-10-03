@@ -21,15 +21,15 @@
     { name: 'FORTERESSE', ground: ['tank', 'sam', 'sam', 'truck'], air: ['heli', 'sam'], foe: { tank: 2, sam: 2, heli: 1 } },
   ];
   const MINI = ['tank', 'heli', 'sam'];
-  const NEWZ = ['canyon', 'banquise', 'eolien', 'carrier'], ALLZ = ZN.concat(NEWZ);
-  POOL.canyon = ['mlrs', 'gunship', 'spg', 'tank', 'aagun', 'bomber']; POOL.banquise = ['spg', 'ifv', 'tank', 'jet', 'sam', 'mlrs']; POOL.eolien = ['destroyer', 'gunship', 'jet', 'destroyer', 'bomber', 'gunship']; POOL.carrier = ['jet', 'bomber', 'destroyer', 'gunship', 'jet', 'bomber'];
+  const NEWZ = ['canyon', 'banquise', 'eolien', 'carrier', 'volcan', 'jungle', 'barrage', 'neon'], ALLZ = ZN.concat(NEWZ);
+  POOL.canyon = ['mlrs', 'gunship', 'spg', 'tank', 'aagun', 'bomber']; POOL.banquise = ['spg', 'ifv', 'tank', 'jet', 'sam', 'mlrs']; POOL.eolien = ['destroyer', 'gunship', 'jet', 'destroyer', 'bomber', 'gunship']; POOL.volcan = ['spg', 'gunship', 'mlrs', 'bomber', 'tank', 'jet']; POOL.jungle = ['gunship', 'aagun', 'ifv', 'heli', 'mlrs', 'bomber']; POOL.barrage = ['tank', 'bomber', 'aagun', 'jet', 'spg', 'gunship']; POOL.neon = ['gunship', 'jet', 'train', 'heli', 'mlrs', 'bomber']; POOL.carrier = ['jet', 'bomber', 'destroyer', 'gunship', 'jet', 'bomber'];
   // v095 : 300 niveaux — rythme par CHAPITRE de 10 : montée, un niveau « respiration » tous les 5, boss de chapitre plus long et plus dur
   const LENV = [1, 0.8, 1.05, 0.9, 0.75, 1, 1.1, 0.9, 0.8, 1.2];       // longueur relative selon la position dans le chapitre
   const HARDV = [0.9, 0.95, 1, 1.05, 0.8, 0.95, 1.05, 1.1, 0.85, 1.2]; // difficulté relative (le 5 et le 9 respirent, le 10 est le boss de chapitre)
   const def = (n) => {
     n = Math.max(1, n | 0);
     // v096 : quatre zones en plus (niveaux 12, 17, 22, 27, puis tous les 20 niveaux pour chacune)
-    const zone = (n >= 12 && n % 5 === 2) ? NEWZ[Math.floor((n - 12) / 5) % NEWZ.length] : ZN[(n - 1) % ZN.length], zi = ALLZ.indexOf(zone), flat = CC.Zones.PROFILE[zone].elev === 0, th = n <= 2 ? THEMES[0] : THEMES[(n * 3 + Math.floor(n / 7)) % THEMES.length];
+    const zone = (n >= 12 && n % 5 === 2) ? NEWZ[Math.floor((n - 12) / 5) % 4] : (n >= 14 && n % 5 === 4) ? NEWZ[4 + Math.floor((n - 14) / 5) % 4] : ZN[(n - 1) % ZN.length], zi = ALLZ.indexOf(zone), flat = CC.Zones.PROFILE[zone].elev === 0, th = n <= 2 ? THEMES[0] : THEMES[(n * 3 + Math.floor(n / 7)) % THEMES.length];
     const nm = n < 4 ? 0 : n < 9 ? 1 : n < 17 ? 2 : 3, hp = n <= 3 ? 1 : Math.min(14, 1 + Math.floor((n - 1) / 3) + (n % 10 === 0 ? 1 : 0)), len = n === 1 ? 900 : n === 2 ? 1200 : Math.round(Math.min(5200, 1500 + 280 * (n - 1)) * LENV[(n - 1) % 10] / 10) * 10;   // v093 : niveaux 1-2 courts ; v095 : longueur variable dans le chapitre (3 min max)
     const mids = [];
     const pool = POOL[zone] || POOL.city, k = Math.floor((n - 1) / ZN.length), boss = pool[k % pool.length];

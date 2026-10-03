@@ -676,12 +676,24 @@
       }
     }
 
+    // v097 : un boss (ou mini-boss) déjà touché reste TOUJOURS devant la fusée : si elle le dépasse, il recule aussitôt plus loin devant elle (on n'a plus à faire demi-tour)
+    bossKeepAhead() {
+      const run = this.endlessRun; if (!run || !run.T.levelLen || this.state !== 'FLIGHT') return;
+      const T = run.T, d = run.dist, cap = run.T.levelLen + 640;
+      for (const t of this.targets) {
+        if (!t.alive || !(t.boss || t.mini) || !t.hit1 || t.pathD === undefined) continue;
+        if (d > t.pathD - 32 && t.pathD < cap) {
+          const gap = t.mini ? 85 : Math.min(200, 75 + 12 * t.hpMax), dT = Math.min(d + gap, cap), air = t.type === 'heli' || (t.gen && t.gen.flying), yy = air ? Math.max(20, t.base.y - T.base(d) + (Math.random() - 0.5) * 12) : 0, lx = (Math.random() - 0.5) * 40, np = T.at(dT, lx, yy);
+          t.flyTo = new V(np[0], np[1], np[2]); t.flySpeed = 170; t.pathD = dT;
+        }
+      }
+    }
     // v075 : coup sur un boss (il a plusieurs points de vie, la fusée traverse et doit revenir)
     hitBoss(t, rocket) {
       t.hp--; t.hitCool = 0.9; t.rageK = Math.max(0.45, (t.rageK || 1) * 0.78);
       { const run0 = this.endlessRun, T0 = run0.T, lv0 = this.levelRun; let dN = 0, best = 1e18; for (let d = Math.max(0, run0.dist - 40); d < run0.dist + 900; d += 6) { const p = T0.at(d, 0, 0), dx = p[0] - t.base.x, dz = p[2] - t.base.z, q = dx * dx + dz * dz; if (q < best) { best = q; dN = d; } }
-        const step = t.mini ? 70 : Math.max(45, Math.min(120, 330 / Math.max(1, t.hpMax))), dT = Math.min(dN + step, (lv0 ? lv0.len : 0) + 640), lx = (Math.random() - 0.5) * 50, yy = t.type === 'heli' || (t.gen && t.gen.flying) ? Math.max(20, t.base.y - T0.base(dN) + (Math.random() - 0.5) * 20) : 0, np = T0.at(dT, lx, yy);
-        t.flyTo = new V(np[0], np[1], np[2]); t.flySpeed = 110; }   // il fuit vers le fond de l'arène et continue de tirer
+        const step = t.mini ? 80 : Math.min(210, 80 + 12 * t.hpMax), dT = Math.min(dN + step, (lv0 ? lv0.len : 0) + 640), lx = (Math.random() - 0.5) * 50, yy = t.type === 'heli' || (t.gen && t.gen.flying) ? Math.max(20, t.base.y - T0.base(dN) + (Math.random() - 0.5) * 20) : 0, np = T0.at(dT, lx, yy);
+        t.flyTo = new V(np[0], np[1], np[2]); t.flySpeed = 130; t.pathD = dT; t.hit1 = true; }   // il fuit vers le fond de l'arène et continue de tirer
       const run = this.endlessRun, fx = this.effects, c = rocket.pos.clone();
       fx.explosion(c, null, true, 'orange'); fx.ring(c, new V(0, 1, 0), 2, 36, 0.6, '#ffd060', 0.95); fx.flash(c, '#ffb040', 9, 110, 0.4, '#ff5020');
       this.rig.shake = 1.4; this.flash = 0.25; this.flashColor = '#ffe0a0'; this.hitStop = 0.14; this.hitScale = 0.15; this.chromaBurst = 0.02;
@@ -983,7 +995,7 @@
       if (this.state === 'RESULTS' && this.results && this.results.endless) this.results.t += dt;   // v034 : chronologie de l'écran de récompenses
       if (this.endlessRun && this.state !== 'MENU' && this.state !== 'RESULTS') this.endlessRun.update(dt);   // v033 : tronçons, paliers, zones
       for (const e of this.entities) if (e.update) e.update(dt, this);
-      this.updatePickups(dt); this.updateGhost(dt);
+      this.updatePickups(dt); this.updateGhost(dt); this.bossKeepAhead();
       for (const m of this.missiles) m.update(dt, this);
       this.missiles = this.missiles.filter((m) => { if (!m.alive) this.scene.remove(m.object); return m.alive; });
       if (this.centerMsgT > 0 && (this.centerMsgT -= dt) <= 0) { this.centerMsg = null; this.centerMsgT = 0; }   // message passager (graine de la carte générée)
