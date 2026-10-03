@@ -237,3 +237,27 @@
     Z.field(S, (a + b) / 2, { type: 'boost', w: 26, h: 44, dd: b - a, color: '#6af0ff' }); S.reserve((a + b) / 2, 0, 2 * S.vol((a + b) / 2), b - a);
   } };
 })();
+
+/* v099 : NUAGES TRANSLUCIDES — des bulles blanches à travers lesquelles on voit ; quand la fusée y entre, le nuage se DESINTEGRE en mini-nuages (et fait un petit bruit de nuage). Aucune collision. */
+(function () {
+  const Z = CC.Zones, V = THREE.Vector3, GEO = new THREE.IcosahedronGeometry(1, 1);
+  Z.cloud = function (S, dc, lx, y, sc) {
+    S.item(dc, (r) => {
+      const p = S.T.at(dc, lx, y), g = new THREE.Group(), col = S.dark ? '#6a5a8a' : '#f4f8ff', puffs = [], center = new V(p[0], p[1], p[2]), n = 4 + Math.floor(r() * 3), radius = sc * 0.85;
+      g.position.copy(center);
+      for (let k = 0; k < n; k++) { const m = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.34 + r() * 0.12, depthWrite: false }), s = new THREE.Mesh(GEO, m), rr = sc * r.between([0.45, 0.8]); s.scale.set(rr * 1.3, rr * 0.62, rr * 1.1); s.position.set(r.between([-sc, sc]) * 0.8, r.between([-sc, sc]) * 0.18, r.between([-sc, sc]) * 0.8); s.userData.s0 = s.scale.clone(); g.add(s); puffs.push(s); }
+      let t = -1; const mini = [];
+      S.b.entity({ object: g, update(dt, game) {
+        if (t < 0) {
+          const rk = game.rocket; if (!rk.active || game.state !== 'FLIGHT' || rk.pos.distanceToSquared(center) > radius * radius) return;
+          t = 0; if (game.audio) game.audio.play('cloud', rk.pos); if (CC.Haptics) CC.Haptics.tick('touch');
+          for (const s of puffs) s.userData.v = s.position.clone().normalize().multiplyScalar(6 + r() * 8);
+          for (let i = 0; i < 12; i++) { const m = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.55, depthWrite: false }), s = new THREE.Mesh(GEO, m), q = sc * r.between([0.08, 0.18]); s.scale.setScalar(q); s.position.set(r.between([-1, 1]) * sc * 0.5, r.between([-1, 1]) * sc * 0.2, r.between([-1, 1]) * sc * 0.5); s.userData.v = new V(r.between([-1, 1]), r.between([-0.3, 1]), r.between([-1, 1])).normalize().multiplyScalar(10 + r() * 16); g.add(s); mini.push(s); }
+        }
+        t += dt; const k = t / 1.2; if (k >= 1) { g.visible = false; return; }
+        for (const s of puffs) { s.position.addScaledVector(s.userData.v, dt); s.scale.copy(s.userData.s0).multiplyScalar(1 + k * 1.2); s.material.opacity = Math.max(0, s.material.opacity * (1 - dt * 2.2)); }
+        for (const s of mini) { s.position.addScaledVector(s.userData.v, dt); s.userData.v.multiplyScalar(1 - dt * 1.5); s.scale.multiplyScalar(1 + dt * 1.6); s.material.opacity = 0.55 * (1 - k); }
+      } });
+    });
+  };
+})();

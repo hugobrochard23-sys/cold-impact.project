@@ -520,12 +520,13 @@
         if (a) { g.input.aimQ.premultiply(_qa.setFromAxisAngle(_ay, -a * 0.5)); g.input.aimQ.normalize(); }
         // v088 : REMONTEE AUTO — près du sol, on ne peut pas piquer plus raide que la hauteur le permet : la visée se redresse doucement (le joueur peut toujours piquer sur une cible haute)
         const q = g.input.aimQ, f = _fa.set(0, 0, -1).applyQuaternion(q);
-        if (f.y < -0.08) {
-          const hit = g.world.raycast(rk.pos, _dn, 60);
+        // v099 : l'assistance n'intervient QUE juste avant l'impact (temps avant le sol < 1,3 s), progressivement, et jamais en piqué vertical (> ~80° : on ne se rattrape plus)
+        if (f.y < -0.1 && f.y > -0.985) {
+          const hit = g.world.raycast(rk.pos, _dn, 80);
           if (hit) {
-            const allow = -Math.min(0.85, Math.max(0, hit.dist - 6) / 55);
-            if (f.y < allow) {
-              const dp = Math.min(2.6 * dt, (allow - f.y) * 1.2), t0 = _fa.y;
+            const ttc = hit.dist / (Math.max(10, rk.speed) * -f.y), allow = 0;
+            if (ttc < 1.3) {
+              const kk = 1 - ttc / 1.3, dp = 2.8 * kk * dt, t0 = _fa.y;
               _qb.copy(q).multiply(_qa.setFromAxisAngle(_ax, 0.05)); const up = _da.set(0, 0, -1).applyQuaternion(_qb).y > t0 ? 1 : -1;
               q.multiply(_qa.setFromAxisAngle(_ax, up * dp)); q.normalize();
             }

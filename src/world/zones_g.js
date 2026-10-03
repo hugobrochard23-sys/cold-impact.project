@@ -106,3 +106,53 @@
     S.reserve(dc, 0, 2 * S.vol(dc), 34);
   } };
 })();
+
+/* v099 : SCENES SPECIALES — BANQUISE : la GROTTE de glace (voûte, stalactites, certaines TOMBENT quand on approche) et des éclats de glace anguleux ;
+ *                          JUNGLE : la MANGROVE (canopée basse, racines : on est obligé de voler bas, au ras de l'eau, puis on remonte). */
+(function () {
+  const U = CC.U, Z = CC.Zones, K = Z.kit, pick = K.pick, V = THREE.Vector3, D = Z.defs;
+  const ICE = ['#cfe6ff', '#bcd8f4', '#e4f2ff', '#a8c8e8'];
+  const CONE = new THREE.CylinderGeometry(1, 1, 1, 7);
+  // stalactite qui tombe : s'accroche à la voûte, se détache quand la fusée est à < 42 m, tombe (sans danger), éclate en éclats de glace
+  function falling(S, dc, lx, y, h, r) {
+    S.item(dc, () => {
+      const p = S.T.at(dc, lx, y), g = new THREE.Group(), m = new THREE.MeshLambertMaterial({ color: '#dff0ff', emissive: '#3a5a7a' }), c = new THREE.Mesh(CONE, m);
+      c.scale.set(1, h, 1); c.geometry = new THREE.CylinderGeometry(1.2, 0.08, 1, 7); g.add(c); g.position.set(p[0], p[1] - h / 2, p[2]);
+      let vy = 0, fell = false, done = false; const shards = [], gy = S.T.at(dc, lx, 0)[1] + h / 2;
+      S.b.entity({ object: g, update(dt, game) {
+        if (done) { for (const s of shards) { s.position.addScaledVector(s.userData.v, dt); s.userData.v.y -= 30 * dt; s.scale.multiplyScalar(1 - dt * 1.2); } return; }
+        if (!fell) { const rk = game.rocket; if (!rk.active || game.state !== 'FLIGHT' || rk.pos.distanceToSquared(g.position) > 42 * 42) return; fell = true; if (game.audio) game.audio.play('ice', g.position); }
+        vy += 34 * dt; g.position.y -= vy * dt; g.rotation.z += dt * 0.6;
+        if (g.position.y <= gy) { done = true; c.visible = false; if (game.audio) game.audio.play('ice', g.position); for (let i = 0; i < 7; i++) { const s = new THREE.Mesh(CONE, m); s.geometry = new THREE.CylinderGeometry(0.5, 0.05, 1, 5); s.scale.set(1, r.between([1.2, 3]), 1); s.userData.v = new V(r.between([-9, 9]), r.between([6, 16]), r.between([-9, 9])); s.position.set(0, -h / 2 + 0.5, 0); g.add(s); shards.push(s); } g.position.y = gy; }
+      } });
+    });
+  }
+  // éclat de glace : prismes inclinés (roulis + cap aléatoires) au lieu de blocs droits
+  function shardCluster(S, dc, lx, h, r) {
+    const base = pick(r, ICE);
+    S.bx(dc, lx, 0.6, h * 0.5, 1.4, h * 0.45, 'white', '#9ac8f0', false);
+    for (let i = 0; i < 4; i++) { const w = r.between([2.4, 6]), hh = h * r.between([0.45, 1]); S.bxr(dc, lx + r.between([-3, 3]), hh / 2, w, hh, w * 0.8, 'white', pick(r, ICE), r.between([-24, 24]), r.between([-45, 45]), true); }
+    S.bx(dc, lx, h * 0.55, 0.6, h * 0.9, 0.6, 'basic:#8ad8ff', undefined, false);
+  }
+  const bq = D.banquise;
+  bq.scenes.icebergs.build = function (S) { const n = Math.round(S.len / 15); for (let i = 0; i < n; i++) { const dc = S.d0 + 10 + S.sr() * (S.len - 20), lx = (S.sr() * 2 - 1) * (S.vol(dc) - 3), h = S.sr.between([12, 40]); S.place(dc, lx, 14, 12, 0, h + 3, (r) => shardCluster(S, dc, lx, h, r)); } };
+  delete bq.scenes.crevasse;
+  bq.scenes.grotte = { len: [230, 290], build(S) {
+    const a = S.d0 + 30, b = S.d1 - 30;
+    for (let dc = a; dc < b; dc += 12) S.item(dc + 6, (r) => { const L = S.lane(dc + 6), roof = L.y + 17 + r() * 4, w = 20 + r() * 3; S.bx(dc + 6, L.lx, roof + 2, 2 * (w + 8), 4, 12.6, 'white', pick(r, ICE)); for (const s of [-1, 1]) S.bx(dc + 6, L.lx + s * (w + 3), roof / 2, 6, roof + 4, 12.6, 'white', pick(r, ICE));
+      for (let k = 0; k < 3; k++) { const hh = r.between([3, 10]), x = L.lx + r.between([-w, w]); if (Math.abs(x - L.lx) > S.R + 4) S.cyl(dc + 6, x, roof - hh, 0.1, hh, 'white', '#e4f2ff', 6, r.between([0.6, 1.2]), true); else S.cyl(dc + 6, x, roof - hh, 0.1, hh, 'white', '#e4f2ff', 6, r.between([0.6, 1.1]), false); }
+      if (r() < 0.22) falling(S, dc + 6, L.lx + r.between([-8, 8]), roof, r.between([6, 12]), r);
+      if (r() < 0.2) S.glow(dc + 6, L.lx + r.between([-w, w]), roof - 3, '#8ad8ff', 18); S.gate(dc + 6, L.lx, L.y); });
+    Z.field(S, (a + b) / 2, { type: 'boost', w: 30, h: 36, dd: b - a, color: '#6af0ff' }); S.reserve((a + b) / 2, 0, 2 * S.vol((a + b) / 2), b - a);
+  } };
+  // MANGROVE
+  D.jungle.scenes.mangrove = { len: [260, 320],
+    pin(T, sc) { const mid = (sc.d0 + sc.d1) / 2; return { lx: U.clamp(T.laneX0(mid), -8, 8), y: 7, from: 24, to: sc.d1 - sc.d0 - 24 }; },
+    build(S) {
+      const a = S.d0 + 30, b = S.d1 - 30;
+      for (let dc = S.d0 + 8; dc < S.d1 - 8; dc += 14) S.item(dc, (r) => { const v = S.vol(dc); S.bx(dc, 0, 0.12, 2 * (v + 14), 0.24, 14.4, 'water', undefined, false, { shadow: false }); });
+      for (let dc = a; dc < b; dc += 12) S.item(dc + 6, (r) => { const v = S.vol(dc + 6); S.bx(dc + 6, 0, 17.5, 2 * (v + 12), 2.6, 12.6, 'col:' + pick(r, ['#2a5a28', '#2e6a2c', '#3a7a30'])); for (let k = 0; k < 5; k++) { const x = r.between([-v, v]), hh = r.between([4, 11]); S.cyl(dc + 6, x, 16.2 - hh, 0.12, hh, 'col:#5a4030', undefined, 5, r.between([0.3, 0.6]), false); } });
+      for (let i = 0; i < Math.round(S.len / 20); i++) { const dc = a + S.sr() * (b - a), lx = (S.sr() * 2 - 1) * (S.vol(dc) - 3); S.item(dc, (r) => S.place(dc, lx, 5, 5, 0, 17, () => { const h = 17; for (let k = -1; k <= 1; k++) S.bxr(dc, lx + k * 1.4, h / 2, 0.8, h + 2, 0.8, 'col:#5a4030', undefined, k * 14, 0, true); })); }
+      for (let dc = a; dc < b; dc += 24) S.gate(dc, S.lane(dc).lx, 7); S.reserve((a + b) / 2, 0, 2 * S.vol((a + b) / 2), b - a);
+    } };
+})();

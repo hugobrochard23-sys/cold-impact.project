@@ -5,6 +5,11 @@
 
   // fonds sonores par zone : niveaux des lits (wind / low / hum / hiss) et réglages ; `night` remplace certains niveaux la nuit
   const AMBIENCE = {
+    // v099 : ambiances sonores des zones nouvelles (vent froid, grondement du volcan, bruissement de jungle, bourdon de la ville néon…)
+    canyon: { wind: 0.12, windF: 680, low: 0.04, lowF: 130 }, banquise: { wind: 0.17, windF: 1500, low: 0.02, lowF: 90, hiss: 0.012, hissF: 6800 }, eolien: { wind: 0.13, windF: 520, low: 0.05, lowF: 100, hum: 0.02, humF: 62 },
+    carrier: { wind: 0.07, windF: 600, low: 0.1, lowF: 85, hum: 0.03, humF: 70 }, volcan: { wind: 0.04, windF: 300, low: 0.16, lowF: 65, hum: 0.025, humF: 38 }, jungle: { wind: 0.03, windF: 420, hiss: 0.022, hissF: 5200, low: 0.02, lowF: 110 },
+    barrage: { wind: 0.05, windF: 360, low: 0.13, lowF: 95, hum: 0.03, humF: 55 }, neon: { wind: 0.02, windF: 300, low: 0.05, lowF: 120, hum: 0.035, humF: 105, hiss: 0.006, hissF: 7000 }, carriere: { wind: 0.07, windF: 480, low: 0.09, lowF: 100 },
+    epaves: { wind: 0.1, windF: 400, low: 0.06, lowF: 90, hiss: 0.006, hissF: 4200 }, lancement: { wind: 0.05, windF: 520, low: 0.07, lowF: 90, hum: 0.02, humF: 80 }, autoroute: { wind: 0.05, windF: 620, low: 0.09, lowF: 130, hum: 0.015, humF: 90 },
     city:   { wind: 0.04, windF: 420, low: 0.07, lowF: 150, hum: 0.012, humF: 50, night: { wind: 0.03, hiss: 0.012 } },
     metro:  { wind: 0.012, windF: 260, low: 0.11, lowF: 110, hum: 0.05, humF: 60, pulse: 0.004, pulseF: 0.5 },
     port:   { wind: 0.06, windF: 700, low: 0.09, lowF: 260, hum: 0.008, humF: 48 },
@@ -332,6 +337,8 @@
         case 'heliFire': this.noiseHit(3000, 'highpass', 0.8, 0.2, 0.03); this.sweep(600, 3200, 'bandpass', 1.5, 0.22, 0.35); this.tone('sine', 90, 50, 0.25, 0.2); break;
         // design : allumage du réacteur (claquement + montée) et coupure (souffle qui s'éteint)
         case 'engineOn': this.noiseHit(1800, 'bandpass', 1.2, 0.18, 0.05); this.sweep(400, 1600, 'bandpass', 1, 0.22, 0.18); break;
+        case 'ice': this.noiseHit(3400, 'highpass', 0.8, 0.2, 0.08); this.sweep(2600, 500, 'bandpass', 2, 0.14, 0.22); break;   // v099 : glace qui casse
+        case 'cloud': this.noiseHit(1300, 'bandpass', 0.6, 0.2, 0.2); this.sweep(520, 160, 'lowpass', 0.9, 0.2, 0.4); break;   // v099 : nuage qui se désintègre
         case 'engineOff': this.sweep(1200, 250, 'lowpass', 0.8, 0.2, 0.3); break;
         case 'warnMissile': this.tone('square', 1320, 1320, 0.07, 0.05); this.tone('square', 1320, 1320, 0.07, 0.05, 0.09); break;   // v026 : bip-bip d'alerte
         case 'warnFuel': this.tone('triangle', 880, 880, 0.12, 0.12); this.tone('triangle', 587, 587, 0.12, 0.2, 0.15); break;     // v026 : deux notes descendantes

@@ -95,9 +95,7 @@
   chute.scenes.nuages = { len: [190, 250], build(S) {
     towerWalls(S, 140, 260);
     // banc de nuages : gros pâtés blancs (sans collision) qui réduisent la vue, dont quelques-uns autour de la trajectoire
-    for (let i = 0; i < 22; i++) { const dc = S.d0 + S.sr() * S.len, lx = S.sr.between([-44, 44]), y = S.sr.between([10, 240]), sc = S.sr.between([10, 30]);
-      S.item(dc, (r) => { for (let k = 0; k < 3; k++) { const p = S.at(dc + r.between([-sc, sc]), lx + r.between([-sc, sc]), y + r.between([-sc * 0.2, sc * 0.3])), g = new THREE.IcosahedronGeometry(sc * r.between([0.6, 1]), 1);
-        S.b.addGeometry(g, new THREE.Vector3(p[0], p[1], p[2]), new THREE.Quaternion(), new THREE.Vector3(1.3, 0.6, 1.1), 'basic:#' + new THREE.Color(S.dark ? '#3a2a5a' : '#f8faff').multiplyScalar(r.between([0.9, 1])).getHexString()); g.dispose(); } }); }
+    for (let i = 0; i < 22; i++) Z.cloud(S, S.d0 + S.sr() * S.len, S.sr.between([-44, 44]), S.sr.between([10, 240]), S.sr.between([14, 34]));   // v099 : nuages translucides
   } };
   chute.scenes.arche = { len: [260, 320], pin(T, sc) { const mid = (sc.d0 + sc.d1) / 2; return { lx: U.clamp(T.laneX0(mid), -6, 6), y: U.clamp(T.laneY0(mid), 60, 160), from: (sc.d1 - sc.d0) / 2 - 70, to: (sc.d1 - sc.d0) / 2 + 70 }; },
     build(S) {

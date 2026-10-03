@@ -9,7 +9,7 @@
   const V = THREE.Vector3;
   const U = CC.U;
   // v030 (mobile) : objets de calcul réutilisés — la caméra est mise à jour à chaque image
-  const _f = new V(), _u = new V(), _o = new V(), _z = new V(0, 0, 1), _y = new V(0, 1, 0), _t1 = new V(), _t2 = new V(), _t3 = new V();
+  const _wu = new V(), _tu = new V(), _f = new V(), _u = new V(), _o = new V(), _z = new V(0, 0, 1), _y = new V(0, 1, 0), _t1 = new V(), _t2 = new V(), _t3 = new V();
   const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _tq = new THREE.Quaternion();
 
   const _yAx = new THREE.Vector3(0, 1, 0), _nb = new THREE.Vector3();
@@ -123,7 +123,9 @@
           this.camNose.lerp(nose, U.damp(c.noseLag, dt)).normalize();
           const k = U.damp(c.followLag, dt);
           this.camDir.lerp(this.camNose, k).normalize();
-          const u = _t1.copy(this.upRef).lerp(this.up, k);
+          // v099 : la caméra garde l'HORIZON stable (haut = haut du monde) ; elle ne suit le haut de la fusée que près de la verticale (loopings, backflips)
+          const wy = U.clamp((Math.abs(this.camDir.y) - 0.55) / 0.35, 0, 1), wu = _wu.set(0, 1, 0).addScaledVector(this.camDir, -this.camDir.y), tu = wu.lengthSq() > 1e-4 ? _tu.copy(wu.normalize()).lerp(this.up, wy) : this.up;
+          const u = _t1.copy(this.upRef).lerp(tu, k);
           if (u.lengthSq() > 1e-6) this.upRef.copy(u.normalize());   // haut exactement opposé (rare) : on garde l'ancien
           this.updateCamBasis();
         }

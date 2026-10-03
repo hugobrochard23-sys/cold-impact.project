@@ -136,3 +136,8 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 - Boss/mini-boss : retour au recul d origine (plus long : 70-150 m selon PV, 85 m mini) ; il ne bouge qu a chaque coup (bossKeepAhead supprime).
 - 4 zones de plus (zones_g.js) : CARRIERE (niv 15,35..), EPAVES (20,40..), LANCEMENT (25,45..), AUTOROUTE (30,50..).
 - Nuit : Target.nightLift ajoute un halo bleute (emissive) aux engins quand game.nightK > 0.
+
+## v099 (nuit)
+- Controles : assistance anti-sol uniquement juste avant impact (ttc<1,3 s), progressive, pas en piqué vertical. Camera : horizon stable (haut du monde sauf près de la verticale), suivi 1,9x plus rapide (followLag 3.8, noseLag 5.6).
+- Nuages translucides qui se désintègrent (Zones.cloud, son cloud). Ambiances sonores par zone (AMBIENCE). Banquise : grotte à stalactites qui tombent + éclats de glace ; Jungle : mangrove (vol bas sous la canopée).
+- Surprise tous les 10 niveaux dès le niveau 20 (meta_ui2).

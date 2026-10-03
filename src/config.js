@@ -67,9 +67,9 @@ CC.CONFIG = {
     distance: 1.85,              // MESURÉ (indirect) : nez à 55 % et tuyère à 67,8 % de la hauteur ⇒ ≈ 1,5 longueur de roquette
     height: 0.52,                // MESURÉ (indirect), même calcul
     crosshairY: 0.402,           // MESURÉ : réticule à 40,2 % de la hauteur
-    followLag: 2.0,              // CHOIX v010, revu v019 : 2e étage du lissage (1/s) ; la caméra suit la tête de la roquette (plus petit = plus doux)
-    noseLag: 3,                  // CHOIX v019 : 1er étage du lissage (1/s) : filtre les à-coups du joystick avant la caméra
-    offsetLag: 7,                // lissage du décalage caméra (1/s) : dérive de la roquette à l'écran quand la visée tourne (ESTIMATION)
+    followLag: 3.8,              // CHOIX v010, revu v019 : 2e étage du lissage (1/s) ; la caméra suit la tête de la roquette (plus petit = plus doux)
+    noseLag: 5.6,                  // CHOIX v019 : 1er étage du lissage (1/s) : filtre les à-coups du joystick avant la caméra
+    offsetLag: 9,                // lissage du décalage caméra (1/s) : dérive de la roquette à l'écran quand la visée tourne (ESTIMATION)
     rollFromYawRate: 0,          // v019 : 0,16 → 0 (Hugo) : l'horizon ne penche plus en virage
     rollLag: 5,
     boostZoom: 0.88,             // CHOIX v026 (Hugo) : pendant le boost, angle de vue × 0,88 (léger zoom avant) ; v034 : gardé pour les modes hors CLASSIQUE

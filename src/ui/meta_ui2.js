@@ -168,6 +168,16 @@
   Home.drawHome = function (ui, ctx, game, W, H) {
     prevHome.apply(this, arguments);
     if (game.meta && !ui.overlay && !ui.reveal && game.state === 'MENU' && !game.testMode) { const f = game.meta.pendingUnlock(); if (f) { ui.unlock = { feat: f, t0: now(), step: 0 }; ui.overlay = 'unlock'; } }
+    // v099 : SURPRISE tous les 10 niveaux à partir du niveau 20 (cadeau unique, ouvert avec l'animation de caisse)
+    if (game.meta && !ui.overlay && !ui.reveal && game.state === 'MENU' && !game.testMode) {
+      const mx = (game.save.lvl && game.save.lvl.max) || 1, M = game.meta;
+      for (let Lv = 20; Lv <= Math.min(mx, 300); Lv += 10) if (!M.M.seen['m' + Lv]) {
+        M.M.seen['m' + Lv] = 1; M.save();
+        const SK = { 20: 'toxique', 40: 'samourai', 50: 'phenix', 70: 'galaxie', 90: 'furtive', 100: 'royale' }, outs = [];
+        if (SK[Lv] && CC.Skins.byId[SK[Lv]]) outs.push(M.give({ t: 'skin', id: SK[Lv] })); outs.push(M.give({ t: 'crate', n: 1 + Math.floor(Lv / 40) })); outs.push(M.give({ t: 'nuts', n: 100 + 20 * Lv }));
+        game.writeSave(); Home.reveal(ui, outs); break;
+      }
+    }
   };
 
   // ============================================================================================================

@@ -172,11 +172,8 @@
     } };
 
   // ============================================================== BASE EN ALTITUDE
-  function cloudPuffs(S, n, yLo, yHi, sideMin, sideMax) {
-    for (let i = 0; i < n; i++) {
-      const dc = S.d0 + S.sr() * S.len, s = S.sr() < 0.5 ? -1 : 1, lx = s * S.sr.between([sideMin, sideMax]), y = S.sr.between([yLo, yHi]), sc = S.sr.between([12, 34]);
-      S.item(dc, (r) => { for (let k = 0; k < 4; k++) { const p = S.at(dc + r.between([-sc, sc]), lx + r.between([-sc, sc]), y + r.between([-sc * 0.15, sc * 0.3])); const g = new THREE.IcosahedronGeometry(sc * r.between([0.5, 0.9]), 1); S.b.addGeometry(g, new THREE.Vector3(p[0], p[1], p[2]), new THREE.Quaternion(), new THREE.Vector3(1.4, 0.55, 1.1), 'basic:#' + new THREE.Color('#f6f8fc').multiplyScalar(r.between([0.92, 1])).getHexString(), undefined); g.dispose(); } });
-    }
+  function cloudPuffs(S, n, yLo, yHi, sideMin, sideMax) {   // v099 : nuages translucides qui se désintègrent (Z.cloud)
+    for (let i = 0; i < n; i++) { const dc = S.d0 + S.sr() * S.len, s = S.sr() < 0.5 ? -1 : 1; Z.cloud(S, dc, s * S.sr.between([sideMin, sideMax]), S.sr.between([yLo, yHi]), S.sr.between([14, 34])); }
   }
   function runway(S) {
     // la piste : bande sombre, axe en tirets, rives, seuils ; feux de bord sobres
