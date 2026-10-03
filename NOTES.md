@@ -141,3 +141,6 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 - Controles : assistance anti-sol uniquement juste avant impact (ttc<1,3 s), progressive, pas en piqué vertical. Camera : horizon stable (haut du monde sauf près de la verticale), suivi 1,9x plus rapide (followLag 3.8, noseLag 5.6).
 - Nuages translucides qui se désintègrent (Zones.cloud, son cloud). Ambiances sonores par zone (AMBIENCE). Banquise : grotte à stalactites qui tombent + éclats de glace ; Jungle : mangrove (vol bas sous la canopée).
 - Surprise tous les 10 niveaux dès le niveau 20 (meta_ui2).
+
+## v100 (nuit)
+- 5 nouveaux engins (src/entities/models_enemy2.js) : apc, snowcat, technical, rocketTruck, hover — branches dans les rosters des 11 zones nouvelles (hover = sur l eau comme boat).

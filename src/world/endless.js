@@ -237,14 +237,14 @@
       const d = t.d, ly = T.laneY(d), raw = r.pick(ly < 15 ? (T.theme ? T.theme.ground : ['tank', 'truck', 'heli', 'heli', 'sam']) : (T.theme ? T.theme.air : ['heli', 'heli', 'heli', 'heli', 'truck'])), RO = CC.Roster;   // v069 : sur la ligne directrice : un engin à hauteur de la trajectoire, ou au sol si elle descend
       const type = RO.pick(t.zone, raw === 'heli', r), air = RO.isAir(type), lx = t.lx;   // v083 : le thème décide air / sol, la zone décide QUI (pas d'hélicoptère sous l'eau)
       let p;
-      if (type === 'boat') {   // patrouilleur : sur l'eau, de part et d'autre du quai
+      if (type === 'boat' || type === 'hover') {   // patrouilleur / aéroglisseur : sur l'eau, de part et d'autre du quai
         const lb = T.laneX(d) + (r() < 0.5 ? -1 : 1) * r.between([21, 29]), pb = T.at(d, lb, -3.3);
-        if (!clearAt(pb, RO.RAD.boat, false)) continue; p = pb;
+        if (!clearAt(pb, RO.RAD[type], false)) continue; p = pb;
       } else p = place(d, lx, ly + (t.dy || 0) + r.between([-1.5, 1.5]), air, RO.RAD[type] || (air ? 8 : 5.5));
       if (!p) continue;   // pas de place libre : pas de cible (jamais dans un mur)
       b.target(type, p, T.yawAcross(d) + (type === 'truck' ? 90 : 0) + RO.face(type), RO.opts(type, { unarmed: d * dk < 250 || r() > U.clamp(0.3 + (d * dk - 250) / 3000, 0.3, 0.9), tint: Math.abs(Math.round(p[0] * 0.37 + p[2] * 0.11)) % 4 }));   // les premiers ne tirent pas ; ensuite de plus en plus souvent
       busy.push(d);
-      if (type === 'boat') continue;   // hors trajectoire : pas de point de passage
+      if (type === 'boat' || type === 'hover') continue;   // hors trajectoire : pas de point de passage
       const hy = air ? p[1] - T.base(d) : 1.6;
       gates.push({ d: d - 55, lx: T.laneX(d - 55), y: T.laneY(d - 55) * 0.7 }, { d: d - 22, lx, y: hy + 3 }, { d, lx, y: hy }, { d: d + 30, lx: T.laneX(d + 30), y: T.laneY(d + 30) * 0.8 });
     }
