@@ -14,7 +14,7 @@
     city: { sg: 0, amp: 1.0, acc: '#e0b020' }, forest: { sg: 0, amp: 1.0, acc: '#c8a050' }, port: { sg: 1, amp: 0.9, acc: '#e0b020' }, usine: { sg: 0, amp: 0.55, acc: '#ff8a1a' },
     tour: { sg: 0, amp: 0.9, acc: '#2be8ff' }, sky: { sg: 0, amp: 0.9, acc: '#e8f0ff' }, metro: { sg: 0, amp: 0.5, acc: '#30c060' }, mini: { sg: 0, amp: 0.6, acc: '#ff5a3a' },
     eau: { sg: -1, amp: 0.8, acc: '#4ab8a8' }, chute: { sg: 0, amp: 1.0, acc: '#ff3ad8' },
-    canyon: { sg: 0, amp: 1.0, acc: '#e8b070' }, banquise: { sg: 0, amp: 0.9, acc: '#9ad0ff' }, volcan: { sg: 0, amp: 1.0, acc: '#ff7a2a' }, jungle: { sg: 0, amp: 0.9, acc: '#9affb0' }, barrage: { sg: 0, amp: 0.8, acc: '#ffd23a' }, neon: { sg: 0, amp: 0.8, acc: '#ff3ad8' },   // v096 : nouvelles zones (le parc éolien et le porte-avions, sur l'eau, n'ont pas de relief)
+    canyon: { sg: 0, amp: 1.0, acc: '#e8b070' }, banquise: { sg: 0, amp: 0.9, acc: '#9ad0ff' }, volcan: { sg: 0, amp: 1.0, acc: '#ff7a2a' }, jungle: { sg: 0, amp: 0.9, acc: '#9affb0' }, barrage: { sg: 0, amp: 0.8, acc: '#ffd23a' }, neon: { sg: 0, amp: 0.8, acc: '#ff3ad8' }, carriere: { sg: 0, amp: 1.0, acc: '#ffb02b' }, lancement: { sg: 0, amp: 0.8, acc: '#ff7a1a' }, autoroute: { sg: 0, amp: 0.7, acc: '#fff2c0' },   // v096 : nouvelles zones (le parc éolien et le porte-avions, sur l'eau, n'ont pas de relief)
   };
   const kA = (T, zone) => U.clamp(0.8 + 0.14 * ((T.difK || 1) - 0.7), 0.8, 1.45) * ZK[zone].amp;   // la hauteur des reliefs grandit avec le niveau
   const dir = (zone, r) => ZK[zone].sg || (r() < 0.5 ? 1 : -1);                                        // +1 : le sol monte d'abord, −1 : il descend d'abord
@@ -27,6 +27,9 @@
     volcan: [(r) => { const h = r.between([8, 24]), w = r.between([4, 8]); return [['b', 0, h / 2, w, h, w, 'col:#4a3430'], ['b', 0, 0.3, w * 2, 0.5, w * 2, 'basic:#ff6a1a']]; }],
     jungle: [(r) => { const h = r.between([14, 30]); return [['c', 0, 0, 2.4, h, 'col:#5a4030', 1.6], ['b', 0, h + 2, 12, 4, 10, 'col:#2e6a2c']]; }],
     barrage: [(r) => { const h = r.between([20, 38]); return [['b', 0, h / 2, 1.4, h, 1.4, 'col:#8a8e96'], ['b', 0, h * 0.8, 12, 0.7, 0.7, 'col:#8a8e96']]; }],
+    carriere: [(r) => { const h = r.between([8, 20]), w = r.between([6, 12]); return [['b', 0, h / 2, w, h, w, 'col:#a88a62'], ['b', 2, h + 1, w * 0.6, 2, w * 0.6, 'col:#c0a070']]; }],
+    lancement: [(r) => { const h = r.between([20, 40]); return [['c', 0, 0, 1.8, h, 'col:#f4f4f0', 1.8], ['b', 6, h / 2, 1, h, 1, 'col:#d85a1a']]; }],
+    autoroute: [(r) => [['b', 0, 3, 8, 6, 5, 'col:#b8b8b4'], ['b', 0, 7, 9, 0.6, 5.4, 'col:#e8c020']]],
     banquise: [(r) => { const h = r.between([8, 24]), w = r.between([4, 9]); return [['b', 0, h / 2, w, h, w, 'col:#cfe6ff'], ['b', 0, h + 1.5, w * 0.6, 3, w * 0.6, 'col:#e4f2ff']]; }, (r) => [['b', 0, 1.5, 10, 3, 7, 'col:#bcd8f4']]],
     city: [
       (r) => { const h = r.between([40, 62]); return [['b', 0, h / 2, 2.2, h, 2.2, 'col:#e0b020'], ['b', 10, h + 1, 30, 1.6, 1.6, 'col:#e0b020'], ['b', -9, h + 1, 5, 4, 4, 'col:#5a5a5e'], ['b', 20, h - 6, 0.12, 14, 0.12, 'col:#222'], ['b', 20, h - 14, 2.4, 2, 2.4, 'col:#d83a2a']]; },   // grue jaune

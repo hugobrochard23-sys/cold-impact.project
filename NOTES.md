@@ -131,3 +131,8 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 
 ## v097
 - 4 zones de plus (zones_f.js) : VOLCAN (niv 14,34..), JUNGLE (19,39..), BARRAGE (24,44..), NEON (29,49..). Effets de terrain (Zones.field : lift/boost/gust) dans les 8 zones nouvelles. Boss/mini-boss : recul croissant avec les PV + bossKeepAhead (restent devant la fusée).
+
+## v098
+- Boss/mini-boss : retour au recul d origine (plus long : 70-150 m selon PV, 85 m mini) ; il ne bouge qu a chaque coup (bossKeepAhead supprime).
+- 4 zones de plus (zones_g.js) : CARRIERE (niv 15,35..), EPAVES (20,40..), LANCEMENT (25,45..), AUTOROUTE (30,50..).
+- Nuit : Target.nightLift ajoute un halo bleute (emissive) aux engins quand game.nightK > 0.

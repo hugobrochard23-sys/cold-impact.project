@@ -36,7 +36,8 @@
   }
 
   // v083 : version dorée de n'importe quel engin : un seul métal doré brillant partagé (son éclat pulse dans Target.update)
-  const GOLD = new THREE.MeshPhongMaterial({ color: '#f2c230', specular: '#fff6c8', shininess: 120, emissive: '#4a3400' });
+  const NIGHTC = new THREE.Color('#5a6a88');   // v098
+const GOLD = new THREE.MeshPhongMaterial({ color: '#f2c230', specular: '#fff6c8', shininess: 120, emissive: '#4a3400' });
   function goldify(model) { model.traverse((o) => { if (o.isMesh && o.material && !o.material.transparent) o.material = GOLD; }); }
 
   class Target {
@@ -118,10 +119,17 @@
       this.outline = { set visible(v) { for (const m of grp.children) m.visible = v; }, get visible() { return grp.children.length ? grp.children[0].visible : false; } };
       this.outline.visible = false;
     }
+    nightLift(k) {
+      this._nk = k === undefined ? 0 : k;
+      if (!this._mats) { this._mats = []; this.object.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) if (m && m.emissive && m !== GOLD && this._mats.indexOf(m) < 0) this._mats.push(m); }); }
+      if (!this._mats.length && (this._nr = (this._nr || 0) + 1) < 40) { this._mats = null; this._nk = undefined; return; }   // modèle pas encore construit : on réessaie
+      for (const m of this._mats) { if (m._e0 === undefined) m._e0 = m.emissive.getHex(); m.emissive.setHex(m._e0).lerp(NIGHTC, 0.9 * this._nk); }
+    }
     updateObb() { this.object.updateMatrixWorld(true); this.obb = obbFrom(this.object, this.size, this.center, this.obb); }
 
     update(dt, game) {
       this.t += dt; if (this.hitCool > 0) this.hitCool -= dt;
+      if (game.nightK !== this._nk) this.nightLift(game.nightK || 0);   // v098 : la nuit, les engins noirs restent lisibles (halo bleuté de clair de lune)
       if (this.golden && this.alive && this.type !== 'heli') GOLD.emissiveIntensity = 0.5 + 0.9 * Math.abs(Math.sin(this.t * 4));
       if (!this.alive) { if (this.wreck) this.updateWreck(dt, game); return; }
       const rk = game.rocket && game.rocket.active ? game.rocket : null;
