@@ -677,6 +677,16 @@
       }
     }
 
+    isUnderwater() {
+      const run = this.endlessRun, rk = this.rocket; if (!run || !rk.active || !run.T) return false;
+      const T = run.T, d = run.dist, z = T.zoneOrder[T.zoneIndex(d) % T.zoneOrder.length];
+      return z === 'eau' ? rk.pos.y < -4 : !!({ eolien: 1, carrier: 1, epaves: 1, port: 1 }[z]) && rk.pos.y - T.base(d) < -3.2;
+    }
+    bubbles(dt, rk) {
+      const B = this._bub || (this._bub = { list: [], t: 0, geo: new THREE.SphereGeometry(0.2, 6, 5), mat: new THREE.MeshBasicMaterial({ color: '#cfeeff', transparent: true, opacity: 0.55, depthWrite: false }) });
+      if (rk) { B.t += dt; while (B.t > 0.025 && B.list.length < 70) { B.t -= 0.025; const m = new THREE.Mesh(B.geo, B.mat), n = rk.nozzle(new V()); m.position.copy(n).add(new V((Math.random() - 0.5) * 0.7, (Math.random() - 0.5) * 0.7, (Math.random() - 0.5) * 0.7)); m.scale.setScalar(0.4 + Math.random() * 1.1); m.userData = { v: new V((Math.random() - 0.5) * 1.5, 2.4 + Math.random() * 2.5, (Math.random() - 0.5) * 1.5), life: 1.5 }; this.scene.add(m); B.list.push(m); } }
+      for (let i = B.list.length - 1; i >= 0; i--) { const m = B.list[i], u = m.userData; u.life -= dt; m.position.addScaledVector(u.v, dt); if (u.life <= 0 || m.position.y > -3.4 && this.endlessRun && this.endlessRun.dist >= 0 && m.position.y > 4) { this.scene.remove(m); B.list.splice(i, 1); } }
+    }
     // v075 : coup sur un boss (il a plusieurs points de vie, la fusée traverse et doit revenir)
     hitBoss(t, rocket) {
       t.hp--; t.hitCool = 0.9; t.rageK = Math.max(0.45, (t.rageK || 1) * 0.78);
@@ -991,7 +1001,7 @@
       if (this.state === 'FLIGHT') this.style.update(dt, rk); else this.style.update(dt, null);
       this.effects.update(dt, this.camera);
       this.rig.update(dt);
-      this.trails.update(dt, rk, this.camera);   // après la caméra : effacement près de sa position de cette image
+      if (this.isUnderwater()) { this.trails.clear(); this.bubbles(dt, rk); } else { this.trails.update(dt, rk, this.camera); this.bubbles(dt, null); }   // v101 : sous l'eau, des BULLES au lieu de traînées   // après la caméra : effacement près de sa position de cette image
       this.audio.updateRocket(rk, dt);
       this.audio.updateWorld(this, dt);
       if (this.endlessRun && this.state === 'FLIGHT') this.audio.updateAmbient(dt);

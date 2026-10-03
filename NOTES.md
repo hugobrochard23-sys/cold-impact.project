@@ -149,3 +149,5 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 
 ## v101 (nuit 2)
 - 10 nouveaux engins (models_enemy3.js) : buggy, arcticSam, mortar, recon, dozer, haul, tel, tanker, rib, quad (drone) ; rosters et boss des zones mises a jour. Neige sur les engins de la banquise, flottaison des bateaux, eclaboussures, volcan : scene cratere (montee puis plongee), niveaux d eau en plus (n%10=3 des 13).
+
+- Sous l eau : bulles au lieu de traînées (Game.bubbles / isUnderwater).
