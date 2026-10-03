@@ -422,6 +422,11 @@
       for (const s of [-1, 1]) bx2({ p: GP(s * (T.vol(m) - 6), ym + 0.06), s: [1.0, 0.1, len], r: [pitch, 0, 0], mat: 'hazard', collide: false, shadow: false });
     } else if (zone === 'mini') {
       slab(-1, 2 * (T.vol(m) + 14), 2, 'planks', '#e0c090', { tile: [18, 18] });
+    } else if (zone === 'eolien') {      // v096 : mer ouverte (comme l'eau du port, sans quai)
+      bx2({ p: GP(0, ym - T.rel(m) - 3.6), s: [900, 2, len], r: [0, 0, 0], mat: 'water', ground: true });
+    } else if (zone === 'carrier') {     // v096 : pont d'envol de 64 m entre deux plans d'eau
+      const q = 32; slab(-1, 2 * q, 2, 'concreteDark', '#7c828a');
+      for (const s of [-1, 1]) bx2({ p: GP(s * (q + 120), ym - T.rel(m) - 3.6), s: [900, 2, len], r: [0, 0, 0], mat: 'water', ground: true });
     } else {
       slab(-1, 900, 2, Z.meta[zone] ? Z.meta[zone].ground : 'asphalt', Z.meta[zone] ? Z.meta[zone].groundTint : '#ffffff');
     }

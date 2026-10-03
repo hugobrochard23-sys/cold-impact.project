@@ -99,7 +99,7 @@
     }
     for (let i = 0; i < PAGE; i++) {
       const n = pg * PAGE + i + 1; if (n > CC.LM.count) break;
-      const col = i % cols, row = Math.floor(i / cols), x = R(x0 + col * cell), y = R(y0 + row * cell), open = n <= max, isDone = !!done[n], isCur = n === cur;
+      const col = i % cols, row = Math.floor(i / cols), x = R(x0 + col * cell), y = R(y0 + row * cell), open = n <= max || !!(CC.CONFIG.dev && CC.CONFIG.dev.unlockAll), isDone = !!done[n], isCur = n === cur;
       const blink = isCur && Math.floor(t * 2.5) % 2 === 0;
       Home.pill(ctx, x, y, size, size, isDone ? 'rgba(20,70,40,0.95)' : open ? (blink ? 'rgba(90,70,24,0.97)' : 'rgba(38,45,54,0.97)') : 'rgba(18,22,28,0.95)', isCur ? GOLD : isDone ? GREEN : open ? '#5a6674' : '#2a313a', size * 0.14);
       if (open) text(ctx, String(n), x + size / 2, y + size * 0.24, ui.fitPx([String(n)], size * 0.6, size * 0.03), isDone ? GREEN : '#ffffff', { align: 'center' });

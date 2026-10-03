@@ -124,3 +124,7 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 
 ## v095
 - 300 niveaux (LM.count) : longueur variable par chapitre (LENV), difficulté en vagues (HARDV, plafond difK 6), coffre plafonné, boss de chapitre. 18 looks (12 nouveaux + 6 ambiances), 8 kits d ennemis (Roster.KITS, Roster.kit posé au lancement). Balayage 4..299 sans erreur.
+
+## v096
+- 4 nouvelles zones (src/world/zones_e.js) : CANYON (niveaux 12, 32, 52...), BANQUISE (17, 37...), EOLIEN (22, 42...), PORTE-AVIONS (27, 47...). Chaque zone : décor, scènes, ennemis (roster), boss (POOL).
+- MODE TEST TEMPORAIRE : CONFIG.dev.unlockAll = true ouvre tous les niveaux et fonctions. A METTRE A false EN PRODUCTION.

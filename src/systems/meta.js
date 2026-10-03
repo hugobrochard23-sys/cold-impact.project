@@ -43,9 +43,9 @@
 
     // ---------- fonctions qui se débloquent ----------
     reach() { return (this.game.save.lvl && this.game.save.lvl.max) || 1; }
-    isOpen(f) { return /[?&]unlockall=1/.test(location.search) || this.reach() >= (UNLOCK[f] || 1); }
+    isOpen(f) { return (CC.CONFIG.dev && CC.CONFIG.dev.unlockAll) || /[?&]unlockall=1/.test(location.search) || this.reach() >= (UNLOCK[f] || 1); }
     unlockAt(f) { return UNLOCK[f] || 1; }
-    pendingUnlock() { for (const f of ['garage', 'pass', 'chest']) if (this.isOpen(f) && !this.M.seen[f]) return f; return null; }
+    pendingUnlock() { if (CC.CONFIG.dev && CC.CONFIG.dev.unlockAll) return null; for (const f of ['garage', 'pass', 'chest']) if (this.isOpen(f) && !this.M.seen[f]) return f; return null; }
     markSeen(f) { this.M.seen[f] = 1; this.save(); }
     // ---------- coffre des étoiles : une récompense toutes les 3 étoiles ----------
     starsAvail() { return Math.max(0, Math.floor(this.total() / 3) - (this.M.sclaim.n || 0)); }

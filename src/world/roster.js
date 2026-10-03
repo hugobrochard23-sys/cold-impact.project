@@ -15,6 +15,10 @@
     mini:   { ground: ['tank', 'ifv', 'jeep', 'sam'], air: [] },
     eau:    { ground: [], air: ['sub', 'sub', 'mine', 'sub'] },
     chute:  { ground: [], air: ['heli', 'jet'] },
+    canyon:   { ground: ['jeep', 'truck', 'sam', 'tank', 'aaturret', 'jeep'], air: ['heli'] },          // v096
+    banquise: { ground: ['tank', 'ifv', 'truck', 'radar', 'sam'], air: ['heli'] },
+    eolien:   { ground: ['boat', 'boat', 'aaturret'], air: ['heli', 'jet'] },
+    carrier:  { ground: ['aaturret', 'truck', 'jeep', 'radar', 'sam'], air: ['jet', 'jet', 'heli'] },
   };
   const FORM = { city: 'heli', forest: 'jeep', port: 'truck', usine: 'truck', tour: 'jet', sky: 'jet', metro: 'jeep', mini: 'jeep', eau: 'mine', chute: 'jet' };
   const TL = { tank: 1, ifv: 1, spg: 1, mlrs: 1, aagun: 1, jeep: 1, aaturret: 1, boat: 1, destroyer: 1, train: 1 };   // engins « comme le char » : le modèle regarde vers −Z → on les retourne

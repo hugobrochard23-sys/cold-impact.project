@@ -14,6 +14,7 @@
     city: { sg: 0, amp: 1.0, acc: '#e0b020' }, forest: { sg: 0, amp: 1.0, acc: '#c8a050' }, port: { sg: 1, amp: 0.9, acc: '#e0b020' }, usine: { sg: 0, amp: 0.55, acc: '#ff8a1a' },
     tour: { sg: 0, amp: 0.9, acc: '#2be8ff' }, sky: { sg: 0, amp: 0.9, acc: '#e8f0ff' }, metro: { sg: 0, amp: 0.5, acc: '#30c060' }, mini: { sg: 0, amp: 0.6, acc: '#ff5a3a' },
     eau: { sg: -1, amp: 0.8, acc: '#4ab8a8' }, chute: { sg: 0, amp: 1.0, acc: '#ff3ad8' },
+    canyon: { sg: 0, amp: 1.0, acc: '#e8b070' }, banquise: { sg: 0, amp: 0.9, acc: '#9ad0ff' },   // v096 : nouvelles zones (le parc éolien et le porte-avions, sur l'eau, n'ont pas de relief)
   };
   const kA = (T, zone) => U.clamp(0.8 + 0.14 * ((T.difK || 1) - 0.7), 0.8, 1.45) * ZK[zone].amp;   // la hauteur des reliefs grandit avec le niveau
   const dir = (zone, r) => ZK[zone].sg || (r() < 0.5 ? 1 : -1);                                        // +1 : le sol monte d'abord, −1 : il descend d'abord
@@ -22,6 +23,8 @@
   // 'b' boîte (dx, yCentre, w, h, d, mat) · 'c' cylindre (dx, y0, rayon, hauteur, mat, rayonHaut) · 's' sphère (dx, yCentre, rayon, mat, aplatissement)
   const TOYS = ['#e8c020', '#d83a2a', '#2a6ac8', '#2aa060', '#8a3aa8', '#ff8a1a'];
   const PROPS = {
+    canyon: [(r) => { const h = r.between([8, 22]), w = r.between([4, 8]); return [['b', 0, h / 2, w, h, w, 'col:#b8603a'], ['b', 0, h + 1, w * 1.2, 2, w * 1.2, 'col:#d08044']]; }, (r) => [['b', 0, 2, 9, 4, 6, 'col:#d8a868'], ['b', 2, 5, 5, 3, 4, 'col:#c89858']]],
+    banquise: [(r) => { const h = r.between([8, 24]), w = r.between([4, 9]); return [['b', 0, h / 2, w, h, w, 'col:#cfe6ff'], ['b', 0, h + 1.5, w * 0.6, 3, w * 0.6, 'col:#e4f2ff']]; }, (r) => [['b', 0, 1.5, 10, 3, 7, 'col:#bcd8f4']]],
     city: [
       (r) => { const h = r.between([40, 62]); return [['b', 0, h / 2, 2.2, h, 2.2, 'col:#e0b020'], ['b', 10, h + 1, 30, 1.6, 1.6, 'col:#e0b020'], ['b', -9, h + 1, 5, 4, 4, 'col:#5a5a5e'], ['b', 20, h - 6, 0.12, 14, 0.12, 'col:#222'], ['b', 20, h - 14, 2.4, 2, 2.4, 'col:#d83a2a']]; },   // grue jaune
       (r) => [['b', -6, 7, 0.8, 14, 0.8, 'col:#3a3d42'], ['b', 6, 7, 0.8, 14, 0.8, 'col:#3a3d42'], ['b', 0, 17, 22, 12, 1.2, 'emis:' + r.pick(['#d83a2a', '#2a9ac8', '#e8a020', '#8a3aa8'])]],                                                         // panneau géant
