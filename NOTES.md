@@ -144,3 +144,5 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 
 ## v100 (nuit)
 - 5 nouveaux engins (src/entities/models_enemy2.js) : apc, snowcat, technical, rocketTruck, hover — branches dans les rosters des 11 zones nouvelles (hover = sur l eau comme boat).
+
+- Boss : les nouveaux engins sont utilises comme boss des zones nouvelles (POOL, indices alignes sur la parite du chapitre).
