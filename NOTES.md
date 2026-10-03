@@ -146,3 +146,6 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 - 5 nouveaux engins (src/entities/models_enemy2.js) : apc, snowcat, technical, rocketTruck, hover — branches dans les rosters des 11 zones nouvelles (hover = sur l eau comme boat).
 
 - Boss : les nouveaux engins sont utilises comme boss des zones nouvelles (POOL, indices alignes sur la parite du chapitre).
+
+## v101 (nuit 2)
+- 10 nouveaux engins (models_enemy3.js) : buggy, arcticSam, mortar, recon, dozer, haul, tel, tanker, rib, quad (drone) ; rosters et boss des zones mises a jour. Neige sur les engins de la banquise, flottaison des bateaux, eclaboussures, volcan : scene cratere (montee puis plongee), niveaux d eau en plus (n%10=3 des 13).

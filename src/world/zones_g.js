@@ -156,3 +156,19 @@
       for (let dc = a; dc < b; dc += 24) S.gate(dc, S.lane(dc).lx, 7); S.reserve((a + b) / 2, 0, 2 * S.vol((a + b) / 2), b - a);
     } };
 })();
+
+/* v101 : VOLCAN — le CRATERE : on monte le long du flanc (le sol suit), on franchit la crête de lave puis on plonge dans la caldeira ; ENNEMIS DE LA BANQUISE : neige sur le toit ; FLOTTAISON des bateaux. */
+(function () {
+  const U = CC.U, Z = CC.Zones, K = Z.kit, pick = K.pick, BAS = ['#4a3430', '#3a2a28', '#5a3e36', '#2e2220'];
+  Z.defs.volcan.scenes.cratere = { len: [320, 380], minD: 250,
+    pin(T, sc) { const L = sc.d1 - sc.d0; return { lx: U.clamp(T.laneX0((sc.d0 + sc.d1) / 2), -6, 6), fy: (d) => 10 + 76 * Math.sin(Math.PI * U.clamp((d - sc.d0) / L, 0, 1)), from: 0, to: L }; },
+    build(S) {
+      for (let dc = S.d0 + 4; dc < S.d1 - 4; dc += 12) S.item(dc + 6, (r) => { const L = S.lane(dc + 6), h = Math.max(1, L.y - 12); S.bx(dc + 6, L.lx, h / 2, 50 + r() * 6, h, 12.6, 'rock', pick(r, BAS)); S.bx(dc + 6, L.lx, h + 0.1, 12 + r() * 6, 0.3, 12.8, 'basic:#ff6a1a', undefined, false, { shadow: false }); if (r() < 0.25) S.glow(dc + 6, L.lx + r.between([-14, 14]), h + 2, '#ff6a1a', 22); S.gate(dc + 6, L.lx, L.y); });
+      const dc = S.d0 + S.len * 0.5; S.item(dc, () => { const L = S.lane(dc); for (const s of [-1, 1]) for (let k = 0; k < 3; k++) S.bx(dc + (k - 1) * 8, L.lx + s * 30, L.y - 6 + k * 3, 9, 14, 8, 'rock', '#2e2220'); });
+      S.reserve(S.mid, 0, 2 * S.vol(S.mid), S.len);
+    } };
+  const T0 = CC.Target && CC.Target.prototype;
+  if (T0 && !T0._v101) { T0._v101 = true; const u0 = T0.update;
+    T0.update = function (dt, game) { u0.call(this, dt, game); if (this.alive && (this.type === 'boat' || this.type === 'hover' || this.type === 'rib' || this.type === 'destroyer')) { const ph = this.ph || 0; this.object.position.y += Math.sin(this.t * 1.4 + ph) * 0.2; this.object.rotation.z = Math.sin(this.t * 1.1 + ph) * 0.035; this.object.rotation.x = Math.sin(this.t * 0.9 + ph) * 0.02; } };   // flottaison
+  }
+})();

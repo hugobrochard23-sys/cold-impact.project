@@ -254,7 +254,7 @@
     groundVehicles() {
       const down = new V(0, -1, 0);
       for (const t of this.targets) {
-        if (t.type !== 'tank' && t.type !== 'truck' && t.type !== 'house' && !(t.tl && t.type !== 'boat' && t.type !== 'hover')) continue;
+        if (t.type !== 'tank' && t.type !== 'truck' && t.type !== 'house' && !(t.tl && t.type !== 'boat' && t.type !== 'hover' && t.type !== 'rib')) continue;
         const p = t.object.position;
         const hit = this.world.raycast(new V(p.x, p.y + 1.5, p.z), down, 3.2, (bx) => bx.kind === 'solid' || bx.kind === 'brick');
         if (!hit || Math.abs(hit.point.y - p.y) > 1.5) continue;

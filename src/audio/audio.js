@@ -338,6 +338,7 @@
         // design : allumage du réacteur (claquement + montée) et coupure (souffle qui s'éteint)
         case 'engineOn': this.noiseHit(1800, 'bandpass', 1.2, 0.18, 0.05); this.sweep(400, 1600, 'bandpass', 1, 0.22, 0.18); break;
         case 'ice': this.noiseHit(3400, 'highpass', 0.8, 0.2, 0.08); this.sweep(2600, 500, 'bandpass', 2, 0.14, 0.22); break;   // v099 : glace qui casse
+        case 'splash': this.noiseHit(2200, 'bandpass', 0.7, 0.28, 0.15); this.sweep(900, 200, 'lowpass', 0.8, 0.25, 0.4); break;   // v101 : éclaboussure
         case 'cloud': this.noiseHit(1300, 'bandpass', 0.6, 0.2, 0.2); this.sweep(520, 160, 'lowpass', 0.9, 0.2, 0.4); break;   // v099 : nuage qui se désintègre
         case 'engineOff': this.sweep(1200, 250, 'lowpass', 0.8, 0.2, 0.3); break;
         case 'warnMissile': this.tone('square', 1320, 1320, 0.07, 0.05); this.tone('square', 1320, 1320, 0.07, 0.05, 0.09); break;   // v026 : bip-bip d'alerte

@@ -237,14 +237,14 @@
       const d = t.d, ly = T.laneY(d), raw = r.pick(ly < 15 ? (T.theme ? T.theme.ground : ['tank', 'truck', 'heli', 'heli', 'sam']) : (T.theme ? T.theme.air : ['heli', 'heli', 'heli', 'heli', 'truck'])), RO = CC.Roster;   // v069 : sur la ligne directrice : un engin à hauteur de la trajectoire, ou au sol si elle descend
       const type = RO.pick(t.zone, raw === 'heli', r), air = RO.isAir(type), lx = t.lx;   // v083 : le thème décide air / sol, la zone décide QUI (pas d'hélicoptère sous l'eau)
       let p;
-      if (type === 'boat' || type === 'hover') {   // patrouilleur / aéroglisseur : sur l'eau, de part et d'autre du quai
+      if (type === 'boat' || type === 'hover' || type === 'rib') {   // patrouilleur / aéroglisseur : sur l'eau, de part et d'autre du quai
         const lb = T.laneX(d) + (r() < 0.5 ? -1 : 1) * r.between([21, 29]), pb = T.at(d, lb, -3.3);
         if (!clearAt(pb, RO.RAD[type], false)) continue; p = pb;
       } else p = place(d, lx, ly + (t.dy || 0) + r.between([-1.5, 1.5]), air, RO.RAD[type] || (air ? 8 : 5.5));
       if (!p) continue;   // pas de place libre : pas de cible (jamais dans un mur)
-      b.target(type, p, T.yawAcross(d) + (type === 'truck' ? 90 : 0) + RO.face(type), RO.opts(type, { unarmed: d * dk < 250 || r() > U.clamp(0.3 + (d * dk - 250) / 3000, 0.3, 0.9), tint: Math.abs(Math.round(p[0] * 0.37 + p[2] * 0.11)) % 4 }));   // les premiers ne tirent pas ; ensuite de plus en plus souvent
+      b.target(type, p, T.yawAcross(d) + (type === 'truck' ? 90 : 0) + RO.face(type), RO.opts(type, { snow: t.zone === 'banquise', unarmed: d * dk < 250 || r() > U.clamp(0.3 + (d * dk - 250) / 3000, 0.3, 0.9), tint: Math.abs(Math.round(p[0] * 0.37 + p[2] * 0.11)) % 4 }));   // les premiers ne tirent pas ; ensuite de plus en plus souvent
       busy.push(d);
-      if (type === 'boat' || type === 'hover') continue;   // hors trajectoire : pas de point de passage
+      if (type === 'boat' || type === 'hover' || type === 'rib') continue;   // hors trajectoire : pas de point de passage
       const hy = air ? p[1] - T.base(d) : 1.6;
       gates.push({ d: d - 55, lx: T.laneX(d - 55), y: T.laneY(d - 55) * 0.7 }, { d: d - 22, lx, y: hy + 3 }, { d, lx, y: hy }, { d: d + 30, lx: T.laneX(d + 30), y: T.laneY(d + 30) * 0.8 });
     }
@@ -538,6 +538,9 @@
       // v084 : LIMITES DU JEU — on ne peut plus sortir de la carte : un plafond invisible à 26 m au-dessus de la trajectoire (on ne passe plus par-dessus les obstacles)
       // et des bords latéraux ; la fusée glisse le long de la limite sans mourir
       if (rk.active && g.state === 'FLIGHT' && this.T.levelLen) {
+        { const Tw = this.T, dw = this.dist, zw = Tw.zoneOrder[Tw.zoneIndex(dw) % Tw.zoneOrder.length], yr = rk.pos.y - Tw.base(dw);   // v101 : éclaboussure quand la fusée plonge dans l'eau ou en sort
+          if ({ eolien: 1, carrier: 1, epaves: 1, port: 1 }[zw] && this._yw !== undefined && (this._yw > -3.2) !== (yr > -3.2) && rk.speed > 12) { const c = rk.pos.clone(); c.y = Tw.base(dw) - 3.2; g.effects.ring(c, new THREE.Vector3(0, 1, 0), 2, 26, 0.8, '#d8ecff', 0.9); g.effects.flash(c, '#cfe8ff', 6, 70, 0.3, '#9ac8f0'); if (g.audio) g.audio.play('splash', c); }
+          this._yw = yr; }
         const T = this.T, d = this.dist; let cap = -1e9, vmax = 0;   // v087 : le plafond suit le POINT HAUT de la trajectoire sur -30 m / +100 m (il ne pousse plus le joueur vers le bas dans les descentes)
         for (const k of [-30, 0, 35, 70, 100]) { cap = Math.max(cap, T.base(d + k) + T.laneY(d + k)); vmax = Math.max(vmax, T.vol(d + k)); }
         cap += 30;
