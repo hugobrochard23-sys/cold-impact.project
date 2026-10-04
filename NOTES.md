@@ -159,3 +159,6 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 
 ## v103
 - Boost : plus de relance en reposant le doigt (reboostMs 0). Eau : texture a vagues douces + materiau Phong brillant. Camera : cap = direction de la vitesse, elevation limitee a +-70 deg, horizon toujours stable : en backflip la fusee tourne devant la camera.
+
+## v104
+- Plus aucune rectification automatique vers le sol. Camera : des que le nez depasse la verticale, le cap de la camera se retourne vite (damp 9) pour revenir derriere la fusee.

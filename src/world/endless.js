@@ -521,7 +521,7 @@
         // v088 : REMONTEE AUTO — près du sol, on ne peut pas piquer plus raide que la hauteur le permet : la visée se redresse doucement (le joueur peut toujours piquer sur une cible haute)
         const q = g.input.aimQ, f = _fa.set(0, 0, -1).applyQuaternion(q);
         // v099 : l'assistance n'intervient QUE juste avant l'impact (temps avant le sol < 1,3 s), progressivement, et jamais en piqué vertical (> ~80° : on ne se rattrape plus)
-        if (f.y < -0.1 && f.y > -0.985) {
+        if (false && f.y < -0.1 && f.y > -0.985) {   // v104 : DESACTIVE — plus aucune rectification quand on pique
           const hit = g.world.raycast(rk.pos, _dn, 80);
           if (hit) {
             const ttc = hit.dist / (Math.max(10, rk.speed) * -f.y), allow = 0;
