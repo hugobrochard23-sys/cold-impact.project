@@ -105,4 +105,31 @@
     const turret = new THREE.Group(); turret.name = 'turret'; turret.position.set(0, 3.2, -1.2); body.add(turret); cyl(0.5, 0.55, 0.2, m.metal, 12, turret).position.y = 0.1; box(0.7, 0.5, 0.8, m.dark, 0, 0.4, 0, turret);
     const gp = new THREE.Group(); gp.position.set(0, 0.5, -0.3); turret.add(gp); const slide = new THREE.Group(); gp.add(slide); cylZ(0.16, 0.2, 0.6, m.light, 10, 0, 0, 0, slide); cylZ(0.12, 0.12, 1.8, m.dark, 10, 0, 0, -1.2, slide); const mz = new THREE.Object3D(); mz.position.set(0, 0, -2.2); slide.add(mz);
     return fin(g, body, turret, gp, slide, mz, [3.0, 4.2, 9.2], [0, 2.1, 0], [new V(0.9, 1.0, -3.8)], { elev: [-0.05, 0.9] }); };
+  // ---------- BOSS dessines a la main : torpille geante (mer), forteresse a chenilles (terre), avion cargo lourd (air) ----------
+  M.torpedo = () => { const g = new THREE.Group(), steel = lam('#6a7078'), dark = lam('#2c3036'), red = basic('#ff3a2a'), yel = lam('#d8a820'), prop = new THREE.Group();
+    cylZ(1.1, 1.1, 8.0, steel, 18, 0, 0, 0, g); cylZ(1.1, 0.15, 2.6, steel, 18, 0, 0, -5.3, g); cylZ(1.14, 1.14, 0.35, yel, 18, 0, 0, -2.2, g); cylZ(1.14, 1.14, 0.2, dark, 18, 0, 0, 1.5, g); cylZ(1.14, 1.14, 0.35, yel, 18, 0, 0, 3.0, g);
+    cylZ(0.5, 0.5, 0.4, red, 10, 0, 0, -6.4, g).castShadow = false; cylZ(1.0, 0.6, 1.8, dark, 14, 0, 0, 4.9, g);
+    for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4, f = new THREE.Group(); f.rotation.z = a; g.add(f); box(0.12, 1.9, 1.6, steel, 0, 1.6, 3.8, f); box(0.1, 1.2, 0.9, dark, 0, 1.2, 4.9, f); }
+    prop.position.set(0, 0, 5.9); g.add(prop); for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3, b = box(0.14, 1.4, 0.4, lam('#b8a050'), Math.sin(a) * 0.8, Math.cos(a) * 0.8, 0, prop); b.rotation.z = -a; } cylZ(0.3, 0.3, 0.6, dark, 8, 0, 0, 0, prop);
+    for (const z of [-3.6, 0.4, 3.4]) for (const sx of [-1, 1]) box(0.3, 0.3, 0.3, dark, sx * 1.1, 0.4, z, g);
+    g.userData = { gen: true, flying: true, size: [4.0, 4.0, 14.0], center: [0, 0, 0], firePoints: [new V(0.9, 0, -6.5), new V(-0.9, 0, -6.5)], anim: (dt, t) => { prop.rotation.z += dt * 18; g.position.y = Math.sin(t * 1.2) * 0.25; } };
+    return bake(g, [prop]); };
+  M.crawler = (tint) => { const P = liv(tint === undefined ? 0 : tint), m = mats(P), g = new THREE.Group(), body = new THREE.Group(); g.add(body);
+    for (const sx of [-1, 1]) for (const z of [-3.0, 3.0]) { track(m, body, sx * 3.7, 5.4, z, 1.8); }
+    box(7.2, 1.2, 11.5, m.dark, 0, 1.4, 0, body); plateY([[-3.2, -5.4], [3.2, -5.4], [3.8, -3.6], [3.8, 5.0], [-3.8, 5.0], [-3.8, -3.6]], 1.6, m.hull, 0.2, body).position.y = 2.0; box(6.4, 0.08, 9.6, m.camo, 0, 3.65, 0.3, body);
+    for (const sx of [-1, 1]) { box(1.4, 0.9, 1.6, m.hull, sx * 2.4, 4.0, -3.4, body); cylZ(0.1, 0.1, 1.6, m.metal, 8, sx * 2.4, 4.2, -4.6, body); for (let i = 0; i < 3; i++) box(0.5, 0.5, 1.6, m.light, sx * 2.6, 3.95, 2.0 + i * 0.7, body); box(0.12, 1.6, 0.12, m.metal, sx * 3.0, 4.6, 4.0, body); }
+    box(2.4, 0.6, 1.4, m.glass, 0, 3.2, -5.4, body); for (let i = 0; i < 6; i++) box(0.5, 0.2, 0.06, basic('#fff0c8'), -1.4 + i * 0.56, 2.4, -5.46, body).castShadow = false;
+    cyl(0.04, 0.04, 3.4, m.metal, 4, body).position.set(-3.0, 5.4, 3.4); box(1.6, 0.9, 0.12, m.dark, -3.0, 6.9, 3.4, body);
+    const turret = new THREE.Group(); turret.name = 'turret'; turret.position.set(0, 3.7, 0.4); body.add(turret); cyl(2.0, 2.2, 0.4, m.metal, 20, turret).position.y = 0.2; plateY([[-1.4, -1.8], [1.4, -1.8], [2.0, -0.8], [2.0, 1.6], [1.2, 2.2], [-1.2, 2.2], [-2.0, 1.6], [-2.0, -0.8]], 1.3, m.hull, 0.12, turret).position.y = 0.4; box(3.0, 0.06, 3.2, m.camo, 0, 1.75, 0.2, turret);
+    const gp = new THREE.Group(); gp.position.set(0, 1.0, -1.7); turret.add(gp); const slide = new THREE.Group(); gp.add(slide); cylZ(0.5, 0.6, 1.4, m.dark, 12, 0, 0, 0, slide); for (const sx of [-1, 1]) { cylZ(0.2, 0.2, 5.6, m.metal, 12, sx * 0.55, 0, -3.2, slide); cylZ(0.3, 0.3, 0.8, m.dark, 12, sx * 0.55, 0, -5.8, slide); } box(1.8, 0.7, 1.0, m.dark, 0, 0, -0.5, slide);
+    const mz = new THREE.Object3D(); mz.position.set(0, 0, -6.2); slide.add(mz); return fin(g, body, turret, gp, slide, mz, [9.4, 7.0, 12.0], [0, 3.2, 0], [new V(1.8, 3.4, 5.0), new V(-1.8, 3.4, 5.0)], { elev: [-0.08, 0.8] }); };
+  M.airlifter = (tint) => { const g = new THREE.Group(), hull = lam('#8a929c'), dark = lam('#3a3e46'), light = lam('#b8bec6'), glass = new THREE.MeshPhongMaterial({ color: '#1c2c3e', specular: '#8aa8c8', shininess: 80 }), eng = [];
+    cylZ(1.5, 1.5, 9.0, hull, 14, 0, 0, 0, g); cylZ(1.5, 0.5, 3.6, hull, 14, 0, 0.1, -6.2, g); cylZ(0.5, 0.5, 0.5, dark, 10, 0, 0.1, -8.2, g); cylZ(1.5, 0.9, 4.0, hull, 14, 0, 0.3, 6.4, g); box(1.2, 0.8, 1.4, glass, 0, 1.0, -5.4, g);
+    box(18, 0.34, 3.6, light, 0, 1.15, -0.4, g); for (const sx of [-1, 1]) box(0.9, 0.5, 2.6, dark, sx * 8.6, 1.2, -0.4, g); box(6.4, 0.24, 2.0, light, 0, 2.6, 8.0, g); box(0.34, 3.6, 2.4, light, 0, 2.6, 7.8, g); box(1.8, 0.1, 2.8, dark, 0, -0.2, 6.2, g).rotation.x = 0.18;
+    for (const x of [-6.6, -3.2, 3.2, 6.6]) { const e = new THREE.Group(); e.position.set(x, 0.4, -1.9); g.add(e); cylZ(0.55, 0.55, 2.2, dark, 10, 0, 0, 0, e); cylZ(0.62, 0.55, 0.35, light, 10, 0, 0, -1.2, e); const pr = new THREE.Group(); pr.position.set(0, 0, -1.5); e.add(pr); for (let i = 0; i < 4; i++) box(0.12, 1.5, 0.3, lam('#2a2c30'), 0, 0.7, 0, pr).rotation.z = i * Math.PI / 2; eng.push(pr); }
+    for (const sx of [-1, 1]) for (let i = 0; i < 4; i++) box(0.3, 0.3, 0.06, basic('#fff0c8'), sx * 1.3, 0.6 + (i - 1.5) * 0.4, -3.6 + i * 2, g).castShadow = false;
+    box(0.5, 0.5, 0.5, basic('#ff3a2a'), 0, 1.7, 6.2, g).castShadow = false;
+    g.userData = { gen: true, flying: true, size: [18.4, 5.0, 20.0], center: [0, 1, 0], firePoints: [new V(-6.6, -0.4, -3.2), new V(6.6, -0.4, -3.2)], anim: (dt, t) => { for (const e of eng) e.rotation.z += dt * 22; g.position.y = Math.sin(t * 0.9) * 0.3; } };
+    return bake(g, eng); };
+  CC.BossFlying.torpedo = true; CC.BossFlying.airlifter = true; CC.BossFlying.mine = true;
 })();

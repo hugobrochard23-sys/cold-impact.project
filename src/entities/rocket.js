@@ -114,7 +114,7 @@
       // --- orientation du nez ---
       const desired = this.grapple.active && this.grapple.t >= this.grapple.shootT ? velDir : input.aimDir;
       const ang = this.fwd.angleTo(desired);
-      const rate = Math.min(cfg.maxTurnRate, cfg.steerGain * ang);
+      const rate = Math.min(cfg.maxTurnRate * (ang > 1.5 ? 1.8 : 1), cfg.steerGain * ang * (ang > 1.5 ? 1.5 : 1));   // v102 : demi-tour (> ~90° d'écart) nettement plus rapide
       rotateToward(this.fwd, desired, rate * dt);
 
       // --- la trajectoire suit le nez (adhérence) ---

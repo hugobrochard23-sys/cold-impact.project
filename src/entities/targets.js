@@ -50,7 +50,6 @@ const GOLD = new THREE.MeshPhongMaterial({ color: '#f2c230', specular: '#fff6c8'
       this.model = type === 'tank' ? CC.Models.tank(opts.tint !== undefined ? opts.tint : vr) : type === 'heli' ? CC.Models.helicopter(false, !!opts.gold) : type === 'heliCamo' ? CC.Models.helicopter(true)
         : type === 'truck' ? CC.Models.truck() : CC.BossModels && CC.BossModels[type] ? CC.BossModels[type](opts.tint, opts.variant) : GEN_MODELS[type] ? GEN_MODELS[type]() : CC.Models.house();   // v032 : radar, dépôt, poste, lance-missiles
       if (opts.gold && type !== 'heli') goldify(this.model);   // v083 : ennemi doré (brille, rapporte plus, lâche une caisse verte)
-      if (opts.snow && this.model.userData.size && !this.model.userData.flying) { const sz = this.model.userData.size, c = this.model.userData.center || [0, 0, 0], cap = new THREE.Mesh(new THREE.BoxGeometry(sz[0] * 0.8, 0.3, sz[2] * 0.74), new THREE.MeshLambertMaterial({ color: '#f6faff' })); cap.position.set(c[0], c[1] + sz[1] * 0.5 - 0.1, c[2]); this.model.add(cap); }   // v101 : neige sur le toit (banquise)
       this.gen = this.model.userData.gen ? this.model.userData : null; this.tl = !!this.model.userData.tankLike;   // tl : engin « comme le char » (même IA de tourelle)
    // v080 : design de boss générique (models_boss.js)
       this.arrive = opts.arrive ? new V().fromArray(opts.arrive) : null; this.grp = opts.grp || null; this.noDrop = !!opts.noDrop; this.golden = !!opts.gold; this.rageK = 1;   // le boss entre en vol depuis le fond de l'arène

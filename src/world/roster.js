@@ -30,7 +30,7 @@
   };
   const FORM = { city: 'heli', forest: 'jeep', port: 'truck', usine: 'truck', tour: 'jet', sky: 'jet', metro: 'jeep', mini: 'jeep', eau: 'mine', chute: 'jet' };
   const TL = { tug: 1, crashTender: 1, buggy: 1, arcticSam: 1, mortar: 1, recon: 1, dozer: 1, haul: 1, tel: 1, tanker: 1, rib: 1, apc: 1, snowcat: 1, technical: 1, rocketTruck: 1, hover: 1, tank: 1, ifv: 1, spg: 1, mlrs: 1, aagun: 1, jeep: 1, aaturret: 1, boat: 1, destroyer: 1, train: 1 };   // engins « comme le char » : le modèle regarde vers −Z → on les retourne
-  const SCALE = { tug: 2.5, crashTender: 1.9, buggy: 2.5, arcticSam: 2.1, mortar: 2.3, recon: 2.2, dozer: 2.0, haul: 1.7, tel: 2.0, tanker: 2.1, rib: 2.3, quad: 2.4, apc: 2.2, snowcat: 2.3, technical: 2.5, rocketTruck: 2.1, hover: 2.1, tank: 2.4, truck: 2.4, sam: 2.4, heli: 2.2, gunship: 1.8, ifv: 2.4, jeep: 2.5, aagun: 2.2, aaturret: 2.2, boat: 2.2, radar: 2.2, jet: 1.5, sub: 1.5, mine: 2.2, spg: 2.0, mlrs: 2.0 };
+  const SCALE = { crawler: 1.0, airlifter: 1.0, torpedo: 1.0, tug: 2.5, crashTender: 1.9, buggy: 2.5, arcticSam: 2.1, mortar: 2.3, recon: 2.2, dozer: 2.0, haul: 1.7, tel: 2.0, tanker: 2.1, rib: 2.3, quad: 2.4, apc: 2.2, snowcat: 2.3, technical: 2.5, rocketTruck: 2.1, hover: 2.1, tank: 2.4, truck: 2.4, sam: 2.4, heli: 2.2, gunship: 1.8, ifv: 2.4, jeep: 2.5, aagun: 2.2, aaturret: 2.2, boat: 2.2, radar: 2.2, jet: 1.5, sub: 1.5, mine: 2.2, spg: 2.0, mlrs: 2.0 };
   R.RAD = { tug: 5, crashTender: 7, buggy: 4.8, arcticSam: 6.4, mortar: 6, recon: 6.2, dozer: 6.5, haul: 8, tel: 7, tanker: 6.5, rib: 6, quad: 5, apc: 6.5, snowcat: 6.2, technical: 4.8, rocketTruck: 7, hover: 8, tank: 5.5, truck: 5.5, sam: 4.5, heli: 8, gunship: 9, ifv: 6, jeep: 4.5, aagun: 6.5, aaturret: 7, boat: 8, radar: 6, jet: 10, sub: 8, mine: 6 };
   // v095 : KITS d'ennemis - chaque niveau en recoit un (8 variantes) qui s'ajoute au tableau de la zone : memes lieux, adversaires differents
   R.KITS = [{ name: 'STANDARD' }, { name: 'ARTILLERIE', g: ['spg', 'mlrs', 'spg'] }, { name: 'DEFENSE AERIENNE', g: ['aagun', 'aaturret', 'radar'] }, { name: 'BLINDES LOURDS', g: ['tank', 'spg', 'tank'] },
@@ -44,9 +44,12 @@
   R.isAir = (type) => !!R.AIR[type];
   R.face = (type) => (TL[type] ? 180 : 0);
   // choisit un engin pour la zone : wantAir = le thème demande un engin volant (sinon, au sol) ; si la zone n'a que l'un des deux, on prend celui-là
-  R.pick = (zone, wantAir, r) => { const z = R.zone(zone), a = z.air, g = z.ground; const list = wantAir ? (a.length ? a : g) : (g.length ? g : a); return list[Math.floor(r() * list.length)]; };
+  const NEWZONE = { canyon: 1, banquise: 1, eolien: 1, carrier: 1, volcan: 1, jungle: 1, barrage: 1, neon: 1, carriere: 1, epaves: 1, lancement: 1, autoroute: 1 };
+  R.pick = (zone, wantAir, r) => { if (wantAir && NEWZONE[zone] && R.zone(zone).ground.length && r() < 0.62) wantAir = false;   // v102 : les engins PROPRES à la zone sont en majorité
+    const z = R.zone(zone), a = z.air, g = z.ground; const list = wantAir ? (a.length ? a : g) : (g.length ? g : a); return list[Math.floor(r() * list.length)]; };
   R.goldType = (zone, r) => { const z = R.zone(zone), list = (r() < 0.5 && z.air.length ? z.air : z.ground.concat(z.air)).filter((t) => t !== 'mine' && t !== 'boat'); return (list.length ? list : ['heli'])[Math.floor(r() * list.length)] || 'heli'; };
-  R.formationType = (zone) => FORM[zone] || 'heli';
+  const NF = { canyon: 'buggy', banquise: 'snowcat', volcan: 'apc', jungle: 'recon', barrage: 'dozer', neon: 'quad', carriere: 'dozer', lancement: 'apc', autoroute: 'tanker', eolien: 'quad', epaves: 'quad', carrier: 'tug' };   // v102 : formations d'engins PROPRES à la zone (plus d'hélicoptères partout)
+  R.formationType = (zone) => NF[zone] || FORM[zone] || 'heli';
   R.scale = (type) => SCALE[type] || 2.4;
   R.opts = (type, extra) => Object.assign({ scale: R.scale(type) * (extra && extra.gold ? 1.12 : 1), drift: R.isAir(type) ? (type === 'jet' ? 16 : type === 'sub' ? 9 : 5) : (type === 'boat' ? 3 : 2.2), driftSpeed: type === 'jet' ? 0.6 : 0.45 }, extra || {});
   // ennemis de garde (qui tirent) autorisés par zone, dérivés du tableau : tank = un engin au sol « comme le char », sam = lance-missiles ou site antiaérien, heli = avion, hélicoptère ou sous-marin

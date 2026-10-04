@@ -153,3 +153,6 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 - Sous l eau : bulles au lieu de traînées (Game.bubbles / isUnderwater).
 
 - Porte-avions : tug (tracteur de pont arme) et crashTender (camion pompiers) ; 12 nouveaux types d engins au total en v101.
+
+## v102
+- Neige-rectangle supprimee. Engins propres a la zone en majorite (R.pick 62% sol, formations propres NF). Boss dessines a la main : torpedo, crawler, airlifter ; tous les engins sont boss au moins une fois (POOL). Camera : vise la fusee (toujours au centre). Demi-tour/backflip plus rapide (rocket.js rate x1.8, addAim x1.8 pres de la verticale).

@@ -139,7 +139,7 @@
           this.pos.copy(want);
         }
         cam.position.copy(this.pos);
-        this.orient(this.camDir, this.roll, this.camRight, this.camUp);
+        { const lk = _wu.copy(rk.pos).addScaledVector(this.camDir, 4).sub(cam.position); if (rk.active && lk.lengthSq() > 4) { lk.normalize(); this.orient(lk, this.roll, this.camRight, this.camUp); } else this.orient(this.camDir, this.roll, this.camRight, this.camUp); }   // v102 : la caméra VISE la fusée : elle reste toujours au centre
       } else if (this.mode === 'impact') {
         const back = _t1.subVectors(this.pos, this.focus).normalize();
         this.pos.addScaledVector(back, dt * 1.5);
