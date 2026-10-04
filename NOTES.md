@@ -162,3 +162,6 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 
 ## v104
 - Plus aucune rectification automatique vers le sol. Camera : des que le nez depasse la verticale, le cap de la camera se retourne vite (damp 9) pour revenir derriere la fusee.
+
+## v105
+- Plus de boost de secours quand la vitesse tombe. Sensibilite VIVE par defaut. Qualite auto : baisse seulement sous 22 img/s (reste en HIGH). Bulles : fixes dans l eau, plus nombreuses selon la vitesse, plus lentes et petites.

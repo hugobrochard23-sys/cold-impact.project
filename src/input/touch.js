@@ -42,7 +42,7 @@
     let finger = null, uiTouch = null;
     Object.defineProperties(T, { down: { get: () => !!finger }, dragPx: { get: () => (finger && finger.dist) || 0 } });   // v091 : lus par le tutoriel (doigt posé ? distance glissée depuis la pose)
     const SENS = [0.7, 1, 1.4];   // v093 : réglage SENSIBILITE (douce / normale / vive)
-    const scale = () => cfg.dragGain * SENS[game.settings.touchSens !== undefined ? game.settings.touchSens : 1] / Math.max(1, Math.min(window.innerWidth, window.innerHeight));
+    const scale = () => cfg.dragGain * SENS[game.settings.touchSens !== undefined ? game.settings.touchSens : 2] / Math.max(1, Math.min(window.innerWidth, window.innerHeight));
     const boostOff = () => { if (T.thrust) { T.thrust = false; if (Hap) Hap.boostStop(); } };
     const boostOn = () => { T.thrust = true; if (Hap) Hap.boostStart(); };   // v034 : le son du boost est joué par Game.onBoostStart
     document.addEventListener('touchstart', (e) => {

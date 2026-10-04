@@ -266,7 +266,7 @@ CC.CONFIG = {
       medium: { pixelRatio: 1,    shadowMap: 1024, shadows: true,  msaa: 0, bloom: true,  particles: 0.9 },
       low:    { pixelRatio: 0.75, shadowMap: 512,  shadows: false, msaa: 0, bloom: false, particles: 0.55 },
     },
-    autoDownFps: 42,             // AUTO : sous 42 images/s en vol pendant autoWindow s → niveau inférieur
+    autoDownFps: 22,             // AUTO : sous 42 images/s en vol pendant autoWindow s → niveau inférieur
     autoWindow: 3,
     maxFpsTouch: 60,             // écrans à 120 Hz : le jeu n'en calcule que 60 (batterie, chauffe)
     pausedFps: 20,               // menus et pause : 20 images/s suffisent

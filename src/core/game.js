@@ -682,10 +682,10 @@
       const T = run.T, d = run.dist, z = T.zoneOrder[T.zoneIndex(d) % T.zoneOrder.length];
       return z === 'eau' ? rk.pos.y < -4 : !!({ eolien: 1, carrier: 1, epaves: 1, port: 1 }[z]) && rk.pos.y - T.base(d) < -3.2;
     }
-    bubbles(dt, rk) {
-      const B = this._bub || (this._bub = { list: [], t: 0, geo: new THREE.SphereGeometry(0.2, 6, 5), mat: new THREE.MeshBasicMaterial({ color: '#cfeeff', transparent: true, opacity: 0.55, depthWrite: false }) });
-      if (rk) { B.t += dt; while (B.t > 0.025 && B.list.length < 70) { B.t -= 0.025; const m = new THREE.Mesh(B.geo, B.mat), n = rk.nozzle(new V()); m.position.copy(n).add(new V((Math.random() - 0.5) * 0.7, (Math.random() - 0.5) * 0.7, (Math.random() - 0.5) * 0.7)); m.scale.setScalar(0.4 + Math.random() * 1.1); m.userData = { v: new V((Math.random() - 0.5) * 1.5, 2.4 + Math.random() * 2.5, (Math.random() - 0.5) * 1.5), life: 1.5 }; this.scene.add(m); B.list.push(m); } }
-      for (let i = B.list.length - 1; i >= 0; i--) { const m = B.list[i], u = m.userData; u.life -= dt; m.position.addScaledVector(u.v, dt); if (u.life <= 0 || m.position.y > -3.4 && this.endlessRun && this.endlessRun.dist >= 0 && m.position.y > 4) { this.scene.remove(m); B.list.splice(i, 1); } }
+    bubbles(dt, rk) {   // v105 : les bulles RESTENT dans l'eau (elles ne suivent pas la fusée : c'est elle qui avance) ; plus elle va vite, plus il y en a
+      const B = this._bub || (this._bub = { list: [], t: 0, geo: new THREE.SphereGeometry(0.1, 6, 5), mat: new THREE.MeshBasicMaterial({ color: '#d8f2ff', transparent: true, opacity: 0.6, depthWrite: false }) });
+      if (rk) { const rate = U.clamp(rk.speed * 0.55, 4, 70); B.t += dt * rate; while (B.t >= 1 && B.list.length < 170) { B.t -= 1; const m = new THREE.Mesh(B.geo, B.mat), n = rk.nozzle(new V()), sp = Math.random(); m.position.copy(n).addScaledVector(rk.vel, -dt * Math.random()).add(new V((Math.random() - 0.5) * 1.1, (Math.random() - 0.5) * 1.1, (Math.random() - 0.5) * 1.1)); m.scale.setScalar(0.35 + sp * sp * 1.5); m.userData = { v: new V((Math.random() - 0.5) * 0.35, 0.5 + Math.random() * 0.7, (Math.random() - 0.5) * 0.35), life: 3.2 + Math.random() * 1.2 }; this.scene.add(m); B.list.push(m); } } else B.t = 0;
+      for (let i = B.list.length - 1; i >= 0; i--) { const m = B.list[i], u = m.userData; u.life -= dt; m.position.addScaledVector(u.v, dt); if (u.life < 0.6) m.scale.multiplyScalar(1 - dt * 2.5); if (u.life <= 0) { this.scene.remove(m); B.list.splice(i, 1); } }
     }
     // v075 : coup sur un boss (il a plusieurs points de vie, la fusée traverse et doit revenir)
     hitBoss(t, rocket) {
@@ -955,7 +955,7 @@
             // v032 : roquette immobilisée (posée en glissant sur un toit, sans essence) → comptée comme un crash, sinon
             // la partie ne peut plus avancer
             const stuck = rk.speed < 6 && this.flightTime > 1;
-            if (stuck && this.endlessRun && rk.fuel > 0.3) {   // v072 : de l'essence mais presque immobile (posée sur un toit, en l'air) : boost de secours qui relance la fusée
+            if (false && stuck && this.endlessRun && rk.fuel > 0.3) {   // v105 : DESACTIVE — plus de boost automatique quand la fusée ralentit (v072) : de l'essence mais presque immobile (posée sur un toit, en l'air) : boost de secours qui relance la fusée
               this.stallT = (this.stallT || 0) + dt;
               if (this.stallT > 0.5) { this.stallT = 0; rk.fbTime = Math.max(rk.fbTime, rk.age - rk.cfg.ignitionDelay + 1.4); rk.vel.addScaledVector(rk.fwd, 24); rk.vel.y += 8; if (rk.sliding > 0) rk.sliding = 0; }
             } else this.stallT = stuck ? (this.stallT || 0) + dt : 0;
