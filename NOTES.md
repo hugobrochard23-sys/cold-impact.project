@@ -165,3 +165,6 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 
 ## v105
 - Plus de boost de secours quand la vitesse tombe. Sensibilite VIVE par defaut. Qualite auto : baisse seulement sous 22 img/s (reste en HIGH). Bulles : fixes dans l eau, plus nombreuses selon la vitesse, plus lentes et petites.
+
+## v106
+- Bulles : naissent a la pointe du nez (noseTip), plus petites, derivent vers l avant (22% de la vitesse).

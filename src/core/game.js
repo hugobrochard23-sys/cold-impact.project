@@ -682,10 +682,12 @@
       const T = run.T, d = run.dist, z = T.zoneOrder[T.zoneIndex(d) % T.zoneOrder.length];
       return z === 'eau' ? rk.pos.y < -4 : !!({ eolien: 1, carrier: 1, epaves: 1, port: 1 }[z]) && rk.pos.y - T.base(d) < -3.2;
     }
-    bubbles(dt, rk) {   // v105 : les bulles RESTENT dans l'eau (elles ne suivent pas la fusée : c'est elle qui avance) ; plus elle va vite, plus il y en a
+    bubbles(dt, rk) {   // v106 : les bulles naissent à la POINTE du nez, sont petites, dérivent vers l'avant (≈ 22 % de la vitesse de la fusée) : elles reculent moins vite à l'écran
       const B = this._bub || (this._bub = { list: [], t: 0, geo: new THREE.SphereGeometry(0.1, 6, 5), mat: new THREE.MeshBasicMaterial({ color: '#d8f2ff', transparent: true, opacity: 0.6, depthWrite: false }) });
-      if (rk) { const rate = U.clamp(rk.speed * 0.55, 4, 70); B.t += dt * rate; while (B.t >= 1 && B.list.length < 170) { B.t -= 1; const m = new THREE.Mesh(B.geo, B.mat), n = rk.nozzle(new V()), sp = Math.random(); m.position.copy(n).addScaledVector(rk.vel, -dt * Math.random()).add(new V((Math.random() - 0.5) * 1.1, (Math.random() - 0.5) * 1.1, (Math.random() - 0.5) * 1.1)); m.scale.setScalar(0.35 + sp * sp * 1.5); m.userData = { v: new V((Math.random() - 0.5) * 0.35, 0.5 + Math.random() * 0.7, (Math.random() - 0.5) * 0.35), life: 3.2 + Math.random() * 1.2 }; this.scene.add(m); B.list.push(m); } } else B.t = 0;
-      for (let i = B.list.length - 1; i >= 0; i--) { const m = B.list[i], u = m.userData; u.life -= dt; m.position.addScaledVector(u.v, dt); if (u.life < 0.6) m.scale.multiplyScalar(1 - dt * 2.5); if (u.life <= 0) { this.scene.remove(m); B.list.splice(i, 1); } }
+      if (rk) { const rate = U.clamp(rk.speed * 0.55, 4, 70), tip = rk.mesh && rk.mesh.userData && rk.mesh.userData.noseZ ? rk.mesh.userData.noseZ : 0.9; B.t += dt * rate;
+        while (B.t >= 1 && B.list.length < 190) { B.t -= 1; const m = new THREE.Mesh(B.geo, B.mat); m.position.copy(rk.noseTip(new V())).add(new V((Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3)).addScaledVector(rk.vel, -dt * Math.random());
+          m.scale.setScalar(0.2 + Math.random() * Math.random() * 0.8); m.userData = { v: rk.vel.clone().multiplyScalar(0.22).add(new V((Math.random() - 0.5) * 0.3, 0.3 + Math.random() * 0.5, (Math.random() - 0.5) * 0.3)), life: 3 + Math.random() * 1.2 }; this.scene.add(m); B.list.push(m); } } else B.t = 0;
+      for (let i = B.list.length - 1; i >= 0; i--) { const m = B.list[i], u = m.userData; u.life -= dt; m.position.addScaledVector(u.v, dt); u.v.multiplyScalar(1 - dt * 0.9); if (u.life < 0.6) m.scale.multiplyScalar(1 - dt * 2.5); if (u.life <= 0) { this.scene.remove(m); B.list.splice(i, 1); } }
     }
     // v075 : coup sur un boss (il a plusieurs points de vie, la fusée traverse et doit revenir)
     hitBoss(t, rocket) {
