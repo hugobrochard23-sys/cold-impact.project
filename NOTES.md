@@ -156,3 +156,6 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 
 ## v102
 - Neige-rectangle supprimee. Engins propres a la zone en majorite (R.pick 62% sol, formations propres NF). Boss dessines a la main : torpedo, crawler, airlifter ; tous les engins sont boss au moins une fois (POOL). Camera : vise la fusee (toujours au centre). Demi-tour/backflip plus rapide (rocket.js rate x1.8, addAim x1.8 pres de la verticale).
+
+## v103
+- Boost : plus de relance en reposant le doigt (reboostMs 0). Eau : texture a vagues douces + materiau Phong brillant. Camera : cap = direction de la vitesse, elevation limitee a +-70 deg, horizon toujours stable : en backflip la fusee tourne devant la camera.

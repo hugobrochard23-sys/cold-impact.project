@@ -89,7 +89,7 @@
       else if (key.startsWith('cloud:')) m = new THREE.MeshBasicMaterial({ color: key.slice(6), fog: false, vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false });
       else if (key === 'chainlink') m = new THREE.MeshLambertMaterial({ map: CC.Textures.get(key), transparent: true, alphaTest: 0.5, side: THREE.DoubleSide });   // v032 : grillage (on voit à travers)
       else if (key === 'waterSurf') m = new THREE.MeshLambertMaterial({ map: CC.Textures.get('water'), vertexColors: true, emissive: '#2a8aa8', emissiveIntensity: 0.75, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide });
-      else if (key === 'water') m = new THREE.MeshLambertMaterial({ map: CC.Textures.get(key), vertexColors: true, emissive: '#0a1820', emissiveIntensity: 0.4 });
+      else if (key === 'water') m = new THREE.MeshPhongMaterial({ map: CC.Textures.get(key), vertexColors: true, emissive: '#0c2a3a', emissiveIntensity: 0.5, specular: '#bcdcf0', shininess: 70 });   // v103 : eau brillante (reflets du soleil)
       else m = new THREE.MeshLambertMaterial({ map: CC.Textures.get(key), vertexColors: true });
       this.materials.set(key, m);
       return m;

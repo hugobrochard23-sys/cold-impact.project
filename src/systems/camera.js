@@ -9,7 +9,7 @@
   const V = THREE.Vector3;
   const U = CC.U;
   // v030 (mobile) : objets de calcul réutilisés — la caméra est mise à jour à chaque image
-  const _wu = new V(), _tu = new V(), _f = new V(), _u = new V(), _o = new V(), _z = new V(0, 0, 1), _y = new V(0, 1, 0), _t1 = new V(), _t2 = new V(), _t3 = new V();
+  const _wu = new V(), _tu = new V(), _nc = new V(), _f = new V(), _u = new V(), _o = new V(), _z = new V(0, 0, 1), _y = new V(0, 1, 0), _t1 = new V(), _t2 = new V(), _t3 = new V();
   const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _tq = new THREE.Quaternion();
 
   const _yAx = new THREE.Vector3(0, 1, 0), _nb = new THREE.Vector3();
@@ -120,12 +120,19 @@
             let df = cy - ry; df = Math.atan2(Math.sin(df), Math.cos(df));
             nose = _nb.copy(rk.fwd).applyAxisAngle(_yAx, -U.clamp(df, -1.0, 1.0) * 0.9);
           }
+          {   // v103 : cap de la caméra = direction de la VITESSE (pas du nez) ; élévation limitée à ±70° : en backflip la fusée tourne devant la caméra, qui ne bascule pas
+            const vl = Math.hypot(rk.vel.x, rk.vel.z);
+            if (!this._hd) this._hd = new V(0, 0, -1);
+            if (vl > 6) this._hd.lerp(_nc.set(rk.vel.x / vl, 0, rk.vel.z / vl), U.damp(3, dt)).setY(0).normalize();
+            const hx = nose.x, hz = nose.z, sh = hx * this._hd.x + hz * this._hd.z, e = Math.atan2(nose.y, sh), ce = U.clamp(e > Math.PI / 2 || e < -Math.PI / 2 ? (nose.y >= 0 ? 1.22 : -1.22) : e, -1.22, 1.22);
+            nose = _nc.set(this._hd.x * Math.cos(ce), Math.sin(ce), this._hd.z * Math.cos(ce));
+          }
           this.camNose.lerp(nose, U.damp(c.noseLag, dt)).normalize();
           const k = U.damp(c.followLag, dt);
           this.camDir.lerp(this.camNose, k).normalize();
           // v099 : la caméra garde l'HORIZON stable (haut = haut du monde) ; elle ne suit le haut de la fusée que près de la verticale (loopings, backflips)
           const wy = U.clamp((Math.abs(this.camDir.y) - 0.55) / 0.35, 0, 1), wu = _wu.set(0, 1, 0).addScaledVector(this.camDir, -this.camDir.y), tu = wu.lengthSq() > 1e-4 ? _tu.copy(wu.normalize()).lerp(this.up, wy) : this.up;
-          const u = _t1.copy(this.upRef).lerp(tu, k);
+          const u = _t1.copy(this.upRef).lerp(wu.lengthSq() > 1e-4 ? wu.normalize() : tu, k);   // v103 : pas de roulis de caméra (horizon toujours stable)
           if (u.lengthSq() > 1e-6) this.upRef.copy(u.normalize());   // haut exactement opposé (rare) : on garde l'ancien
           this.updateCamBasis();
         }

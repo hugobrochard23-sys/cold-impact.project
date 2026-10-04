@@ -9,7 +9,7 @@
     facadeDark: [12, 14], facadeGlass: [12, 14], facadeSand: [12, 14], facadeBrick: [12, 14], facadeMint: [12, 14], facadeNavy: [12, 14], facadeLilac: [12, 14], facadeWhite: [12, 14], facadeOchre: [12, 14], storefront: [8, 4.2], brick: [2.6, 2.6], planks: [2, 2], grass: [4, 4], rock: [6, 6], hazard: [1.2, 1.2],
     metal: [2, 2], tankGreen: [2, 2], camo: [3, 3], blueFloor: [2, 2], cream: [2, 2], bark: [1.2, 2.4],
     houseWall: [2, 2], roofBrown: [1.5, 1.5], white: [2, 2], dirt: [4, 4], rail: [1, 1], asphalt: [4, 4],
-    sand: [4, 4], water: [6, 6], waterSurf: [8, 8], corrugated: [2.4, 2.6], chainlink: [2, 2],   // v032 : générateur de missions
+    sand: [4, 4], water: [15, 15], waterSurf: [15, 15], corrugated: [2.4, 2.6], chainlink: [2, 2],   // v032 : générateur de missions
   };
 
   function make(name, w, h, draw) {
@@ -111,9 +111,9 @@
       for (let y = 3; y < h; y += 8) for (let x = 0; x < w; x++) if (((x + y * 3) % 11) < 6) px(g, x, (y + Math.round(Math.sin(x * 0.4) * 1.2) + h) % h, '#b89a6c');
       for (let k = 0; k < 20; k++) px(g, Math.floor(r() * w), Math.floor(r() * h), '#dcc496');
     },
-    water: (g, w, h, r) => {
-      noiseFill(g, w, h, r, '#1f3a4a', 6);
-      for (let k = 0; k < 14; k++) { const x = Math.floor(r() * w), y = Math.floor(r() * h), l = 3 + Math.floor(r() * 6); g.fillStyle = r() < 0.5 ? '#3a5a6a' : '#2c4a5a'; g.fillRect(x, y, l, 1); }
+    water: (g, w, h, r) => {   // v103 : vagues douces qui se raccordent (périodes entières) + petits reflets
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const u = x / w * Math.PI * 2, v = y / h * Math.PI * 2, a = 0.5 + 0.25 * Math.sin(u * 2 + Math.sin(v * 3) * 1.3) + 0.25 * Math.sin(v * 2 + u + Math.sin(u * 3) * 0.9); g.fillStyle = 'rgb(' + Math.round(22 + 34 * a) + ',' + Math.round(66 + 64 * a) + ',' + Math.round(92 + 70 * a) + ')'; g.fillRect(x, y, 1, 1); }
+      for (let k = 0; k < Math.max(6, w * h / 90); k++) { g.fillStyle = r() < 0.5 ? 'rgba(220,240,255,0.55)' : 'rgba(180,220,245,0.4)'; g.fillRect(Math.floor(r() * w), Math.floor(r() * h), r() < 0.3 ? 2 : 1, 1); }
     },
     corrugated: (g, w, h, r) => {
       noiseFill(g, w, h, r, '#d8d8d8', 8);

@@ -390,7 +390,7 @@
       this.padMode = false;
       this.state = 'FLIGHT'; this.flightTime = 0; this.stallT = 0; this.boostK = 0;
       { const ln = this.endlessRun && this.endlessRun.T.levelLen && this.levelRun && this.levelRun.n; if (ln && ln <= 2 && !this.testMode) rk.shieldT = 9999; }   // v093 : niveaux 1-2 : impossible de perdre contre un mur (bouclier permanent)
-      if (CC.Touch && CC.Touch.active) { this.settings.tutorialFlights = (this.settings.tutorialFlights || 0) + 1; const T = this.input.touch; if (T) T.reboostUntil = performance.now() + 1800; }   // le doigt posé juste après le départ = boost tout de suite
+      if (CC.Touch && CC.Touch.active) { this.settings.tutorialFlights = (this.settings.tutorialFlights || 0) + 1; const T = this.input.touch; if (T) T.reboostUntil = 0; }   // le doigt posé juste après le départ = boost tout de suite
       this.telemetry.event('fire', { runTime: this.runTime, pad: true });
     }
 
