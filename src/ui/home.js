@@ -507,6 +507,7 @@
     const rows = [
       ['SON', s.sfx > 0 ? 'OUI' : 'NON', () => ui.toggleVolume(game, 'sfx')],
       ['MUSIQUE', s.music > 0 ? 'OUI' : 'NON', () => ui.toggleVolume(game, 'music')],
+      ['COMMANDES', (s.ctl || (CC.Touch && CC.Touch.active ? 'simple' : 'free')) === 'simple' ? 'SIMPLES' : 'LIBRES', () => { s.ctl = (s.ctl || (CC.Touch && CC.Touch.active ? 'simple' : 'free')) === 'simple' ? 'free' : 'simple'; game.applySettings(); }],
       ['SENSIBILITE', ['DOUCE', 'NORMALE', 'VIVE'][s.touchSens !== undefined ? s.touchSens : 2], () => { s.touchSens = ((s.touchSens !== undefined ? s.touchSens : 2) + 1) % 3; game.applySettings(); }],
       ['VIBRATION', vib[vibV], () => { s.vibration = (vibV + 1) % 4; if (CC.Haptics) { CC.Haptics.setLevel(s.vibration); CC.Haptics.tick('fire'); } game.applySettings(); }],
       ['GRAPHISMES', ui.graphicsLabel(game), () => ui.cycleGraphics(game)],

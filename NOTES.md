@@ -168,3 +168,6 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 
 ## v106
 - Bulles : naissent a la pointe du nez (noseTip), plus petites, derivent vers l avant (22% de la vitesse).
+
+## v107 — COMMANDES SIMPLES (defaut tactile)
+- La fusee vise un point du couloir 1 s devant elle (applySimpleAim) ; le glisse deplace ce point (game.ctl.ox/oy en metres). Doigt leve > 0,6 s : recentrage doux. bossGuard : un boss depasse se replace devant. Reglage COMMANDES SIMPLES/LIBRES (settings.ctl). Mode libre = ancien comportement (PC par defaut).

@@ -64,7 +64,7 @@
     if (st.step === 0) {
       const k = Math.sin(t * 2.6); hand(ctx, W * 0.5 + k * W * 0.2, H * 0.68, r, t, false);
       ctx.save(); ctx.fillStyle = '#35ff4a'; ctx.globalAlpha = 0.8; const q = r * 0.3, d = k > 0 ? 1 : -1; for (let n = 0; n < 3; n++) ctx.fillRect(Math.round(W * 0.5 + k * W * 0.2 + d * (r * 1.7 + n * q * 1.4)), Math.round(H * 0.68 - q / 2), Math.round(q), Math.round(q)); ctx.restore();
-      label(g, ctx, W, H, st.armed ? 'GLISSE POUR TOURNER' : 'LEVE LE DOIGT');
+      label(g, ctx, W, H, st.armed ? (g.simpleCtl() ? 'GLISSE POUR DEPLACER' : 'GLISSE POUR TOURNER') : 'LEVE LE DOIGT');
     } else if (st.step === 1) {
       hand(ctx, W * 0.5, H * 0.68, r, t, true);
       const k = Math.min(1, st.ok / 0.5); ctx.save(); ctx.strokeStyle = '#ffd23a'; ctx.lineWidth = r * 0.22; ctx.beginPath(); ctx.arc(W * 0.5, H * 0.68, r * 1.9, -Math.PI / 2, -Math.PI / 2 + k * 6.283); ctx.stroke(); ctx.restore();

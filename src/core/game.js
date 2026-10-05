@@ -318,7 +318,7 @@
       let ld = opts.levelDef !== undefined ? opts.levelDef : null;   // v075 : mode NIVEAUX
       if (opts.levelDef === undefined && !this.testMode && !this.params.has('endless')) ld = this.curLevelDef();
       if (opts.levelDef === undefined && this.params.has('level')) ld = CC.LM.def(parseInt(this.params.get('level'), 10) || 1);
-      this.levelRun = ld; this.levelWin = false; this.coinFx = null;
+      this.levelRun = ld; this.levelWin = false; this.coinFx = null; this.ctl = { ox: 0, oy: 0, idle: 0 };
       if (CC.Roster) CC.Roster.kit = ld && ld.kit ? ld.kit : 0;   // v095 : kit d'ennemis du niveau
       this.clearPickups(); this.modRun = { shield: this.meta.shieldCharges(), drops: [] };   // v082 : modules équipés pour ce vol
       if (CC.Look) CC.Look.set(ld ? CC.Look.forLevel(ld) : null);   // v081 : look du niveau (teinte, matériaux, ambiance)
@@ -689,6 +689,32 @@
           m.scale.setScalar(0.2 + Math.random() * Math.random() * 0.8); m.userData = { v: rk.vel.clone().multiplyScalar(0.22).add(new V((Math.random() - 0.5) * 0.3, 0.3 + Math.random() * 0.5, (Math.random() - 0.5) * 0.3)), life: 3 + Math.random() * 1.2 }; this.scene.add(m); B.list.push(m); } } else B.t = 0;
       for (let i = B.list.length - 1; i >= 0; i--) { const m = B.list[i], u = m.userData; u.life -= dt; m.position.addScaledVector(u.v, dt); u.v.multiplyScalar(1 - dt * 0.9); if (u.life < 0.6) m.scale.multiplyScalar(1 - dt * 2.5); if (u.life <= 0) { this.scene.remove(m); B.list.splice(i, 1); } }
     }
+    // ---------- v107 : COMMANDES SIMPLES (tactile, par défaut) ----------
+    // La fusée vise un point du couloir 1 s devant elle ; le doigt déplace ce point à gauche / droite / haut / bas (décalage ox, oy en mètres par rapport à la ligne du niveau).
+    // Doigt levé depuis plus de 0,6 s : le décalage revient doucement au centre (position sûre). Plus de demi-tour à faire : les boss reculent devant la fusée.
+    simpleCtl() {
+      const mode = this.settings.ctl || (CC.Touch && CC.Touch.active ? 'simple' : 'free');
+      const run = this.endlessRun;
+      return mode === 'simple' && !!run && !!run.T.levelLen && this.state === 'FLIGHT' && this.rocket.active && !this.useAutopilot;
+    }
+    applySimpleAim(dt) {
+      const run = this.endlessRun, T = run.T, rk = this.rocket, C = this.ctl || (this.ctl = { ox: 0, oy: 0, idle: 0 }), d = run.dist, la = Math.max(34, Math.max(rk.speed, 25) * 0.85), dd = d + la;
+      if (this.input.touch && this.input.touch.down) C.idle = 0; else { C.idle += dt; if (C.idle > 0.6) { const k = 1 - Math.exp(-dt * 0.8); C.ox -= C.ox * k; C.oy -= C.oy * k; } }
+      const lim = U.clamp(T.vol(dd) - 5, 8, 30), ly = T.laneY(dd);
+      C.ox = U.clamp(C.ox, -lim, lim); C.oy = U.clamp(C.oy, 3.5 - ly, 24);
+      const p = T.at(dd, T.laneX(dd) + C.ox, ly + C.oy), dx = p[0] - rk.pos.x, dy = p[1] - rk.pos.y, dz = p[2] - rk.pos.z, l = Math.hypot(dx, dy, dz) || 1;
+      this.input.setAim(Math.atan2(-dx / l, -dz / l), Math.asin(U.clamp(dy / l, -0.97, 0.97)));
+    }
+    // si la fusée a DEPASSE un boss / mini-boss, il se replace devant elle (pas de demi-tour à faire)
+    bossGuard(dt) {
+      if (!this.simpleCtl()) return; this._bg = (this._bg || 0) - dt; if (this._bg > 0) return; this._bg = 0.3;
+      const run = this.endlessRun, T = run.T, cap = T.levelLen + 700;
+      for (const t of this.targets) {
+        if (!t.alive || !(t.boss || t.mini) || !t.base || t.flyTo) continue;
+        let dN = run.dist, best = 1e18; for (let d = Math.max(0, run.dist - 140); d < run.dist + 520; d += 8) { const q = T.at(d, 0, 0), ex = q[0] - t.base.x, ez = q[2] - t.base.z, e2 = ex * ex + ez * ez; if (e2 < best) { best = e2; dN = d; } }
+        if (run.dist > dN + 22 && dN < cap) { const air = t.type === 'heli' || (t.gen && t.gen.flying), yy = air ? Math.max(20, t.base.y - T.base(dN)) : 0, np = T.at(Math.min(run.dist + 95, cap), (Math.random() - 0.5) * 24, yy); t.flyTo = new V(np[0], np[1], np[2]); t.flySpeed = 150; }
+      }
+    }
     // v075 : coup sur un boss (il a plusieurs points de vie, la fusée traverse et doit revenir)
     hitBoss(t, rocket) {
       t.hp--; t.hitCool = 0.9; t.rageK = Math.max(0.45, (t.rageK || 1) * 0.78);
@@ -907,6 +933,7 @@
 
     // ---------- boucle ----------
     update(dt) {
+      if (this.simpleCtl()) this.applySimpleAim(dt);   // v107 : COMMANDES SIMPLES — la fusée suit le couloir toute seule, le doigt ne fait que la DEPLACER dans le couloir
       const inp = (this.useAutopilot && this.autopilot && this.state !== 'MENU') ? this.autopilot.poll(dt) : this.input.poll(dt);
       if (inp.aimQ) this.rig.setAimQ(inp.aimQ);
       else { this.input.setAim(inp.yaw, inp.pitch); this.rig.setAim(inp.yaw, inp.pitch); }   // pilote automatique : lacet / tangage
@@ -996,7 +1023,7 @@
       if (this.state === 'RESULTS' && this.results && this.results.endless) this.results.t += dt;   // v034 : chronologie de l'écran de récompenses
       if (this.endlessRun && this.state !== 'MENU' && this.state !== 'RESULTS') this.endlessRun.update(dt);   // v033 : tronçons, paliers, zones
       for (const e of this.entities) if (e.update) e.update(dt, this);
-      this.updatePickups(dt); this.updateGhost(dt);
+      this.updatePickups(dt); this.updateGhost(dt); this.bossGuard(dt);
       for (const m of this.missiles) m.update(dt, this);
       this.missiles = this.missiles.filter((m) => { if (!m.alive) this.scene.remove(m.object); return m.alive; });
       if (this.centerMsgT > 0 && (this.centerMsgT -= dt) <= 0) { this.centerMsg = null; this.centerMsgT = 0; }   // message passager (graine de la carte générée)

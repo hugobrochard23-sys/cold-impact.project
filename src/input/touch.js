@@ -72,7 +72,8 @@
         if (t.identifier !== finger.id) continue;
         // v024 : au lanceur, la vue ne bouge pas ; en vol, le glissé dirige
         finger.dist = (finger.dist || 0) + Math.hypot(t.clientX - finger.x, t.clientY - finger.y);
-        if (game.state === 'FLIGHT') { const k = scale(); const rx = (t.clientX - finger.x) * k, ry = (t.clientY - finger.y) * k; finger.sx = (finger.sx || 0) * 0.4 + rx * 0.6; finger.sy = (finger.sy || 0) * 0.4 + ry * 0.6; input.addAim(-finger.sx, -finger.sy); }   // v088 : sensibilité 3.0 → 2.3 + lissage (les nouveaux joueurs sur-corrigeaient)
+        if (game.state === 'FLIGHT' && game.simpleCtl()) { const C = game.ctl || (game.ctl = { ox: 0, oy: 0, idle: 0 }), sn = SENS[game.settings.touchSens !== undefined ? game.settings.touchSens : 2]; C.ox += (t.clientX - finger.x) * 0.13 * sn * (window.innerWidth < 500 ? 1 : 0.7); C.oy -= (t.clientY - finger.y) * 0.1 * sn * (window.innerWidth < 500 ? 1 : 0.7); }   // v107 : commandes simples : le glissé déplace la fusée dans le couloir
+        else if (game.state === 'FLIGHT') { const k = scale(); const rx = (t.clientX - finger.x) * k, ry = (t.clientY - finger.y) * k; finger.sx = (finger.sx || 0) * 0.4 + rx * 0.6; finger.sy = (finger.sy || 0) * 0.4 + ry * 0.6; input.addAim(-finger.sx, -finger.sy); }   // v088 : sensibilité 3.0 → 2.3 + lissage (les nouveaux joueurs sur-corrigeaient)
         finger.x = t.clientX; finger.y = t.clientY;
         if (Math.hypot(t.clientX - finger.x0, t.clientY - finger.y0) > cfg.tapMaxMove) finger.moved = true;
       }
@@ -120,7 +121,7 @@
         // haut / bas : inchangés (glissé relatif)
         const x = finger.x / Math.max(1, window.innerWidth), b = cfg.edgeBand;
         const push = x < b ? -(b - x) / b : x > 1 - b ? (x - (1 - b)) / b : 0;
-        if (push) input.addAim(-push * cfg.edgeTurnRate * dt, 0);
+        if (push && !game.simpleCtl()) input.addAim(-push * cfg.edgeTurnRate * dt, 0);
       }
       if (!flying) { boostOff(); if (game.state !== 'FLIGHT') T.reboostUntil = 0; }   // pause : la fenêtre reste ouverte
       pause.hidden = !playing() || !!(CC.Tutorial && CC.Tutorial.hold);   // v091 : pas de bouton pause pendant les consignes du tuto
