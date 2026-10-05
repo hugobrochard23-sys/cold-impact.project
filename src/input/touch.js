@@ -42,7 +42,7 @@
     let finger = null, uiTouch = null;
     Object.defineProperties(T, { down: { get: () => !!finger }, dragPx: { get: () => (finger && finger.dist) || 0 } });   // v091 : lus par le tutoriel (doigt posé ? distance glissée depuis la pose)
     const SENS = [0.7, 1, 1.4];   // v093 : réglage SENSIBILITE (douce / normale / vive)
-    const scale = () => cfg.dragGain * SENS[game.settings.touchSens !== undefined ? game.settings.touchSens : 2] / Math.max(1, Math.min(window.innerWidth, window.innerHeight));
+    const scale = () => cfg.dragGain * SENS[game.settings.touchSens !== undefined ? game.settings.touchSens : 1] / Math.max(1, Math.min(window.innerWidth, window.innerHeight));
     const boostOff = () => { if (T.thrust) { T.thrust = false; if (Hap) Hap.boostStop(); } };
     const boostOn = () => { T.thrust = true; if (Hap) Hap.boostStart(); };   // v034 : le son du boost est joué par Game.onBoostStart
     document.addEventListener('touchstart', (e) => {
@@ -72,8 +72,8 @@
         if (t.identifier !== finger.id) continue;
         // v024 : au lanceur, la vue ne bouge pas ; en vol, le glissé dirige
         finger.dist = (finger.dist || 0) + Math.hypot(t.clientX - finger.x, t.clientY - finger.y);
-        if (game.state === 'FLIGHT' && game.simpleCtl()) { const C = game.ctl || (game.ctl = { ox: 0, oy: 0, idle: 0 }), sn = SENS[game.settings.touchSens !== undefined ? game.settings.touchSens : 2]; C.ox += (t.clientX - finger.x) * 0.13 * sn * (window.innerWidth < 500 ? 1 : 0.7); C.oy -= (t.clientY - finger.y) * 0.1 * sn * (window.innerWidth < 500 ? 1 : 0.7); }   // v107 : commandes simples : le glissé déplace la fusée dans le couloir
-        else if (game.state === 'FLIGHT') { const k = scale(); const rx = (t.clientX - finger.x) * k, ry = (t.clientY - finger.y) * k; finger.sx = (finger.sx || 0) * 0.4 + rx * 0.6; finger.sy = (finger.sy || 0) * 0.4 + ry * 0.6; input.addAim(-finger.sx, -finger.sy); }   // v088 : sensibilité 3.0 → 2.3 + lissage (les nouveaux joueurs sur-corrigeaient)
+        if (game.state === 'FLIGHT' && game.simpleCtl()) { const C = game.ctl || (game.ctl = { ox: 0, oy: 0, idle: 0 }); C.ox += (t.clientX - finger.x) * 0.13 * (window.innerWidth < 500 ? 1 : 0.7); C.oy -= (t.clientY - finger.y) * 0.1 * (window.innerWidth < 500 ? 1 : 0.7); }   // option COMMANDES SIMPLES (v107)
+        else if (game.state === 'FLIGHT') { const k = scale(); input.addAim(-(t.clientX - finger.x) * k, -(t.clientY - finger.y) * k); }   // v033 : glissé brut
         finger.x = t.clientX; finger.y = t.clientY;
         if (Math.hypot(t.clientX - finger.x0, t.clientY - finger.y0) > cfg.tapMaxMove) finger.moved = true;
       }

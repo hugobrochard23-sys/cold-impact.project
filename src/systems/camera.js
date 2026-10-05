@@ -113,28 +113,10 @@
         // v019 : la caméra s'oriente vers la tête de la roquette (on monte → elle pivote vers le haut), par un double
         // lissage : le mouvement démarre et s'arrête en douceur, sans à-coup à chaque coup de joystick
         if (rk.active) {
-          let nose = rk.fwd;
-          const run = this.game.endlessRun;
-          if (run && run.T) {   // v076 : la caméra regarde déjà vers où le couloir tourne : le décor paraît en ligne droite
-            const T = run.T, a = T.at(run.dist + 8, 0, 0), b = T.at(run.dist + 80, 0, 0), cy = Math.atan2(b[0] - a[0], -(b[2] - a[2])), ry = Math.atan2(rk.fwd.x, -rk.fwd.z);
-            let df = cy - ry; df = Math.atan2(Math.sin(df), Math.cos(df));
-            nose = _nb.copy(rk.fwd).applyAxisAngle(_yAx, -U.clamp(df, -1.0, 1.0) * 0.9);
-          }
-          {   // v103 : cap de la caméra = direction de la VITESSE (pas du nez) ; élévation limitée à ±70° : en backflip la fusée tourne devant la caméra, qui ne bascule pas
-            const vl = Math.hypot(rk.vel.x, rk.vel.z);
-            if (!this._hd) this._hd = new V(0, 0, -1);
-            const hd = this._hd, hl0 = Math.hypot(nose.x, nose.z), turn = (tx, tz, k) => { const th = Math.atan2(hd.x * tz - hd.z * tx, hd.x * tx + hd.z * tz) * k, cs = Math.cos(th), sn = Math.sin(th), nx = hd.x * cs - hd.z * sn, nz = hd.x * sn + hd.z * cs; hd.set(nx, 0, nz).normalize(); };
-            if (hl0 > 0.12 && nose.x * hd.x + nose.z * hd.z < 0) turn(nose.x / hl0, nose.z / hl0, U.damp(9, dt));   // v104 : le nez a dépassé la verticale : la caméra se retourne vite (≈ 0,3 s) pour être de nouveau derrière la fusée
-            else if (vl > 6) turn(rk.vel.x / vl, rk.vel.z / vl, U.damp(3, dt));
-            const hx = nose.x, hz = nose.z, sh = hx * this._hd.x + hz * this._hd.z, e = Math.atan2(nose.y, sh), ce = U.clamp(e > Math.PI / 2 || e < -Math.PI / 2 ? (nose.y >= 0 ? 1.22 : -1.22) : e, -1.22, 1.22);
-            nose = _nc.set(this._hd.x * Math.cos(ce), Math.sin(ce), this._hd.z * Math.cos(ce));
-          }
-          this.camNose.lerp(nose, U.damp(c.noseLag, dt)).normalize();
+          this.camNose.lerp(rk.fwd, U.damp(c.noseLag, dt)).normalize();
           const k = U.damp(c.followLag, dt);
           this.camDir.lerp(this.camNose, k).normalize();
-          // v099 : la caméra garde l'HORIZON stable (haut = haut du monde) ; elle ne suit le haut de la fusée que près de la verticale (loopings, backflips)
-          const wy = U.clamp((Math.abs(this.camDir.y) - 0.55) / 0.35, 0, 1), wu = _wu.set(0, 1, 0).addScaledVector(this.camDir, -this.camDir.y), tu = wu.lengthSq() > 1e-4 ? _tu.copy(wu.normalize()).lerp(this.up, wy) : this.up;
-          const u = _t1.copy(this.upRef).lerp(wu.lengthSq() > 1e-4 ? wu.normalize() : tu, k);   // v103 : pas de roulis de caméra (horizon toujours stable)
+          const u = _t1.copy(this.upRef).lerp(this.up, k);
           if (u.lengthSq() > 1e-6) this.upRef.copy(u.normalize());   // haut exactement opposé (rare) : on garde l'ancien
           this.updateCamBasis();
         }
@@ -148,7 +130,7 @@
           this.pos.copy(want);
         }
         cam.position.copy(this.pos);
-        { const lk = _wu.copy(rk.pos).addScaledVector(this.camDir, 4).sub(cam.position); if (rk.active && lk.lengthSq() > 4) { lk.normalize(); this.orient(lk, this.roll, this.camRight, this.camUp); } else this.orient(this.camDir, this.roll, this.camRight, this.camUp); }   // v102 : la caméra VISE la fusée : elle reste toujours au centre
+        this.orient(this.camDir, this.roll, this.camRight, this.camUp);
       } else if (this.mode === 'impact') {
         const back = _t1.subVectors(this.pos, this.focus).normalize();
         this.pos.addScaledVector(back, dt * 1.5);

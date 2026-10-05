@@ -67,9 +67,9 @@ CC.CONFIG = {
     distance: 1.85,              // MESURÉ (indirect) : nez à 55 % et tuyère à 67,8 % de la hauteur ⇒ ≈ 1,5 longueur de roquette
     height: 0.52,                // MESURÉ (indirect), même calcul
     crosshairY: 0.402,           // MESURÉ : réticule à 40,2 % de la hauteur
-    followLag: 3.8,              // CHOIX v010, revu v019 : 2e étage du lissage (1/s) ; la caméra suit la tête de la roquette (plus petit = plus doux)
-    noseLag: 5.6,                  // CHOIX v019 : 1er étage du lissage (1/s) : filtre les à-coups du joystick avant la caméra
-    offsetLag: 9,                // lissage du décalage caméra (1/s) : dérive de la roquette à l'écran quand la visée tourne (ESTIMATION)
+    followLag: 2.0,              // CHOIX v010, revu v019 : 2e étage du lissage (1/s) ; la caméra suit la tête de la roquette (plus petit = plus doux)
+    noseLag: 3,                  // CHOIX v019 : 1er étage du lissage (1/s) : filtre les à-coups du joystick avant la caméra
+    offsetLag: 7,                // lissage du décalage caméra (1/s) : dérive de la roquette à l'écran quand la visée tourne (ESTIMATION)
     rollFromYawRate: 0,          // v019 : 0,16 → 0 (Hugo) : l'horizon ne penche plus en virage
     rollLag: 5,
     boostZoom: 0.88,             // CHOIX v026 (Hugo) : pendant le boost, angle de vue × 0,88 (léger zoom avant) ; v034 : gardé pour les modes hors CLASSIQUE
@@ -87,12 +87,12 @@ CC.CONFIG = {
     sensitivity: 0.0021, invertY: false, maxPitchDeg: 88, autoLevel: 1.5,
     // CHOIX v022 (Hugo) : commandes tactiles sans bouton (src/input/touch.js), remplacent le joystick de v017-v021
     touch: {
-      dragGain: 2.3,             // rad de visée pour un glissé de la largeur (ou hauteur, la plus petite) de l'écran
+      dragGain: 2.2,             // rad de visée pour un glissé de la largeur (ou hauteur, la plus petite) de l'écran
       tapMaxMs: 250, tapMaxMove: 12,   // un toucher court (ms) et presque immobile (px) = tap
       longPressMs: 400,          // v026 : 500 → 400 ms (Hugo) ; v024 : appui long (doigt immobile) qui déclenche le boost, maintenu tant que le doigt est posé
-      reboostMs: 0,            // v029 : 1000 → 600 ms (Hugo) ; v026 : après un boost, fenêtre (ms) où reposer le doigt relance le boost sans appui long
+      reboostMs: 600,            // v029 : 1000 → 600 ms (Hugo) ; v026 : après un boost, fenêtre (ms) où reposer le doigt relance le boost sans appui long
       edgeBand: 0.22,            // v024 : bande latérale (fraction de la largeur) où le doigt fait tourner sans fin
-      edgeTurnRate: 2.6,         // v024 : virage (rad/s) quand le doigt est tout au bord
+      edgeTurnRate: 1.8,         // v024 : virage (rad/s) quand le doigt est tout au bord
       pixelRatio: 1,             // fluidité : rendu à 1 pixel par point d'écran (au lieu de 1,5)
       shadowMapSize: 1024,       // fluidité : ombres 1024 au lieu de 2048
       fovMinH: 66,               // debout : angle de vue horizontal minimal (°), la vue verticale s'élargit en conséquence

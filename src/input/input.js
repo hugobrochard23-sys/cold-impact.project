@@ -83,7 +83,6 @@
 
     // Rotations dans le repère de la roquette : lacet autour de son « haut », tangage autour de sa « droite ».
     addAim(dy, dp) {
-      if (dp && this.game.state === 'FLIGHT') { const f = _f.copy(FWD).applyQuaternion(this.aimQ); if (Math.abs(f.y) > 0.72) dp *= 1.8; }   // v102 : près de la verticale (boucle, backflip) le glissé vertical tourne plus vite
       if (dy) this.aimQ.multiply(_q.setFromAxisAngle(AY, dy));
       if (dp) { this.aimQ.multiply(_q.setFromAxisAngle(AX, dp)); this.pitchActiveT = 0.3; }
       this.aimQ.normalize();

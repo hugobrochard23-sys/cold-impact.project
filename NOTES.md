@@ -171,3 +171,6 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 
 ## v107 — COMMANDES SIMPLES (defaut tactile)
 - La fusee vise un point du couloir 1 s devant elle (applySimpleAim) ; le glisse deplace ce point (game.ctl.ox/oy en metres). Doigt leve > 0,6 s : recentrage doux. bossGuard : un boss depasse se replace devant. Reglage COMMANDES SIMPLES/LIBRES (settings.ctl). Mode libre = ancien comportement (PC par defaut).
+
+## v108 — CONTROLES = v033
+- Copie des controles du depot cold-impact-v033 : touch.js (glisse brut, dragGain 2.2, bande de virage 1.8, reboost 600 ms), input.js addAim, rocket.js (rate), camera.js (poursuite = nez, lags 2/3/7). Les commandes simples (v107) restent en option (COMMANDES SIMPLES), defaut LIBRES. Restent differents de v033 : MANIABILITE (Run.update, v066), limites douces plafond/bords, glissade au sol (v087).

@@ -693,7 +693,7 @@
     // La fusée vise un point du couloir 1 s devant elle ; le doigt déplace ce point à gauche / droite / haut / bas (décalage ox, oy en mètres par rapport à la ligne du niveau).
     // Doigt levé depuis plus de 0,6 s : le décalage revient doucement au centre (position sûre). Plus de demi-tour à faire : les boss reculent devant la fusée.
     simpleCtl() {
-      const mode = this.settings.ctl || (CC.Touch && CC.Touch.active ? 'simple' : 'free');
+      const mode = this.settings.ctl || 'free';   // v108 : par défaut, commandes de v033 (libres)
       const run = this.endlessRun;
       return mode === 'simple' && !!run && !!run.T.levelLen && this.state === 'FLIGHT' && this.rocket.active && !this.useAutopilot;
     }
