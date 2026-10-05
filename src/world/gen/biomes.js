@@ -15,6 +15,14 @@
     sun: { color: '#fff3dc', intensity: 0.66, dir: sunDir(r, [0.55, 0.85]) },
     postfx: { vignette: 0.42, vignetteColor: '#2c3a4c', halftone: 0.3, lift: '#080c12', saturation: 1.0, bloomThreshold: 0.95, bloomStrength: 0.18 },   // v046 : jour franc — plus de voile brun-rouge
   }) });
+  // v111 : jour franc et doux pour les premiers niveaux (plaine) : ciel bleu, soleil chaud et haut, pas de trame ni de halo
+  E('plaineDay', { label: 'JOUR CLAIR', dark: 0, vis: 1, skyline: '#dfeaf2', make: (r) => ({
+    sky: { top: '#5f9fe0', horizon: '#e8f2fa', bottom: '#c8dcea', sunColor: '#fff6dc', sunSize: 420 },
+    fog: { color: '#dbe8f2', near: 200, far: r.between([860, 980]) },
+    hemi: { sky: '#dcecff', ground: '#6f8a58', intensity: 0.92 }, ambient: { color: '#ffffff', intensity: 0.2 },
+    sun: { color: '#fff1d2', intensity: 0.85, dir: [0.35, 0.8, 0.5] },
+    postfx: { vignette: 0.16, vignetteColor: '#2c3a4c', halftone: 0, lift: '#080c12', saturation: 1.08, bloomThreshold: 0.98, bloomStrength: 0.1 },
+  }) });
   E('overcast', { label: 'COUVERT', dark: 0.15, vis: 0.8, skyline: '#c9ccd0', make: (r) => ({
     sky: { top: '#9aa3ad', horizon: '#d6d9dc', bottom: '#b9bcc0', sunColor: '#d8dce0', sunSize: 90 },
     fog: { color: '#c6c9cd', near: 110, far: r.between([600, 760]) },

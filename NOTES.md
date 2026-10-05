@@ -180,3 +180,6 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 
 ## v110 — étape 1 du tutoriel (débutants)
 Boost permanent et gratuit niveaux 1-10 (`game.autoBoost`, `rocket.freeBoost`), aide de visée cachée niveaux 1-3 (`game.assistAim`, réglage `settings.noAssist`), niveau 1 = éolien (mer ouverte), tuto sans étape boost, jauge de fuel masquée jusqu au niveau 11, explications ponctuelles à partir du niveau 4.
+
+## v111 — tutoriel refait
+Zone PLAINE militaire (niveaux 1-2, sans relief, env plaineDay), vitesse plafonnée (game.autoCap : 30/34/38 m/s puis montée), niveau 1 = UNE cible, niveau 2 = 3 cibles, victoire immédiate (game.tutWin), anti-crash près du sol (assistAim), tutoriel (objectif + viseur + main courte), sensibilité remise à la base (sensVer 2), dev.unlockAll=false (utiliser ?unlockall=1 pour tout ouvrir).

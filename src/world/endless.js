@@ -150,7 +150,7 @@
     const cfg = C(), T = new Track(seed, opts && opts.zones);
     if (opts && opts.env) T.forceEnv = opts.env;   // banc de test : ?env=neonNight
     if (opts && opts.levelLen) {   // v075 : niveau à longueur fixe (arène + boss à la fin)
-      T.levelLen = opts.levelLen; T.nightOk = !!opts.nightOk; T.dens = opts.dens === undefined ? 1 : opts.dens; T.difK = opts.difK || 1; T.bossHp = opts.bossHp || 1; T.bossType = opts.bossType || 'heli'; T.padStyle = opts.padStyle || 0; T.theme = opts.theme || null; T.mids = opts.mids || []; T.bossTint = opts.bossTint || 0; T.bossVar = opts.bossVar || 0; T.event = opts.event || null; T.ease = opts.ease === undefined ? 1 : opts.ease; T.storm = opts.event && opts.event.type === 'storm' ? { d0: opts.event.d - 30, d1: opts.event.d + 280 } : null;
+      T.levelLen = opts.levelLen; T.tutD = opts.tutD || null; T.nightOk = !!opts.nightOk; T.dens = opts.dens === undefined ? 1 : opts.dens; T.difK = opts.difK || 1; T.bossHp = opts.bossHp || 1; T.bossType = opts.bossType || 'heli'; T.padStyle = opts.padStyle || 0; T.theme = opts.theme || null; T.mids = opts.mids || []; T.bossTint = opts.bossTint || 0; T.bossVar = opts.bossVar || 0; T.event = opts.event || null; T.ease = opts.ease === undefined ? 1 : opts.ease; T.storm = opts.event && opts.event.type === 'storm' ? { d0: opts.event.d - 30, d1: opts.event.d + 280 } : null;
     }
     if (opts && opts.order && opts.order.length) { const o = opts.order.filter((z) => CC.Zones.PROFILE[z]); while (o.length < 90) o.push(o[o.length % Math.max(1, opts.order.length)]); T.zoneOrder = o; if (opts.levelLen) { const dE = o[1] && o[1] !== o[0] ? Math.abs(CC.Zones.PROFILE[o[1]].elev - CC.Zones.PROFILE[o[0]].elev) : 0; T.off = dE ? C().zoneLen - (Math.max(130, 1.8 * dE) + 40) : 0; } }   // banc de test : ?order=city,metro,…
     const L = {
@@ -189,15 +189,15 @@
 
     // cibles en route, sur la colonne vertébrale (il faut parfois plonger vers le sol pour les prendre)
     const dk = T.difK || 1;
-    const nextT = (from) => from + U.lerp(110, 36, U.clamp(from * dk / 6000, 0, 1)) * r.between([0.8, 1.25]);   // v071 : une cible tous les ~110 m au départ, ~36 m vers 6 000 m   // v069 : une cible tous les ~50 m, une par une, sur la ligne directrice   // v068 : peu de cibles au départ, de plus en plus ensuite
-    if (T.nextTarget === undefined) T.nextTarget = 130;   // v040 : le premier réservoir vient APRES la première porte (tutoriel lisible)
+    const nextT = (from) => T.tutD ? (T.tutD.find((x) => x > from + 1) || 1e9) : from + U.lerp(110, 36, U.clamp(from * dk / 6000, 0, 1)) * r.between([0.8, 1.25]);   // v071 : une cible tous les ~110 m au départ, ~36 m vers 6 000 m   // v069 : une cible tous les ~50 m, une par une, sur la ligne directrice   // v068 : peu de cibles au départ, de plus en plus ensuite
+    if (T.nextTarget === undefined) T.nextTarget = T.tutD ? T.tutD[0] : 130;   // v040 : le premier réservoir vient APRES la première porte (tutoriel lisible)
     const tgt = [];
     while (T.nextTarget < d1) {
       const d = T.nextTarget;
       if (T.levelLen && d > T.levelLen - 90) { T.nextTarget = 1e9; break; }   // v075 : plus de cibles dans l'arène
       const scA = (CC.Zones.plan(T, T.zoneIndex(d)).scenes.find((q) => d >= q.d0 && d < q.d1)) || null, STRUCT = { passage: 55, tower: 55, carrefour: 50, viaduc: 90, vitres: 60, city1: 0, escalier: 0 };
       const nearPin = zoneAt(d) === 'city' && scA ? (STRUCT[scA.name] !== undefined && (STRUCT[scA.name] === 0 || Math.abs(d - (scA.d0 + scA.d1) / 2) < STRUCT[scA.name])) : CC.Zones.pinAt(T, d).some((p) => d > p.d0 - 15 && d < p.d1 + 15);   // v069 : en ville, seules les scènes à structure centrale écartent les cibles   // pas de plongée vers une cible dans une scène à structure imposée
-      if (d >= d0 + 10 && !inRamp(d) && tr0(d).t === 1 && Math.abs((d + T.off) % cfg.zoneLen) > 70 && !nearPin && !CC.Zones.noTargets[zoneAt(d)]) {
+      if (d >= d0 + 10 && !inRamp(d) && tr0(d).t === 1 && Math.abs((d + T.off) % cfg.zoneLen) > 70 && (T.tutD || !nearPin) && !CC.Zones.noTargets[zoneAt(d)]) {
         const zone = zoneAt(d), lx = CC.Zones.targetLx(T, d, zone) + r.between([-1.5, 1.5]);
         const sn = ((CC.Zones.plan(T, T.zoneIndex(d)).scenes.find((q) => d >= q.d0 && d < q.d1)) || {}).name;
         const sc2 = (CC.Zones.plan(T, T.zoneIndex(d)).scenes.find((q) => d >= q.d0 && d < q.d1)) || null, rel = sc2 ? d - sc2.d0 : 0;
@@ -236,7 +236,7 @@
     };
     const keep = (a, b, p) => Math.abs(Math.sin(a * 12.9898 + b * 78.233) * 43758.5453) % 1 <= p;   // v109 : tirage déterministe par position
     for (const t of tgt) {
-      if (T.levelLen && T.dens < 1 && !t.golden && !keep(t.d, t.lx, T.dens)) continue;
+      if (T.levelLen && T.dens < 1 && !T.tutD && !t.golden && !keep(t.d, t.lx, T.dens)) continue;
       const d = t.d, ly = T.laneY(d), raw = r.pick(ly < 15 ? (T.theme ? T.theme.ground : ['tank', 'truck', 'heli', 'heli', 'sam']) : (T.theme ? T.theme.air : ['heli', 'heli', 'heli', 'heli', 'truck'])), RO = CC.Roster;   // v069 : sur la ligne directrice : un engin à hauteur de la trajectoire, ou au sol si elle descend
       const type = RO.pick(t.zone, raw === 'heli', r), air = RO.isAir(type), lx = t.lx;   // v083 : le thème décide air / sol, la zone décide QUI (pas d'hélicoptère sous l'eau)
       let p;
@@ -293,7 +293,7 @@
 
     // v080 : SURPRISES — (1) une CIBLE DOREE de temps en temps, à l'écart de la trajectoire : risque / récompense (5 points, beaucoup de carburant) ;
     //        (2) des FORMATIONS de 5 hélicoptères en V ou en diagonale : toutes détruites = bonus (aucune information à l'écran, tout se voit dans le décor)
-    if (T.levelLen && d1 < T.levelLen - 110 && !location.search.includes('notgt')) {
+    if (T.levelLen && !T.tutD && d1 < T.levelLen - 110 && !location.search.includes('notgt')) {
       const rg = G.stream(T.seed, 'gold' + k), rf = G.stream(T.seed, 'form' + k);
       if (rg() < 0.4) {
         const gs = T.gstat || (T.gstat = { tries: 0, placed: 0 });
@@ -356,6 +356,7 @@
     const route = k < 0 ? [] : nodes.map((g) => T.at(g.d, g.lx, g.y));
     for (const t of b.targets) t.updateObb();
     const collect = k < 0 || !CC.Collect ? null : CC.Collect.build(game, T, b, nodes, d0, d1, r, ctx.special);
+    if (T.tutD) tanks.length = 0;   // v111 : niveaux 1-2 : aucun ennemi qui tire
     if (T.levelLen && T.dens < 1) for (let i = tanks.length - 1; i >= 0; i--) { const q = tanks[i]; if (!keep(q.pos[0], q.pos[2], Math.min(1, T.dens + 0.15))) tanks.splice(i, 1); }   // v109 : moins de gardes
     return { k, builder: b, boxes, targets: b.targets, entities: b.entities, route, tanks, collect, rings: ctx.rings.map((q) => Object.assign({ passed: false, missed: false }, q)), doors: ctx.doors.map((q) => Object.assign({ passed: false }, q)) };
   }

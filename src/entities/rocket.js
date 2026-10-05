@@ -138,6 +138,7 @@
         if (this.retroActive) loss += this.acfg.retro.decel * dt;
         if (this.sliding > 0) loss += cfg.slideFriction * dt;
         this.vel.multiplyScalar(Math.max(0, speed - loss) / speed);
+        if (this.game.autoBoost && this.game.autoBoost()) { const cap = this.game.autoCap(), sp2 = this.vel.length(); if (sp2 > cap) this.vel.multiplyScalar(cap / sp2); }   // v111 : débutants — vitesse plafonnée (lente au niveau 1, puis de plus en plus vive)
       }
       this.vel.y -= CC.CONFIG.physics.gravity * dt;
 

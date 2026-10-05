@@ -18,6 +18,7 @@
     canyon:   { ground: ['technical', 'rocketTruck', 'buggy', 'tank', 'sam', 'buggy'], air: ['heli'] },          // v096
     banquise: { ground: ['snowcat', 'arcticSam', 'apc', 'radar', 'tank', 'arcticSam'], air: ['heli'] },
     eolien:   { ground: ['boat', 'hover', 'rib', 'rib', 'aaturret'], air: ['heli', 'jet', 'quad'] },
+    plaine:   { ground: ['tank', 'apc', 'technical', 'jeep'], air: ['heli'] },   // v111
     carrier:  { ground: ['tug', 'crashTender', 'aaturret', 'radar', 'sam', 'tug'], air: ['jet', 'jet', 'heli', 'quad'] },
     volcan:   { ground: ['apc', 'rocketTruck', 'mortar', 'tank', 'mortar'], air: ['heli'] },          // v097
     jungle:   { ground: ['technical', 'recon', 'sam', 'apc', 'recon'], air: ['heli', 'quad'] },
@@ -44,11 +45,11 @@
   R.isAir = (type) => !!R.AIR[type];
   R.face = (type) => (TL[type] ? 180 : 0);
   // choisit un engin pour la zone : wantAir = le thème demande un engin volant (sinon, au sol) ; si la zone n'a que l'un des deux, on prend celui-là
-  const NEWZONE = { canyon: 1, banquise: 1, eolien: 1, carrier: 1, volcan: 1, jungle: 1, barrage: 1, neon: 1, carriere: 1, epaves: 1, lancement: 1, autoroute: 1 };
+  const NEWZONE = { plaine: 1, canyon: 1, banquise: 1, eolien: 1, carrier: 1, volcan: 1, jungle: 1, barrage: 1, neon: 1, carriere: 1, epaves: 1, lancement: 1, autoroute: 1 };
   R.pick = (zone, wantAir, r) => { if (wantAir && NEWZONE[zone] && R.zone(zone).ground.length && r() < 0.62) wantAir = false;   // v102 : les engins PROPRES à la zone sont en majorité
     const z = R.zone(zone), a = z.air, g = z.ground; const list = wantAir ? (a.length ? a : g) : (g.length ? g : a); return list[Math.floor(r() * list.length)]; };
   R.goldType = (zone, r) => { const z = R.zone(zone), list = (r() < 0.5 && z.air.length ? z.air : z.ground.concat(z.air)).filter((t) => t !== 'mine' && t !== 'boat'); return (list.length ? list : ['heli'])[Math.floor(r() * list.length)] || 'heli'; };
-  const NF = { canyon: 'buggy', banquise: 'snowcat', volcan: 'apc', jungle: 'recon', barrage: 'dozer', neon: 'quad', carriere: 'dozer', lancement: 'apc', autoroute: 'tanker', eolien: 'quad', epaves: 'quad', carrier: 'tug' };   // v102 : formations d'engins PROPRES à la zone (plus d'hélicoptères partout)
+  const NF = { plaine: 'apc', canyon: 'buggy', banquise: 'snowcat', volcan: 'apc', jungle: 'recon', barrage: 'dozer', neon: 'quad', carriere: 'dozer', lancement: 'apc', autoroute: 'tanker', eolien: 'quad', epaves: 'quad', carrier: 'tug' };   // v102 : formations d'engins PROPRES à la zone (plus d'hélicoptères partout)
   R.formationType = (zone) => NF[zone] || FORM[zone] || 'heli';
   R.scale = (type) => SCALE[type] || 2.4;
   R.opts = (type, extra) => Object.assign({ scale: R.scale(type) * (extra && extra.gold ? 1.12 : 1), drift: R.isAir(type) ? (type === 'jet' ? 16 : type === 'sub' ? 9 : 5) : (type === 'boat' ? 3 : 2.2), driftSpeed: type === 'jet' ? 0.6 : 0.45 }, extra || {});

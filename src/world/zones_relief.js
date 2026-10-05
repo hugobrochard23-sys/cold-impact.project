@@ -13,7 +13,7 @@
   const ZK = {
     city: { sg: 0, amp: 1.0, acc: '#e0b020' }, forest: { sg: 0, amp: 1.0, acc: '#c8a050' }, port: { sg: 1, amp: 0.9, acc: '#e0b020' }, usine: { sg: 0, amp: 0.55, acc: '#ff8a1a' },
     tour: { sg: 0, amp: 0.9, acc: '#2be8ff' }, sky: { sg: 0, amp: 0.9, acc: '#e8f0ff' }, metro: { sg: 0, amp: 0.5, acc: '#30c060' }, mini: { sg: 0, amp: 0.6, acc: '#ff5a3a' },
-    eau: { sg: -1, amp: 0.8, acc: '#4ab8a8' }, chute: { sg: 0, amp: 1.0, acc: '#ff3ad8' },
+    eau: { sg: -1, amp: 0.8, acc: '#4ab8a8' }, plaine: { sg: 0, amp: 0.12, acc: '#9ad060' }, chute: { sg: 0, amp: 1.0, acc: '#ff3ad8' },
     canyon: { sg: 0, amp: 1.0, acc: '#e8b070' }, banquise: { sg: 0, amp: 0.9, acc: '#9ad0ff' }, volcan: { sg: 0, amp: 1.0, acc: '#ff7a2a' }, jungle: { sg: 0, amp: 0.9, acc: '#9affb0' }, barrage: { sg: 0, amp: 0.8, acc: '#ffd23a' }, neon: { sg: 0, amp: 0.8, acc: '#ff3ad8' }, carriere: { sg: 0, amp: 1.0, acc: '#ffb02b' }, lancement: { sg: 0, amp: 0.8, acc: '#ff7a1a' }, autoroute: { sg: 0, amp: 0.7, acc: '#fff2c0' },   // v096 : nouvelles zones (le parc éolien et le porte-avions, sur l'eau, n'ont pas de relief)
   };
   const kA = (T, zone) => U.clamp(0.8 + 0.14 * ((T.difK || 1) - 0.7), 0.8, 1.45) * ZK[zone].amp;   // la hauteur des reliefs grandit avec le niveau
@@ -23,6 +23,9 @@
   // 'b' boîte (dx, yCentre, w, h, d, mat) · 'c' cylindre (dx, y0, rayon, hauteur, mat, rayonHaut) · 's' sphère (dx, yCentre, rayon, mat, aplatissement)
   const TOYS = ['#e8c020', '#d83a2a', '#2a6ac8', '#2aa060', '#8a3aa8', '#ff8a1a'];
   const PROPS = {
+    plaine: [(r) => { const h = r.between([7, 12]); return [['c', 0, 0, 0.6, h * 0.4, 'col:#6b4a2e', 0.4], ['c', 0, h * 0.3, h * 0.4, h * 0.75, 'col:#3f8f3a', 0.2]]; },
+      (r) => { const w = r.between([6, 9]); return [['b', 0, 1.6, w, 3.2, w * 1.2, 'col:#6f7f4e'], ['b', 0, 3.5, w * 0.8, 0.6, w, 'col:#4a5238']]; },
+      (r) => [['b', 0, 0.6, 7, 1.2, 1.6, 'col:#c8b078'], ['b', 0, 1.7, 5, 1, 1.5, 'col:#d0b880']]],
     canyon: [(r) => { const h = r.between([8, 22]), w = r.between([4, 8]); return [['b', 0, h / 2, w, h, w, 'col:#b8603a'], ['b', 0, h + 1, w * 1.2, 2, w * 1.2, 'col:#d08044']]; }, (r) => [['b', 0, 2, 9, 4, 6, 'col:#d8a868'], ['b', 2, 5, 5, 3, 4, 'col:#c89858']]],
     volcan: [(r) => { const h = r.between([8, 24]), w = r.between([4, 8]); return [['b', 0, h / 2, w, h, w, 'col:#4a3430'], ['b', 0, 0.3, w * 2, 0.5, w * 2, 'basic:#ff6a1a']]; }],
     jungle: [(r) => { const h = r.between([14, 30]); return [['c', 0, 0, 2.4, h, 'col:#5a4030', 1.6], ['b', 0, h + 2, 12, 4, 10, 'col:#2e6a2c']]; }],
@@ -337,7 +340,7 @@
   // ---------- inscription dans toutes les zones ----------
   const ALL = Object.keys(SC), ENCL = { metro: 1, usine: 1, mini: 1 };
   for (const zone of Object.keys(ZK)) {
-    if (zone === 'tour' || zone === 'chute') continue;   // ces deux zones sont déjà verticales (ascension, chute continue)
+    if (zone === 'tour' || zone === 'chute' || zone === 'plaine') continue;   // ces deux zones sont déjà verticales (ascension, chute continue)
     const def = Z.defs[zone]; if (!def) continue;
     def.notFirst = (def.notFirst || []).concat(['salle', 'chuteLibre', 'montee', 'pontPlongeon', 'gradins', 'soussol', 'defile', 'montagnesRusses']);   // jamais en toute première scène
     for (const nm of ALL) {
@@ -354,7 +357,7 @@
   forest.notFirst = ['salle', 'chuteLibre', 'montee', 'pontPlongeon', 'gradins', 'soussol', 'defile', 'montagnesRusses'];
   Z.defs.forest = forest;
   for (const nm of ALL) forest.scenes[nm] = SC[nm];
-  for (const zone of Object.keys(ZK)) { if (zone === 'tour' || zone === 'chute') continue; const def = Z.defs[zone]; if (def) def.scenes.galerie = ENCL[zone] ? Object.assign({}, SC.galerie, { noDress: true }) : SC.galerie; }
+  for (const zone of Object.keys(ZK)) { if (zone === 'tour' || zone === 'chute' || zone === 'plaine') continue; const def = Z.defs[zone]; if (def) def.scenes.galerie = ENCL[zone] ? Object.assign({}, SC.galerie, { noDress: true }) : SC.galerie; }
   forest.scenes.galerie = SC.galerie;
   Z.reliefNames = ALL;
 })();

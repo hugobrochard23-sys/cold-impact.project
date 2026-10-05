@@ -178,7 +178,7 @@ CC.CONFIG = {
   // regardant une minute de publicité en entier. Au retour du paiement, Stripe renvoie vers le jeu (réglage du lien dans le
   // Dashboard : redirection vers l'adresse du jeu + « ?paid=1&session_id={CHECKOUT_SESSION_ID} ») en y ajoutant
   // utm_content = identifiant du cosmétique ; le jeu le débloque et l'équipe (src/ui/shop.js).
-  dev: { unlockAll: true },   // v096 : MODE TEST TEMPORAIRE — tous les niveaux et fonctions sont ouverts. METTRE false (ou supprimer) AVANT LA MISE EN PRODUCTION.
+  dev: { unlockAll: false },   // v096 : MODE TEST TEMPORAIRE — tous les niveaux et fonctions sont ouverts. METTRE false (ou supprimer) AVANT LA MISE EN PRODUCTION.
   legal: { termsUrl: '', privacyUrl: '' },   // v094 : adresses des pages « Conditions d'utilisation » et « Confidentialité » (À RENSEIGNER)
   shop: {
     priceCents: 229,             // prix unique de tous les cosmétiques (2,29 €)

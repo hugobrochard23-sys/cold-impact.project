@@ -152,6 +152,36 @@
     S.reserve(dc, 0, 2 * S.vol(dc), 28);
   } };
 
+
+  // =============================================================== PLAINE MILITAIRE (v111 : zone des premiers niveaux — grande plaine ouverte, base militaire sur les côtés)
+  function oak(S, dc, lx, r) { const h = r.between([5, 9]), c = pick(r, ['#3f8f3a', '#4a9a40', '#357f33']); S.cyl(dc, lx, 0, 0.55, h * 0.45, 'col:#6b4a2e', undefined, 6, 0.4, false); S.cyl(dc, lx, h * 0.3, h * 0.42, h * 0.8, 'col:' + c, undefined, 8, 0.2, false); }
+  function pine(S, dc, lx, r) { const h = r.between([8, 15]); S.cyl(dc, lx, 0, 0.5, 3, 'col:#5a3f28', undefined, 6, 0.4, false); S.cyl(dc, lx, 2, h * 0.34, h * 0.55, 'col:#2f7a3a', undefined, 8, 0.2, false); S.cyl(dc, lx, 2 + h * 0.3, h * 0.26, h * 0.5, 'col:#388a42', undefined, 8, 0.2, false); }
+  function tower(S, dc, lx, r) { S.place(dc, lx, 7, 7, 0, 16, () => { for (const a of [-1, 1]) for (const b of [-1, 1]) S.cyl(dc, lx + a * 2, 0, 0.3, 9, 'metal', '#5a6048', 6, 0.3, false); S.bx(dc, lx, 9.6, 5.6, 2.6, 5.6, 'corrugated', '#6a7a4a'); S.bx(dc, lx, 11.2, 6.4, 0.5, 6.4, 'col:#4a5238', undefined, false); S.bx(dc, lx + 2.4, 13.4, 0.2, 4.2, 0.2, 'metal', '#c8ccd0', false); S.bx(dc, lx + 3.4, 15, 1.8, 1.1, 0.1, 'col:#c02a22', undefined, false); }); }
+  function hangar(S, dc, lx, r) { S.place(dc, lx, 18, 24, 0, 10, () => { const c = pick(r, ['#7a8a5a', '#8a8a6a', '#6f7f56']); S.bx(dc, lx, 4, 16, 8, 22, 'corrugated', c); S.bx(dc, lx, 8.3, 14, 1.4, 21, 'corrugated', '#5a6848', false); S.bx(dc, lx + (lx > 0 ? -8.1 : 8.1), 3, 0.3, 5.6, 12, 'col:#2a2e26', undefined, false); }); }
+  function fence(S, dc, lx) { S.place(dc, lx, 14, 2, 0, 3, () => { for (let i = 0; i < 6; i++) S.bx(dc, lx - 6.5 + i * 2.6, 1.2, 0.2, 2.4, 0.2, 'metal', '#8a9088', false); S.bx(dc, lx, 1.9, 14, 0.15, 0.1, 'metal', '#a0a8a0', false); S.bx(dc, lx, 0.8, 14, 0.15, 0.1, 'metal', '#a0a8a0', false); }); }
+  function windsock(S, dc, lx) { S.place(dc, lx, 3, 3, 0, 10, () => { S.cyl(dc, lx, 0, 0.2, 9, 'metal', '#d8d8d4', 6, 0.2, false); S.bx(dc, lx + 1.4, 8.6, 2.8, 0.9, 0.9, 'col:#ff7a1a', undefined, false); }); }
+
+  Z.PROFILE.plaine = { elev: 0, vol: 74, y: [10, 70], amp: 0.7 };
+  Z.meta.plaine = { label: 'PLAINE', envs: ['plaineDay'], ground: 'white', groundTint: '#6f9d4f', wall: () => ({ mat: { side: 'rock', top: 'grass' }, tint: '#8a9a6a' }), obstacle: 'rock', obstacleTint: '#8a9a6a' };
+  const plaine = { signature: 'poste', scenes: {}, dress(S) {
+    for (const s of [-1, 1]) S.rows(S.d0, S.d1, 70, 0.5, (dc) => S.item(dc, (r) => { const h = r.between([14, 42]); S.bx(dc, s * (S.vol(dc) + r.between([90, 260])), h / 2 - 3, r.between([100, 240]), h, r.between([60, 150]), 'col:' + pick(r, ['#86a86a', '#7a9c60', '#8cae70', '#94b478']), undefined, false, { shadow: false }); }));
+    // piste d'atterrissage au centre (repère de direction et de vitesse) : bande sombre, marquage blanc
+    S.rows(S.d0, S.d1, 30, 0, (dc) => S.item(dc, () => { S.bx(dc, 0, 0.04, 22, 0.1, 31, 'col:#4a4e54', undefined, false, { shadow: false }); for (const x of [-9, 9]) S.bx(dc, x, 0.1, 0.5, 0.06, 18, 'col:#e8e8dc', undefined, false, { shadow: false }); S.bx(dc, 0, 0.1, 0.8, 0.06, 9, 'col:#e8e8dc', undefined, false, { shadow: false }); }));
+    // arbres épars des deux côtés
+    for (const s of [-1, 1]) S.rows(S.d0, S.d1, 26, 0.9, (dc) => S.item(dc, (r) => { const lx = s * (S.vol(dc) - r.between([1, 30])); (r() < 0.55 ? oak : pine)(S, dc, lx, r); }));
+    // éléments militaires : bases le long des deux bords (jamais sur la trajectoire)
+    const kit = [tent, truckBlock, sandbags, container, crates, drums, tower, mast, windsock];
+    for (const s of [-1, 1]) S.rows(S.d0, S.d1, 54, 0.8, (dc) => S.item(dc, (r) => { const lx = s * r.between([27, S.vol(dc) - 6]), f = pick(r, kit); f(S, dc, lx, r); }));
+  } };
+  Z.defs.plaine = plaine;
+  plaine.scenes.poste = { len: [200, 200], build(S) {
+    const dc = S.d0 + 100;
+    S.item(dc, (r) => { const L = S.lane(dc), w = 34; for (const s of [-1, 1]) { tower(S, dc, L.lx + s * w, r); sandbags(S, dc + 8, L.lx + s * (w - 6), r); } S.gate(dc - 30, L.lx, L.y); S.gate(dc, L.lx, L.y); S.gate(dc + 30, L.lx, L.y); });
+    S.reserve(dc, 0, 2 * S.vol(dc), 28);
+  } };
+  plaine.scenes.camp = { len: [260, 340], build(S) { const n = Math.round(S.len / 40); for (let i = 0; i < n; i++) { const dc = S.d0 + 16 + S.sr() * (S.len - 32), s = S.sr() < 0.5 ? -1 : 1, lx = s * S.sr.between([30, S.vol(dc) - 8]); S.item(dc, (r) => pick(r, [tent, hangar, truckBlock, container, tower, radome, fence])(S, dc, lx, r)); } } };
+  plaine.scenes.vallon = { len: [240, 320], build(S) { const n = Math.round(S.len / 30); for (let i = 0; i < n; i++) { const dc = S.d0 + 10 + S.sr() * (S.len - 20), s = S.sr() < 0.5 ? -1 : 1, lx = s * S.sr.between([28, S.vol(dc) - 4]); S.item(dc, (r) => (r() < 0.5 ? oak : pine)(S, dc, lx, r)); } } };
+
   // =============================================================== PORTE-AVIONS
   function jet(S, dc, lx, r) {
     S.place(dc, lx, 15, 17, 0, 6, () => { const y = S.yaw(dc) + r.between([-12, 12]), c = pick(r, ['#9aa0a8', '#8a9098', '#a8aeb6']);
