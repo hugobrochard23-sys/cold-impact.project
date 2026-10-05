@@ -27,20 +27,25 @@
   // v095 : 300 niveaux — rythme par CHAPITRE de 10 : montée, un niveau « respiration » tous les 5, boss de chapitre plus long et plus dur
   const LENV = [1, 0.8, 1.05, 0.9, 0.75, 1, 1.1, 0.9, 0.8, 1.2];       // longueur relative selon la position dans le chapitre
   const HARDV = [0.9, 0.95, 1, 1.05, 0.8, 0.95, 1.05, 1.1, 0.85, 1.2]; // difficulté relative (le 5 et le 9 respirent, le 10 est le boss de chapitre)
+  // v109 : les 10 premiers niveaux sont un PARCOURS CHOISI (zones ouvertes, de jour, lisibles) ; les zones verticales ou fermées (tour, chute, base aérienne, usine, métro, mini) ne viennent qu'à partir du niveau 25
+  const EARLY = ['city', 'forest', 'port', 'carriere', 'canyon', 'eolien', 'autoroute', 'banquise', 'jungle', 'city'], HARD = { tour: 1, chute: 1, sky: 1, usine: 1, metro: 1, mini: 1 }, SOFT = ['city', 'forest', 'port', 'canyon', 'jungle', 'banquise', 'carriere', 'autoroute'];
+  const zoneFix = (n, z) => (n <= 10 ? EARLY[n - 1] : n < 25 && HARD[z] ? SOFT[n % SOFT.length] : z);
   const def = (n) => {
     n = Math.max(1, n | 0);
     // v096 : quatre zones en plus (niveaux 12, 17, 22, 27, puis tous les 20 niveaux pour chacune)
-    const zone = (n >= 12 && n % 5 === 2) ? NEWZ[Math.floor((n - 12) / 5) % 4] : (n >= 14 && n % 5 === 4) ? NEWZ[4 + Math.floor((n - 14) / 5) % 4] : (n >= 13 && n % 10 === 3) ? 'eau' : (n >= 15 && n % 5 === 0) ? NEWZ[8 + Math.floor((n - 15) / 5) % 4] : ZN[(n - 1) % ZN.length], zi = ALLZ.indexOf(zone), flat = CC.Zones.PROFILE[zone].elev === 0, th = n <= 2 ? THEMES[0] : THEMES[(n * 3 + Math.floor(n / 7)) % THEMES.length];
+    const zone = zoneFix(n, (n >= 12 && n % 5 === 2) ? NEWZ[Math.floor((n - 12) / 5) % 4] : (n >= 14 && n % 5 === 4) ? NEWZ[4 + Math.floor((n - 14) / 5) % 4] : (n >= 13 && n % 10 === 3) ? 'eau' : (n >= 15 && n % 5 === 0) ? NEWZ[8 + Math.floor((n - 15) / 5) % 4] : ZN[(n - 1) % ZN.length]), zi = ALLZ.indexOf(zone), flat = CC.Zones.PROFILE[zone].elev === 0, th = n <= 2 ? THEMES[0] : THEMES[(n * 3 + Math.floor(n / 7)) % THEMES.length];
     const nm = n < 4 ? 0 : n < 9 ? 1 : n < 17 ? 2 : 3, hp = n <= 3 ? 1 : Math.min(14, 1 + Math.floor((n - 1) / 3) + (n % 10 === 0 ? 1 : 0)), len = n === 1 ? 900 : n === 2 ? 1200 : Math.round(Math.min(5200, 1500 + 280 * (n - 1)) * LENV[(n - 1) % 10] / 10) * 10;   // v093 : niveaux 1-2 courts ; v095 : longueur variable dans le chapitre (3 min max)
     const mids = [];
     const pool = POOL[zone] || POOL.city, k = Math.floor((n - 1) / ZN.length), boss = pool[k % pool.length];
     for (let i = 0; i < nm; i++) { let mt = pool[(k + 1 + 2 * i) % pool.length]; if (mt === boss && zone !== 'eau') mt = pool[(k + 2 + 2 * i) % pool.length]; if (mt === boss && zone !== 'eau') mt = MINI[(n + i) % MINI.length]; mids.push({ d: Math.round(len * (i + 1) / (nm + 1)), type: mt, tint: (k + i + 3) % 6, variant: (k + i + 1) % 3, hp: Math.min(5, 2 + Math.floor(n / 12)) }); }
     return {
       n, zone, seed: 7000 + n * 131, len,
+      nightOk: n >= 16 && n % 12 === 4,                                    // v109 : la nuit est EXCEPTIONNELLE (un niveau sur 12 à partir du 16)
+      dens: n <= 2 ? 0.95 : n <= 10 ? 0.66 : n <= 30 ? 0.7 : 0.8,         // v109 : moins d'ennemis (part des cibles et gardes conservée)
       difK: Math.min(6, 0.35 + 0.075 * (n - 1)) * (n <= 3 ? 1 : HARDV[(n - 1) % 10]), chapter: Math.floor((n - 1) / 10) + 1,                    // v084 : la difficulté (cibles, ouvertures, missiles) monte DOUCEMENT avec le numéro du niveau (niveau 1 : 0,35 ; niveau 10 : 1 ; niveau 40 : 3,3)
       ease: Math.min(1, (n - 1) / 35),                 // 0 → 1 sur 35 niveaux : ouvertures, slaloms et virages passent de très larges à serrés
       hp,                                              // les trois premiers boss tombent d'un coup, ensuite de plus en plus de points de vie
-      boss, bossTint: (k + zi) % 6, bossVar: k % 3, look: (k * 7 + 5 * zi + (k >> 1)) % (CC.Look ? CC.Look.LOOKS.length : 6), kit: (n * 5 + k * 3 + zi) % 8, theme: th, mids,
+      boss, bossTint: (k + zi) % 6, bossVar: k % 3, look: (k * 7 + 5 * zi + (k >> 1)) % (CC.Look ? CC.Look.LOOKS.length : 6), kit: n <= 10 ? 0 : (n * 5 + k * 3 + zi) % 8, theme: th, mids,
       event: n < 3 ? null : { type: ['rain', 'storm', 'convoy'][(n + k) % 3], d: Math.round(len * (0.5 + 0.1 * ((n * 7) % 3))) },   // v083 : un événement par niveau (dès le niveau 3)
       // départ DIRECTEMENT dans la zone (même altitude que le lanceur) ; les zones en contrebas / en altitude (métro, profondeur, base aérienne) sont atteintes par une rampe très courte
       order: (flat ? [] : ['city']).concat(new Array(90).fill(zone)),

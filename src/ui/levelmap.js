@@ -134,7 +134,7 @@
     const L = Home.layout(ui, W, H), { u, Y } = L, lv = game.levelRun;
     const label = lv ? 'NIVEAU ' + lv.n : '', lp = ui.fitPx([label], W * 0.6, u * 0.009);
     text(ctx, label, W / 2, Y(0.27), lp, '#ffffff', { align: 'center' });
-    if (game.meta && Home.crateIcon) {   // v082 : QUOTIDIEN (cadeau, missions du jour, coffre) — pastille rouge quand il y a quelque chose à prendre
+    if (game.meta && Home.crateIcon && ((game.save.lvl && game.save.lvl.max) || 1) >= 3) {   // v109 : quêtes et coffre seulement à partir du niveau 3 (accueil épuré au début) ; v082 : QUOTIDIEN (cadeau, missions du jour, coffre) — pastille rouge quand il y a quelque chose à prendre
       const hdr = L.T + L.HH * 0.1, gr = u * 0.055, gx = u * 0.04 + gr, gy = hdr + u * 0.04 * 0.8 + gr, hov = !ui.isTouch() && ui.mouse.x > gx - gr && ui.mouse.x < gx + gr && ui.mouse.y > gy - gr && ui.mouse.y < gy + gr;
       Home.pill(ctx, gx - gr, gy - gr, 2 * gr, 2 * gr, hov ? 'rgba(50,59,70,0.97)' : 'rgba(38,45,54,0.97)', game.meta.badge() ? GOLD : '#5a6674', gr * 0.35);
       Home.crateIcon(ctx, gx, gy, gr * 1.1);

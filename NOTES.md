@@ -174,3 +174,6 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 
 ## v108 — CONTROLES = v033
 - Copie des controles du depot cold-impact-v033 : touch.js (glisse brut, dragGain 2.2, bande de virage 1.8, reboost 600 ms), input.js addAim, rocket.js (rate), camera.js (poursuite = nez, lags 2/3/7). Les commandes simples (v107) restent en option (COMMANDES SIMPLES), defaut LIBRES. Restent differents de v033 : MANIABILITE (Run.update, v066), limites douces plafond/bords, glissade au sol (v087).
+
+## v109 — jeu plus calme et lisible
+- 10 premiers niveaux = parcours choisi (city, forest, port, carriere, canyon, eolien, autoroute, banquise, jungle, city), zones verticales/fermees (tour, chute, sky, usine, metro, mini) seulement a partir du niveau 25. Nuit exceptionnelle (nightOk : n>=16 et n%12==4) : 5 niveaux sur 60 au lieu de 24. Densite d ennemis (dens) et gardes allegees, pas de formations avant le niveau 10, kit STANDARD jusqu au niveau 10. Tuto sans texte (main animee). Quetes/coffre masques avant le niveau 3.

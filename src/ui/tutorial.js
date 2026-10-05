@@ -49,7 +49,7 @@
     ctx.save(); ctx.globalAlpha = 0.65; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill();
     ctx.globalAlpha = 0.9; ctx.strokeStyle = '#35ff4a'; ctx.lineWidth = Math.max(3, r * 0.18); ctx.beginPath(); ctx.arc(x, y, r * (1.25 + (ring ? ((t * 1.4) % 1) * 0.6 : 0)), 0, 6.283); ctx.stroke(); ctx.restore();
   };
-  const label = (g, ctx, W, H, s, sub) => {
+  const label = (g, ctx, W, H, s, sub) => { if (true) { if (s === 'LEVE LE DOIGT') { const t = performance.now() / 1000, r = Math.min(W, H) * 0.06, y = H * 0.68 + Math.sin(t * 3) * 6; ctx.save(); ctx.globalAlpha = 0.55; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4; ctx.setLineDash([8, 8]); ctx.beginPath(); ctx.arc(W / 2, y, r, 0, 6.283); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = '#ffffff'; const q = r * 0.3; ctx.fillRect(W / 2 - q / 2, y - q * 1.6, q, q * 2.2); ctx.fillRect(W / 2 - q * 1.5, y - q * 1.6, q, q); ctx.fillRect(W / 2 + q * 0.5, y - q * 1.6, q, q); ctx.restore(); } return; }   // v109 : plus aucun texte (la main animée suffit) ; levée du doigt = main en pointillés
     const F = CC.Font, px = Math.max(3, Math.round(H * 0.0058)), w = Math.min(W * 0.9, F.measure(s, px) + px * 12), h = px * 24, x = W / 2 - w / 2, y = H * 0.2;
     CC.Home.pill(ctx, x, y, w, h, 'rgba(8,60,20,0.92)', '#56ff5a');
     F.draw(ctx, s, W / 2, y + h * 0.3, Math.min(px, (w - px * 8) / Math.max(1, F.measure(s, 1))), '#ffffff', { align: 'center' });

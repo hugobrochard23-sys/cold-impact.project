@@ -103,6 +103,7 @@
         const Z = ZONES[this.zoneOrder[zi % this.zoneOrder.length]], r = G.stream(this.seed, 'env' + zi);
         let pool = Z.envs; if (zi === 0 && !this.forceEnv) { const day = pool.filter((e) => (G.Envs.get(e).dark || 0) < 0.1); if (day.length) pool = day; }   // v046 : la partie ne commence JAMAIS de nuit
         if (CC.Look && CC.Look.cur && this.levelLen) pool = CC.Look.pool(this.zoneOrder[zi % this.zoneOrder.length], Z.envs);   // v081 : ambiance selon le look du niveau
+        if (this.levelLen && !this.nightOk) { const lite = (e) => (G.Envs.get(e).dark || 0) < 0.15; let dp = pool.filter(lite); if (!dp.length) dp = Z.envs.filter(lite); if (dp.length) pool = dp; }   // v109 : de jour sauf niveaux de nuit exceptionnels
         const id = this.forceEnv || pool[Math.floor(r() * pool.length)];
         this._env[zi] = G.Envs.get(id).make(r);
         this._env[zi].clouds = false; this._env[zi].dark = G.Envs.get(id).dark; this._env[zi].id = id;
@@ -149,7 +150,7 @@
     const cfg = C(), T = new Track(seed, opts && opts.zones);
     if (opts && opts.env) T.forceEnv = opts.env;   // banc de test : ?env=neonNight
     if (opts && opts.levelLen) {   // v075 : niveau à longueur fixe (arène + boss à la fin)
-      T.levelLen = opts.levelLen; T.difK = opts.difK || 1; T.bossHp = opts.bossHp || 1; T.bossType = opts.bossType || 'heli'; T.padStyle = opts.padStyle || 0; T.theme = opts.theme || null; T.mids = opts.mids || []; T.bossTint = opts.bossTint || 0; T.bossVar = opts.bossVar || 0; T.event = opts.event || null; T.ease = opts.ease === undefined ? 1 : opts.ease; T.storm = opts.event && opts.event.type === 'storm' ? { d0: opts.event.d - 30, d1: opts.event.d + 280 } : null;
+      T.levelLen = opts.levelLen; T.nightOk = !!opts.nightOk; T.dens = opts.dens === undefined ? 1 : opts.dens; T.difK = opts.difK || 1; T.bossHp = opts.bossHp || 1; T.bossType = opts.bossType || 'heli'; T.padStyle = opts.padStyle || 0; T.theme = opts.theme || null; T.mids = opts.mids || []; T.bossTint = opts.bossTint || 0; T.bossVar = opts.bossVar || 0; T.event = opts.event || null; T.ease = opts.ease === undefined ? 1 : opts.ease; T.storm = opts.event && opts.event.type === 'storm' ? { d0: opts.event.d - 30, d1: opts.event.d + 280 } : null;
     }
     if (opts && opts.order && opts.order.length) { const o = opts.order.filter((z) => CC.Zones.PROFILE[z]); while (o.length < 90) o.push(o[o.length % Math.max(1, opts.order.length)]); T.zoneOrder = o; if (opts.levelLen) { const dE = o[1] && o[1] !== o[0] ? Math.abs(CC.Zones.PROFILE[o[1]].elev - CC.Zones.PROFILE[o[0]].elev) : 0; T.off = dE ? C().zoneLen - (Math.max(130, 1.8 * dE) + 40) : 0; } }   // banc de test : ?order=city,metro,…
     const L = {
@@ -233,7 +234,9 @@
       }
       return null;
     };
+    const keep = (a, b, p) => Math.abs(Math.sin(a * 12.9898 + b * 78.233) * 43758.5453) % 1 <= p;   // v109 : tirage déterministe par position
     for (const t of tgt) {
+      if (T.levelLen && T.dens < 1 && !t.golden && !keep(t.d, t.lx, T.dens)) continue;
       const d = t.d, ly = T.laneY(d), raw = r.pick(ly < 15 ? (T.theme ? T.theme.ground : ['tank', 'truck', 'heli', 'heli', 'sam']) : (T.theme ? T.theme.air : ['heli', 'heli', 'heli', 'heli', 'truck'])), RO = CC.Roster;   // v069 : sur la ligne directrice : un engin à hauteur de la trajectoire, ou au sol si elle descend
       const type = RO.pick(t.zone, raw === 'heli', r), air = RO.isAir(type), lx = t.lx;   // v083 : le thème décide air / sol, la zone décide QUI (pas d'hélicoptère sous l'eau)
       let p;
@@ -255,7 +258,7 @@
       if (!sA || sA.name === 'arene' || d > T.levelLen - 30) continue;
       if (!((T.ease === undefined ? 1 : T.ease) < 0.25 || Math.abs(T.laneY(d + 70) - T.laneY(d)) > 8 || sA.name === 'city1' || sA.name === 'escalier' || (CC.Zones.reliefNames || []).indexOf(sA.name) >= 0)) continue;
       const pa = T.at(d, T.laneX(d), T.laneY(d) - 2.2), pb = T.at(d + 70, T.laneX(d + 70), T.laneY(d + 70) - 2.2), o = CC.Models.guideArrow(), P = new THREE.Vector3(pa[0], pa[1], pa[2]);
-      o.position.copy(P); o.lookAt(new THREE.Vector3(pb[0], pb[1], pb[2])); o.scale.setScalar(2.8);   // v087 : plus de rotateX(0.6) = la flèche pointait ~34° trop bas
+      o.position.copy(P); o.lookAt(new THREE.Vector3(pb[0], pb[1], pb[2])); o.scale.setScalar(sA.zone === 'tour' || sA.zone === 'chute' || sA.zone === 'sky' ? 4 : 2.8);   // v087 : plus de rotateX(0.6) = la flèche pointait ~34° trop bas
       b.entity({ object: o, t: Math.random() * 6, base: P.y, update(dt) { this.t += dt; this.object.position.y = this.base + Math.sin(this.t * 3) * 0.3; } });
     }
 
@@ -302,7 +305,7 @@
           gs.placed++; b.target(gt, p, T.yawAcross(d) + RO.face(gt), RO.opts(gt, { gold: true, unarmed: true, drift: gair ? 12 : 4, driftSpeed: 0.5 })); busy.push(d); break;
         }
       }
-      if ((T.difK || 1) >= 0.5 && rf() < 0.3) {
+      if ((T.difK || 1) >= 0.5 && (T.padStyle || 99) >= 10 && rf() < 0.3) {
         const V5 = rf() < 0.5, pat = V5 ? [[0, -14], [12, -7], [24, 0], [12, 7], [0, 14]] : [[0, -14], [11, -7], [22, 0], [33, 7], [44, 14]];
         for (let a = 0; a < 4; a++) {
           const d = d0 + cfg.chunkLen * (0.1 + 0.5 * rf()), pts = [], RO = CC.Roster, fu = RO.formationType(zoneAt(d)), fair = RO.isAir(fu);   // v083 : la formation est faite d'engins de la zone
@@ -353,6 +356,7 @@
     const route = k < 0 ? [] : nodes.map((g) => T.at(g.d, g.lx, g.y));
     for (const t of b.targets) t.updateObb();
     const collect = k < 0 || !CC.Collect ? null : CC.Collect.build(game, T, b, nodes, d0, d1, r, ctx.special);
+    if (T.levelLen && T.dens < 1) for (let i = tanks.length - 1; i >= 0; i--) { const q = tanks[i]; if (!keep(q.pos[0], q.pos[2], Math.min(1, T.dens + 0.15))) tanks.splice(i, 1); }   // v109 : moins de gardes
     return { k, builder: b, boxes, targets: b.targets, entities: b.entities, route, tanks, collect, rings: ctx.rings.map((q) => Object.assign({ passed: false, missed: false }, q)), doors: ctx.doors.map((q) => Object.assign({ passed: false }, q)) };
   }
 
