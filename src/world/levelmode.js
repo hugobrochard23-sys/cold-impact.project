@@ -31,11 +31,18 @@
   // v109 : les 10 premiers niveaux sont un PARCOURS CHOISI (zones ouvertes, de jour, lisibles) ; les zones verticales ou fermées (tour, chute, base aérienne, usine, métro, mini) ne viennent qu'à partir du niveau 25
   const EARLY = ['city', 'forest', 'canyon', 'port', 'carriere', 'city', 'autoroute', 'banquise', 'jungle', 'eolien'], HARD = { tour: 1, chute: 1, sky: 1, usine: 1, metro: 1, mini: 1 }, SOFT = ['city', 'forest', 'port', 'canyon', 'jungle', 'banquise', 'carriere', 'autoroute'];
   const zoneFix = (n, z) => (n <= 10 ? EARLY[n - 1] : n < 25 && HARD[z] ? SOFT[n % SOFT.length] : z);
+  // v114 : les 10 premiers niveaux sont écrits à la main : suite de scènes imposée (un obstacle « signature » par niveau) et longueur choisie
+  const CUR = {
+    1: { len: 1000, scenes: ['boulevard', 'virage', 'vitrage', 'boulevard'] }, 2: { len: 760, scenes: ['maison', 'maison'] }, 3: { len: 1100, scenes: ['hoodoos', 'arches', 'pontsRoche'] },
+    4: { len: 1500, scenes: ['conteneurs', 'navire', 'lac', 'pont', 'levant'] }, 5: { len: 1700, scenes: ['camions', 'excavatrices', 'convoyeur', 'tirs', 'roue'] },
+    6: { len: 1900, scenes: ['carrefour', 'viaduc', 'passage', 'slalom', 'chicane'] }, 7: { len: 2000, scenes: ['convoi', 'echangeurs', 'panneaux', 'tunnel', 'peage'] },
+    8: { len: 2100, scenes: ['icebergs', 'pontsGlace', 'crevasses', 'cathedrale', 'grotte'] }, 9: { len: 2300, scenes: ['canopee', 'lianes', 'cascade', 'temple', 'riviere', 'arbrePorte'] },
+    10: { len: 2400, scenes: ['champ', 'plateformes', 'cargos', 'portique'] } };
   const def = (n) => {
     n = Math.max(1, n | 0);
     // v096 : quatre zones en plus (niveaux 12, 17, 22, 27, puis tous les 20 niveaux pour chacune)
     const zone = zoneFix(n, (n >= 12 && n % 5 === 2) ? NEWZ[Math.floor((n - 12) / 5) % 4] : (n >= 14 && n % 5 === 4) ? NEWZ[4 + Math.floor((n - 14) / 5) % 4] : (n >= 13 && n % 10 === 3) ? 'eau' : (n >= 15 && n % 5 === 0) ? NEWZ[8 + Math.floor((n - 15) / 5) % 4] : ZN[(n - 1) % ZN.length]), zi = ALLZ.indexOf(zone), flat = CC.Zones.PROFILE[zone].elev === 0, th = n <= 2 ? THEMES[0] : THEMES[(n * 3 + Math.floor(n / 7)) % THEMES.length];
-    const nm = n < 4 ? 0 : n < 9 ? 1 : n < 17 ? 2 : 3, hp = n <= 3 ? 1 : Math.min(14, 1 + Math.floor((n - 1) / 3) + (n % 10 === 0 ? 1 : 0)), len = n === 1 ? 1000 : n === 2 ? 760 : n === 3 ? 1100 : Math.round(Math.min(5200, 1500 + 280 * (n - 1)) * LENV[(n - 1) % 10] / 10) * 10;   // v093 : niveaux 1-2 courts ; v095 : longueur variable dans le chapitre (3 min max)
+    const nm = n < 4 ? 0 : n < 9 ? 1 : n < 17 ? 2 : 3, hp = n <= 3 ? 1 : Math.min(14, 1 + Math.floor((n - 1) / 3) + (n % 10 === 0 ? 1 : 0)), len = CUR[n] ? CUR[n].len : Math.round(Math.min(5200, 1500 + 280 * (n - 1)) * LENV[(n - 1) % 10] / 10) * 10;   // v093 : niveaux 1-2 courts ; v095 : longueur variable dans le chapitre (3 min max)
     const mids = [];
     const pool = POOL[zone] || POOL.city, k = Math.floor((n - 1) / ZN.length), boss = pool[k % pool.length];
     for (let i = 0; i < nm; i++) { let mt = pool[(k + 1 + 2 * i) % pool.length]; if (mt === boss && zone !== 'eau') mt = pool[(k + 2 + 2 * i) % pool.length]; if (mt === boss && zone !== 'eau') mt = MINI[(n + i) % MINI.length]; mids.push({ d: Math.round(len * (i + 1) / (nm + 1)), type: mt, tint: (k + i + 3) % 6, variant: (k + i + 1) % 3, hp: Math.min(5, 2 + Math.floor(n / 12)) }); }
@@ -43,8 +50,8 @@
       n, zone, seed: 7000 + n * 131, len,
       // v112 : LES TROIS PREMIERS NIVEAUX, faits main. 1 = ville : une avenue, un immeuble à traverser en cassant une vitre, UNE cible derrière ; 2 = forêt : deux granges à traverser, un ennemi dans chacune ; 3 = canyon : arches puis un boss qui sort d'un mur de briques
       tutD: n <= 2 ? [] : null, winKills: n === 1 ? 1 : n === 2 ? 2 : 0,
-      scenes: n === 1 ? ['boulevard', 'virage', 'vitrage', 'boulevard'] : n === 2 ? ['maison', 'maison'] : n === 3 ? ['hoodoos', 'arches', 'pontsRoche'] : null,
-      tutRel: n === 1 ? [{ scene: 'vitrage', off: 62 }] : null, bossEnt: n < 3 ? null : (boss === 'sub' || boss === 'destroyer' || zone === 'eau') ? 'rise' : (/^(heli|gunship|jet|bomber)$/.test(boss) && n % 2 === 0) ? 'sky' : 'wall', bossWall: n >= 3 && !((boss === 'sub' || boss === 'destroyer' || zone === 'eau') || (/^(heli|gunship|jet|bomber)$/.test(boss) && n % 2 === 0)), env: n === 1 ? 'day' : n === 2 ? 'plaineDay' : n === 3 ? 'goldenHour' : null,
+      scenes: CUR[n] ? CUR[n].scenes : null,
+      tutRel: n === 1 ? [{ scene: 'vitrage', off: 62 }] : null, bossEnt: n < 3 ? null : (boss === 'sub' || boss === 'destroyer' || zone === 'eau') ? 'rise' : (/^(heli|gunship|jet|bomber)$/.test(boss) && n % 2 === 0) ? 'sky' : 'wall', bossWall: n >= 3 && !((boss === 'sub' || boss === 'destroyer' || zone === 'eau') || (/^(heli|gunship|jet|bomber)$/.test(boss) && n % 2 === 0)), env: ({ 1: 'day', 2: 'plaineDay', 3: 'goldenHour', 4: 'day', 5: 'goldenHour', 6: 'day', 7: 'day', 8: 'iceDay', 9: 'day', 10: 'day' })[n] || null,
 
       nightOk: n >= 16 && n % 12 === 4,                                    // v109 : la nuit est EXCEPTIONNELLE (un niveau sur 12 à partir du 16)
       dens: n <= 2 ? 0.95 : n <= 10 ? 0.66 : n <= 30 ? 0.7 : 0.8,         // v109 : moins d'ennemis (part des cibles et gardes conservée)

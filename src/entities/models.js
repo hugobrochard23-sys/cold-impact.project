@@ -500,7 +500,7 @@
   // Flèche verte (séq. 6).
   M.arrow = function () {
     const g = new THREE.Group();
-    const mat = basic('#1fbf22');
+    const mat = new THREE.MeshBasicMaterial({ color: '#52c874', transparent: true, opacity: 0.45, depthWrite: false });   // v114 : flèches de chemin discrètes (plus de vert fluo)
     box(1.2, 3.2, 0.3, mat, 0, 2.4, 0, g);
     const shape = new THREE.Shape(); shape.moveTo(-1.6, 0); shape.lineTo(1.6, 0); shape.lineTo(0, -2.0); shape.lineTo(-1.6, 0);
     const head = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.3, bevelEnabled: false }), mat);

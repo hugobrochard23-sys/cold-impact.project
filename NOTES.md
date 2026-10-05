@@ -189,3 +189,6 @@ N1 ville (boulevard + VITRAGE : immeuble a traverser, vitres a casser, 1 cible),
 
 ## v113 — retours du joueur
 Tuto : plus de points a cote du cercle, textes centres, pas de bandeau MISSION au niveau 1. Missiles inoffensifs niveaux 1-9 (miss >= 13 m). Entrees de boss variees (`ld.bossEnt` : wall = mur qui s effondre avec gravite `SmashWall.breakFall`, matiere selon la zone ; sky = plonge des nuages ; rise = remonte du sol/de l eau), declenchees de 340-380 m, repere BOSS a l ecran (hud.js). Plus de montagnes russes / chute libre / escalier / city1 avant le niveau ~20 (skipQ). Foret : arbres varies, buissons, rochers, sol plus clair. N1 : + un virage.
+
+## v114 — actualisation rapide + niveaux 4-10 faits main
+index.html charge les scripts avec ?v=<version.json> (document.write synchrone, version.json relu sans cache) : une nouvelle version est prise des la prochaine ouverture ; `node tools/stamp.js` avant chaque publication (index.static.html = ancienne version statique). Niveaux 1-10 : suite de scenes imposee par niveau (levelmode.js CUR).
