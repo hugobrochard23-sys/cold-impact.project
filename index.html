@@ -9,121 +9,119 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>COLD IMPACT</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="style.css">
+  <script>(function () { var V = ''; try { var x = new XMLHttpRequest(); x.open('GET', 'version.json?t=' + Date.now(), false); x.send(); if (x.status === 200) V = '?v=' + encodeURIComponent(JSON.parse(x.responseText).v); } catch (e) { V = ''; } document.write('<link rel="stylesheet" href="style.css' + V + '">'); })();</script>
 </head>
 <body>
   <div id="game"></div>
   <noscript>COLD IMPACT nécessite JavaScript et WebGL.</noscript>
 
   <!-- Moteur 3D (three.js r149, copie locale : fonctionne hors ligne et en double-cliquant sur index.html) -->
-  <script src="assets/lib/three.min.js"></script>
-
-  <!-- Paramètres et utilitaires -->
-  <script src="src/config.js"></script>
-  <script src="src/core/util.js"></script>
-  <script src="src/ui/font.js"></script>
-
-  <!-- Rendu -->
-  <script src="src/rendering/curve.js"></script>
-  <script src="src/rendering/textures.js"></script>
-  <script src="src/rendering/postfx.js"></script>
-  <script src="src/rendering/particles.js"></script>
-  <script src="src/rendering/trails.js"></script>
-  <script src="src/rendering/shadow.js"></script>
-  <script src="src/rendering/horizon.js"></script>
-
-  <!-- Physique, monde, entités -->
-  <script src="src/physics/collision.js"></script>
-  <script src="src/world/builder.js"></script>
-  <script src="src/entities/skins.js"></script>
-  <script src="src/entities/skins2.js"></script>
-  <script src="src/entities/models.js"></script>
-  <script src="src/entities/models_gen.js"></script>
-  <script src="src/entities/models_boss.js"></script>
-  <script src="src/entities/models_enemy.js"></script>
-  <script src="src/entities/models_enemy2.js"></script>
-  <script src="src/entities/models_enemy3.js"></script>
-  <script src="src/entities/targets.js"></script>
-  <script src="src/entities/rocket.js"></script>
-  <script src="src/entities/pad.js"></script>
-  <script src="src/entities/drone.js"></script>
-
-  <!-- Systèmes -->
-  <script src="src/systems/camera.js"></script>
-  <script src="src/systems/style.js"></script>
-  <script src="src/systems/progress.js"></script>
-  <script src="src/systems/meta.js"></script>
-  <script src="src/audio/audio.js"></script>
-  <script src="src/ui/hud.js"></script>
-  <script src="src/ui/hud_simple.js"></script>
-  <script src="src/ui/menu.js"></script>
-  <script src="src/ui/home.js"></script>
-  <script src="src/ui/shop.js"></script>
-  <script src="src/ui/screens.js"></script>
-  <script src="src/ui/levelmap.js"></script>
-  <script src="src/ui/meta_ui.js"></script>
-  <script src="src/ui/meta_ui2.js"></script>
-  <script src="src/ui/tutorial.js"></script>
-  <script src="src/ui/hangar.js"></script>
-  <script src="src/ui/pro.js"></script>
-  <script src="src/ui/ads.js"></script>
-  <script src="src/input/input.js"></script>
-  <script src="src/input/haptics.js"></script>
-  <script src="src/input/touch.js"></script>
-
-  <!-- Niveaux (reconstruits d'après les 7 séquences de la vidéo) -->
-  <script src="src/world/levels/level1_city.js"></script>
-  <script src="src/world/levels/level2_brick.js"></script>
-  <script src="src/world/levels/level3_canyon.js"></script>
-  <script src="src/world/levels/level4_cave.js"></script>
-  <script src="src/world/levels/level5_woods.js"></script>
-  <script src="src/world/levels/level6_construction.js"></script>
-  <script src="src/world/levels/level7_night.js"></script>
-  <script src="src/world/levels/level8_trench.js"></script>
-  <script src="src/world/levels/level9_nightcanyon.js"></script>
-  <!-- Générateur de missions (v032) : graine → plan (donnée pure) → validation → construction -->
-  <script src="src/world/gen/core.js"></script>
-  <script src="src/world/gen/profiles.js"></script>
-  <script src="src/world/gen/biomes.js"></script>
-  <script src="src/world/gen/layout.js"></script>
-  <script src="src/world/gen/templates.js"></script>
-  <script src="src/world/gen/mission.js"></script>
-  <script src="src/world/gen/features.js"></script>
-  <script src="src/world/gen/nav.js"></script>
-  <script src="src/world/gen/validate.js"></script>
-  <script src="src/world/gen/generator.js"></script>
-  <script src="src/world/gen/kit.js"></script>
-  <script src="src/world/gen/debugdraw.js"></script>
-  <script src="src/world/levels/generated.js"></script>
-  <!-- Mode CLASSIQUE (v033) : couloir infini construit par tronçons -->
-  <script src="src/world/collect.js"></script>
-  <script src="src/entities/smash.js"></script>
-  <script src="src/world/scenery.js"></script>
-  <script src="src/world/pieces.js"></script>
-  <script src="src/world/life.js"></script>
-  <script src="src/world/zones.js"></script>
-  <script src="src/world/city_pit.js"></script>
-  <script src="src/world/zones_a.js"></script>
-  <script src="src/world/zones_b.js"></script>
-  <script src="src/world/zones_c.js"></script>
-  <script src="src/world/zones_d.js"></script>
-  <script src="src/world/zones_life.js"></script>
-  <script src="src/world/zones_turns.js"></script>
-  <script src="src/world/zones_e.js"></script>
-  <script src="src/world/zones_f.js"></script>
-  <script src="src/world/zones_g.js"></script>
-  <script src="src/world/zones_relief.js"></script>
-  <script src="src/world/backdrop.js"></script>
-  <script src="src/world/tight.js"></script>
-  <script src="src/world/zones_chaos.js"></script>
-  <script src="src/world/look.js"></script>
-  <script src="src/world/roster.js"></script>
-  <script src="src/world/levelmode.js"></script>
-  <script src="src/world/endless.js"></script>
-
-  <!-- Boucle de jeu -->
-  <script src="src/core/quality.js"></script>
-  <script src="src/core/game.js"></script>
-  <script src="game.js"></script>
+  <!-- v114 : chargement SANS cache périmé. version.json (relu à chaque ouverture, jamais en cache) donne un numéro ; chaque fichier du jeu est demandé avec ce numéro,
+       donc dès qu'une nouvelle version est publiée, le navigateur télécharge les fichiers modifiés au lieu de réutiliser les anciens. Hors ligne / dans l'appli Android : pas de numéro, comportement d'avant. -->
+  <script>
+  (function () {
+    var V = '';
+    try { var x = new XMLHttpRequest(); x.open('GET', 'version.json?t=' + Date.now(), false); x.send(); if (x.status === 200) V = '?v=' + encodeURIComponent(JSON.parse(x.responseText).v); } catch (e) { V = ''; }
+    window.CC_VERSION = V;
+    var L = [
+      "assets/lib/three.min.js",
+      "src/config.js",
+      "src/core/util.js",
+      "src/ui/font.js",
+      "src/rendering/curve.js",
+      "src/rendering/textures.js",
+      "src/rendering/postfx.js",
+      "src/rendering/particles.js",
+      "src/rendering/trails.js",
+      "src/rendering/shadow.js",
+      "src/rendering/horizon.js",
+      "src/physics/collision.js",
+      "src/world/builder.js",
+      "src/entities/skins.js",
+      "src/entities/skins2.js",
+      "src/entities/models.js",
+      "src/entities/models_gen.js",
+      "src/entities/models_boss.js",
+      "src/entities/models_enemy.js",
+      "src/entities/models_enemy2.js",
+      "src/entities/models_enemy3.js",
+      "src/entities/targets.js",
+      "src/entities/rocket.js",
+      "src/entities/pad.js",
+      "src/entities/drone.js",
+      "src/systems/camera.js",
+      "src/systems/style.js",
+      "src/systems/progress.js",
+      "src/systems/meta.js",
+      "src/audio/audio.js",
+      "src/ui/hud.js",
+      "src/ui/hud_simple.js",
+      "src/ui/menu.js",
+      "src/ui/home.js",
+      "src/ui/shop.js",
+      "src/ui/screens.js",
+      "src/ui/levelmap.js",
+      "src/ui/meta_ui.js",
+      "src/ui/meta_ui2.js",
+      "src/ui/tutorial.js",
+      "src/ui/hangar.js",
+      "src/ui/pro.js",
+      "src/ui/ads.js",
+      "src/input/input.js",
+      "src/input/haptics.js",
+      "src/input/touch.js",
+      "src/world/levels/level1_city.js",
+      "src/world/levels/level2_brick.js",
+      "src/world/levels/level3_canyon.js",
+      "src/world/levels/level4_cave.js",
+      "src/world/levels/level5_woods.js",
+      "src/world/levels/level6_construction.js",
+      "src/world/levels/level7_night.js",
+      "src/world/levels/level8_trench.js",
+      "src/world/levels/level9_nightcanyon.js",
+      "src/world/gen/core.js",
+      "src/world/gen/profiles.js",
+      "src/world/gen/biomes.js",
+      "src/world/gen/layout.js",
+      "src/world/gen/templates.js",
+      "src/world/gen/mission.js",
+      "src/world/gen/features.js",
+      "src/world/gen/nav.js",
+      "src/world/gen/validate.js",
+      "src/world/gen/generator.js",
+      "src/world/gen/kit.js",
+      "src/world/gen/debugdraw.js",
+      "src/world/levels/generated.js",
+      "src/world/collect.js",
+      "src/entities/smash.js",
+      "src/world/scenery.js",
+      "src/world/pieces.js",
+      "src/world/life.js",
+      "src/world/zones.js",
+      "src/world/city_pit.js",
+      "src/world/zones_a.js",
+      "src/world/zones_b.js",
+      "src/world/zones_c.js",
+      "src/world/zones_d.js",
+      "src/world/zones_life.js",
+      "src/world/zones_turns.js",
+      "src/world/zones_e.js",
+      "src/world/zones_f.js",
+      "src/world/zones_g.js",
+      "src/world/zones_relief.js",
+      "src/world/backdrop.js",
+      "src/world/tight.js",
+      "src/world/zones_chaos.js",
+      "src/world/look.js",
+      "src/world/roster.js",
+      "src/world/levelmode.js",
+      "src/world/endless.js",
+      "src/core/quality.js",
+      "src/core/game.js",
+      "game.js"
+    ];
+    for (var i = 0; i < L.length; i++) document.write('<scr' + 'ipt src="' + L[i] + V + '"></scr' + 'ipt>');
+  })();
+  </script>
 </body>
 </html>

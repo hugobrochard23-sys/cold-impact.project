@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>COLD IMPACT</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game"></div>
+  <noscript>COLD IMPACT nécessite JavaScript et WebGL.</noscript>
+
+  <!-- Moteur 3D (three.js r149, copie locale : fonctionne hors ligne et en double-cliquant sur index.html) -->
+  <script src="assets/lib/three.min.js"></script>
+
+  <!-- Paramètres et utilitaires -->
+  <script src="src/config.js"></script>
+  <script src="src/core/util.js"></script>
+  <script src="src/ui/font.js"></script>
+
+  <!-- Rendu -->
+  <script src="src/rendering/curve.js"></script>
+  <script src="src/rendering/textures.js"></script>
+  <script src="src/rendering/postfx.js"></script>
+  <script src="src/rendering/particles.js"></script>
+  <script src="src/rendering/trails.js"></script>
+  <script src="src/rendering/shadow.js"></script>
+  <script src="src/rendering/horizon.js"></script>
+
+  <!-- Physique, monde, entités -->
+  <script src="src/physics/collision.js"></script>
+  <script src="src/world/builder.js"></script>
+  <script src="src/entities/skins.js"></script>
+  <script src="src/entities/skins2.js"></script>
+  <script src="src/entities/models.js"></script>
+  <script src="src/entities/models_gen.js"></script>
+  <script src="src/entities/models_boss.js"></script>
+  <script src="src/entities/models_enemy.js"></script>
+  <script src="src/entities/models_enemy2.js"></script>
+  <script src="src/entities/models_enemy3.js"></script>
+  <script src="src/entities/targets.js"></script>
+  <script src="src/entities/rocket.js"></script>
+  <script src="src/entities/pad.js"></script>
+  <script src="src/entities/drone.js"></script>
+
+  <!-- Systèmes -->
+  <script src="src/systems/camera.js"></script>
+  <script src="src/systems/style.js"></script>
+  <script src="src/systems/progress.js"></script>
+  <script src="src/systems/meta.js"></script>
+  <script src="src/audio/audio.js"></script>
+  <script src="src/ui/hud.js"></script>
+  <script src="src/ui/hud_simple.js"></script>
+  <script src="src/ui/menu.js"></script>
+  <script src="src/ui/home.js"></script>
+  <script src="src/ui/shop.js"></script>
+  <script src="src/ui/screens.js"></script>
+  <script src="src/ui/levelmap.js"></script>
+  <script src="src/ui/meta_ui.js"></script>
+  <script src="src/ui/meta_ui2.js"></script>
+  <script src="src/ui/tutorial.js"></script>
+  <script src="src/ui/hangar.js"></script>
+  <script src="src/ui/pro.js"></script>
+  <script src="src/ui/ads.js"></script>
+  <script src="src/input/input.js"></script>
+  <script src="src/input/haptics.js"></script>
+  <script src="src/input/touch.js"></script>
+
+  <!-- Niveaux (reconstruits d'après les 7 séquences de la vidéo) -->
+  <script src="src/world/levels/level1_city.js"></script>
+  <script src="src/world/levels/level2_brick.js"></script>
+  <script src="src/world/levels/level3_canyon.js"></script>
+  <script src="src/world/levels/level4_cave.js"></script>
+  <script src="src/world/levels/level5_woods.js"></script>
+  <script src="src/world/levels/level6_construction.js"></script>
+  <script src="src/world/levels/level7_night.js"></script>
+  <script src="src/world/levels/level8_trench.js"></script>
+  <script src="src/world/levels/level9_nightcanyon.js"></script>
+  <!-- Générateur de missions (v032) : graine → plan (donnée pure) → validation → construction -->
+  <script src="src/world/gen/core.js"></script>
+  <script src="src/world/gen/profiles.js"></script>
+  <script src="src/world/gen/biomes.js"></script>
+  <script src="src/world/gen/layout.js"></script>
+  <script src="src/world/gen/templates.js"></script>
+  <script src="src/world/gen/mission.js"></script>
+  <script src="src/world/gen/features.js"></script>
+  <script src="src/world/gen/nav.js"></script>
+  <script src="src/world/gen/validate.js"></script>
+  <script src="src/world/gen/generator.js"></script>
+  <script src="src/world/gen/kit.js"></script>
+  <script src="src/world/gen/debugdraw.js"></script>
+  <script src="src/world/levels/generated.js"></script>
+  <!-- Mode CLASSIQUE (v033) : couloir infini construit par tronçons -->
+  <script src="src/world/collect.js"></script>
+  <script src="src/entities/smash.js"></script>
+  <script src="src/world/scenery.js"></script>
+  <script src="src/world/pieces.js"></script>
+  <script src="src/world/life.js"></script>
+  <script src="src/world/zones.js"></script>
+  <script src="src/world/city_pit.js"></script>
+  <script src="src/world/zones_a.js"></script>
+  <script src="src/world/zones_b.js"></script>
+  <script src="src/world/zones_c.js"></script>
+  <script src="src/world/zones_d.js"></script>
+  <script src="src/world/zones_life.js"></script>
+  <script src="src/world/zones_turns.js"></script>
+  <script src="src/world/zones_e.js"></script>
+  <script src="src/world/zones_f.js"></script>
+  <script src="src/world/zones_g.js"></script>
+  <script src="src/world/zones_relief.js"></script>
+  <script src="src/world/backdrop.js"></script>
+  <script src="src/world/tight.js"></script>
+  <script src="src/world/zones_chaos.js"></script>
+  <script src="src/world/look.js"></script>
+  <script src="src/world/roster.js"></script>
+  <script src="src/world/levelmode.js"></script>
+  <script src="src/world/endless.js"></script>
+
+  <!-- Boucle de jeu -->
+  <script src="src/core/quality.js"></script>
+  <script src="src/core/game.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
