@@ -146,6 +146,7 @@
       this.save.owned.stock = true;
       if (!this.save.owned[this.save.equipped]) this.save.equipped = 'stock';
       this.settings = Object.assign({ sensitivity: CC.CONFIG.input.sensitivity, invertY: false, music: CC.CONFIG.audio.music, sfx: CC.CONFIG.audio.sfx, postfx: true, graphics: 'auto' }, (s && s.settings) || {});
+      try { if (localStorage.getItem('coldimpact.terms') === '1') this.settings.termsOk = true; } catch (e) { /* ignoré */ }
       if (this.settings.sensVer !== 2) { delete this.settings.touchSens; this.settings.sensVer = 2; }   // v111 : sensibilité remise à la valeur de base (v033) pour tout le monde
       if (this.testMode) this.settings.postfx = this.params.get('postfx') !== '0';
     }
@@ -325,7 +326,7 @@
       if (CC.Look) CC.Look.set(ld ? CC.Look.forLevel(ld) : null);   // v081 : look du niveau (teinte, matériaux, ambiance)
       this.assistFuel = ld ? 3 * Math.min(5, ((this.save.lvl && this.save.lvl.tries && this.save.lvl.tries[ld.n]) || 0)) : 0;   // coup de pouce après plusieurs échecs
       if (ld) seed = ld.seed;
-      const ordP = this.params.get('order'), L = CC.Endless.level(seed, { zones: this.testMode ? null : this.progress.unlockedWorlds(), order: ld ? ld.order : (ordP ? ordP.split(',') : null), env: this.params.get('env') || null, levelLen: ld && ld.len, difK: ld && ld.difK, bossHp: ld && ld.hp, bossType: ld && ld.boss, padStyle: ld && ld.n, theme: ld && ld.theme, tutD: ld && ld.tutD, mids: ld && ld.mids, bossTint: ld && ld.bossTint, bossVar: ld && ld.bossVar, event: ld && ld.event, ease: ld && ld.ease, nightOk: ld && ld.nightOk, dens: ld && ld.dens });
+      const ordP = this.params.get('order'), L = CC.Endless.level(seed, { zones: this.testMode ? null : this.progress.unlockedWorlds(), order: ld ? ld.order : (ordP ? ordP.split(',') : null), env: this.params.get('env') || (ld && ld.env) || null, levelLen: ld && ld.len, difK: ld && ld.difK, bossHp: ld && ld.hp, bossType: ld && ld.boss, padStyle: ld && ld.n, theme: ld && ld.theme, tutD: ld && ld.tutD, tutRel: ld && ld.tutRel, scenes: ld && ld.scenes, bossWall: ld && ld.bossWall, mids: ld && ld.mids, bossTint: ld && ld.bossTint, bossVar: ld && ld.bossVar, event: ld && ld.event, ease: ld && ld.ease, nightOk: ld && ld.nightOk, dens: ld && ld.dens });
       this.loadLevelFrom(L, -1);
       this.endlessRun = new CC.Endless.Run(this, L);
       this.startGhost(ld);   // v083 : après le chargement (qui efface les anciens objets)
@@ -365,7 +366,7 @@
       this.pendingHome = null;
       this.startEndless(null, { home: true });
       this.fadeIn = 0.45;
-      if (ph.opts.autoLaunch) this.pad.queued = true;
+      if (ph.opts.autoLaunch) { this.pad.queued = true; this.cine = true; }   // v112 : pas de menu : le lanceur se prépare et part tout seul
     }
 
     // v034 : le toucher sur le lanceur → charge → allumage (Game.update, état LAUNCH)
@@ -389,7 +390,7 @@
       pad.ignite(); this.audio.play('padIgnite');
       this.rig.startHandoff(true); this.rig.startFlight();
       this.padMode = false;
-      this.state = 'FLIGHT'; this.flightTime = 0; this.stallT = 0; this.boostK = 0;
+      this.state = 'FLIGHT'; this.flightTime = 0; this.stallT = 0; this.boostK = 0; this.cine = false;
       { const ln = this.endlessRun && this.endlessRun.T.levelLen && this.levelRun && this.levelRun.n; if (ln && ln <= 2 && !this.testMode) rk.shieldT = 9999; }   // v093 : niveaux 1-2 : impossible de perdre contre un mur (bouclier permanent)
       if (CC.Touch && CC.Touch.active) { this.settings.tutorialFlights = (this.settings.tutorialFlights || 0) + 1; const T = this.input.touch; if (T) T.reboostUntil = 0; }   // le doigt posé juste après le départ = boost tout de suite
       this.telemetry.event('fire', { runTime: this.runTime, pad: true });
@@ -435,7 +436,7 @@
       if (this.levelRun) {   // v075 : résultat du niveau (victoire = coffre + niveau suivant ; échec = % parcouru, un coup de pouce après plusieurs essais)
         const lv = this.levelRun, L = (S.lvl = S.lvl || { cur: 1, max: 1, done: {}, tries: {}, mode: 'level' }); L.tries = L.tries || {}; L.done = L.done || {};
         const win = !!this.levelWin; this.results.level = { n: lv.n, len: lv.len, win, pct: win ? 1 : Math.min(0.99, run.dist / lv.len), chest: win ? (L.done[lv.n] ? Math.max(4, Math.round(lv.chest * 0.4)) : lv.chest) : 0, boss: !!(run.dist > lv.len - 80), replay: !!L.done[lv.n] };   // v086 : un niveau déjà fini rapporte 40 % du coffre
-        { const T = run.T, ratio = Math.min(1, (run.kills || 0) / ((T.spawned || 0) + 1)), M = this.meta, stars = M.starsFor(win, ratio), lr = this.results.level;
+        { const T = run.T, ratio = Math.min(1, (run.kills || 0) / ((T.spawned || 0) + 1)), M = this.meta, stars = win && lv.n <= 3 ? 3 : M.starsFor(win, ratio), lr = this.results.level;   // v112 : niveaux 1-3 : trois étoiles d'office
           lr.stars = stars; lr.ratio = ratio; lr.newStars = win ? M.setStars(lv.n, stars) : 0;
           lr.passXp = M.addPassXp(win ? 60 + 25 * stars : 8 + Math.round(lr.pct * 20));
           if (win) M.event('wins', 1);
@@ -632,16 +633,9 @@
 
     // v083 : FANTOME — le meilleur essai du niveau (le plus loin, ou le plus rapide s'il est fini) rejoue en transparence ; position toutes les 0,25 s
     clearGhost() { if (this.ghostMesh) { this.scene.remove(this.ghostMesh); this.ghostMesh = null; } }
-    startGhost(ld) {
-      this.clearGhost(); this.ghostRec = ld ? { t: 0, next: 0, pts: [] } : null; this.winTime = 0;
-      const gh = ld && this.meta.ghost(ld.n); this.ghostPlay = gh && gh.pts && gh.pts.length > 9 ? gh.pts : null; if (!this.ghostPlay) return;
-      const g = new THREE.Group(), mat = new THREE.MeshBasicMaterial({ color: '#9fe8ff', transparent: true, opacity: 0.38, depthWrite: false });
-      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8), mat); body.rotation.x = Math.PI / 2; g.add(body);
-      const nose = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.35, 8), mat); nose.rotation.x = -Math.PI / 2; nose.position.z = -0.55; g.add(nose);
-      for (let i = 0; i < 4; i++) { const f = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.2, 0.2), mat); f.position.z = 0.32; f.rotation.z = i * Math.PI / 2 + Math.PI / 4; f.position.x = Math.cos(f.rotation.z) * 0.12; f.position.y = Math.sin(f.rotation.z) * 0.12; g.add(f); }
-      g.scale.setScalar(1.5); g.visible = false; this.scene.add(g); this.ghostMesh = g;
-    }
-    updateGhost(dt) {
+    startGhost() { this.clearGhost(); this.ghostRec = null; this.ghostPlay = null; this.winTime = 0; }   // v112 : plus de fantôme
+    updateGhost(dt) { return;
+
       const R = this.ghostRec, rk = this.rocket; if (!R || !this.levelRun) return;
       if (this.state === 'FLIGHT' && rk.active) {
         R.t += dt; if (R.t >= R.next) { R.next += 0.25; R.pts.push(+rk.pos.x.toFixed(1), +rk.pos.y.toFixed(1), +rk.pos.z.toFixed(1)); }
@@ -730,7 +724,14 @@
       (this.killPops = this.killPops || []).push({ p: c, t0: performance.now(), txt: t.hp + ' / ' + t.hpMax });
     }
     // v111 : niveaux d'entraînement (1-2) : détruire la ou les cibles = VICTOIRE tout de suite (grande explosion, arrêt sur image, coffre), sans arène
-    tutWin(t, c, rocket) { const ld = this.levelRun, run = this.endlessRun; if (ld && ld.tutD && !this.levelWin && run && run.stats.targets >= ld.tutD.length) this.onBossDead(t, c, rocket); }
+    tutWin(t, c, rocket) { const ld = this.levelRun, run = this.endlessRun; if (ld && ld.tutD && !this.levelWin && run && run.stats.targets >= (ld.winKills || ld.tutD.length)) this.onBossDead(t, c, rocket); }
+    // v112 : le boss fait exploser le mur de briques qui le cachait (secousse, éclats, flash)
+    // le boss reste caché tant que son mur n'est pas tombé
+    bossHide() { if (!(this.levelRun && this.levelRun.bossWall)) return; const w = this.entities.find((e) => e.o && e.o.bossWall); const hide = !!w && !w.broken; for (const t of this.targets) if (t.boss && t.object) t.object.visible = !hide; }
+    breakBossWall() {
+      const w = this.entities.find((e) => e.o && e.o.bossWall && !e.broken); if (!w) return; w.broken = true;
+      setTimeout(() => { try { w.breakAll(this, new V(0, 4, -26), 26); this.rig.shake = Math.max(this.rig.shake || 0, 1.6); this.flash = Math.max(this.flash || 0, 0.35); this.flashColor = '#ffd9a0'; this.hitStop = 0.1; this.hitScale = 0.2; } catch (e) { /* ignoré */ } }, 380);
+    }
     onBossDead(t, c, rocket) {
       this.meta.event('boss', 1); this.winTime = this.ghostRec ? this.ghostRec.t : 0;
       this.levelWin = true; this.hitStop = 1.4; this.hitScale = 0.2; this.chromaBurst = 0.03; this.flash = 0.5; this.flashColor = '#ffffff';
@@ -939,23 +940,7 @@
     // v110 : DEBUTANTS — niveaux 1 à 10 : boost permanent et gratuit ; niveaux 1 à 3 : AIDE DE VISEE cachée (la fusée est attirée vers la cible devant elle, de moins en moins)
     autoBoost() { const n = this.levelRun && this.endlessRun && this.endlessRun.T.levelLen && this.levelRun.n; return !!(n && n <= 10 && !this.settings.manualBoost); }
     autoCap() { const n = (this.levelRun && this.levelRun.n) || 1; return n <= 3 ? [30, 34, 38][n - 1] : Math.min(62, 38 + (n - 3) * 3.4); }
-    assistK() { const n = this.levelRun && this.endlessRun && this.endlessRun.T.levelLen && this.levelRun.n; return n && n <= 3 && !this.settings.noAssist ? [1, 0.6, 0.35][n - 1] : 0; }
-    assistAim(dt) {
-      const k = this.assistK(); if (!k || this.state !== 'FLIGHT' || !this.rocket.active) return;
-      const A = this._as || (this._as = { f: new V(), d: new V(), r: new V(), q: new THREE.Quaternion(), q2: new THREE.Quaternion(), id: new THREE.Quaternion() }), rk = this.rocket;
-      A.f.set(0, 0, -1).applyQuaternion(this.input.aimQ);
-      let best = null, bs = 1e9, bd = 1e9;
-      for (const t of this.targets) { if (!t.alive || t.guard || t.boss || !t.object) continue; A.d.subVectors(t.object.position, rk.pos); const d = A.d.length(); if (d < 12 || d > 420) continue; const ang = A.f.angleTo(A.d.divideScalar(d)); if (ang < 0.8 && ang + d * 0.0006 < bs) { bs = ang + d * 0.0006; best = t; bd = d; } }
-      if (best) {   // 1. la fusée est attirée vers la cible devant elle
-        A.d.subVectors(best.object.position, rk.pos).normalize(); const ang = A.f.angleTo(A.d);
-        if (ang > 0.008) { const step = Math.min(ang, k * (0.8 + ang * 1.4) * dt); A.q.setFromUnitVectors(A.f, A.d); A.q2.copy(A.id).slerp(A.q, step / ang); this.input.aimQ.premultiply(A.q2).normalize(); A.f.set(0, 0, -1).applyQuaternion(this.input.aimQ); }
-      }
-      // 2. anti-crash : près du sol, le nez est relevé tout seul (sauf pour plonger sur une cible toute proche)
-      const T = this.endlessRun.T, h = rk.pos.y - T.base(Math.max(0, -rk.pos.z));
-      if (h < 10 && A.f.y < 0.16 && !(best && bd < 60)) { A.r.crossVectors(A.f, A.up || (A.up = new V(0, 1, 0))).normalize(); A.q.setFromAxisAngle(A.r, Math.min(0.16 - A.f.y, 1.9 * k * ((10 - h) / 10) * dt + 0.002)); this.input.aimQ.premultiply(A.q).normalize(); }
-    }
     update(dt) {
-      this.assistAim(dt);
       if (this.simpleCtl()) this.applySimpleAim(dt);   // v107 : COMMANDES SIMPLES — la fusée suit le couloir toute seule, le doigt ne fait que la DEPLACER dans le couloir
       const inp = (this.useAutopilot && this.autopilot && this.state !== 'MENU') ? this.autopilot.poll(dt) : this.input.poll(dt);
       if (inp.aimQ) this.rig.setAimQ(inp.aimQ);
@@ -1046,7 +1031,7 @@
       if (this.state === 'RESULTS' && this.results && this.results.endless) this.results.t += dt;   // v034 : chronologie de l'écran de récompenses
       if (this.endlessRun && this.state !== 'MENU' && this.state !== 'RESULTS') this.endlessRun.update(dt);   // v033 : tronçons, paliers, zones
       for (const e of this.entities) if (e.update) e.update(dt, this);
-      this.updatePickups(dt); this.updateGhost(dt); this.bossGuard(dt);
+      this.updatePickups(dt); this.updateGhost(dt); this.bossGuard(dt); this.bossHide();
       for (const m of this.missiles) m.update(dt, this);
       this.missiles = this.missiles.filter((m) => { if (!m.alive) this.scene.remove(m.object); return m.alive; });
       if (this.centerMsgT > 0 && (this.centerMsgT -= dt) <= 0) { this.centerMsg = null; this.centerMsgT = 0; }   // message passager (graine de la carte générée)
@@ -1224,7 +1209,7 @@
       this.watchVisibility();
       this.toMenu();
       // v091 : tout premier lancement (ou après RÉINITIALISER) : on est jeté directement dans le niveau 1, sans menu — le tutoriel commence aussitôt
-      if (!((this.settings.tutStep || 0) >= 4) && ((this.save.lvl && this.save.lvl.max) || 1) <= 1 && this.pad && (this.settings.termsOk || this.testMode)) this.pad.queued = true;
+      if (!((this.settings.tutStep || 0) >= 4) && ((this.save.lvl && this.save.lvl.max) || 1) <= 1 && this.pad && (this.settings.termsOk || this.testMode)) { this.pad.queued = true; this.cine = true; }
       if (!this.settings.termsOk && !this.testMode) this.ui.overlay = 'terms';   // v094 : conditions d'utilisation à la première ouverture
       // v032 : lien partagé ?mission=<graine>&diff=<difficulté> → écran du générateur avec cette graine
       const ms = CC.Gen.parseSeed(this.params.get('mission'));

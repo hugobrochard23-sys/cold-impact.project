@@ -42,6 +42,14 @@
       game.audio.play('brick', c0); game.audio.play('boomSmall', c0);
       game.onSmash(c0, n);
     }
+    // v112 : le mur du boss s'écroule d'un coup (quelques gerbes d'éclats seulement, pour rester fluide)
+    breakAll(game, vel, fxN) {
+      const step = Math.max(1, Math.floor(this.centers.length / (fxN || 24))); let k = 0, n = 0;
+      this.centers.forEach((c, j) => { if (!this.alive[j]) return; this.alive[j] = false; this.colliders[j].active = false; this.mesh.setMatrixAt(j, _zero); if (k++ % step === 0) game.effects.shatter(c, this.size, vel, this.kind); n += this.reward; });
+      this.mesh.instanceMatrix.needsUpdate = true;
+      const mid = this.centers[Math.floor(this.centers.length / 2)];
+      game.audio.play('brick', mid); game.audio.play('boom', mid); game.onSmash(mid, Math.min(n, 40));
+    }
     reset() { this.alive.fill(true); this.centers.forEach((c, i) => { _m.compose(c, this.quat, _s.set(1, 1, 1)); this.mesh.setMatrixAt(i, _m); this.colliders[i].active = true; }); this.mesh.instanceMatrix.needsUpdate = true; }
   }
 

@@ -111,6 +111,6 @@
     const bw = W * 0.8, bh = HH * 0.1, bx = (W - bw) / 2, by = Y(0.82), on = inRect(ui, bx, by, bw, bh);
     greenBtn(ctx, bx, by, bw, bh, on); txt(ctx, 'ACCEPTER ET JOUER', W / 2, by + bh * 0.32, bw - 16, 2.4, DARK, 'center');
     txt(ctx, 'EN JOUANT TU ACCEPTES CES CONDITIONS', W / 2, by + bh + HH * 0.02, W * 0.9, 1, DIM, 'center');
-    hit(ui, bx, by, bw, bh, () => { game.settings.termsOk = true; game.writeSave(); ui.overlay = null; game.goHome({ autoLaunch: ((game.save.lvl && game.save.lvl.max) || 1) <= 1 && !((game.settings.tutStep || 0) >= 4) }); });
+    hit(ui, bx, by, bw, bh, () => { game.settings.termsOk = true; try { localStorage.setItem('coldimpact.terms', '1'); } catch (e) { /* ignoré */ } game.writeSave(); ui.overlay = null; game.goHome({ autoLaunch: ((game.save.lvl && game.save.lvl.max) || 1) <= 1 && !((game.settings.tutStep || 0) >= 4) }); });
   };
 })();

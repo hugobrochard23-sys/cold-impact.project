@@ -217,9 +217,10 @@
       names.splice(Math.min(1, names.length), 0, ...sp);
     }
     if (zi === 0 && def.notFirst) { const k = names.findIndex((n) => def.notFirst.indexOf(n) < 0); if (def.notFirst.indexOf(names[0]) >= 0 && k > 0) { const t = names[0]; names[0] = names[k]; names[k] = t; } }   // v056 : pas de scène en altitude juste au départ
+    if (zi === 0 && T.forceScenes) { names.length = 0; for (const n of T.forceScenes) if (def.scenes[n]) names.push(n); }   // v112 : niveaux 1-3 : parcours de scènes choisi à la main
     const total = end - padOut - (start + padIn);
     const sigAt = def.signature ? Math.max(1, Math.round(names.length * r.between([0.45, 0.65]))) : -1;
-    if (sigAt > 0) names.splice(Math.min(sigAt, names.length), 0, def.signature);
+    if (sigAt > 0 && !(zi === 0 && T.forceScenes)) names.splice(Math.min(sigAt, names.length), 0, def.signature);
     let d = start + padIn, i = 0;
     while (d < end - padOut - 70 && i < 40) {
       const nm = names[i % names.length], sd = def.scenes[nm];
@@ -482,6 +483,13 @@
     const dEnd = T.levelLen + 800; if (dEnd > S.d0 && dEnd <= S.d1 + 0.5) S.item(dEnd - 3, () => S.bx(dEnd - 3, 0, 55, 2 * (V0 + 24), 110, 6, wl.mat, wl.tint));
     // v080 : le boss a SON design (CC.BossModels), il entre en vol depuis le fond de l'arène ; en altitude (tour, chute) il vole à la hauteur de la trajectoire
     const dB = T.levelLen + 110, dS = T.levelLen + 380;
+    // v112 : le boss est caché derrière un MUR DE BRIQUES géant qu'il fait voler en éclats en entrant (Game.breakBossWall)
+    const dW = T.levelLen + 348;
+    if (T.bossWall && dW >= S.d0 && dW < S.d1) S.item(dW, () => {
+      const cols = 16, rows = 8, bw = 2 * (V0 + 2) / cols, bh = 8, blocks = [];
+      for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) blocks.push(S.at(dW, -(V0 + 2) + (i + 0.5) * bw, bh / 2 + j * bh));
+      S.b.smashWall({ blocks, size: [bw + 0.05, bh, 3.2], yaw: S.yaw(dW), mat: 'brick', shatter: 'brick', reward: 2, bossWall: true });
+    });
     if (dS >= S.d0 && dS < S.d1) S.item(dS, () => {
       const bt = T.bossType || 'heli', fly = bt === 'heli' || (CC.BossFlying && CC.BossFlying[bt]), yy = fly ? U.clamp(S.lane(dB).y, 24, 270) : 0, face = bt === 'heli' ? 0 : 180;
       const st = S.at(dS, 0, yy), en = S.at(dB, 0, yy);

@@ -47,7 +47,7 @@
     draw(ctx, game, W, H) {
       this.buttons = []; this.hover = -1;
       const col = CC.CONFIG.hud.colors;
-      if (game.state === 'MENU' && !this.overlay && game.padMode) CC.Home.drawHome(this, ctx, game, W, H);   // v034 : accueil = le lanceur
+      if (game.state === 'MENU' && !this.overlay && game.padMode) { if (!game.cine) CC.Home.drawHome(this, ctx, game, W, H); }   // v034 : accueil = le lanceur
       else if (game.state === 'MENU' && !game.padMode) this.drawMenu(ctx, game, W, H);
       else if (game.state === 'LAUNCH') CC.Home.drawHome(this, ctx, game, W, H);                            // s'efface pendant la charge
       else if (game.state === 'RESULTS' && !this.overlay) this.drawResults(ctx, game, W, H);

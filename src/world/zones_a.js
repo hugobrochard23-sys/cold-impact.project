@@ -520,6 +520,13 @@
   { const b1 = city.scenes.city1.build; city.scenes.city1.build = function (S) { b1.call(this, S); endTank(S, PIT + 68); }; }
   { const b2 = city.scenes.escalier.build; city.scenes.escalier.build = function (S) { b2.call(this, S); endTank(S, SH + 66); }; }
 
+  // v112 : VITRAGE = le passage à travers l'immeuble avec une VITRE à casser à l'entrée et une à la sortie (niveau 1)
+  city.scenes.vitrage = Object.assign({}, city.scenes.passage, { build(S) {
+    city.scenes.passage.build.call(this, S);
+    const c = S.mid, L = S.lane(c), hh = S.R * 2 + 4, hw = S.R + 3.5, yc = U.clamp(L.y, hh / 2 + 1.2, 30);
+    S.item(c, () => { for (const k of [-17.4, 17.4]) S.b.glass(S.at(c + k, L.lx, yc), [hw * 2 - 0.4, hh - 0.4, 0.12], [0, S.yaw(c + k), 0]); });
+  } });
+
   // ---------- v067 : MISSIONS MILITAIRES dans la ville — des groupes de cibles à détruire en série (combo) ----------
   const TS = { tank: 2.4, truck: 2.4, sam: 2.4, radar: 2.4, heli: 2.2 };
   function tgt(S, type, dc, lx, y, yawAdd) {

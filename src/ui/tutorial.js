@@ -1,9 +1,9 @@
 /* v111 : TUTORIEL des niveaux 1 et 2 (tactile) — refait pour qu'on comprenne tout de suite quoi faire.
  *  - un OBJECTIF toujours visible en haut (« DETRUIS LA CIBLE », « 1 / 3 ») ;
- *  - un VISEUR rouge sur la cible la plus proche (avec la distance), ou une flèche au bord de l'écran si elle est hors champ ;
+ *  - un VISEUR rouge sur la cible la plus proche (avec la distance, sur un fond sombre : la fusée est blanche), ou une flèche au bord de l'écran si elle est hors champ ;
  *  - tout premier vol : le jeu se met en pause UNE fois, une main montre le geste « glisse pour tourner » ; dès que le joueur glisse, on joue ;
  *  - si le joueur ne bouge plus pendant 3 s : une main glisse vers la cible (aide non bloquante).
- * La fusée est aidée en douce par game.assistAim() (niveaux 1-3). Chaque étape réussie est enregistrée (settings.tutStep). `?tut=1` force le tuto au banc de test. */
+ * Chaque étape réussie est enregistrée (settings.tutStep). `?tut=1` force le tuto au banc de test. */
 (function () {
   const V = THREE.Vector3, _p = new V(), _f = new V(), _d = new V();
   const T = CC.Tutorial = { hold: false, st: null };
@@ -57,7 +57,9 @@
       const pr = r * (1.0 + 0.2 * Math.sin(t * 7)); ctx.strokeStyle = '#ff3b2e'; ctx.lineWidth = r * 0.2;
       ctx.beginPath(); ctx.arc(P.x, P.y, pr, 0, 6.283); ctx.stroke(); ctx.beginPath();
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { ctx.moveTo(P.x + dx * pr * 1.55, P.y + dy * pr * 1.55); ctx.lineTo(P.x + dx * pr * 0.65, P.y + dy * pr * 0.65); } ctx.stroke();
-      const F = CC.Font, px = Math.max(2, Math.round(H * 0.0036)); F.draw(ctx, d + ' M', P.x, P.y + pr * 1.75, px, '#ffffff', { align: 'center', outline: '#101010' });
+      const F = CC.Font, px = Math.max(2, Math.round(H * 0.0036)), str = d + ' M', tw = F.measure(str, px), ph = px * 10, py = Math.max(H * 0.2, P.y - pr * 1.9 - ph);
+      ctx.fillStyle = 'rgba(8,10,16,0.78)'; ctx.fillRect(Math.round(P.x - tw / 2 - px * 3), Math.round(py), Math.round(tw + px * 6), Math.round(ph)); ctx.strokeStyle = '#ff3b2e'; ctx.lineWidth = Math.max(2, px * 0.6); ctx.strokeRect(Math.round(P.x - tw / 2 - px * 3), Math.round(py), Math.round(tw + px * 6), Math.round(ph));
+      F.draw(ctx, str, P.x, py + px * 2, px, '#ffffff', { align: 'center' });
     } else {   // flèche au bord, dans la direction de la cible (derrière → vers le bas)
       let ax = P.nx, ay = -P.ny; if (!inFront) { ax = -ax; ay = -ay; if (Math.abs(ax) < 0.05 && Math.abs(ay) < 0.05) ay = 1; }
       const m = Math.max(Math.abs(ax), Math.abs(ay), 1e-4); ax /= m; ay /= m;
@@ -73,7 +75,7 @@
   T.draw = function (ctx, W, H, g) {
     if (!T.enabled(g) || g.state !== 'FLIGHT') return false;
     const st = state(), t = performance.now() / 1000, r = Math.min(W, H) * 0.075, n = T.level(g), run = g.endlessRun;
-    const tg = nearest(g), total = (g.levelRun.tutD || []).length, done = run ? run.stats.targets : 0;
+    const tg = nearest(g), total = g.levelRun.winKills || 1, done = run ? run.stats.targets : 0;
     if (g.levelWin) { pill(ctx, W, H, 'MISSION ACCOMPLIE !', H * 0.3, 'rgba(70,48,0,0.94)', '#ffd23a', 1.45); return true; }   // victoire : grand message pendant le ralenti
     pill(ctx, W, H, n === 1 ? 'MISSION : DETRUIS LA CIBLE' : 'MISSION : DETRUIS LES ' + total + ' CIBLES  ' + Math.min(done, total) + '/' + total, H * 0.13, 'rgba(60,12,10,0.92)', '#ff5a3a');
     if (T.hold) {   // pause : la main montre le geste

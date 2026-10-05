@@ -27,7 +27,7 @@
     boss:   { text: (n) => 'VAINCS ' + n + ' BOSS', gen: () => 1 },
     stars:  { text: (n) => 'GAGNE ' + n + ' ETOILES', gen: (r) => 3 + Math.floor(r() * 3) },
   };
-  const UNLOCK = { garage: 2, pass: 5, chest: 10 };   // niveau de jeu à atteindre : GARAGE (niveau 2), PASS (niveau 5), COFFRE DES ETOILES (niveau 10)
+  const UNLOCK = { garage: 3, pass: 6, chest: 10 };   // niveau de jeu à atteindre : GARAGE (niveau 2), PASS (niveau 5), COFFRE DES ETOILES (niveau 10)
   const GIFT = [{ t: 'nuts', n: 30 }, { t: 'nuts', n: 50 }, { t: 'crate', n: 1 }, { t: 'nuts', n: 90 }, { t: 'nuts', n: 140 }, { t: 'crate', n: 2 }, { t: 'nuts', n: 300 }];
 
   class Meta {

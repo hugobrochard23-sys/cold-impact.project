@@ -359,5 +359,31 @@
   for (const nm of ALL) forest.scenes[nm] = SC[nm];
   for (const zone of Object.keys(ZK)) { if (zone === 'tour' || zone === 'chute' || zone === 'plaine') continue; const def = Z.defs[zone]; if (def) def.scenes.galerie = ENCL[zone] ? Object.assign({}, SC.galerie, { noDress: true }) : SC.galerie; }
   forest.scenes.galerie = SC.galerie;
+  // v112 : MAISON / GRANGE de la forêt (niveau 2) : un grand bâtiment avec une porte à chaque bout ; l'ennemi est à l'intérieur
+  forest.scenes.maison = { len: [300, 300], build(S) {
+    const c = S.d0 + 150, L = S.lane(c), W0 = 9, BW = 16, HL = 15, HH = 13, wall = 'houseWall', tint = '#cdbb9c', roof = '#9a4a30', pickR = (r, a) => a[Math.floor(r() * a.length)];
+    // forêt de pins de chaque côté (le couloir central reste dégagé)
+    for (const s of [-1, 1]) S.rows(S.d0, S.d1, 11, 0.9, (dc) => S.item(dc, (r) => { const lx = L.lx + s * r.between([17, 52]), h = r.between([9, 18]); S.cyl(dc, lx, 0, 0.55, 3.2, 'col:#5a3f28', undefined, 6, 0.4, false); S.cyl(dc, lx, 2.2, h * 0.34, h * 0.55, 'col:' + pickR(r, ['#2f7a3a', '#2a6e34', '#368a40']), undefined, 8, 0.2, false); S.cyl(dc, lx, 2.2 + h * 0.3, h * 0.25, h * 0.5, 'col:' + pickR(r, ['#388a42', '#2f7a3a']), undefined, 8, 0.2, false); }));
+    S.item(c, (r) => {
+      for (const sg of [-1, 1]) { const dd = c + sg * HL;   // façades avant et arrière : deux pans, un linteau, une grande porte au milieu
+        S.bx(dd, L.lx - (W0 + (BW - W0) / 2), HH / 2, BW - W0, HH, 1.3, wall, tint); S.bx(dd, L.lx + (W0 + (BW - W0) / 2), HH / 2, BW - W0, HH, 1.3, wall, tint);
+        S.bx(dd, L.lx, 8 + (HH - 8) / 2, 2 * W0, HH - 8, 1.3, wall, tint);
+        for (const x of [-W0, W0]) S.bx(dd, L.lx + x, 4, 0.6, 8, 1.6, 'col:#5a3a22', undefined, false);   // montants de la porte (bois)
+        S.bx(dd, L.lx, 8.2, 2 * W0 + 1.2, 0.6, 1.6, 'col:#5a3a22', undefined, false); }
+      for (const sg of [-1, 1]) S.bx(c, L.lx + sg * BW, HH / 2, 1.3, HH, 2 * HL, wall, tint);   // murs latéraux
+      S.bx(c, L.lx, HH + 0.5, 2 * BW + 4, 0.9, 2 * HL + 4, 'roofBrown', roof);   // toit à étages
+      S.bx(c, L.lx, HH + 1.8, 2 * BW - 6, 1.8, 2 * HL + 2, 'roofBrown', roof);
+      S.bx(c, L.lx, HH + 3.1, 8, 1.0, 2 * HL, 'roofBrown', roof);
+      // décor intérieur : bottes de foin, caisses, tonneaux contre les murs
+      for (let i = 0; i < 6; i++) { const sg = i % 2 ? 1 : -1, dd = c + (i - 2.5) * 4.2; S.bx(dd, L.lx + sg * (BW - 3.2), 1.3, 3.6, 2.6, 3.2, 'col:#d9bb5a', undefined, false); }
+      S.bx(c - 7, L.lx + (r() < 0.5 ? -1 : 1) * 7, 0.9, 2.2, 1.8, 2.2, 'planks', '#a8793c', false);
+      // un lampadaire jaune à l'intérieur et l'ennemi, garé au milieu
+      S.bx(c, L.lx, HH - 0.6, 6, 0.3, 0.3, 'emis:#ffe8b0', undefined, false);
+      const RO = CC.Roster, type = pickR(r, ['jeep', 'technical', 'apc']);
+      S.b.target(type, S.at(c, L.lx, 0), S.yaw(c) + (RO ? RO.face(type) : 0), RO ? RO.opts(type, { unarmed: true }) : { unarmed: true });
+      S.gate(c - HL - 25, L.lx, 5); S.gate(c, L.lx, 4);
+    });
+    S.reserve(c, 0, 2 * (BW + 6), 2 * HL + 10);
+  } };
   Z.reliefNames = ALL;
 })();

@@ -183,3 +183,6 @@ Boost permanent et gratuit niveaux 1-10 (`game.autoBoost`, `rocket.freeBoost`), 
 
 ## v111 — tutoriel refait
 Zone PLAINE militaire (niveaux 1-2, sans relief, env plaineDay), vitesse plafonnée (game.autoCap : 30/34/38 m/s puis montée), niveau 1 = UNE cible, niveau 2 = 3 cibles, victoire immédiate (game.tutWin), anti-crash près du sol (assistAim), tutoriel (objectif + viseur + main courte), sensibilité remise à la base (sensVer 2), dev.unlockAll=false (utiliser ?unlockall=1 pour tout ouvrir).
+
+## v112 — les 3 premiers niveaux faits main
+N1 ville (boulevard + VITRAGE : immeuble a traverser, vitres a casser, 1 cible), N2 foret (2 GRANGES, 1 ennemi dedans), N3 canyon (hoodoos, arches, ponts de roche) ; boss derriere un MUR DE BRIQUES qui explose (levels >=3, `game.breakBossWall`). Parcours impose par `ld.scenes` (zones.js planBase `T.forceScenes`), cibles relatives `ld.tutRel`, env impose `ld.env` (plaineDay = jour clair). Plus d aide de visee ni de fantome. 3 etoiles aux niveaux 1-3. Garage ouvert au niveau 3, pass au 6. Depart sans menu (`game.cine`), conditions d utilisation memorisees a part (coldimpact.terms). La zone `plaine` (v111) reste dans le code mais n est plus utilisee.

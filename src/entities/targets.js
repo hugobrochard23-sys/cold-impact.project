@@ -135,7 +135,7 @@ const GOLD = new THREE.MeshPhongMaterial({ color: '#f2c230', specular: '#fff6c8'
       const rk = game.rocket && game.rocket.active ? game.rocket : null;
       if (this.path && game.state === 'FLIGHT' && rk && this.fleeDist < this.pathLen) { this.fleeDist += this.fleeSpeed * dt; this.placeOnPath(); }
       if (this.patrol) { this.patrolDist += this.patrolSpeed * dt; this.placeOnPatrol(); }
-      if (this.arrive && rk && rk.pos.distanceTo(this.base) < 600) { this.flyTo = this.arrive; this.flySpeed = 85; this.arrive = null; game.flash = Math.max(game.flash || 0, 0.28); game.flashColor = '#ff3a2a'; game.rig.shake = Math.max(game.rig.shake, 1.1); game.audio.play('alarm'); if (this.boss) game.audio.play('shipHorn'); }   // v080 : entrée du boss (sirène, secousse, éclat rouge)
+      if (this.arrive && rk && rk.pos.distanceTo(this.base) < (game.levelRun && game.levelRun.bossWall ? 175 : 600)) { if (game.levelRun && game.levelRun.bossWall) game.breakBossWall(); this.flyTo = this.arrive; this.flySpeed = 85; this.arrive = null; game.flash = Math.max(game.flash || 0, 0.28); game.flashColor = '#ff3a2a'; game.rig.shake = Math.max(game.rig.shake, 1.1); game.audio.play('alarm'); if (this.boss) game.audio.play('shipHorn'); }   // v080 : entrée du boss (sirène, secousse, éclat rouge)
       if (this.gen) this.updateGeneric(dt, game, rk);
       else if (this.type === 'heli' || this.type === 'heliCamo') this.updateHeli(dt, game, rk);
       if (!this.gen && (this.type === 'tank' || this.type === 'sam' || this.tl)) this.updateTank(dt, game, rk);
