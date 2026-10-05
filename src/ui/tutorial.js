@@ -20,7 +20,7 @@
   T.update = function (g, dt) {
     const S = g.settings;
     if (!T.enabled(g) || g.state !== 'FLIGHT' || g.paused) { T.hold = false; if (!T.enabled(g)) T.st = null; return false; }
-    const st = T.st || (T.st = { step: S.tutStep || 0, t: 0, ok: 0, got: false });
+    const st = T.st || (T.st = { step: S.tutStep === 1 ? 2 : S.tutStep || 0, t: 0, ok: 0, got: false });
     const rk = g.rocket, tt = g.input.touch;
     const advance = (n) => { st.step = n; st.t = 0; st.ok = 0; st.f0 = null; S.tutStep = n; st.armed = false; st.pressed = false; g.writeSave(); T.hold = false; if (g.audio) g.audio.play('card'); if (CC.Haptics) CC.Haptics.pattern('mission'); };
     if (st.step === 0 || st.step === 1) st.t += dt; else if (st.step === 3) st.t += dt;
@@ -28,7 +28,7 @@
     const down = !!(tt && tt.down);
     if (T.hold) { if (!st.armed) { if (!down) { st.armed = true; st.f0 = aimFwd(g, new V()); } } else if (down) st.pressed = true; }
     if (st.step === 0 && !T.hold && g.flightTime > 0.7) { T.hold = true; st.armed = false; st.pressed = false; }
-    if (st.step === 0 && T.hold && st.armed && st.f0) { if (st.pressed && ((tt.dragPx || 0) > 45 || aimFwd(g, _f).angleTo(st.f0) > 0.3)) advance(1); }
+    if (st.step === 0 && T.hold && st.armed && st.f0) { if (st.pressed && ((tt.dragPx || 0) > 45 || aimFwd(g, _f).angleTo(st.f0) > 0.3)) advance(2); }   // v110 : boost permanent → plus d'étape « maintiens »
     else if (st.step === 1) {
       if (!T.hold && st.t > 1.6) { T.hold = true; st.armed = false; st.pressed = false; }
       if (T.hold) { st.ok = st.armed && tt && tt.thrust ? st.ok + dt : 0; if (st.ok > 0.5) advance(2); }

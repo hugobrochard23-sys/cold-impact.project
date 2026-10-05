@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>COLD IMPACT RUSH</title>
+  <link rel="icon" href="data:,">
+  <style>
+    html, body { margin: 0; height: 100%; background: #0b0e14; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; font-family: 'Trebuchet MS', 'Arial Black', sans-serif; }
+    #c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+    .hud { position: fixed; left: 0; right: 0; text-align: center; color: #fff; text-shadow: 0 3px 0 rgba(0,0,0,.35); pointer-events: none; }
+    #score { top: calc(env(safe-area-inset-top) + 14px); font-size: 14vmin; font-weight: 900; line-height: 1; letter-spacing: 1px; }
+    #combo { top: calc(env(safe-area-inset-top) + 18vmin); font-size: 6vmin; font-weight: 900; color: #ffd23a; opacity: 0; transition: opacity .15s, transform .15s; }
+    #combo.on { opacity: 1; transform: scale(1.15); }
+    #best { top: calc(env(safe-area-inset-top) + 14px); left: 14px; right: auto; text-align: left; font-size: 3.6vmin; font-weight: 800; color: #ffd23a; }
+    #msg { top: 58%; font-size: 6vmin; font-weight: 900; }
+    #msg small { display: block; font-size: 3.6vmin; opacity: .85; margin-top: 1vmin; }
+    #over { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; background: rgba(8,12,20,.55); color: #fff; text-align: center; }
+    #over.on { display: flex; }
+    #over h1 { margin: 0; font-size: 11vmin; color: #ff6a4a; text-shadow: 0 4px 0 rgba(0,0,0,.4); }
+    #over .big { font-size: 16vmin; font-weight: 900; line-height: 1.1; }
+    #over .row { font-size: 4.4vmin; opacity: .9; margin: .6vmin 0; }
+    #btn { margin-top: 4vmin; padding: 2.6vmin 9vmin; font-size: 6.4vmin; font-weight: 900; color: #14181d; background: #ffd23a; border-radius: 3vmin; box-shadow: 0 1.2vmin 0 #b8861a; }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div class="hud" id="best"></div>
+  <div class="hud" id="score">0</div>
+  <div class="hud" id="combo"></div>
+  <div class="hud" id="msg">GLISSE POUR EVITER<small>glisse aussi vers le haut - un glisse = un deplacement</small></div>
+  <div id="over"><h1>BOOM !</h1><div class="big" id="oscore">0</div><div class="row" id="orow"></div><div class="row" id="obest"></div><div id="btn">REJOUER</div></div>
+
+  <script src="assets/lib/three.min.js"></script>
+  <script src="src/config.js"></script>
+  <script src="src/core/util.js"></script>
+  <script src="src/rendering/textures.js"></script>
+  <script src="src/entities/skins.js"></script>
+  <script src="src/entities/skins2.js"></script>
+  <script src="src/entities/models.js"></script>
+  <script src="src/entities/models_gen.js"></script>
+  <script src="src/entities/models_boss.js"></script>
+  <script src="src/entities/models_enemy.js"></script>
+  <script src="src/entities/models_enemy2.js"></script>
+  <script src="src/entities/models_enemy3.js"></script>
+  <script src="src/rendering/particles.js"></script>
+  <script src="src/rendering/horizon.js"></script>
+  <script src="src/audio/audio.js"></script>
+  <script src="src/rush/rush.js"></script>
+</body>
+</html>

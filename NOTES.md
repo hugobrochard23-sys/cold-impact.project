@@ -177,3 +177,6 @@ Boss plus personnalisés par zone, plusieurs zones par niveau, missions du jour,
 
 ## v109 — jeu plus calme et lisible
 - 10 premiers niveaux = parcours choisi (city, forest, port, carriere, canyon, eolien, autoroute, banquise, jungle, city), zones verticales/fermees (tour, chute, sky, usine, metro, mini) seulement a partir du niveau 25. Nuit exceptionnelle (nightOk : n>=16 et n%12==4) : 5 niveaux sur 60 au lieu de 24. Densite d ennemis (dens) et gardes allegees, pas de formations avant le niveau 10, kit STANDARD jusqu au niveau 10. Tuto sans texte (main animee). Quetes/coffre masques avant le niveau 3.
+
+## v110 — étape 1 du tutoriel (débutants)
+Boost permanent et gratuit niveaux 1-10 (`game.autoBoost`, `rocket.freeBoost`), aide de visée cachée niveaux 1-3 (`game.assistAim`, réglage `settings.noAssist`), niveau 1 = éolien (mer ouverte), tuto sans étape boost, jauge de fuel masquée jusqu au niveau 11, explications ponctuelles à partir du niveau 4.

@@ -111,7 +111,7 @@
       game.flyers.length = 0;   // v039 : plus de compteur d'écrous
       // ---- jauge d'essence verticale (bord droit, sous la pastille des éclats)
       const gh = Math.min(H * 0.34, 300), gwid = Math.max(16, pillH * 0.42), gxx = W - gwid - Math.max(14, W * 0.045), gy = top + pillH + H * 0.03;
-      this.drawFuelBar(game, rk, gxx, gy, gwid, gh);
+      if (!(game.autoBoost && game.autoBoost())) this.drawFuelBar(game, rk, gxx, gy, gwid, gh);   // v110 : niveaux 1-10 : boost gratuit → pas de jauge (elle apparaît au niveau 11)
       // ---- une ligne de journal, sous le score
       const fpx = pillH * 0.05, f = game.hudFeed[0], fy = top + pillH + H * 0.012 + Math.max(4, pillH * 0.1) * 3;
       if (broke) { if (Math.floor(performance.now() / 350) % 2 === 0) F.draw(ctx, 'NOUVEAU RECORD', W / 2, fy, fpx * 1.15, '#ffe45a', { align: 'center', outline: '#0a0e16' }); }
@@ -226,8 +226,9 @@
       const rk = game.rocket, run = game.endlessRun, t = game.flightTime || 0, S0 = game.settings;
       let label = null, kind = 'drag';
       // v083 : explications UNE SEULE FOIS, au moment où le joueur voit la chose pour la première fois
-      if (run && !S0.seenCrate && game.pickups && game.pickups.some((q) => q.obj.position.distanceTo(rk.pos) < 140)) { label = 'ATTRAPE LA CAISSE VERTE'; kind = 'fuel'; }
-      else if (run && !S0.seenGold && game.targets.some((q) => q.alive && q.golden && q.obb && q.obb.c.distanceTo(rk.pos) < 260)) { label = 'ENGIN DORE : BONUS'; kind = 'fuel'; }
+      const lvN = (game.levelRun && game.levelRun.n) || 99;   // v110 : les explications ponctuelles n'arrivent qu'à partir du niveau 4
+      if (run && lvN >= 4 && !S0.seenCrate && game.pickups && game.pickups.some((q) => q.obj.position.distanceTo(rk.pos) < 140)) { label = 'ATTRAPE LA CAISSE VERTE'; kind = 'fuel'; }
+      else if (run && lvN >= 4 && !S0.seenGold && game.targets.some((q) => q.alive && q.golden && q.obb && q.obb.c.distanceTo(rk.pos) < 260)) { label = 'ENGIN DORE : BONUS'; kind = 'fuel'; }
       if (!label) return;   // v091 : plus de consignes « glisse / maintiens » après le tutoriel interactif
       if (label) { /* explication ponctuelle déjà choisie */ }
       else if (t < 2.2) { label = 'GLISSE POUR DIRIGER'; kind = 'drag'; }

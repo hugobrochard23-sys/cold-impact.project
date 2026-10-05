@@ -101,7 +101,7 @@
     // OBSERVÉ (séq. 4) : pendant les rétro-fusées la flamme principale est éteinte
     get thrusting() { return this.active && this.ignited && !this.grapple.active && !this.retroActive && (this.freeBoost || (this.throttle && this.fuel > 0)); }
     // v009 : poussée automatique et gratuite pendant les premières secondes après l'allumage
-    get freeBoost() { return this.ignited && this.age < this.cfg.ignitionDelay + this.fbTime; }
+    get freeBoost() { return this.ignited && (this.age < this.cfg.ignitionDelay + this.fbTime || (this.game.autoBoost && this.game.autoBoost())); }   // v110 : niveaux 1-10 : le boost est toujours actif (et gratuit)
 
     /* Un pas physique. input : { aimDir, retro, grappleHeld } */
     step(dt, input) {

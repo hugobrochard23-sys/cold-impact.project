@@ -28,7 +28,7 @@
   const LENV = [1, 0.8, 1.05, 0.9, 0.75, 1, 1.1, 0.9, 0.8, 1.2];       // longueur relative selon la position dans le chapitre
   const HARDV = [0.9, 0.95, 1, 1.05, 0.8, 0.95, 1.05, 1.1, 0.85, 1.2]; // difficulté relative (le 5 et le 9 respirent, le 10 est le boss de chapitre)
   // v109 : les 10 premiers niveaux sont un PARCOURS CHOISI (zones ouvertes, de jour, lisibles) ; les zones verticales ou fermées (tour, chute, base aérienne, usine, métro, mini) ne viennent qu'à partir du niveau 25
-  const EARLY = ['city', 'forest', 'port', 'carriere', 'canyon', 'eolien', 'autoroute', 'banquise', 'jungle', 'city'], HARD = { tour: 1, chute: 1, sky: 1, usine: 1, metro: 1, mini: 1 }, SOFT = ['city', 'forest', 'port', 'canyon', 'jungle', 'banquise', 'carriere', 'autoroute'];
+  const EARLY = ['eolien', 'forest', 'port', 'carriere', 'canyon', 'city', 'autoroute', 'banquise', 'jungle', 'city'], HARD = { tour: 1, chute: 1, sky: 1, usine: 1, metro: 1, mini: 1 }, SOFT = ['city', 'forest', 'port', 'canyon', 'jungle', 'banquise', 'carriere', 'autoroute'];
   const zoneFix = (n, z) => (n <= 10 ? EARLY[n - 1] : n < 25 && HARD[z] ? SOFT[n % SOFT.length] : z);
   const def = (n) => {
     n = Math.max(1, n | 0);

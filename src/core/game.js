@@ -932,7 +932,22 @@
     }
 
     // ---------- boucle ----------
+    // v110 : DEBUTANTS — niveaux 1 à 10 : boost permanent et gratuit ; niveaux 1 à 3 : AIDE DE VISEE cachée (la fusée est attirée vers la cible devant elle, de moins en moins)
+    autoBoost() { const n = this.levelRun && this.endlessRun && this.endlessRun.T.levelLen && this.levelRun.n; return !!(n && n <= 10 && !this.settings.manualBoost); }
+    assistK() { const n = this.levelRun && this.endlessRun && this.endlessRun.T.levelLen && this.levelRun.n; return n && n <= 3 && !this.settings.noAssist ? [1, 0.6, 0.35][n - 1] : 0; }
+    assistAim(dt) {
+      const k = this.assistK(); if (!k || this.state !== 'FLIGHT' || !this.rocket.active) return;
+      const A = this._as || (this._as = { f: new V(), d: new V(), q: new THREE.Quaternion(), q2: new THREE.Quaternion(), id: new THREE.Quaternion() }), rk = this.rocket;
+      A.f.set(0, 0, -1).applyQuaternion(this.input.aimQ);
+      let best = null, bs = 1e9;
+      for (const t of this.targets) { if (!t.alive || t.guard || t.boss || !t.object) continue; A.d.subVectors(t.object.position, rk.pos); const d = A.d.length(); if (d < 12 || d > 420) continue; const ang = A.f.angleTo(A.d.divideScalar(d)); if (ang < 0.8 && ang + d * 0.0006 < bs) { bs = ang + d * 0.0006; best = t; } }
+      if (!best) return;
+      A.d.subVectors(best.object.position, rk.pos).normalize(); const ang = A.f.angleTo(A.d); if (ang < 0.008) return;
+      const step = Math.min(ang, k * (0.8 + ang * 1.4) * dt);
+      A.q.setFromUnitVectors(A.f, A.d); A.q2.copy(A.id).slerp(A.q, step / ang); this.input.aimQ.premultiply(A.q2).normalize();
+    }
     update(dt) {
+      this.assistAim(dt);
       if (this.simpleCtl()) this.applySimpleAim(dt);   // v107 : COMMANDES SIMPLES — la fusée suit le couloir toute seule, le doigt ne fait que la DEPLACER dans le couloir
       const inp = (this.useAutopilot && this.autopilot && this.state !== 'MENU') ? this.autopilot.poll(dt) : this.input.poll(dt);
       if (inp.aimQ) this.rig.setAimQ(inp.aimQ);
