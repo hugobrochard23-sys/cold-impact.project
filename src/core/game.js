@@ -326,7 +326,7 @@
       if (CC.Look) CC.Look.set(ld ? CC.Look.forLevel(ld) : null);   // v081 : look du niveau (teinte, matériaux, ambiance)
       this.assistFuel = ld ? 3 * Math.min(5, ((this.save.lvl && this.save.lvl.tries && this.save.lvl.tries[ld.n]) || 0)) : 0;   // coup de pouce après plusieurs échecs
       if (ld) seed = ld.seed;
-      const ordP = this.params.get('order'), L = CC.Endless.level(seed, { zones: this.testMode ? null : this.progress.unlockedWorlds(), order: ld ? ld.order : (ordP ? ordP.split(',') : null), env: this.params.get('env') || (ld && ld.env) || null, levelLen: ld && ld.len, difK: ld && ld.difK, bossHp: ld && ld.hp, bossType: ld && ld.boss, padStyle: ld && ld.n, theme: ld && ld.theme, tutD: ld && ld.tutD, tutRel: ld && ld.tutRel, scenes: ld && ld.scenes, bossWall: ld && ld.bossWall, mids: ld && ld.mids, bossTint: ld && ld.bossTint, bossVar: ld && ld.bossVar, event: ld && ld.event, ease: ld && ld.ease, nightOk: ld && ld.nightOk, dens: ld && ld.dens });
+      const ordP = this.params.get('order'), L = CC.Endless.level(seed, { zones: this.testMode ? null : this.progress.unlockedWorlds(), order: ld ? ld.order : (ordP ? ordP.split(',') : null), env: this.params.get('env') || (ld && ld.env) || null, levelLen: ld && ld.len, difK: ld && ld.difK, bossHp: ld && ld.hp, bossType: ld && ld.boss, padStyle: ld && ld.n, theme: ld && ld.theme, tutD: ld && ld.tutD, tutRel: ld && ld.tutRel, scenes: ld && ld.scenes, bossWall: ld && ld.bossWall, bossEnt: ld && ld.bossEnt, mids: ld && ld.mids, bossTint: ld && ld.bossTint, bossVar: ld && ld.bossVar, event: ld && ld.event, ease: ld && ld.ease, nightOk: ld && ld.nightOk, dens: ld && ld.dens });
       this.loadLevelFrom(L, -1);
       this.endlessRun = new CC.Endless.Run(this, L);
       this.startGhost(ld);   // v083 : après le chargement (qui efface les anciens objets)
@@ -728,9 +728,17 @@
     // v112 : le boss fait exploser le mur de briques qui le cachait (secousse, éclats, flash)
     // le boss reste caché tant que son mur n'est pas tombé
     bossHide() { if (!(this.levelRun && this.levelRun.bossWall)) return; const w = this.entities.find((e) => e.o && e.o.bossWall); const hide = !!w && !w.broken; for (const t of this.targets) if (t.boss && t.object) t.object.visible = !hide; }
+    bossTrigger() { const e = this.levelRun && this.levelRun.bossEnt; return e === 'wall' ? 340 : e === 'sky' ? 380 : e === 'rise' ? 340 : 600; }
+    bossSpeed() { const e = this.levelRun && this.levelRun.bossEnt; return e === 'wall' ? 36 : e === 'sky' ? 52 : e === 'rise' ? 32 : 85; }
+    bossEntrance(t) {
+      const e = this.levelRun && this.levelRun.bossEnt;
+      if (e === 'wall') this.breakBossWall();
+      else if (e === 'rise') { const q = t.base.clone(); q.y = t.base.y + 50; try { this.effects.ring(q, new V(0, 1, 0), 3, 70, 1.0, '#cfeaff', 0.85); this.effects.explosion(q, null, true, 'cyan'); } catch (er) { /* ignoré */ } this.audio.play('splash', q); this.audio.play('whale', q); this.rig.shake = Math.max(this.rig.shake || 0, 1.4); }
+      else if (e === 'sky') { this.audio.play('siren', t.base); this.audio.play('whoosh', t.base); }
+    }
     breakBossWall() {
       const w = this.entities.find((e) => e.o && e.o.bossWall && !e.broken); if (!w) return; w.broken = true;
-      setTimeout(() => { try { w.breakAll(this, new V(0, 4, -26), 26); this.rig.shake = Math.max(this.rig.shake || 0, 1.6); this.flash = Math.max(this.flash || 0, 0.35); this.flashColor = '#ffd9a0'; this.hitStop = 0.1; this.hitScale = 0.2; } catch (e) { /* ignoré */ } }, 380);
+      setTimeout(() => { try { w.breakFall(this, 20); this.rig.shake = Math.max(this.rig.shake || 0, 1.6); this.flash = Math.max(this.flash || 0, 0.35); this.flashColor = '#ffd9a0'; this.hitStop = 0.1; this.hitScale = 0.2; } catch (e) { /* ignoré */ } }, 120);
     }
     onBossDead(t, c, rocket) {
       this.meta.event('boss', 1); this.winTime = this.ghostRec ? this.ghostRec.t : 0;

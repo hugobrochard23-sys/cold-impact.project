@@ -186,3 +186,6 @@ Zone PLAINE militaire (niveaux 1-2, sans relief, env plaineDay), vitesse plafonn
 
 ## v112 — les 3 premiers niveaux faits main
 N1 ville (boulevard + VITRAGE : immeuble a traverser, vitres a casser, 1 cible), N2 foret (2 GRANGES, 1 ennemi dedans), N3 canyon (hoodoos, arches, ponts de roche) ; boss derriere un MUR DE BRIQUES qui explose (levels >=3, `game.breakBossWall`). Parcours impose par `ld.scenes` (zones.js planBase `T.forceScenes`), cibles relatives `ld.tutRel`, env impose `ld.env` (plaineDay = jour clair). Plus d aide de visee ni de fantome. 3 etoiles aux niveaux 1-3. Garage ouvert au niveau 3, pass au 6. Depart sans menu (`game.cine`), conditions d utilisation memorisees a part (coldimpact.terms). La zone `plaine` (v111) reste dans le code mais n est plus utilisee.
+
+## v113 — retours du joueur
+Tuto : plus de points a cote du cercle, textes centres, pas de bandeau MISSION au niveau 1. Missiles inoffensifs niveaux 1-9 (miss >= 13 m). Entrees de boss variees (`ld.bossEnt` : wall = mur qui s effondre avec gravite `SmashWall.breakFall`, matiere selon la zone ; sky = plonge des nuages ; rise = remonte du sol/de l eau), declenchees de 340-380 m, repere BOSS a l ecran (hud.js). Plus de montagnes russes / chute libre / escalier / city1 avant le niveau ~20 (skipQ). Foret : arbres varies, buissons, rochers, sol plus clair. N1 : + un virage.

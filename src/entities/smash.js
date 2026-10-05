@@ -5,7 +5,7 @@
  * chaque bloc a sa boîte de collision (kind 'brick', ref → cette classe) : Rocket.resolveHit la brise sans rien savoir d'elle. */
 (function () {
   const V = THREE.Vector3;
-  const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new V(), _zero = new THREE.Matrix4().makeScale(0, 0, 0);
+  const _e = new THREE.Euler(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new V(), _zero = new THREE.Matrix4().makeScale(0, 0, 0);
 
   class SmashWall {
     /* o = { blocks: [[x,y,z], …] centres, size: [w,h,d], yaw (degrés), mat, shatter: 'brick'|'planks', reward (matériaux par bloc) } */
@@ -41,6 +41,33 @@
       this.mesh.instanceMatrix.needsUpdate = true;
       game.audio.play('brick', c0); game.audio.play('boomSmall', c0);
       game.onSmash(c0, n);
+    }
+    // v113 : le mur du boss s'EFFONDRE : chaque bloc est projeté vers la fusée, tombe avec de la gravité, rebondit sur le sol et glisse
+    breakFall(game, fxN) {
+      const rk = game.rocket.pos, mid = this.centers[Math.floor(this.centers.length / 2)], D = new V(rk.x - mid.x, 0, rk.z - mid.z).normalize(), F = this.fall = { t: 0, st: [], gy: Infinity };
+      this.centers.forEach((c) => { F.gy = Math.min(F.gy, c.y - this.size.y / 2); });
+      let k = 0; const step = Math.max(1, Math.floor(this.centers.length / (fxN || 18)));
+      this.centers.forEach((c, j) => {
+        if (!this.alive[j]) return; this.alive[j] = false; this.colliders[j].active = false;
+        const sp = 10 + Math.random() * 22, dx = c.x - mid.x, dy = c.y - (F.gy + 28);
+        F.st.push({ j, p: c.clone(), v: new V(D.x * sp + dx * 0.35 + (Math.random() - 0.5) * 6, 3 + Math.random() * 13 - Math.abs(dy) * 0.04, D.z * sp + (Math.random() - 0.5) * 6), r: new V(), w: new V((Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5), done: false });
+        if (k++ % step === 0) game.effects.shatter(c, this.size, new V(D.x * 20, 6, D.z * 20), this.kind);
+      });
+      game.audio.play('brick', mid); game.audio.play('boom', mid);
+      for (const f of [0.25, 0.5, 0.75]) { const q = mid.clone(); q.x += (f - 0.5) * 90; q.y = F.gy + 3; try { game.effects.dustKick(q, new V(0, 1, 0), 4); game.effects.smokePuff(q, new V(D.x * 6, 5, D.z * 6), 7, 2.2); } catch (e) { /* ignoré */ } }
+      game.onSmash(mid, 20);
+    }
+    update(dt) {
+      const F = this.fall; if (!F) return; F.t += dt;
+      const hs = this.size.y / 2, one = _s.set(1, 1, 1);
+      for (const s of F.st) {
+        if (s.done) continue;
+        s.v.y -= 26 * dt; s.p.addScaledVector(s.v, dt); s.r.addScaledVector(s.w, dt);
+        if (s.p.y < F.gy + hs) { s.p.y = F.gy + hs; s.v.y = s.v.y < -4 ? -s.v.y * 0.3 : 0; s.v.x *= 0.8; s.v.z *= 0.8; s.w.multiplyScalar(0.65); }
+        _e.set(s.r.x, s.r.y, s.r.z); _q2.setFromEuler(_e).premultiply(this.quat); _m.compose(s.p, _q2, one); this.mesh.setMatrixAt(s.j, _m);
+        if (F.t > 7) { this.mesh.setMatrixAt(s.j, _zero); s.done = true; }
+      }
+      this.mesh.instanceMatrix.needsUpdate = true; if (F.t > 7) this.fall = null;
     }
     // v112 : le mur du boss s'écroule d'un coup (quelques gerbes d'éclats seulement, pour rester fluide)
     breakAll(game, vel, fxN) {

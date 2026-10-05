@@ -135,7 +135,7 @@ const GOLD = new THREE.MeshPhongMaterial({ color: '#f2c230', specular: '#fff6c8'
       const rk = game.rocket && game.rocket.active ? game.rocket : null;
       if (this.path && game.state === 'FLIGHT' && rk && this.fleeDist < this.pathLen) { this.fleeDist += this.fleeSpeed * dt; this.placeOnPath(); }
       if (this.patrol) { this.patrolDist += this.patrolSpeed * dt; this.placeOnPatrol(); }
-      if (this.arrive && rk && rk.pos.distanceTo(this.base) < (game.levelRun && game.levelRun.bossWall ? 175 : 600)) { if (game.levelRun && game.levelRun.bossWall) game.breakBossWall(); this.flyTo = this.arrive; this.flySpeed = 85; this.arrive = null; game.flash = Math.max(game.flash || 0, 0.28); game.flashColor = '#ff3a2a'; game.rig.shake = Math.max(game.rig.shake, 1.1); game.audio.play('alarm'); if (this.boss) game.audio.play('shipHorn'); }   // v080 : entrée du boss (sirène, secousse, éclat rouge)
+      if (this.arrive && rk && rk.pos.distanceTo(this.base) < game.bossTrigger()) { game.bossEntrance(this); this.flyTo = this.arrive; this.flySpeed = game.bossSpeed(); this.arrive = null; game.flash = Math.max(game.flash || 0, 0.28); game.flashColor = '#ff3a2a'; game.rig.shake = Math.max(game.rig.shake, 1.1); game.audio.play('alarm'); if (this.boss) game.audio.play('shipHorn'); }   // v080 : entrée du boss (sirène, secousse, éclat rouge)
       if (this.gen) this.updateGeneric(dt, game, rk);
       else if (this.type === 'heli' || this.type === 'heliCamo') this.updateHeli(dt, game, rk);
       if (!this.gen && (this.type === 'tank' || this.type === 'sam' || this.tl)) this.updateTank(dt, game, rk);
@@ -480,7 +480,8 @@ const GOLD = new THREE.MeshPhongMaterial({ color: '#f2c230', specular: '#fff6c8'
       this.object = CC.Models.enemyMissile();
       this.pos = from.clone();
       // ESTIMATION : visée imprécise (OBSERVÉ séq. 3 : le missile frôle la roquette sans la toucher)
-      const missDist = opts ? opts.miss * (0.7 + U.rng() * 0.6) : 5 + U.rng() * 3;
+      let missDist = opts ? opts.miss * (0.7 + U.rng() * 0.6) : 5 + U.rng() * 3;
+      { const ln = CC.game && CC.game.levelRun && CC.game.levelRun.n; if (ln && ln <= 9) missDist = Math.max(missDist, 13 + U.rng() * 6); else if (ln && ln <= 19) missDist = Math.max(missDist, 5 + U.rng() * 3); }   // v113 : niveaux 1-9 : les missiles frôlent la fusée sans la toucher (juste pour prévenir)
       this.miss = new V(U.rng() - 0.5, U.rng() * 0.6, U.rng() - 0.5).normalize().multiplyScalar(missDist);
       this.dir = new V().subVectors(target.pos, from).add(this.miss).normalize();
       this.speed = opts ? opts.speed : 48; this.turn = opts ? opts.turn : 0.8; this.life = opts ? opts.life : 5;

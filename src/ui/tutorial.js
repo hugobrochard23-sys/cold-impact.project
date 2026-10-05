@@ -8,6 +8,7 @@
   const V = THREE.Vector3, _p = new V(), _f = new V(), _d = new V();
   const T = CC.Tutorial = { hold: false, st: null };
 
+  T.marker = (ctx, W, H, g, tg, t, label) => marker(ctx, W, H, g, tg, t, label);
   T.level = (g) => { const run = g.endlessRun, n = g.levelRun && g.levelRun.n; return run && run.T.levelLen && n && n <= 2 ? n : 0; };
   T.enabled = function (g) {
     if (!(CC.Touch && CC.Touch.active) && !/[?&]tut=1\b/.test(location.search)) return false;
@@ -42,14 +43,15 @@
     ctx.globalAlpha = 0.95; ctx.strokeStyle = '#35ff4a'; ctx.lineWidth = Math.max(3, r * 0.18); ctx.beginPath(); ctx.arc(x, y, r * (1.25 + (ring ? ((t * 1.4) % 1) * 0.6 : 0)), 0, 6.283); ctx.stroke(); ctx.restore();
   };
   const pill = (ctx, W, H, s, y, fill, stroke, k) => {
-    const F = CC.Font, px = Math.max(3, Math.round(H * 0.0052 * (k || 1))), w = Math.min(W * 0.94, F.measure(s, px) + px * 12), h = px * 22, x = W / 2 - w / 2;
-    CC.Home.pill(ctx, x, y, w, h, fill, stroke); F.draw(ctx, s, W / 2, y + h * 0.3, Math.min(px, (w - px * 8) / Math.max(1, F.measure(s, 1))), '#ffffff', { align: 'center' });
+    const F = CC.Font, px = Math.max(3, Math.round(H * 0.0052 * (k || 1))), w = Math.min(W * 0.94, F.measure(s, px) + px * 12), h = px * 16, x = W / 2 - w / 2;
+    const ps = Math.min(px, (w - px * 8) / Math.max(1, F.measure(s, 1)));
+    CC.Home.pill(ctx, x, y, w, h, fill, stroke); F.draw(ctx, s, W / 2, y + h / 2 - 1.9 * ps, ps, '#ffffff', { align: 'center' });
     return h;
   };
   const project = (g, pos, W, H) => { const c = g.camera; _p.copy(pos); const pp = CC.Curve ? CC.Curve.apply(_p, c).project(c) : _p.project(c); return { x: (pp.x * 0.5 + 0.5) * W, y: (-pp.y * 0.5 + 0.5) * H, z: pp.z, nx: pp.x, ny: pp.y }; };
 
   // viseur sur la cible, ou flèche vers elle
-  const marker = (ctx, W, H, g, tg, t) => {
+  const marker = (ctx, W, H, g, tg, t, label) => {
     const r = Math.min(W, H) * 0.075, d = Math.round(tg.object.position.distanceTo(g.rocket.pos)), P = project(g, tg.object.position, W, H);
     const inFront = P.z < 1, onScreen = inFront && P.x > r && P.x < W - r && P.y > r * 2 && P.y < H - r;
     ctx.save();
@@ -57,7 +59,7 @@
       const pr = r * (1.0 + 0.2 * Math.sin(t * 7)); ctx.strokeStyle = '#ff3b2e'; ctx.lineWidth = r * 0.2;
       ctx.beginPath(); ctx.arc(P.x, P.y, pr, 0, 6.283); ctx.stroke(); ctx.beginPath();
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { ctx.moveTo(P.x + dx * pr * 1.55, P.y + dy * pr * 1.55); ctx.lineTo(P.x + dx * pr * 0.65, P.y + dy * pr * 0.65); } ctx.stroke();
-      const F = CC.Font, px = Math.max(2, Math.round(H * 0.0036)), str = d + ' M', tw = F.measure(str, px), ph = px * 10, py = Math.max(H * 0.2, P.y - pr * 1.9 - ph);
+      const F = CC.Font, px = Math.max(2, Math.round(H * 0.0036)), str = (label ? label + ' ' : '') + d + ' M', tw = F.measure(str, px), ph = px * 10, py = Math.max(H * 0.2, P.y - pr * 1.9 - ph);
       ctx.fillStyle = 'rgba(8,10,16,0.78)'; ctx.fillRect(Math.round(P.x - tw / 2 - px * 3), Math.round(py), Math.round(tw + px * 6), Math.round(ph)); ctx.strokeStyle = '#ff3b2e'; ctx.lineWidth = Math.max(2, px * 0.6); ctx.strokeRect(Math.round(P.x - tw / 2 - px * 3), Math.round(py), Math.round(tw + px * 6), Math.round(ph));
       F.draw(ctx, str, P.x, py + px * 2, px, '#ffffff', { align: 'center' });
     } else {   // flèche au bord, dans la direction de la cible (derrière → vers le bas)
@@ -77,12 +79,11 @@
     const st = state(), t = performance.now() / 1000, r = Math.min(W, H) * 0.075, n = T.level(g), run = g.endlessRun;
     const tg = nearest(g), total = g.levelRun.winKills || 1, done = run ? run.stats.targets : 0;
     if (g.levelWin) { pill(ctx, W, H, 'MISSION ACCOMPLIE !', H * 0.3, 'rgba(70,48,0,0.94)', '#ffd23a', 1.45); return true; }   // victoire : grand message pendant le ralenti
-    pill(ctx, W, H, n === 1 ? 'MISSION : DETRUIS LA CIBLE' : 'MISSION : DETRUIS LES ' + total + ' CIBLES  ' + Math.min(done, total) + '/' + total, H * 0.13, 'rgba(60,12,10,0.92)', '#ff5a3a');
+    const hm = n === 2 ? pill(ctx, W, H, 'MISSION : DETRUIS LES ' + total + ' ENNEMIS  ' + Math.min(done, total) + '/' + total, H * 0.1, 'rgba(60,12,10,0.92)', '#ff5a3a', 0.9) : 0, yi = H * 0.1 + (hm ? hm + H * 0.015 : 0);   // v113 : le bandeau MISSION n'apparaît qu'au niveau 2
     if (T.hold) {   // pause : la main montre le geste
       ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.42)'; ctx.fillRect(0, 0, W, H); ctx.restore();
       const k = Math.sin(t * 2.6), hx = W * 0.5 + k * W * 0.13, hy = H * 0.68; hand(ctx, hx, hy, r, t, false);
-      ctx.save(); ctx.fillStyle = '#35ff4a'; ctx.globalAlpha = 0.85; const q = r * 0.3, d = k > 0 ? 1 : -1; for (let i = 0; i < 3; i++) ctx.fillRect(Math.round(hx + d * (r * 1.7 + i * q * 1.4)), Math.round(hy - q / 2), Math.round(q), Math.round(q)); ctx.restore();
-      pill(ctx, W, H, st.armed ? 'GLISSE POUR TOURNER' : 'POSE LE DOIGT ET GLISSE', H * 0.22, 'rgba(8,60,20,0.94)', '#56ff5a', 1.15);
+      pill(ctx, W, H, st.armed ? 'GLISSE POUR TOURNER' : 'POSE LE DOIGT ET GLISSE', yi, 'rgba(8,60,20,0.94)', '#56ff5a', 1.15);
       if (tg) marker(ctx, W, H, g, tg, t);
       return true;
     }
@@ -93,7 +94,7 @@
         const tx = P ? P.x : W * 0.5, ty = P ? P.y : H * 0.3, k = (t * 0.9) % 1, dx = tx - W * 0.5, dy = ty - H * 0.72, dl = Math.hypot(dx, dy) || 1;
         const f = _f.set(0, 0, -1).applyQuaternion(g.input.aimQ), want = _d.subVectors(tg.object.position, g.rocket.pos).normalize(), ang = f.angleTo(want);
         const css = Math.max(45, Math.min(150, ang / (CC.CONFIG.input.touch.dragGain / Math.max(1, Math.min(window.innerWidth, window.innerHeight))))), L = css * (W / Math.max(1, window.innerWidth));
-        if (ang > 0.12) { hand(ctx, W * 0.5 + dx / dl * L * k, H * 0.72 + dy / dl * L * k, r * 0.9, t, false); pill(ctx, W, H, 'GLISSE VERS LA CIBLE', H * 0.22, 'rgba(8,60,20,0.94)', '#56ff5a', 1.1); }
+        if (ang > 0.12) { hand(ctx, W * 0.5 + dx / dl * L * k, H * 0.72 + dy / dl * L * k, r * 0.9, t, false); pill(ctx, W, H, 'GLISSE VERS LA CIBLE', yi, 'rgba(8,60,20,0.94)', '#56ff5a', 1.1); }
       }
     }
     return true;

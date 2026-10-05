@@ -156,7 +156,7 @@
   Z.meta.port = { label: 'PORT', envs: ['harbor', 'harborDusk', 'neonNight'], ground: 'concrete', groundTint: '#d8d8d4', wall: () => ({ mat: { side: 'corrugated', top: 'metal' }, tint: '#c8ccd0' }), obstacle: 'metal', obstacleTint: '#c8ccd4' };
   Z.meta.sky = { label: 'BASE AERIENNE', envs: ['altitude', 'altitudeDusk'], ground: 'concreteDark', groundTint: '#b8bcc4', wall: () => ({ mat: { side: 'metal', top: 'concreteDark' }, tint: '#d0d4dc' }), obstacle: 'metal', obstacleTint: '#d0d4dc' };
   Z.meta.mini = { label: 'MONDE MINIATURE', envs: ['miniRoom'], ground: 'planks', groundTint: '#d8b888', wall: () => ({ mat: { side: 'concreteWarm', top: 'concrete' }, tint: '#e8d8b8' }), obstacle: 'planks', obstacleTint: '#d8b888' };
-  Z.meta.forest = { label: 'FORET', envs: ['forestDay', 'forestDusk', 'forestNight'], ground: 'dirt', groundTint: '#5a6a48', wall: (r) => ({ mat: { side: 'rock', top: 'grass' }, tint: r.pick(['#8a9a82', '#7a8a72']) }), obstacle: 'rock', obstacleTint: '#8a9a82' };
+  Z.meta.forest = { label: 'FORET', envs: ['forestDay', 'forestDusk', 'forestNight'], ground: 'dirt', groundTint: '#8fb064', wall: (r) => ({ mat: { side: 'rock', top: 'grass' }, tint: r.pick(['#8a9a82', '#7a8a72']) }), obstacle: 'rock', obstacleTint: '#8a9a82' };
 
   Z.meta.chute = { label: 'CHUTE', envs: ['altitude', 'altitudeDusk', 'neonNight'], ground: 'asphalt', groundTint: '#b8b8b8', wall: Z.meta.city.wall, obstacle: 'concrete', obstacleTint: '#d8d4cc' };
   Z.meta.tour = { label: 'ASCENSION', envs: ['altitude', 'altitudeDusk', 'neonNight'], ground: 'asphalt', groundTint: '#b8b8b8', wall: Z.meta.city.wall, obstacle: 'concrete', obstacleTint: '#d8d4cc' };
@@ -202,6 +202,7 @@
     const r = G.stream(T.seed, 'plan' + zi);
     const skipQ = (new URLSearchParams(location.search).get('skip') || '').split(',');
     if (T.levelLen && (T.ease === undefined ? 1 : T.ease) < 0.12) skipQ.push('slalom', 'defile', 'salle', 'galerie', 'city1', 'escalier', 'cheminee', 'plongee', 'toits', 'epingle', 'chicane', 'slalom', 'ruelle', 'enfilade', 'chuteLibre', 'montee', 'pontPlongeon', 'gradins');   // niveaux faciles : pas de montée / plongeon ni de virage serré
+    if (T.levelLen && (T.ease === undefined ? 1 : T.ease) < 0.55) skipQ.push('montagnesRusses', 'chuteLibre', 'montee', 'pontPlongeon', 'escalier', 'city1', 'cheminee', 'plongee');   // v113 : pas de montagnes russes (la fusée « se frise »), de chute libre ni d'escalier avant le niveau 20
     skipQ.push('rame', 'presses', 'bras', 'chaine', 'grues', 'squelette', 'arche', 'levant', 'convoi', 'camp', 'helis', 'convoi2', 'camp2', 'helis2', 'banc');   // v083 : + « banc » (baleine qui traverse : un obstacle mobile qui tuait sans raison)   // v073 : scènes avec éléments mobiles ou superflus   // banc de test : ?skip=city1,escalier
     const names = Object.keys(def.scenes).filter((n) => n !== def.signature && skipQ.indexOf(n) < 0);
     for (let i = names.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); const t = names[i]; names[i] = names[j]; names[j] = t; }
@@ -482,17 +483,17 @@
     for (let dc = S.d0; dc < S.d1; dc += 40) S.item(dc + 20, () => { for (const sg of [-1, 1]) S.bx(dc + 20, sg * (V0 + 12), 55, 24, 110, 40.6, wl.mat, wl.tint); });
     const dEnd = T.levelLen + 800; if (dEnd > S.d0 && dEnd <= S.d1 + 0.5) S.item(dEnd - 3, () => S.bx(dEnd - 3, 0, 55, 2 * (V0 + 24), 110, 6, wl.mat, wl.tint));
     // v080 : le boss a SON design (CC.BossModels), il entre en vol depuis le fond de l'arène ; en altitude (tour, chute) il vole à la hauteur de la trajectoire
-    const dB = T.levelLen + 110, dS = T.levelLen + 380;
-    // v112 : le boss est caché derrière un MUR DE BRIQUES géant qu'il fait voler en éclats en entrant (Game.breakBossWall)
-    const dW = T.levelLen + 348;
+    const dB = T.levelLen + 110, dS = T.levelLen + (T.bossEnt === 'rise' ? 200 : 380), ent = T.bossEnt;
+    // v112/v113 : le boss est caché derrière un MUR géant (briques, planches, roche, glace… selon la zone) qui s'effondre quand il entre ; ou il plonge du ciel ; ou il remonte du sol / de l'eau
+    const dW = T.levelLen + 348, WM = { city: ['brick', 'brick'], forest: ['planks', 'planks'], jungle: ['planks', 'planks'], canyon: ['rock', 'brick'], banquise: ['white', 'glass'], carriere: ['sand', 'brick'], autoroute: ['concrete', 'brick'], port: ['corrugated', 'planks'], usine: ['corrugated', 'planks'], eolien: ['metal', 'planks'], volcan: ['rock', 'brick'], barrage: ['concrete', 'brick'] }[zone] || ['brick', 'brick'];
     if (T.bossWall && dW >= S.d0 && dW < S.d1) S.item(dW, () => {
       const cols = 16, rows = 8, bw = 2 * (V0 + 2) / cols, bh = 8, blocks = [];
       for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) blocks.push(S.at(dW, -(V0 + 2) + (i + 0.5) * bw, bh / 2 + j * bh));
-      S.b.smashWall({ blocks, size: [bw + 0.05, bh, 3.2], yaw: S.yaw(dW), mat: 'brick', shatter: 'brick', reward: 2, bossWall: true });
+      S.b.smashWall({ blocks, size: [bw + 0.05, bh, 3.2], yaw: S.yaw(dW), mat: WM[0], shatter: WM[1], reward: 2, bossWall: true });
     });
     if (dS >= S.d0 && dS < S.d1) S.item(dS, () => {
       const bt = T.bossType || 'heli', fly = bt === 'heli' || (CC.BossFlying && CC.BossFlying[bt]), yy = fly ? U.clamp(S.lane(dB).y, 24, 270) : 0, face = bt === 'heli' ? 0 : 180;
-      const st = S.at(dS, 0, yy), en = S.at(dB, 0, yy);
+      const st = S.at(dS, 0, yy + (ent === 'sky' ? 110 : ent === 'rise' ? -50 : 0)), en = S.at(dB, 0, yy);
       S.b.target(bt, st, S.yaw(dB) + face, { scale: 6.5, hp: T.bossHp || 1, boss: true, unarmed: false, drift: fly ? 7 : 3, driftSpeed: 0.35, tint: T.bossTint || 0, variant: T.bossVar || 0, arrive: en });
     });
   }

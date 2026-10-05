@@ -43,8 +43,8 @@
       n, zone, seed: 7000 + n * 131, len,
       // v112 : LES TROIS PREMIERS NIVEAUX, faits main. 1 = ville : une avenue, un immeuble à traverser en cassant une vitre, UNE cible derrière ; 2 = forêt : deux granges à traverser, un ennemi dans chacune ; 3 = canyon : arches puis un boss qui sort d'un mur de briques
       tutD: n <= 2 ? [] : null, winKills: n === 1 ? 1 : n === 2 ? 2 : 0,
-      scenes: n === 1 ? ['boulevard', 'vitrage', 'boulevard'] : n === 2 ? ['maison', 'maison'] : n === 3 ? ['hoodoos', 'arches', 'pontsRoche'] : null,
-      tutRel: n === 1 ? [{ scene: 'vitrage', off: 62 }] : null, bossWall: n >= 3, env: n === 1 ? 'day' : n === 2 ? 'plaineDay' : n === 3 ? 'goldenHour' : null,
+      scenes: n === 1 ? ['boulevard', 'virage', 'vitrage', 'boulevard'] : n === 2 ? ['maison', 'maison'] : n === 3 ? ['hoodoos', 'arches', 'pontsRoche'] : null,
+      tutRel: n === 1 ? [{ scene: 'vitrage', off: 62 }] : null, bossEnt: n < 3 ? null : (boss === 'sub' || boss === 'destroyer' || zone === 'eau') ? 'rise' : (/^(heli|gunship|jet|bomber)$/.test(boss) && n % 2 === 0) ? 'sky' : 'wall', bossWall: n >= 3 && !((boss === 'sub' || boss === 'destroyer' || zone === 'eau') || (/^(heli|gunship|jet|bomber)$/.test(boss) && n % 2 === 0)), env: n === 1 ? 'day' : n === 2 ? 'plaineDay' : n === 3 ? 'goldenHour' : null,
 
       nightOk: n >= 16 && n % 12 === 4,                                    // v109 : la nuit est EXCEPTIONNELLE (un niveau sur 12 à partir du 16)
       dens: n <= 2 ? 0.95 : n <= 10 ? 0.66 : n <= 30 ? 0.7 : 0.8,         // v109 : moins d'ennemis (part des cibles et gardes conservée)

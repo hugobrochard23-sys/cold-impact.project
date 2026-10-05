@@ -212,6 +212,7 @@
       this.drawIndicators(game);
       this.drawMissileWarning(game);
       if (lite) this.drawTutorial(game, W, H);
+      if (lite && CC.Tutorial && game.state === 'FLIGHT' && game.levelRun && game.endlessRun) { const bt = game.targets.find((q) => q.boss && q.alive && q.object && q.object.visible); if (bt && !(CC.Tutorial.enabled(game))) CC.Tutorial.marker(this.ctx, W, H, game, bt, performance.now() / 1000, 'BOSS'); }   // v113 : repère du boss, visible de très loin
       const msg = (CC.Tutorial && CC.Tutorial.enabled(game)) ? null : game.centerMsg || (lite && game.state === 'AIM' && !game.endlessRun ? 'TOUCHE POUR TIRER    MAINTIENS : BOOST' : null);
       // v032 : réduit si le message dépasse la largeur de l'écran (brief de mission long, téléphone en portrait)
       const cpx = msg ? Math.min(C.center.px, 0.94 * W / Math.max(1, CC.Font.measure(msg, this.refH, !this.modern))) : 0;
