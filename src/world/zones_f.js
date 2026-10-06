@@ -10,7 +10,7 @@
   Z.PROFILE.barrage = { elev: 0, vol: 44, y: [6, 40], amp: 0.8 };
   Z.PROFILE.neon = { elev: 0, vol: 30, y: [8, 60], amp: 0.6 };
   Z.meta.volcan = { label: 'VOLCAN', envs: ['emberSky', 'bloodMoon', 'stormGrey'], ground: 'rock', groundTint: '#3a2a28', wall: () => ({ mat: { side: 'rock', top: 'rock' }, tint: '#4a3430' }), obstacle: 'rock', obstacleTint: '#4a3430' };
-  Z.meta.jungle = { label: 'JUNGLE', envs: ['day', 'goldenHour', 'mistMorning'], ground: 'grass', groundTint: '#3a6a30', wall: () => ({ mat: { side: 'rock', top: 'grass' }, tint: '#5a7a4a' }), obstacle: 'rock', obstacleTint: '#6a7a5a' };
+  Z.meta.jungle = { label: 'JUNGLE', envs: ['jungleMist', 'day', 'goldenHour', 'mistMorning'], ground: 'grass', groundTint: '#98ae7c', wall: () => ({ mat: { side: 'rock', top: 'grass' }, tint: '#5a7a4a' }), obstacle: 'rock', obstacleTint: '#6a7a5a' };
   Z.meta.barrage = { label: 'BARRAGE', envs: ['day', 'overcast', 'goldenHour', 'mistMorning'], ground: 'concrete', groundTint: '#a8aaa8', wall: () => ({ mat: { side: 'concrete', top: 'concrete' }, tint: '#c8c8c4' }), obstacle: 'concrete', obstacleTint: '#c8c8c4' };
   Z.meta.neon = { label: 'MEGAPOLE NEON', envs: ['neonNight', 'twilight', 'bloodMoon'], ground: 'asphalt', groundTint: '#ffffff', wall: () => ({ mat: { side: 'facadeDark', top: 'concrete', bottom: 'concreteDark' }, tint: '#c0c4d0' }), obstacle: 'concrete', obstacleTint: '#8a8e9a' };
   const NEON = ['#ff3ad8', '#2be8ff', '#ffb02b', '#8a6aff', '#5aff8a'];

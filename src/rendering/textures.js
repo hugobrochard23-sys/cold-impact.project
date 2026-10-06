@@ -8,8 +8,8 @@
     concrete: [2, 2], concreteDark: [2, 2], concreteWarm: [2, 2], facade: [12, 14], facadePink: [12, 14], facadeTan: [12, 14],
     facadeDark: [12, 14], facadeGlass: [12, 14], facadeSand: [12, 14], facadeBrick: [12, 14], facadeMint: [12, 14], facadeNavy: [12, 14], facadeLilac: [12, 14], facadeWhite: [12, 14], facadeOchre: [12, 14], storefront: [8, 4.2], brick: [2.6, 2.6], planks: [2, 2], grass: [4, 4], rock: [6, 6], hazard: [1.2, 1.2],
     metal: [2, 2], tankGreen: [2, 2], camo: [3, 3], blueFloor: [2, 2], cream: [2, 2], bark: [1.2, 2.4],
-    houseWall: [2, 2], roofBrown: [1.5, 1.5], white: [2, 2], dirt: [4, 4], rail: [1, 1], asphalt: [4, 4],
-    sand: [4, 4], water: [15, 15], waterSurf: [15, 15], corrugated: [2.4, 2.6], chainlink: [2, 2],   // v032 : générateur de missions
+    houseWall: [2, 2], roofBrown: [1.5, 1.5], white: [14, 14], dirt: [11, 11], rail: [1, 1], asphalt: [4, 4], grass: [12, 12],
+    sand: [12, 12], water: [15, 15], waterSurf: [15, 15], corrugated: [2.4, 2.6], chainlink: [2, 2],   // v032 : générateur de missions
   };
 
   function make(name, w, h, draw) {
@@ -42,6 +42,32 @@
     }
     if (r() < 0.7) { g.fillStyle = 'rgba(60,56,50,0.12)'; g.fillRect(Math.floor(r() * 20), Math.floor(r() * 20), 9, 7); }   // tache
   }
+
+  // v117 : SOLS NATURELS — textures 256 × 256 lissées, sans quadrillage ni raccord : bruit de valeur répétable sur plusieurs échelles,
+  // couleurs mélangées en dégradé, détails dessinés par-dessus (brins d'herbe, feuilles mortes, aiguilles, scintillement de neige, rides de sable)
+  function lattice(period, rng) { const a = new Float32Array(period * period); for (let i = 0; i < a.length; i++) a[i] = rng(); return a; }
+  function vnoise(lat, period, u, v) {   // u, v dans [0,1[ ; répétable
+    const x = u * period, y = v * period, x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+    const X0 = ((x0 % period) + period) % period, Y0 = ((y0 % period) + period) % period, X1 = (X0 + 1) % period, Y1 = (Y0 + 1) % period;
+    const a = lat[Y0 * period + X0], b = lat[Y0 * period + X1], c = lat[Y1 * period + X0], d = lat[Y1 * period + X1];
+    return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
+  }
+  function fbmField(size, rng, periods, weights) {
+    const lats = periods.map((p) => lattice(p, rng)), out = new Float32Array(size * size); let wsum = 0; for (const w of weights) wsum += w;
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) { let v = 0; for (let k = 0; k < periods.length; k++) v += vnoise(lats[k], periods[k], x / size, y / size) * weights[k]; out[y * size + x] = v / wsum; }
+    return out;
+  }
+  const hex3 = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  const mix3 = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+  const ramp = (stops, t) => { t = Math.max(0, Math.min(1, t)); for (let i = 1; i < stops.length; i++) if (t <= stops[i][0]) { const k = (t - stops[i - 1][0]) / (stops[i][0] - stops[i - 1][0] || 1); return mix3(stops[i - 1][1], stops[i][1], k); } return stops[stops.length - 1][1]; };
+  function paint(g, size, fn) {   // fn(x, y) -> [r,g,b]
+    const id = g.createImageData(size, size), d = id.data;
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) { const c = fn(x, y), i = (y * size + x) * 4; d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = 255; }
+    g.putImageData(id, 0, 0);
+  }
+  function dot(g, size, x, y, w, h, col) { g.fillStyle = col; for (const ox of [0, -size, size]) for (const oy of [0, -size, size]) g.fillRect(x + ox, y + oy, w, h); }   // répété sur les bords : le motif se raccorde
+  const pickCol = (r, a) => a[Math.floor(r() * a.length)];
+  const RGB = (c) => 'rgb(' + Math.round(c[0]) + ',' + Math.round(c[1]) + ',' + Math.round(c[2]) + ')';
   function noiseFill(g, w, h, rng, base, amp) {
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) px(g, x, y, shade(base, (rng() - 0.5) * amp));
   }
@@ -51,7 +77,14 @@
     concrete: (g, w, h, r) => concreteTex(g, w, h, r, '#aaa59e', 'rgba(70,66,60,0.35)'),
     concreteDark: (g, w, h, r) => concreteTex(g, w, h, r, '#6f6b68', 'rgba(30,30,30,0.35)'),
     concreteWarm: (g, w, h, r) => concreteTex(g, w, h, r, '#b4aa9c', 'rgba(80,70,60,0.3)'),
-    white: (g, w, h, r) => { noiseFill(g, w, h, r, '#e4e4e2', 6); g.fillStyle = 'rgba(120,120,120,0.35)'; g.fillRect(0, 0, w, 1); g.fillRect(0, 0, 1, h); },
+    // NEIGE : blanc légèrement bleuté, creux d'ombre bleue, congères douces, scintillement ; aucun joint
+    white: (g, w, h, r) => {
+      const F = fbmField(w, r, [2, 4, 8, 16, 32], [0.4, 0.3, 0.16, 0.09, 0.05]), W = fbmField(w, r, [6, 14], [0.6, 0.4]);
+      const sl = [[0, hex3('#bcd0e6')], [0.35, hex3('#d6e3f1')], [0.7, hex3('#eaf1f8')], [1, hex3('#fbfdff')]];
+      paint(g, w, (x, y) => { let c = ramp(sl, F[y * w + x]); const rip = Math.sin((x * 0.55 + y * 0.9) * 0.55 + W[y * w + x] * 9) * 0.5 + 0.5; return mix3(c, hex3('#c4d6ea'), rip * 0.1); });
+      for (let k = 0; k < 220; k++) dot(g, w, Math.floor(r() * w), Math.floor(r() * h), 1, 1, r() < 0.5 ? 'rgba(255,255,255,0.95)' : 'rgba(210,235,255,0.8)');
+      for (let k = 0; k < 18; k++) dot(g, w, Math.floor(r() * w), Math.floor(r() * h), 5 + Math.floor(r() * 6), 1, 'rgba(150,176,206,0.28)');
+    },
     // design : asphalte — grain, gravillons clairs, fissure et rapiéçage
     asphalt: (g, w, h, r) => {
       noiseFill(g, w, h, r, '#4a4847', 12);
@@ -98,18 +131,32 @@
         for (let k = 0; k < 4; k++) px(g, Math.floor(r() * w), row * 4 + Math.floor(r() * 3), shade(base, 18));
       }
     },
+    // PRAIRIE : trois verts mélangés en grandes plaques, zones sèches, brins d'herbe, quelques fleurs ; aucune ligne droite
     grass: (g, w, h, r) => {
-      noiseFill(g, w, h, r, '#23511a', 14);                    // MESURÉ #204918
-      g.fillStyle = '#3d7a2a';                                  // MESURÉ lignes de grille #335a23
-      for (let i = 0; i < w; i += 8) { g.fillRect(i, 0, 1, h); g.fillRect(0, i, w, 1); }
-      for (let k = 0; k < 40; k++) px(g, Math.floor(r() * w), Math.floor(r() * h), '#2f6a20');
+      const F = fbmField(w, r, [3, 6, 12, 24, 48], [0.36, 0.28, 0.2, 0.1, 0.06]), D = fbmField(w, r, [2, 5], [0.65, 0.35]);
+      const gr = [[0, hex3('#2f5a24')], [0.35, hex3('#44782e')], [0.65, hex3('#5e9138')], [1, hex3('#86b04e')]], dry = hex3('#9a9650'), soil = hex3('#5a4a30');
+      paint(g, w, (x, y) => { const f = F[y * w + x], d = D[y * w + x]; let c = ramp(gr, f); if (d > 0.58) c = mix3(c, dry, Math.min(0.55, (d - 0.58) * 3.2)); if (d < 0.22) c = mix3(c, soil, Math.min(0.4, (0.22 - d) * 3)); return c; });
+      for (let k = 0; k < 2600; k++) { const x = Math.floor(r() * w), y = Math.floor(r() * h), L = 2 + Math.floor(r() * 4), dk = r() < 0.5, lean = r() < 0.5 ? -1 : 1; for (let j = 0; j < L; j++) dot(g, w, (x + Math.round(j * 0.3 * lean) + w) % w, (y - j + h) % h, 1, 1, dk ? 'rgba(28,62,22,0.55)' : 'rgba(170,205,100,' + (0.35 + 0.1 * (L - j)) + ')'); }
+      for (let k = 0; k < 40; k++) dot(g, w, Math.floor(r() * w), Math.floor(r() * h), 2, 2, pickCol(r, ['#f2efe0', '#f5d76a', '#e9e6f4']));
     },
-    dirt: (g, w, h, r) => { noiseFill(g, w, h, r, '#3b2f28', 14); },
+    // SOUS-BOIS : terre brune, mousse en plaques, feuilles mortes, aiguilles de pin, petites pierres, ombres de racines
+    dirt: (g, w, h, r) => {
+      const F = fbmField(w, r, [3, 7, 14, 28, 56], [0.34, 0.28, 0.2, 0.12, 0.06]), M = fbmField(w, r, [2, 4, 9], [0.5, 0.3, 0.2]);
+      const sl = [[0, hex3('#34291d')], [0.4, hex3('#4d3d28')], [0.75, hex3('#6a5535')], [1, hex3('#86703f')]], moss = hex3('#4b5f2e'), moss2 = hex3('#62773a');
+      paint(g, w, (x, y) => { const f = F[y * w + x], m = M[y * w + x]; let c = ramp(sl, f); if (m > 0.54) c = mix3(c, f > 0.5 ? moss2 : moss, Math.min(0.85, (m - 0.54) * 4)); return c; });
+      for (let k = 0; k < 900; k++) { const x = Math.floor(r() * w), y = Math.floor(r() * h), ang = r() * 3.14, L = 3 + Math.floor(r() * 5), col = pickCol(r, ['rgba(120,92,48,0.75)', 'rgba(150,112,56,0.7)', 'rgba(92,70,40,0.75)']); for (let j = 0; j < L; j++) dot(g, w, (x + Math.round(Math.cos(ang) * j) + w) % w, (y + Math.round(Math.sin(ang) * j) + h) % h, 1, 1, col); }   // aiguilles
+      for (let k = 0; k < 160; k++) dot(g, w, Math.floor(r() * w), Math.floor(r() * h), 2 + Math.floor(r() * 2), 2, pickCol(r, ['#a4682e', '#8a4f26', '#b88a3a', '#7a3d20', '#6e5a2a']));   // feuilles mortes
+      for (let k = 0; k < 40; k++) { const x = Math.floor(r() * w), y = Math.floor(r() * h); dot(g, w, x, y, 3, 2, 'rgba(120,118,108,0.9)'); dot(g, w, x, y, 2, 1, 'rgba(176,172,160,0.9)'); }   // cailloux
+      for (let k = 0; k < 30; k++) dot(g, w, Math.floor(r() * w), Math.floor(r() * h), 3 + Math.floor(r() * 4), 2, 'rgba(26,20,12,0.45)');   // zones d'ombre
+    },
+    dirtOld: (g, w, h, r) => { noiseFill(g, w, h, r, '#3b2f28', 14); },
     // v032 : sable (grain, rides de vent), eau (reflets en bandes), tôle ondulée (conteneurs, teinte par sommet), grillage
-    sand: (g, w, h, r) => {
-      noiseFill(g, w, h, r, '#c8ab7c', 12);
-      for (let y = 3; y < h; y += 8) for (let x = 0; x < w; x++) if (((x + y * 3) % 11) < 6) px(g, x, (y + Math.round(Math.sin(x * 0.4) * 1.2) + h) % h, '#b89a6c');
-      for (let k = 0; k < 20; k++) px(g, Math.floor(r() * w), Math.floor(r() * h), '#dcc496');
+    sand: (g, w, h, r) => {   // v117 : dunes — rides de vent douces (diagonales ondulées), grain fin, quelques cailloux
+      const F = fbmField(w, r, [3, 6, 12, 24], [0.4, 0.3, 0.2, 0.1]), W = fbmField(w, r, [4, 9], [0.6, 0.4]);
+      const sl = [[0, hex3('#b8955e')], [0.4, hex3('#d0ad76')], [0.75, hex3('#e0c08a')], [1, hex3('#ecd3a0')]];
+      paint(g, w, (x, y) => { let c = ramp(sl, F[y * w + x]); const rip = Math.sin((x * 0.5 + y * 1.1) * 0.42 + W[y * w + x] * 10); return mix3(c, rip > 0 ? hex3('#f0d9a6') : hex3('#a98650'), Math.abs(rip) * 0.16); });
+      for (let k = 0; k < 500; k++) dot(g, w, Math.floor(r() * w), Math.floor(r() * h), 1, 1, r() < 0.5 ? 'rgba(255,240,200,0.7)' : 'rgba(120,90,50,0.45)');
+      for (let k = 0; k < 14; k++) { const x = Math.floor(r() * w), y = Math.floor(r() * h); dot(g, w, x, y, 3, 2, 'rgba(110,88,60,0.8)'); dot(g, w, x, y, 2, 1, 'rgba(160,138,104,0.8)'); }
     },
     water: (g, w, h, r) => {   // v103 : vagues douces qui se raccordent (périodes entières) + petits reflets
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const u = x / w * Math.PI * 2, v = y / h * Math.PI * 2, a = 0.5 + 0.25 * Math.sin(u * 2 + Math.sin(v * 3) * 1.3) + 0.25 * Math.sin(v * 2 + u + Math.sin(u * 3) * 0.9); g.fillStyle = 'rgb(' + Math.round(22 + 34 * a) + ',' + Math.round(66 + 64 * a) + ',' + Math.round(92 + 70 * a) + ')'; g.fillRect(x, y, 1, 1); }
@@ -261,8 +308,10 @@
     if (!cache[name]) {
       const d = defs[name];
       if (!d) throw new Error('Texture inconnue : ' + name);
-      const big = /^facade/.test(name) ? [128, 128] : name === 'storefront' ? [64, 32] : [32, 32];   // design : façades 4 × 4 travées
+      const nat = name === 'grass' || name === 'dirt' || name === 'white' || name === 'sand';   // v117 : sols naturels
+      const big = nat ? [256, 256] : /^facade/.test(name) ? [128, 128] : name === 'storefront' ? [64, 32] : [32, 32];   // design : façades 4 × 4 travées
       cache[name] = make(name, big[0], big[1], d);
+      if (nat) { cache[name].magFilter = THREE.LinearFilter; cache[name].anisotropy = 8; }
     }
     return cache[name];
   };

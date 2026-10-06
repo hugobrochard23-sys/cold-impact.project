@@ -259,7 +259,7 @@
       if (!sA || sA.name === 'arene' || d > T.levelLen - 30) continue;
       if (!((T.ease === undefined ? 1 : T.ease) < 0.25 || Math.abs(T.laneY(d + 70) - T.laneY(d)) > 8 || sA.name === 'city1' || sA.name === 'escalier' || (CC.Zones.reliefNames || []).indexOf(sA.name) >= 0)) continue;
       const pa = T.at(d, T.laneX(d), T.laneY(d) - 2.2), pb = T.at(d + 70, T.laneX(d + 70), T.laneY(d + 70) - 2.2), o = CC.Models.guideArrow(), P = new THREE.Vector3(pa[0], pa[1], pa[2]);
-      o.position.copy(P); o.lookAt(new THREE.Vector3(pb[0], pb[1], pb[2])); o.scale.setScalar(sA.zone === 'tour' || sA.zone === 'chute' || sA.zone === 'sky' ? 3.4 : 2.1);   // v087 : plus de rotateX(0.6) = la flèche pointait ~34° trop bas
+      o.position.copy(P); o.lookAt(new THREE.Vector3(pb[0], pb[1], pb[2])); o.scale.setScalar(sA.zone === 'tour' || sA.zone === 'chute' || sA.zone === 'sky' ? 2.8 : 1.6);   // v087 : plus de rotateX(0.6) = la flèche pointait ~34° trop bas
       b.entity({ object: o, t: Math.random() * 6, base: P.y, update(dt) { this.t += dt; this.object.position.y = this.base + Math.sin(this.t * 3) * 0.3; } });
     }
 

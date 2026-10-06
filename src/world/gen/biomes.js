@@ -31,6 +31,14 @@
     sun: { color: '#fff0d2', intensity: 0.78, dir: [0.4, 0.78, 0.48] },
     postfx: { vignette: 0.22, vignetteColor: '#2a3a30', halftone: 0, lift: '#080c0a', saturation: 0.9, bloomThreshold: 0.98, bloomStrength: 0.1 },
   }) });
+  // v117 : jungle — brume verte, lumière chaude qui filtre par le haut, sous-bois sombre
+  E('jungleMist', { label: 'JUNGLE', dark: 0.08, vis: 0.8, skyline: '#8fb09a', make: (r) => ({
+    sky: { top: '#5f93a8', horizon: '#bcd6c0', bottom: '#8fb09a', sunColor: '#fff0c0', sunSize: 300 },
+    fog: { color: '#7fa88c', near: 60, far: r.between([430, 520]) },
+    hemi: { sky: '#cfe6d0', ground: '#3a5230', intensity: 0.8 }, ambient: { color: '#e8f4e0', intensity: 0.2 },
+    sun: { color: '#ffe8b0', intensity: 0.8, dir: [0.2, 0.85, 0.45] },
+    postfx: { vignette: 0.3, vignetteColor: '#12281a', halftone: 0, lift: '#06100a', saturation: 0.95, bloomThreshold: 0.98, bloomStrength: 0.1 },
+  }) });
   E('overcast', { label: 'COUVERT', dark: 0.15, vis: 0.8, skyline: '#c9ccd0', make: (r) => ({
     sky: { top: '#9aa3ad', horizon: '#d6d9dc', bottom: '#b9bcc0', sunColor: '#d8dce0', sunSize: 90 },
     fog: { color: '#c6c9cd', near: 110, far: r.between([600, 760]) },

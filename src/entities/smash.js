@@ -11,7 +11,7 @@
     /* o = { blocks: [[x,y,z], …] centres, size: [w,h,d], yaw (degrés), mat, shatter: 'brick'|'planks', reward (matériaux par bloc) } */
     constructor(builder, o) {
       this.o = o; this.reward = o.reward || 4; this.kind = o.shatter || 'brick';
-      const geo = builder.soloBoxGeometry(o.size, o.mat), mat = builder.mat(o.mat);
+      const geo = builder.soloBoxGeometry(o.size, o.mat), mat = builder.mat(geo.userData.matKey || o.mat);
       const n = o.blocks.length;
       this.mesh = new THREE.InstancedMesh(geo, mat, n); this.mesh.castShadow = true; this.mesh.receiveShadow = true; this.mesh.frustumCulled = false;
       this.object = this.mesh;

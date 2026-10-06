@@ -198,3 +198,6 @@ Niveaux 1-10 plus courts (len 420..1600) et plus rapides (autoCap 38..64), cible
 
 ## v116 — lumiere
 Bloom plafonne (0.14 jour / 0.4 nuit, seuil >= 0.93 jour), eclat blanc des explosions /2 (game.render), lumieres d explosion x0.45 (particles.flash), brouillard et horizon de jour assombris de 14 % (game.applyEnv, horizon.setEnv).
+
+## v117 — sols et arbres + bug niveaux 7/9
+BUG : le mur du boss plantait la construction du niveau (soloBoxGeometry cherchait la cle de matiere d origine alors que le Look du niveau l avait remplacee) -> la fusee partait dans le vide. Corrige (builder.soloBoxGeometry + try/catch dans zones.js). Sols naturels 256px lisses (textures.js : grass, dirt = sous-bois, white = neige, sand = dunes, fbm repetable, plus de quadrillage). src/world/trees.js : CC.Trees conifer/broadleaf/bush/rock/stump/log (facettes + couleurs de sommet, builder.addGeometry lit geometry.color). Foret (zones_relief.js maison) plantee avec. Env jungleMist ; looks 0 pour les niveaux 1-10.

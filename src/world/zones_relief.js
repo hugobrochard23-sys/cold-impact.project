@@ -363,18 +363,16 @@
   forest.scenes.maison = { len: [220, 220], build(S) {
     const c = S.d0 + 110, L = S.lane(c), W0 = 9, BW = 16, HL = 15, HH = 13, wall = 'houseWall', tint = '#cdbb9c', roof = '#9a4a30', pickR = (r, a) => a[Math.floor(r() * a.length)];
     // forêt de pins de chaque côté (le couloir central reste dégagé)
-    // v115 : vraie forêt — grands conifères à nombreux étages et feuillus massifs aux teintes naturelles, serrés des deux côtés, avec un fond de grands arbres sombres
-    const GP = ['#2f5a36', '#284f30', '#365f3a', '#2c5433'], GB = ['#4d6e3a', '#42632f', '#587a40', '#3f5f33'];
-    const tree = (dc, lx, r, tall) => {
-      const h = tall ? r.between([26, 46]) : r.between([17, 34]), k = h / 16, g1 = pickR(r, GP), g2 = pickR(r, GP);
-      S.cyl(dc, lx, 0, 0.9 * k, h * 0.6, 'bark', pickR(r, ['#7d6247', '#6f563e', '#8a6c4c']), 7, 0.55 * k, false);
-      if (r() < 0.72) for (let i = 0; i < 7; i++) S.cyl(dc, lx + (r() - 0.5) * 0.5, h * 0.17 + i * h * 0.118, (5.2 - i * 0.7) * k, h * 0.2, 'col:' + (i % 2 ? g2 : g1), undefined, 10, 0.3 * k, false);
-      else { const gb = pickR(r, GB), gc = pickR(r, GB); S.cyl(dc, lx, h * 0.38, 6 * k, h * 0.5, 'col:' + gb, undefined, 10, 4 * k, false); S.cyl(dc, lx + 3.4 * k, h * 0.56, 4.2 * k, h * 0.34, 'col:' + gc, undefined, 9, 2.6 * k, false); S.cyl(dc, lx - 3 * k, h * 0.52, 4 * k, h * 0.34, 'col:' + gc, undefined, 9, 2.4 * k, false); S.cyl(dc, lx, h * 0.62, 4 * k, h * 0.3, 'col:' + gb, undefined, 9, 1.8 * k, false); }
+    // v117 : FORÊT — sapins à étages et feuillus en facettes (CC.Trees), serrés des deux côtés avec un fond de grands arbres ; buissons, rochers moussus, souches et troncs couchés
+    const plant = (dc, lx, r, far) => {
+      if (!S.inClip(dc)) return; const p = S.at(dc, lx, 0), conif = r() < (far ? 0.75 : 0.58), h = far ? r.between([26, 44]) : r.between([15, 30]);
+      if (conif) CC.Trees.conifer(S.b, p[0], p[1], p[2], h, r, { far }); else CC.Trees.broadleaf(S.b, p[0], p[1], p[2], h * 0.85, r, { autumn: r() < 0.03, far });
+      if (!far && Math.abs(lx - L.lx) < 34) S.b.box({ p: [p[0], p[1] + h * 0.4, p[2]], s: [h * 0.06 + 0.7, h * 0.8, h * 0.06 + 0.7], render: false });   // le tronc est solide
     };
-    for (const s of [-1, 1]) {
-      S.rows(S.d0, S.d1, 5, 0.9, (dc) => S.item(dc, (r) => tree(dc, L.lx + s * r.between([14, 44]), r, false)));
-      S.rows(S.d0, S.d1, 7, 0.9, (dc) => S.item(dc, (r) => tree(dc, L.lx + s * r.between([44, 100]), r, true)));
-      S.rows(S.d0, S.d1, 15, 0.9, (dc) => S.item(dc, (r) => { const lx = L.lx + s * r.between([10, 20]); if (r() < 0.55) S.cyl(dc, lx, 0, r.between([1.4, 2.4]), r.between([1.1, 1.9]), 'col:' + pickR(r, ['#4f8f3d', '#3f7f35', '#5a9a44']), undefined, 7, 0.9, false); else if (r() < 0.6) S.bx(dc, lx, 0.7, r.between([1.6, 3]), r.between([1.1, 1.8]), r.between([1.4, 2.6]), 'rock', pickR(r, ['#9a9a94', '#8a8a86']), false); else S.cyl(dc, lx, 0, 0.8, 1.0, 'bark', '#7a5c3c', 6, 0.7, false); }));
+    for (const sg of [-1, 1]) {
+      S.rows(S.d0, S.d1, 9, 0.9, (dc) => S.item(dc, (r) => plant(dc, L.lx + sg * r.between([13, 46]), r, false)));
+      S.rows(S.d0, S.d1, 15, 0.9, (dc) => S.item(dc, (r) => plant(dc, L.lx + sg * r.between([46, 110]), r, true)));
+      S.rows(S.d0, S.d1, 12, 0.9, (dc) => S.item(dc, (r) => { if (!S.inClip(dc)) return; const lx = L.lx + sg * r.between([9, 26]), p = S.at(dc, lx, 0), k = r(); if (k < 0.45) CC.Trees.bush(S.b, p[0], p[1], p[2], r.between([1.4, 2.8]), r); else if (k < 0.8) CC.Trees.rock(S.b, p[0], p[1], p[2], r.between([0.9, 2.6]), r); else if (k < 0.92) CC.Trees.stump(S.b, p[0], p[1], p[2], r.between([0.9, 1.5]), r); else CC.Trees.log(S.b, p[0], p[1], p[2], r.between([5, 9]), r); }));
     }
     S.item(c, (r) => {
       for (const sg of [-1, 1]) { const dd = c + sg * HL;   // façades avant et arrière : deux pans, un linteau, une grande porte au milieu

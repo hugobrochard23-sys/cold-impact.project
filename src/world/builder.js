@@ -172,14 +172,14 @@
       const m = new THREE.Matrix4().compose(pos, q, scale || new V(1, 1, 1));
       const nm = new THREE.Matrix3().getNormalMatrix(m);
       const base = bt.pos.length / 3;
-      const tc = tint ? U.hexToRgb(tint).map((x) => x / 255) : [1, 1, 1];
+      const tc = tint ? U.hexToRgb(tint).map((x) => x / 255) : [1, 1, 1], CA = g.attributes.color;   // v117 : couleurs de sommet propres à la géométrie (arbres, rochers)
       const v = new V(), n = new V();
       for (let i = 0; i < P.count; i++) {
         v.fromBufferAttribute(P, i).applyMatrix4(m);
         n.fromBufferAttribute(N, i).applyMatrix3(nm).normalize();
         bt.pos.push(v.x, v.y, v.z); bt.nor.push(n.x, n.y, n.z);
         bt.uv.push(UV ? UV.getX(i) * (uvScale ? uvScale[0] : 1) : 0, UV ? UV.getY(i) * (uvScale ? uvScale[1] : 1) : 0);
-        bt.col.push(tc[0], tc[1], tc[2]);
+        if (CA) bt.col.push(tc[0] * CA.getX(i), tc[1] * CA.getY(i), tc[2] * CA.getZ(i)); else bt.col.push(tc[0], tc[1], tc[2]);
       }
       if (g.index) for (let i = 0; i < g.index.count; i++) bt.idx.push(base + g.index.getX(i));
       else for (let i = 0; i < P.count; i++) bt.idx.push(base + i);
@@ -207,7 +207,8 @@
       const saved = this.batches;
       this.batches = new Map();
       this.addBoxGeometry(new V(), new THREE.Quaternion(), size[0], size[1], size[2], matKey);
-      const g = geometryFromBatch(this.batches.get(matKey));
+      const key = this.batches.has(matKey) ? matKey : this.batches.keys().next().value;   // v117 : le look du niveau peut avoir changé la clé de matière (béton → autre texture) : on prend le lot réellement créé
+      const g = geometryFromBatch(this.batches.get(key)); g.userData.matKey = key;
       this.batches = saved;
       return g;
     }
