@@ -29,15 +29,15 @@
   const LENV = [1, 0.8, 1.05, 0.9, 0.75, 1, 1.1, 0.9, 0.8, 1.2];       // longueur relative selon la position dans le chapitre
   const HARDV = [0.9, 0.95, 1, 1.05, 0.8, 0.95, 1.05, 1.1, 0.85, 1.2]; // difficulté relative (le 5 et le 9 respirent, le 10 est le boss de chapitre)
   // v109 : les 10 premiers niveaux sont un PARCOURS CHOISI (zones ouvertes, de jour, lisibles) ; les zones verticales ou fermées (tour, chute, base aérienne, usine, métro, mini) ne viennent qu'à partir du niveau 25
-  const EARLY = ['city', 'forest', 'canyon', 'port', 'carriere', 'city', 'autoroute', 'banquise', 'jungle', 'eolien'], HARD = { tour: 1, chute: 1, sky: 1, usine: 1, metro: 1, mini: 1 }, SOFT = ['city', 'forest', 'port', 'canyon', 'jungle', 'banquise', 'carriere', 'autoroute'];
+  const EARLY = ['city', 'forest', 'canyon', 'port', 'banquise', 'city', 'autoroute', 'jungle', 'eolien', 'carrier'], HARD = { tour: 1, chute: 1, sky: 1, usine: 1, metro: 1, mini: 1 }, SOFT = ['city', 'forest', 'port', 'canyon', 'jungle', 'banquise', 'carriere', 'autoroute'];
   const zoneFix = (n, z) => (n <= 10 ? EARLY[n - 1] : n < 25 && HARD[z] ? SOFT[n % SOFT.length] : z);
   // v114 : les 10 premiers niveaux sont écrits à la main : suite de scènes imposée (un obstacle « signature » par niveau) et longueur choisie
   const CUR = {
-    1: { len: 1000, scenes: ['boulevard', 'virage', 'vitrage', 'boulevard'] }, 2: { len: 760, scenes: ['maison', 'maison'] }, 3: { len: 1100, scenes: ['hoodoos', 'arches', 'pontsRoche'] },
-    4: { len: 1500, scenes: ['conteneurs', 'navire', 'lac', 'pont', 'levant'] }, 5: { len: 1700, scenes: ['camions', 'excavatrices', 'convoyeur', 'tirs', 'roue'] },
-    6: { len: 1900, scenes: ['carrefour', 'viaduc', 'passage', 'slalom', 'chicane'] }, 7: { len: 2000, scenes: ['convoi', 'echangeurs', 'panneaux', 'tunnel', 'peage'] },
-    8: { len: 2100, scenes: ['icebergs', 'pontsGlace', 'crevasses', 'cathedrale', 'grotte'] }, 9: { len: 2300, scenes: ['canopee', 'lianes', 'cascade', 'temple', 'riviere', 'arbrePorte'] },
-    10: { len: 2400, scenes: ['champ', 'plateformes', 'cargos', 'portique'] } };
+    1: { len: 420, scenes: ['vitrage'] }, 2: { len: 500, scenes: ['maison', 'maison'] }, 3: { len: 800, scenes: ['arches', 'hoodoos'] },
+    4: { len: 1000, scenes: ['conteneurs', 'navire', 'lac', 'pont', 'levant'] }, 5: { len: 1100, scenes: ['icebergs', 'pontsGlace', 'cathedrale', 'grotte'] },
+    6: { len: 1200, scenes: ['carrefour', 'viaduc', 'passage', 'slalom', 'chicane'] }, 7: { len: 1300, scenes: ['convoi', 'echangeurs', 'panneaux', 'tunnel', 'peage'] },
+    8: { len: 1400, scenes: ['canopee', 'lianes', 'cascade', 'temple', 'riviere', 'arbrePorte'] }, 9: { len: 1500, scenes: ['champ', 'plateformes', 'cargos', 'portique'] },
+    10: { len: 1600, scenes: ['parc', 'ilot', 'atelier', 'catapultes', 'hangar'] } };
   const def = (n) => {
     n = Math.max(1, n | 0);
     // v096 : quatre zones en plus (niveaux 12, 17, 22, 27, puis tous les 20 niveaux pour chacune)
@@ -51,7 +51,7 @@
       // v112 : LES TROIS PREMIERS NIVEAUX, faits main. 1 = ville : une avenue, un immeuble à traverser en cassant une vitre, UNE cible derrière ; 2 = forêt : deux granges à traverser, un ennemi dans chacune ; 3 = canyon : arches puis un boss qui sort d'un mur de briques
       tutD: n <= 2 ? [] : null, winKills: n === 1 ? 1 : n === 2 ? 2 : 0,
       scenes: CUR[n] ? CUR[n].scenes : null,
-      tutRel: n === 1 ? [{ scene: 'vitrage', off: 62 }] : null, bossEnt: n < 3 ? null : (boss === 'sub' || boss === 'destroyer' || zone === 'eau') ? 'rise' : (/^(heli|gunship|jet|bomber)$/.test(boss) && n % 2 === 0) ? 'sky' : 'wall', bossWall: n >= 3 && !((boss === 'sub' || boss === 'destroyer' || zone === 'eau') || (/^(heli|gunship|jet|bomber)$/.test(boss) && n % 2 === 0)), env: ({ 1: 'day', 2: 'plaineDay', 3: 'goldenHour', 4: 'day', 5: 'goldenHour', 6: 'day', 7: 'day', 8: 'iceDay', 9: 'day', 10: 'day' })[n] || null,
+      tutRel: n === 1 ? [{ scene: 'vitrage', off: 62 }] : null, bossEnt: n < 3 ? null : (boss === 'sub' || boss === 'destroyer' || zone === 'eau') ? 'rise' : (/^(heli|gunship|jet|bomber)$/.test(boss) && n % 2 === 0) ? 'sky' : 'wall', bossWall: n >= 3 && !((boss === 'sub' || boss === 'destroyer' || zone === 'eau') || (/^(heli|gunship|jet|bomber)$/.test(boss) && n % 2 === 0)), env: ({ 1: 'day', 2: 'forestSoft', 3: 'goldenHour', 4: 'day', 5: 'mistMorning', 6: 'day', 7: 'day', 8: 'day', 9: 'day', 10: 'day' })[n] || null, tgtGap: n >= 3 && n <= 10 ? 70 : null,
 
       nightOk: n >= 16 && n % 12 === 4,                                    // v109 : la nuit est EXCEPTIONNELLE (un niveau sur 12 à partir du 16)
       dens: n <= 2 ? 0.95 : n <= 10 ? 0.66 : n <= 30 ? 0.7 : 0.8,         // v109 : moins d'ennemis (part des cibles et gardes conservée)

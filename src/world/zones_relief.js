@@ -360,18 +360,20 @@
   for (const zone of Object.keys(ZK)) { if (zone === 'tour' || zone === 'chute' || zone === 'plaine') continue; const def = Z.defs[zone]; if (def) def.scenes.galerie = ENCL[zone] ? Object.assign({}, SC.galerie, { noDress: true }) : SC.galerie; }
   forest.scenes.galerie = SC.galerie;
   // v112 : MAISON / GRANGE de la forêt (niveau 2) : un grand bâtiment avec une porte à chaque bout ; l'ennemi est à l'intérieur
-  forest.scenes.maison = { len: [300, 300], build(S) {
-    const c = S.d0 + 150, L = S.lane(c), W0 = 9, BW = 16, HL = 15, HH = 13, wall = 'houseWall', tint = '#cdbb9c', roof = '#9a4a30', pickR = (r, a) => a[Math.floor(r() * a.length)];
+  forest.scenes.maison = { len: [220, 220], build(S) {
+    const c = S.d0 + 110, L = S.lane(c), W0 = 9, BW = 16, HL = 15, HH = 13, wall = 'houseWall', tint = '#cdbb9c', roof = '#9a4a30', pickR = (r, a) => a[Math.floor(r() * a.length)];
     // forêt de pins de chaque côté (le couloir central reste dégagé)
-    // v113 : forêt plus belle — pins en étages et feuillus aux tons variés, troncs en écorce, buissons, rochers et souches au bord du couloir
-    const tree = (dc, lx, r) => {
-      const h = r.between([11, 24]), k = h / 16, g1 = pickR(r, ['#2f6f35', '#2a6630', '#387a3a']), g2 = pickR(r, ['#3b8040', '#448a44', '#357a3c']);
-      S.cyl(dc, lx, 0, 0.75 * k, h * 0.55, 'bark', '#8a6c4c', 7, 0.5 * k, false);
-      if (r() < 0.65) for (let i = 0; i < 5; i++) S.cyl(dc, lx, h * 0.2 + i * h * 0.155, (5 - i * 0.95) * k, h * 0.24, 'col:' + (i % 2 ? g2 : g1), undefined, 9, 0.35 * k, false);
-      else { S.cyl(dc, lx, h * 0.42, 4.6 * k, h * 0.55, 'col:' + g1, undefined, 9, 3.4 * k, false); S.cyl(dc, lx + 2.2 * k, h * 0.6, 3.2 * k, h * 0.36, 'col:' + g2, undefined, 8, 2.2 * k, false); S.cyl(dc, lx - 2 * k, h * 0.55, 3 * k, h * 0.34, 'col:' + g2, undefined, 8, 2 * k, false); }
+    // v115 : vraie forêt — grands conifères à nombreux étages et feuillus massifs aux teintes naturelles, serrés des deux côtés, avec un fond de grands arbres sombres
+    const GP = ['#2f5a36', '#284f30', '#365f3a', '#2c5433'], GB = ['#4d6e3a', '#42632f', '#587a40', '#3f5f33'];
+    const tree = (dc, lx, r, tall) => {
+      const h = tall ? r.between([26, 46]) : r.between([17, 34]), k = h / 16, g1 = pickR(r, GP), g2 = pickR(r, GP);
+      S.cyl(dc, lx, 0, 0.9 * k, h * 0.6, 'bark', pickR(r, ['#7d6247', '#6f563e', '#8a6c4c']), 7, 0.55 * k, false);
+      if (r() < 0.72) for (let i = 0; i < 7; i++) S.cyl(dc, lx + (r() - 0.5) * 0.5, h * 0.17 + i * h * 0.118, (5.2 - i * 0.7) * k, h * 0.2, 'col:' + (i % 2 ? g2 : g1), undefined, 10, 0.3 * k, false);
+      else { const gb = pickR(r, GB), gc = pickR(r, GB); S.cyl(dc, lx, h * 0.38, 6 * k, h * 0.5, 'col:' + gb, undefined, 10, 4 * k, false); S.cyl(dc, lx + 3.4 * k, h * 0.56, 4.2 * k, h * 0.34, 'col:' + gc, undefined, 9, 2.6 * k, false); S.cyl(dc, lx - 3 * k, h * 0.52, 4 * k, h * 0.34, 'col:' + gc, undefined, 9, 2.4 * k, false); S.cyl(dc, lx, h * 0.62, 4 * k, h * 0.3, 'col:' + gb, undefined, 9, 1.8 * k, false); }
     };
     for (const s of [-1, 1]) {
-      S.rows(S.d0, S.d1, 9, 0.9, (dc) => S.item(dc, (r) => tree(dc, L.lx + s * r.between([16, 56]), r)));
+      S.rows(S.d0, S.d1, 5, 0.9, (dc) => S.item(dc, (r) => tree(dc, L.lx + s * r.between([14, 44]), r, false)));
+      S.rows(S.d0, S.d1, 7, 0.9, (dc) => S.item(dc, (r) => tree(dc, L.lx + s * r.between([44, 100]), r, true)));
       S.rows(S.d0, S.d1, 15, 0.9, (dc) => S.item(dc, (r) => { const lx = L.lx + s * r.between([10, 20]); if (r() < 0.55) S.cyl(dc, lx, 0, r.between([1.4, 2.4]), r.between([1.1, 1.9]), 'col:' + pickR(r, ['#4f8f3d', '#3f7f35', '#5a9a44']), undefined, 7, 0.9, false); else if (r() < 0.6) S.bx(dc, lx, 0.7, r.between([1.6, 3]), r.between([1.1, 1.8]), r.between([1.4, 2.6]), 'rock', pickR(r, ['#9a9a94', '#8a8a86']), false); else S.cyl(dc, lx, 0, 0.8, 1.0, 'bark', '#7a5c3c', 6, 0.7, false); }));
     }
     S.item(c, (r) => {

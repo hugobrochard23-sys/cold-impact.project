@@ -23,6 +23,14 @@
     sun: { color: '#fff1d2', intensity: 0.85, dir: [0.35, 0.8, 0.5] },
     postfx: { vignette: 0.16, vignetteColor: '#2c3a4c', halftone: 0, lift: '#080c12', saturation: 1.08, bloomThreshold: 0.98, bloomStrength: 0.1 },
   }) });
+  // v115 : forêt — teintes douces et désaturées, brume légère qui donne de la profondeur entre les arbres
+  E('forestSoft', { label: 'FORET CLAIRE', dark: 0, vis: 0.9, skyline: '#cfdcd8', make: (r) => ({
+    sky: { top: '#7da0c0', horizon: '#dce6e4', bottom: '#b9cbc4', sunColor: '#fff0cc', sunSize: 360 },
+    fog: { color: '#c3d3cb', near: 90, far: r.between([520, 640]) },
+    hemi: { sky: '#d9e6ee', ground: '#58694a', intensity: 0.86 }, ambient: { color: '#ffffff', intensity: 0.22 },
+    sun: { color: '#fff0d2', intensity: 0.78, dir: [0.4, 0.78, 0.48] },
+    postfx: { vignette: 0.22, vignetteColor: '#2a3a30', halftone: 0, lift: '#080c0a', saturation: 0.9, bloomThreshold: 0.98, bloomStrength: 0.1 },
+  }) });
   E('overcast', { label: 'COUVERT', dark: 0.15, vis: 0.8, skyline: '#c9ccd0', make: (r) => ({
     sky: { top: '#9aa3ad', horizon: '#d6d9dc', bottom: '#b9bcc0', sunColor: '#d8dce0', sunSize: 90 },
     fog: { color: '#c6c9cd', near: 110, far: r.between([600, 760]) },

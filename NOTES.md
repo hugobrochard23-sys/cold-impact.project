@@ -192,3 +192,6 @@ Tuto : plus de points a cote du cercle, textes centres, pas de bandeau MISSION a
 
 ## v114 — actualisation rapide + niveaux 4-10 faits main
 index.html charge les scripts avec ?v=<version.json> (document.write synchrone, version.json relu sans cache) : une nouvelle version est prise des la prochaine ouverture ; `node tools/stamp.js` avant chaque publication (index.static.html = ancienne version statique). Niveaux 1-10 : suite de scenes imposee par niveau (levelmode.js CUR).
+
+## v115
+Niveaux 1-10 plus courts (len 420..1600) et plus rapides (autoCap 38..64), cibles plus rapprochees (tgtGap 70), zones toutes differentes (N5 banquise, N8 jungle, N9 eolien, N10 porte-avions), foret refaite (env forestSoft, grands arbres), fleche garage pixelisee sans contour, textes de l accueil supprimes, lanceur moins eblouissant (game.render padLook).

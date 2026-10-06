@@ -326,7 +326,7 @@
       if (CC.Look) CC.Look.set(ld ? CC.Look.forLevel(ld) : null);   // v081 : look du niveau (teinte, matériaux, ambiance)
       this.assistFuel = ld ? 3 * Math.min(5, ((this.save.lvl && this.save.lvl.tries && this.save.lvl.tries[ld.n]) || 0)) : 0;   // coup de pouce après plusieurs échecs
       if (ld) seed = ld.seed;
-      const ordP = this.params.get('order'), L = CC.Endless.level(seed, { zones: this.testMode ? null : this.progress.unlockedWorlds(), order: ld ? ld.order : (ordP ? ordP.split(',') : null), env: this.params.get('env') || (ld && ld.env) || null, levelLen: ld && ld.len, difK: ld && ld.difK, bossHp: ld && ld.hp, bossType: ld && ld.boss, padStyle: ld && ld.n, theme: ld && ld.theme, tutD: ld && ld.tutD, tutRel: ld && ld.tutRel, scenes: ld && ld.scenes, bossWall: ld && ld.bossWall, bossEnt: ld && ld.bossEnt, mids: ld && ld.mids, bossTint: ld && ld.bossTint, bossVar: ld && ld.bossVar, event: ld && ld.event, ease: ld && ld.ease, nightOk: ld && ld.nightOk, dens: ld && ld.dens });
+      const ordP = this.params.get('order'), L = CC.Endless.level(seed, { zones: this.testMode ? null : this.progress.unlockedWorlds(), order: ld ? ld.order : (ordP ? ordP.split(',') : null), env: this.params.get('env') || (ld && ld.env) || null, levelLen: ld && ld.len, difK: ld && ld.difK, bossHp: ld && ld.hp, bossType: ld && ld.boss, padStyle: ld && ld.n, theme: ld && ld.theme, tutD: ld && ld.tutD, tutRel: ld && ld.tutRel, scenes: ld && ld.scenes, bossWall: ld && ld.bossWall, bossEnt: ld && ld.bossEnt, tgtGap: ld && ld.tgtGap, mids: ld && ld.mids, bossTint: ld && ld.bossTint, bossVar: ld && ld.bossVar, event: ld && ld.event, ease: ld && ld.ease, nightOk: ld && ld.nightOk, dens: ld && ld.dens });
       this.loadLevelFrom(L, -1);
       this.endlessRun = new CC.Endless.Run(this, L);
       this.startGhost(ld);   // v083 : après le chargement (qui efface les anciens objets)
@@ -947,7 +947,7 @@
     // ---------- boucle ----------
     // v110 : DEBUTANTS — niveaux 1 à 10 : boost permanent et gratuit ; niveaux 1 à 3 : AIDE DE VISEE cachée (la fusée est attirée vers la cible devant elle, de moins en moins)
     autoBoost() { const n = this.levelRun && this.endlessRun && this.endlessRun.T.levelLen && this.levelRun.n; return !!(n && n <= 10 && !this.settings.manualBoost); }
-    autoCap() { const n = (this.levelRun && this.levelRun.n) || 1; return n <= 3 ? [30, 34, 38][n - 1] : Math.min(62, 38 + (n - 3) * 3.4); }
+    autoCap() { const n = (this.levelRun && this.levelRun.n) || 1; return n <= 3 ? [38, 42, 46][n - 1] : Math.min(64, 46 + (n - 3) * 2.6); }
     update(dt) {
       if (this.simpleCtl()) this.applySimpleAim(dt);   // v107 : COMMANDES SIMPLES — la fusée suit le couloir toute seule, le doigt ne fait que la DEPLACER dans le couloir
       const inp = (this.useAutopilot && this.autopilot && this.state !== 'MENU') ? this.autopilot.poll(dt) : this.input.poll(dt);
@@ -1094,6 +1094,9 @@
         this._uwWas = k > 0.01;
         if (this.postParams) this.postParams.tint = k > 0.02 ? '#' + new THREE.Color('#ffffff').lerp(new THREE.Color('#a4e6f2'), k).getHexString() : this.postTintBase;
       }
+      const padLook = this.padMode && (this.state === 'MENU' || this.state === 'LAUNCH'), L0 = padLook ? [this.hemi.intensity, this.sun.intensity, this.ambient.intensity] : null, PP = this.postParams, B0 = padLook && PP ? [PP.bloomStrength, PP.bloomThreshold] : null;
+      if (padLook) { this.hemi.intensity *= 0.72; this.sun.intensity *= 0.72; this.ambient.intensity *= 0.8; if (PP) { PP.bloomStrength = Math.min(PP.bloomStrength, 0.1); PP.bloomThreshold = Math.max(PP.bloomThreshold, 0.97); } }   // v115 : lanceur sans éblouissement
+      try {
       if (this.settings.postfx && this.postParams) {
         this.postParams.flash = this.flash * 0.85; this.postParams.flashColor = this.flashColor || '#ffffff';
         if (this.postChroma === undefined || this.postParamsRef !== this.postParams) { this.postParamsRef = this.postParams; this.postChroma = this.postParams.chromatic; }
@@ -1103,6 +1106,7 @@
         this.renderer.setRenderTarget(null);
         this.renderer.render(this.scene, this.camera);
       }
+      } finally { if (padLook) { this.hemi.intensity = L0[0]; this.sun.intensity = L0[1]; this.ambient.intensity = L0[2]; if (PP && B0) { PP.bloomStrength = B0[0]; PP.bloomThreshold = B0[1]; } } }
     }
 
     // v038 : EAU — la surface est à −3,6 m (monde) dans la zone PROFONDEUR et ses rampes ; on la traverse : éclaboussure, brouillard bleu serré, teinte

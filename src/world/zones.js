@@ -156,7 +156,7 @@
   Z.meta.port = { label: 'PORT', envs: ['harbor', 'harborDusk', 'neonNight'], ground: 'concrete', groundTint: '#d8d8d4', wall: () => ({ mat: { side: 'corrugated', top: 'metal' }, tint: '#c8ccd0' }), obstacle: 'metal', obstacleTint: '#c8ccd4' };
   Z.meta.sky = { label: 'BASE AERIENNE', envs: ['altitude', 'altitudeDusk'], ground: 'concreteDark', groundTint: '#b8bcc4', wall: () => ({ mat: { side: 'metal', top: 'concreteDark' }, tint: '#d0d4dc' }), obstacle: 'metal', obstacleTint: '#d0d4dc' };
   Z.meta.mini = { label: 'MONDE MINIATURE', envs: ['miniRoom'], ground: 'planks', groundTint: '#d8b888', wall: () => ({ mat: { side: 'concreteWarm', top: 'concrete' }, tint: '#e8d8b8' }), obstacle: 'planks', obstacleTint: '#d8b888' };
-  Z.meta.forest = { label: 'FORET', envs: ['forestDay', 'forestDusk', 'forestNight'], ground: 'dirt', groundTint: '#8fb064', wall: (r) => ({ mat: { side: 'rock', top: 'grass' }, tint: r.pick(['#8a9a82', '#7a8a72']) }), obstacle: 'rock', obstacleTint: '#8a9a82' };
+  Z.meta.forest = { label: 'FORET', envs: ['forestDay', 'forestDusk', 'forestNight'], ground: 'dirt', groundTint: '#a3c07a', wall: (r) => ({ mat: { side: 'rock', top: 'grass' }, tint: r.pick(['#8a9a82', '#7a8a72']) }), obstacle: 'rock', obstacleTint: '#8a9a82' };
 
   Z.meta.chute = { label: 'CHUTE', envs: ['altitude', 'altitudeDusk', 'neonNight'], ground: 'asphalt', groundTint: '#b8b8b8', wall: Z.meta.city.wall, obstacle: 'concrete', obstacleTint: '#d8d4cc' };
   Z.meta.tour = { label: 'ASCENSION', envs: ['altitude', 'altitudeDusk', 'neonNight'], ground: 'asphalt', groundTint: '#b8b8b8', wall: Z.meta.city.wall, obstacle: 'concrete', obstacleTint: '#d8d4cc' };

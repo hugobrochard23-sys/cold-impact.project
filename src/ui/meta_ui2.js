@@ -42,8 +42,9 @@
       const P = game.progress.P, gd = meta.isOpen('garage') && !P.tutDone ? 0 : meta.isOpen('pass') && !(meta.M.seen && meta.M.seen.pass_used) ? 1 : -1;
       if (gd >= 0) {
         const tt = now(), ax = bx + cw * (gd + 0.5), q = Math.max(4, R(bh * 0.1)), ay = by - bh * 0.78 - Math.abs(Math.sin(tt * 4.5)) * bh * 0.22, lab = gd === 0 ? 'AMELIORE TA FUSEE' : 'CADEAUX';
-        ctx.fillStyle = '#35ff4a'; ctx.beginPath(); ctx.moveTo(ax - q * 2.6, ay - q * 2.6); ctx.lineTo(ax + q * 2.6, ay - q * 2.6); ctx.lineTo(ax + q * 2.6, ay - q * 0.6); ctx.lineTo(ax, ay + q * 2.2); ctx.lineTo(ax - q * 2.6, ay - q * 0.6); ctx.closePath(); ctx.fill();
-        ctx.strokeStyle = '#0a3a12'; ctx.lineWidth = 3; ctx.stroke();
+        ctx.fillStyle = '#35ff4a'; const px = Math.max(3, Math.round(q * 0.9)), X0 = Math.round(ax), Y0 = Math.round(ay);   // v115 : flèche pixelisée (blocs), sans contour
+        ctx.fillRect(X0 - px, Y0 - px * 6, px * 2, px * 4);
+        for (let k2 = 0; k2 < 4; k2++) { const wb = 7 - 2 * k2; ctx.fillRect(X0 - px * wb / 2, Y0 - px * 2 + k2 * px, px * wb, px); }
         const lw = Math.min(W * 0.62, F.measure(lab, 1.5) + q * 6), lx = Math.max(W * 0.02, ax + q * 3.4 + lw > W * 0.97 ? ax - q * 3.4 - lw : ax + q * 3.4), ly = ay - q * 0.2 - bh * 0.27;
         panel(ctx, lx, ly, lw, bh * 0.55, 'rgba(8,60,20,0.95)', '#56ff5a', 8); txt(ctx, lab, lx + lw / 2, ly + bh * 0.14, lw - q * 2, 1.5, '#ffffff', 'center');
       }

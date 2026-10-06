@@ -15,7 +15,7 @@
   Z.PROFILE.eolien = { elev: 0, vol: 60, y: [8, 44], amp: 1.15 };
   Z.PROFILE.carrier = { elev: 0, vol: 34, y: [6, 36], amp: 0.7 };
   Z.meta.canyon = { label: 'CANYON ROUGE', envs: ['sandStorm', 'goldenHour', 'emberSky', 'day'], ground: 'sand', groundTint: '#d08048', wall: () => ({ mat: { side: 'rock', top: 'sand' }, tint: '#b8603a' }), obstacle: 'rock', obstacleTint: '#a85a34' };
-  Z.meta.banquise = { label: 'BANQUISE', envs: ['iceDay', 'mistMorning', 'twilight', 'day'], ground: 'white', groundTint: '#d8ecff', wall: () => ({ mat: { side: 'white', top: 'white' }, tint: '#bcd8f4' }), obstacle: 'white', obstacleTint: '#cfe6ff' };
+  Z.meta.banquise = { label: 'BANQUISE', envs: ['iceDay', 'mistMorning', 'twilight', 'day'], ground: 'white', groundTint: '#a9c4da', wall: () => ({ mat: { side: 'white', top: 'white' }, tint: '#bcd8f4' }), obstacle: 'white', obstacleTint: '#cfe6ff' };
   Z.meta.eolien = { label: 'PARC EOLIEN', envs: ['day', 'goldenHour', 'mistMorning', 'overcast'], ground: 'water', groundTint: '#ffffff', wall: () => ({ mat: { side: 'metal', top: 'metal' }, tint: '#d8dce0' }), obstacle: 'metal', obstacleTint: '#e0e4e8' };
   Z.meta.carrier = { label: 'PORTE-AVIONS', envs: ['day', 'harborDusk', 'overcast', 'goldenHour'], ground: 'concreteDark', groundTint: '#7c828a', wall: () => ({ mat: { side: 'metal', top: 'metal' }, tint: '#9aa0a8' }), obstacle: 'metal', obstacleTint: '#9aa0a8' };
 
