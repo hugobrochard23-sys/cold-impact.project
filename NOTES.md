@@ -195,3 +195,6 @@ index.html charge les scripts avec ?v=<version.json> (document.write synchrone, 
 
 ## v115
 Niveaux 1-10 plus courts (len 420..1600) et plus rapides (autoCap 38..64), cibles plus rapprochees (tgtGap 70), zones toutes differentes (N5 banquise, N8 jungle, N9 eolien, N10 porte-avions), foret refaite (env forestSoft, grands arbres), fleche garage pixelisee sans contour, textes de l accueil supprimes, lanceur moins eblouissant (game.render padLook).
+
+## v116 — lumiere
+Bloom plafonne (0.14 jour / 0.4 nuit, seuil >= 0.93 jour), eclat blanc des explosions /2 (game.render), lumieres d explosion x0.45 (particles.flash), brouillard et horizon de jour assombris de 14 % (game.applyEnv, horizon.setEnv).

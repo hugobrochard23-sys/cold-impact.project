@@ -101,7 +101,7 @@
     }
     setEnv(env) {
       if (!env || !env.fog) return;
-      this.fog.set(env.fog.color);
+      this.fog.set(env.fog.color); if ((env.dark || 0) < 0.3) this.fog.multiplyScalar(0.86);
       const d = env.dark !== undefined ? env.dark : 0;
       this.tint.copy(this.fog).multiplyScalar(d > 0.4 ? 0.62 : 0.84);   // v038e : silhouettes plus claires (brume), plus de masses noires
       this.matS.color.copy(this.tint);

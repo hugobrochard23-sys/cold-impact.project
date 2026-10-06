@@ -235,7 +235,7 @@
       let L = null;
       for (const c of this.lights) if (!L || c.age / c.life > L.age / L.life) L = c;
       L.light.position.copy(pos); L.c0.set(color); L.c1.set(color1 || color); L.light.color.copy(L.c0); L.light.distance = dist;
-      L.i0 = intensity; L.life = life; L.age = 0; L.light.intensity = intensity;
+      intensity *= 0.45; L.i0 = intensity; L.life = life; L.age = 0; L.light.intensity = intensity;   // v116 : lumières d'explosion réduites
     }
     updateLights(dt) {
       for (const L of this.lights) {

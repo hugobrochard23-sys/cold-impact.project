@@ -120,15 +120,16 @@
       let fNear = env.fog.near, fFar = env.fog.far; const vd = CC.CONFIG.render.viewDist;
       if (this.level && this.level.endless && vd) { fFar = Math.min(fFar, vd); fNear = Math.min(fNear, fFar * 0.28); }
       this.fogBase = { near: fNear, far: fFar, color: new THREE.Color(env.fog.color) }; this.postTintBase = (env.postfx && env.postfx.tint) || '#ffffff';
-      this.scene.fog.color.set(env.fog.color); this.scene.fog.near = fNear; this.scene.fog.far = fFar;
+      this.scene.fog.color.set(env.fog.color); if ((env.dark || 0) < 0.3) this.scene.fog.color.multiplyScalar(0.86); this.scene.fog.near = fNear; this.scene.fog.far = fFar;   // v116 : fond de couloir moins blanc
       { const far = this.level && this.level.endless && vd ? vd + 90 : CC.CONFIG.camera.far; if (this.camera.far !== far) { this.camera.far = far; this.camera.updateProjectionMatrix(); } }   // v038g : rien n'est dessiné au-delà du brouillard
-      this.renderer.setClearColor(env.fog.color);
+      this.renderer.setClearColor(this.scene.fog.color);
       this.hemi.color.set(env.hemi.sky); this.hemi.groundColor.set(env.hemi.ground); this.hemi.intensity = env.hemi.intensity;
       this.ambient.color.set(env.ambient.color); this.ambient.intensity = env.ambient.intensity;
       this.sun.color.set(env.sun.color); this.sun.intensity = env.sun.intensity;
       this.sunDir = new V().fromArray(env.sun.dir).normalize();
       this.sun.castShadow = CC.CONFIG.render.shadows && env.sun.shadow !== false && this.shadowsAllowed !== false;
       this.postParams = Object.assign({}, CC.CONFIG.postfx, env.postfx || {});
+      { const dk = env.dark || 0; this.postParams.bloomStrength = Math.min(this.postParams.bloomStrength, dk > 0.3 ? 0.4 : 0.14); this.postParams.bloomThreshold = Math.max(this.postParams.bloomThreshold, dk > 0.3 ? 0.7 : 0.93); }   // v116 : halo réduit partout (éblouissement)
       // v063 : CAUSE DES ECRANS NOIRS — un fondu entre deux ambiances laissait des réglages indéfinis (bloom…) : NaN dans le post-traitement = écran noir
       for (const k in CC.CONFIG.postfx) { const v = this.postParams[k]; if (v === undefined || (typeof v === 'number' && !Number.isFinite(v))) this.postParams[k] = CC.CONFIG.postfx[k]; }
       if (this.horizon) this.horizon.setEnv(env);
@@ -1098,7 +1099,7 @@
       if (padLook) { this.hemi.intensity *= 0.72; this.sun.intensity *= 0.72; this.ambient.intensity *= 0.8; if (PP) { PP.bloomStrength = Math.min(PP.bloomStrength, 0.1); PP.bloomThreshold = Math.max(PP.bloomThreshold, 0.97); } }   // v115 : lanceur sans éblouissement
       try {
       if (this.settings.postfx && this.postParams) {
-        this.postParams.flash = this.flash * 0.85; this.postParams.flashColor = this.flashColor || '#ffffff';
+        this.postParams.flash = Math.min(this.flash, 0.4) * 0.5;   // v116 : éclat blanc des explosions divisé par deux this.postParams.flashColor = this.flashColor || '#ffffff';
         if (this.postChroma === undefined || this.postParamsRef !== this.postParams) { this.postParamsRef = this.postParams; this.postChroma = this.postParams.chromatic; }
         this.postParams.chromatic = (Number.isFinite(this.postChroma) ? this.postChroma : 0) + this.boostK * CC.CONFIG.boost.chromatic + (this.chromaBurst || 0);   // v034 : le boost écarte les couleurs sur les bords
         this.postfx.render(this.scene, this.camera, this.postParams, time);
