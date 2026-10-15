@@ -70,6 +70,7 @@
       else if (this.overlay === 'unlock') { this.buttons = []; CC.Home.drawUnlock(this, ctx, game, W, H); }          // v086
       else if (this.overlay === 'daily') { this.buttons = []; CC.Home.drawDaily(this, ctx, game, W, H); }
       else if (this.overlay === 'msettings') { this.buttons = []; CC.Home.drawSettings(this, ctx, game, W, H); }
+      else if (this.overlay === 'l1death') { this.buttons = []; CC.Home.drawL1Death(this, ctx, game, W, H); }   // v118
       else if (this.overlay === 'revive') { this.buttons = []; CC.Home.drawRevive(this, ctx, game, W, H); }
       else if (this.overlay === 'generating') { this.buttons = []; this.drawGenerating(ctx, game, W, H); }
       else if (this.overlay === 'shop') { this.buttons = []; if (!this.shop) this.shop = new CC.Shop(this); this.shop.draw(ctx, game, W, H); }

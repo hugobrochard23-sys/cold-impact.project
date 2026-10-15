@@ -524,7 +524,7 @@
   city.scenes.vitrage = Object.assign({}, city.scenes.passage, { build(S) {
     city.scenes.passage.build.call(this, S);
     const c = S.mid, L = S.lane(c), hh = S.R * 2 + 4, hw = S.R + 3.5, yc = U.clamp(L.y, hh / 2 + 1.2, 30);
-    S.item(c, () => { for (const k of [-17.4, 17.4]) S.b.glass(S.at(c + k, L.lx, yc), [hw * 2 - 0.4, hh - 0.4, 0.12], [0, S.yaw(c + k), 0]); });
+    S.item(c, () => { for (const k of (S.game && S.game.levelRun && S.game.levelRun.n === 1 ? [-17.4, -8.7, 0, 8.7, 17.4] : [-17.4, 17.4])) S.b.glass(S.at(c + k, L.lx, yc), [hw * 2 - 0.4, hh - 0.4, 0.12], [0, S.yaw(c + k), 0]); });
   } });
 
   // ---------- v067 : MISSIONS MILITAIRES dans la ville — des groupes de cibles à détruire en série (combo) ----------

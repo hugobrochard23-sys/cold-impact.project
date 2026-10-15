@@ -748,5 +748,71 @@
     game.audio.play('target');
   };
 
+  // v118 : ECRAN DE MORT du niveau 1 — cause, progression, pièces gagnées, REJOUER, et trois améliorations en bas (EXPLOSION, BOUCLIER, RALENTI).
+  // Un toucher sur une carte l'achète tout de suite ; la carte CONSEILLEE répond à la cause de la mort.
+  Home.drawL1Death = function (ui, ctx, game, W, H) {
+    const L = Home.layout(ui, W, H), { HH, u, Y } = L, L1 = CC.L1, S = L1.save(game), last = game.l1last || { pct: 0, cause: 'CRASH', lines: [], total: 0, rec: 'boom' };
+    if (!last.t0) last.t0 = performance.now();
+    const tt = (performance.now() - last.t0) / 1000, pr = ui.pixelRatio(), cx = W / 2, now = performance.now();
+    ui.dim(ctx, W, H, 0.68);
+    const P = (labels, maxW, maxPx) => ui.fitPx(labels, maxW, maxPx), T = (s, x, y, px, c, o) => text(ui, ctx, s, x, y, px, c, o || {});
+    // porte-monnaie (en haut à droite)
+    { const s = 'PIECES ' + U.formatInt(S.coins), px = P([s], W * 0.4, u * 0.0065); T(s, W * 0.94, Y(0.03), px, GOLD, { align: 'right' }); ICON.nut(ctx, W * 0.94 - tw(s, px) - px * 6, Y(0.03) + px * 3.5, px * 4, GOLD); }
+    T('NIVEAU 1', W * 0.06, Y(0.03), P(['NIVEAU 1'], W * 0.3, u * 0.0065), '#9fb0c8');
+    // cause
+    { const a = last.win ? 'BIEN JOUE' : 'DETRUIT PAR', b = last.cause; T(a, cx, Y(0.062), P([a], W * 0.6, u * 0.0075), '#c8d0dc', { align: 'center' }); T(b, cx, Y(0.085), P([b], W * 0.86, u * 0.017), last.win ? GOLD : RED, { align: 'center', skew: -0.2 }); }
+    // progression du niveau + record
+    { const bx = W * 0.08, bw = W * 0.84, by = Y(0.235), bh = Math.max(u * 0.034, 14 * pr), k = U.clamp(last.pct * Math.min(1, tt / 0.6 + 0.05), 0, 1);
+      pxRect(ctx, bx, by, bw, bh, 'rgba(8,12,18,0.85)', 'rgba(159,176,200,0.5)');
+      ctx.fillStyle = GOLD; ctx.fillRect(Math.round(bx + 3), Math.round(by + 3), Math.round((bw - 6) * k), Math.round(bh - 6));
+      const best = (S.best || 0) / 100; ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(bx + 3 + (bw - 6) * best), Math.round(by - bh * 0.25), Math.max(2, Math.round(bh * 0.12)), Math.round(bh * 1.5));
+      const pc = Math.round(last.pct * 100) + ' %', pp = P([pc], W * 0.3, u * 0.011); T(pc, cx, by - pp * 9, pp, GOLD, { align: 'center' });
+      const rl = 'RECORD ' + (S.best || 0) + ' %', rp = P([rl], W * 0.4, u * 0.0055); T(rl, bx, by + bh + rp * 1.5, rp, '#9fb0c8');
+      const bl = last.atBoss && last.bossHp ? 'BOSS ' + last.bossHp + ' PV' : 'BOSS', blp = P([bl], W * 0.3, u * 0.0055); T(bl, bx + bw, by + bh + blp * 1.5, blp, last.atBoss ? RED : '#9fb0c8', { align: 'right' }); }
+    // conseil
+    { const hint = ({ shield: 'CONSEIL : LE BOUCLIER ARRETE UN MISSILE', slow: 'CONSEIL : LE RALENTI TE LAISSE LE TEMPS DE TOURNER', boom: 'CONSEIL : PLUS D EXPLOSION = BOSS PLUS VITE A TERRE' })[last.rec] || '', hp = P([hint], W * 0.92, u * 0.0058); T(hint, cx, Y(0.29), hp, '#c8d0dc', { align: 'center' }); }
+    // pièces gagnées (lignes qui apparaissent une à une)
+    { const x0 = W * 0.12, x1 = W * 0.88, rh = u * 0.044, y0 = Y(0.335); let shown = 0;
+      last.lines.forEach((r, i) => { const st = 0.35 + i * 0.22; if (tt < st) return; shown++; const k = U.clamp((tt - st) / 0.25, 0, 1), v = Math.round(r[1] * k), px = P([r[0]], W * 0.5, u * 0.0062);
+        T(r[0], x0, y0 + i * rh, px, '#e8ecef'); T('+' + v, x1, y0 + i * rh, px, GOLD, { align: 'right' }); });
+      if (shown) { const yt = y0 + last.lines.length * rh + rh * 0.2, s = '+' + U.formatInt(Math.round(last.total * U.clamp((tt - 0.35) / (0.22 * last.lines.length + 0.3), 0, 1))) + ' PIECES', px = P([s], W * 0.6, u * 0.011);
+        ctx.fillStyle = 'rgba(217,164,65,0.5)'; ctx.fillRect(Math.round(x0), Math.round(yt - rh * 0.3), Math.round(x1 - x0), 2);
+        T(s, cx, yt, px, GOLD, { align: 'center' }); } }
+    // doubler les pièces (publicité récompensée)
+    if (game.ads && game.ads.enabled() && !last.doubled && tt > 0.5) { const bw = W * 0.84, bh = Math.max(u * 0.1, 44 * pr), bx = cx - bw / 2, by = Y(0.475), on = inRect(ui, bx, by, bw, bh);
+      pxRect(ctx, bx, by, bw, bh, on ? 'rgba(86,255,90,0.35)' : 'rgba(86,255,90,0.2)', GREEN, undefined, Math.max(3, bh * 0.05)); ICON.play(ctx, bx + bh * 0.55, by + bh / 2, bh * 0.2, GREEN);
+      const s = 'PIECES X2  REGARDER UNE PUB', lp = P([s], bw - bh * 1.15, bh * 0.028); T(s, bx + bh * 1.0, by + bh / 2 - lp * 3.5, lp, '#ffffff'); hit(ui, bx, by, bw, bh, () => game.ads.rewarded(() => L1.double(game), null, 'coins')); }
+    // REJOUER
+    { const bw = W * 0.84, bh = Math.max(u * 0.165, 60 * pr), bx = cx - bw / 2, by = Y(0.552), on = inRect(ui, bx, by, bw, bh), pulse = 1 + 0.025 * Math.sin(now / 260);
+      ctx.save(); ctx.translate(cx, by + bh / 2); ctx.scale(pulse, pulse); ctx.translate(-cx, -(by + bh / 2));
+      pxRect(ctx, bx, by, bw, bh, on ? 'rgba(217,164,65,0.55)' : 'rgba(217,164,65,0.38)', GOLD, undefined, Math.max(3, bh * 0.05));
+      const s = 'REJOUER', lp = P([s], bw * 0.6, bh * 0.034); T(s, cx + bh * 0.2, by + bh / 2 - lp * 3.5, lp, '#ffffff', { align: 'center' }); ICON.rocket(ctx, bx + bh * 0.62, by + bh / 2, bh * 0.26, '#ffffff'); ctx.restore();
+      hit(ui, bx, by, bw, bh, () => L1.retry(game)); }
+    // trois améliorations
+    { const gap = W * 0.02, cw = (W * 0.94 - 2 * gap) / 3, ch = Math.min(HH * 0.245, cw * 1.9), cy0 = Y(0.985) - ch;
+      T('AMELIORER', cx, cy0 - u * 0.06, P(['AMELIORER'], W * 0.5, u * 0.0085), '#e8ecef', { align: 'center' });
+      L1.ORDER.forEach((id, i) => {
+        const D = L1.UP[id], lvl = S.up[id] || 0, c = L1.col[id], x = W * 0.03 + i * (cw + gap), cost = L1.nextCost(game, id), can = cost !== null && S.coins >= cost, rec = last.rec === id;
+        const on = inRect(ui, x, cy0, cw, ch), pulse = rec ? 0.5 + 0.5 * Math.sin(now / 240) : 0;
+        pxRect(ctx, x, cy0, cw, ch, can ? (on ? 'rgba(40,52,76,0.97)' : 'rgba(22,30,46,0.95)') : 'rgba(12,16,26,0.92)', rec ? (pulse > 0.5 ? '#ffffff' : c) : c, undefined, Math.max(2, ch * 0.012));
+        const ix = x + cw / 2, iy = cy0 + ch * 0.13, ir = cw * 0.1;
+        ctx.lineWidth = Math.max(2, ir * 0.3); ctx.strokeStyle = c; ctx.fillStyle = c;
+        if (id === 'boom') ICON.flame(ctx, ix, iy, ir * 1.3, c);
+        else if (id === 'shield') { ctx.beginPath(); ctx.arc(ix, iy, ir * 1.2, 0, 6.283); ctx.stroke(); ctx.beginPath(); ctx.arc(ix, iy, ir * 0.45, 0, 6.283); ctx.fill(); }
+        else { ctx.beginPath(); ctx.arc(ix, iy, ir * 1.2, 0, 6.283); ctx.stroke(); ctx.beginPath(); ctx.moveTo(ix, iy); ctx.lineTo(ix, iy - ir * 0.9); ctx.moveTo(ix, iy); ctx.lineTo(ix + ir * 0.6, iy + ir * 0.3); ctx.stroke(); }
+        const np = P([D.name], cw * 0.9, ch * 0.05); T(D.name, ix, cy0 + ch * 0.25, np, c, { align: 'center' });
+        const ps = Math.max(3, cw * 0.075), pw = D.max * ps * 1.5; for (let k = 0; k < D.max; k++) { ctx.fillStyle = k < lvl ? c : 'rgba(159,176,200,0.28)'; ctx.fillRect(Math.round(ix - pw / 2 + k * ps * 1.5), Math.round(cy0 + ch * 0.35), Math.round(ps), Math.round(ps)); }
+        const cur = D.cur(lvl), nx = cost !== null ? D.nxt(lvl) : 'NIVEAU MAX', lp = P(cur.concat([nx]), cw * 0.94, ch * 0.04);
+        T(cur[0], ix, cy0 + ch * 0.43, lp, '#ffffff', { align: 'center' }); T(cur[1], ix, cy0 + ch * 0.43 + lp * 11, lp, '#9fb0c8', { align: 'center' }); T(nx, ix, cy0 + ch * 0.43 + lp * 22, lp, cost !== null ? GOLD : '#9fb0c8', { align: 'center' });
+        const by = cy0 + ch * 0.74, bh = ch * 0.2, bx = x + cw * 0.08, bw = cw * 0.84;
+        pxRect(ctx, bx, by, bw, bh, cost === null ? 'rgba(60,70,90,0.7)' : can ? 'rgba(217,164,65,0.55)' : 'rgba(40,46,60,0.8)', cost === null ? '#9fb0c8' : can ? GOLD : 'rgba(159,176,200,0.35)');
+        if (cost === null) T('MAX', ix, by + bh / 2 - np * 3.5, np, '#c8d0dc', { align: 'center' });
+        else { const s = String(cost), cp = P([s], bw * 0.5, bh * 0.034), w2 = tw(s, cp) + cp * 9; T(s, ix + cp * 4.5, by + bh / 2 - cp * 3.5, cp, can ? '#ffffff' : RED, { align: 'center' }); ICON.nut(ctx, ix - w2 / 2 + cp * 3, by + bh / 2, cp * 3.4, can ? GOLD : '#8a96a8'); }
+        if (rec) { const s = 'CONSEILLE', rp = P([s], cw * 0.9, ch * 0.028); if (pulse > 0.3) T(s, ix, cy0 - rp * 9, rp, GOLD, { align: 'center' }); }
+        if (last.bought && last.bought.id === id) { const a = 1 - (now - last.bought.t) / 700; if (a > 0) { ctx.fillStyle = 'rgba(255,255,255,' + (a * 0.55) + ')'; ctx.fillRect(Math.round(x), Math.round(cy0), Math.round(cw), Math.round(ch)); T('+1', ix, cy0 + ch * 0.58 - (1 - a) * ch * 0.1, np * 1.4, '#ffffff', { align: 'center' }); } }
+        hit(ui, x, cy0, cw, ch, () => L1.buy(game, id));
+      }); }
+  };
+
   CC.Home = Home;
 })();

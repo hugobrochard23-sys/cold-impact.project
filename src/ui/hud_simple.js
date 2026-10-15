@@ -26,6 +26,7 @@
         F.draw(ctx, boss.boss ? 'BOSS' : 'MINI BOSS', W / 2, by + bh + px, px * 0.7, '#ffffff', { align: 'center' });
       }
     }
+    if (game.l1run && CC.L1) CC.L1.drawHud(ctx, game, W, H, px);   // v118 : bulles de bouclier, charges de ralenti, messages
   };
   // jauge d'essence : juste la barre (fond sombre translucide), aucun contour
   CC.HUD.prototype.drawFuelBar = function (game, rk, x, y, w, h) {

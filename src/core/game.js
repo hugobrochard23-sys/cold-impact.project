@@ -324,6 +324,7 @@
       this.levelRun = ld; this.levelWin = false; this.coinFx = null; this.ctl = { ox: 0, oy: 0, idle: 0 };
       if (CC.Roster) CC.Roster.kit = ld && ld.kit ? ld.kit : 0;   // v095 : kit d'ennemis du niveau
       this.clearPickups(); this.modRun = { shield: this.meta.shieldCharges(), drops: [] };   // v082 : modules équipés pour ce vol
+      this.l1run = null; if (CC.L1 && (!this.testMode || /[?&]l1=1/.test(location.search))) CC.L1.beginRun(this);   // v118 : améliorations du niveau 1 (bouclier, ralenti)
       if (CC.Look) CC.Look.set(ld ? CC.Look.forLevel(ld) : null);   // v081 : look du niveau (teinte, matériaux, ambiance)
       this.assistFuel = ld ? 3 * Math.min(5, ((this.save.lvl && this.save.lvl.tries && this.save.lvl.tries[ld.n]) || 0)) : 0;   // coup de pouce après plusieurs échecs
       if (ld) seed = ld.seed;
@@ -392,7 +393,7 @@
       this.rig.startHandoff(true); this.rig.startFlight();
       this.padMode = false;
       this.state = 'FLIGHT'; this.flightTime = 0; this.stallT = 0; this.boostK = 0; this.cine = false;
-      { const ln = this.endlessRun && this.endlessRun.T.levelLen && this.levelRun && this.levelRun.n; if (ln && ln <= 2 && !this.testMode) rk.shieldT = 9999; }   // v093 : niveaux 1-2 : impossible de perdre contre un mur (bouclier permanent)
+      { const ln = this.endlessRun && this.endlessRun.T.levelLen && this.levelRun && this.levelRun.n; if (ln && ln === 2 && !this.testMode) rk.shieldT = 9999; }   // v093 : niveaux 1-2 : impossible de perdre contre un mur (bouclier permanent)
       if (CC.Touch && CC.Touch.active) { this.settings.tutorialFlights = (this.settings.tutorialFlights || 0) + 1; const T = this.input.touch; if (T) T.reboostUntil = 0; }   // le doigt posé juste après le départ = boost tout de suite
       this.telemetry.event('fire', { runTime: this.runTime, pad: true });
     }
@@ -712,8 +713,8 @@
       }
     }
     // v075 : coup sur un boss (il a plusieurs points de vie, la fusée traverse et doit revenir)
-    hitBoss(t, rocket) {
-      t.hp--; t.hitCool = 0.9; t.rageK = Math.max(0.45, (t.rageK || 1) * 0.78);
+    hitBoss(t, rocket, dm) {
+      t.hp -= dm || 1; t.hitCool = 0.9; if (CC.L1 && this.l1run) CC.L1.onBossHit(this, t); t.rageK = Math.max(0.45, (t.rageK || 1) * 0.78);
       { const run0 = this.endlessRun, T0 = run0.T, lv0 = this.levelRun; let dN = 0, best = 1e18; for (let d = Math.max(0, run0.dist - 40); d < run0.dist + 900; d += 6) { const p = T0.at(d, 0, 0), dx = p[0] - t.base.x, dz = p[2] - t.base.z, q = dx * dx + dz * dz; if (q < best) { best = q; dN = d; } }
         const step = t.mini ? 85 : Math.max(70, Math.min(150, 450 / Math.max(1, t.hpMax))), dT = Math.min(dN + step, (lv0 ? lv0.len : 0) + 640), lx = (Math.random() - 0.5) * 50, yy = t.type === 'heli' || (t.gen && t.gen.flying) ? Math.max(20, t.base.y - T0.base(dN) + (Math.random() - 0.5) * 20) : 0, np = T0.at(dT, lx, yy);
         t.flyTo = new V(np[0], np[1], np[2]); t.flySpeed = 110; }   // il fuit vers le fond de l'arène et continue de tirer
@@ -733,6 +734,7 @@
     bossSpeed() { const e = this.levelRun && this.levelRun.bossEnt; return e === 'wall' ? 36 : e === 'sky' ? 52 : e === 'rise' ? 32 : 85; }
     bossEntrance(t) {
       const e = this.levelRun && this.levelRun.bossEnt;
+      if (this.l1run) CC.L1.msg(this, 'BOSS !', 1.6, '#ff6a50');
       if (e === 'wall') this.breakBossWall();
       else if (e === 'rise') { const q = t.base.clone(); q.y = t.base.y + 50; try { this.effects.ring(q, new V(0, 1, 0), 3, 70, 1.0, '#cfeaff', 0.85); this.effects.explosion(q, null, true, 'cyan'); } catch (er) { /* ignoré */ } this.audio.play('splash', q); this.audio.play('whale', q); this.rig.shake = Math.max(this.rig.shake || 0, 1.4); }
       else if (e === 'sky') { this.audio.play('siren', t.base); this.audio.play('whoosh', t.base); }
@@ -742,13 +744,15 @@
       setTimeout(() => { try { w.breakFall(this, 20); this.rig.shake = Math.max(this.rig.shake || 0, 1.6); this.flash = Math.max(this.flash || 0, 0.35); this.flashColor = '#ffd9a0'; this.hitStop = 0.1; this.hitScale = 0.2; } catch (e) { /* ignoré */ } }, 120);
     }
     onBossDead(t, c, rocket) {
+      if (this.l1run && CC.L1.on(this) && !this.levelWin) { CC.L1.msg(this, 'BOSS DETRUIT !', 2.2, '#ffe9a0'); CC.L1.settle(this, true); this.results0 = this.l1last; }   // v118
       this.meta.event('boss', 1); this.winTime = this.ghostRec ? this.ghostRec.t : 0;
       this.levelWin = true; this.hitStop = 1.4; this.hitScale = 0.2; this.chromaBurst = 0.03; this.flash = 0.5; this.flashColor = '#ffffff';
       for (let i = 0; i < 7; i++) setTimeout(() => { try { this.effects.explosion(c.clone().add(new V((Math.random() - 0.5) * 16, Math.random() * 9, (Math.random() - 0.5) * 16)), null, true, i % 2 ? 'cyan' : 'orange'); this.audio.play('boom', c); } catch (e) { /* ignoré */ } }, i * 170);
       setTimeout(() => { if (this.state === 'FLIGHT' && this.endlessRun) { const rk = this.rocket; rk.active = false; rk.mesh.visible = false; rk.light.intensity = 0; rk.rope.visible = false; this.finishEndless(); } }, 2000);
     }
     onTargetHit(t, rocket) {
-      if (this.endlessRun && t.hp > 1 && !t.hazard) { this.hitBoss(t, rocket); return; }
+      const dm = CC.L1 && this.l1run ? CC.L1.bossDmg(this) : 1;   // v118 : EXPLOSION = plus de dégâts au boss
+      if (this.endlessRun && t.hp > dm && !t.hazard) { this.hitBoss(t, rocket, dm); return; }
       if (t.hazard) { this.onRocketCrash(t.cause || (t.type === 'train' ? 'train' : 'drone'), rocket.pos.clone(), new V(0, 1, 0)); return; }   // v034 : un drone ne se détruit pas, il détruit
       const c = t.obb.c.clone();
       t.kill(this);
@@ -775,7 +779,8 @@
         (this.killPops = this.killPops || []).push({ p: c.clone(), t0: performance.now(), txt: '+' + (Math.round(val * 10) / 10), chain: run.streak || 0 });   // v093 : le +1 grossit avec la série
         if (t.golden) { this.settings.seenGold = true; if (CC.Haptics) CC.Haptics.pattern('levelUp'); }
         if (t.golden && !t.noDrop) this.spawnModPickup(c);   // v082 : l'engin doré lâche une caisse verte (un module)
-        { const rad = this.meta.warRadius();   // v082 : module OGIVE : tout ce qui est proche explose aussi
+        { const rad = Math.max(this.meta.warRadius(), CC.L1 && this.l1run ? CC.L1.radius(this) : 0);   // v082 : module OGIVE : tout ce qui est proche explose aussi (v118 : et l'amélioration EXPLOSION)
+          if (rad > 0 && CC.L1 && this.l1run && CC.L1.radius(this) > 0) CC.L1.boomFx(this, c, rad);
           if (rad > 0 && !t.boss) for (const q of this.targets) { if (q === t || !q.alive || q.boss || q.mini || q.hazard || !q.obb || q.obb.c.distanceTo(c) > rad) continue; const c2 = q.obb.c.clone(); q.kill(this); run.points = (run.points || 0) + this.progress.pointMult(); run.kills = (run.kills || 0) + 1; run.stats.targets++; this.progress.event('targets'); this.meta.event('kills', 1); run.addFuel(CC.CONFIG.endless.fuelTarget * 0.6); fx.explosion(c2, null, true, 'cyan'); fx.ring(c2, up, 2, 24, 0.5, '#ffd060', 0.9); } }
         if (t.boss) this.onBossDead(t, c, rocket);
         if (CC.Touch && CC.Touch.active && CC.Haptics) CC.Haptics.tick('warn');
@@ -948,7 +953,7 @@
     // ---------- boucle ----------
     // v110 : DEBUTANTS — niveaux 1 à 10 : boost permanent et gratuit ; niveaux 1 à 3 : AIDE DE VISEE cachée (la fusée est attirée vers la cible devant elle, de moins en moins)
     autoBoost() { const n = this.levelRun && this.endlessRun && this.endlessRun.T.levelLen && this.levelRun.n; return !!(n && n <= 10 && !this.settings.manualBoost); }
-    autoCap() { const n = (this.levelRun && this.levelRun.n) || 1; return n <= 3 ? [38, 42, 46][n - 1] : Math.min(64, 46 + (n - 3) * 2.6); }
+    autoCap() { const n = (this.levelRun && this.levelRun.n) || 1; return n <= 3 ? [44, 42, 46][n - 1] : Math.min(64, 46 + (n - 3) * 2.6); }
     update(dt) {
       if (this.simpleCtl()) this.applySimpleAim(dt);   // v107 : COMMANDES SIMPLES — la fusée suit le couloir toute seule, le doigt ne fait que la DEPLACER dans le couloir
       const inp = (this.useAutopilot && this.autopilot && this.state !== 'MENU') ? this.autopilot.poll(dt) : this.input.poll(dt);
@@ -1022,7 +1027,8 @@
             if (this.impactT > 0.9) {
               // v093 : niveaux 1-3 : pas d'écran, la partie se relance aussitôt (essayer = instantané)
               const cl = this.endlessRun.T.levelLen && this.levelRun && this.levelRun.n;
-              if (cl && cl <= 3 && !this.testMode && this.crashKind !== 'win') { if (!this.pendingHome) this.goHome({ autoLaunch: true }); }
+              if (cl === 1 && this.l1run && !this.pendingHome) CC.L1.beginDeath(this);   // v118 : niveau 1 : écran de mort avec trois améliorations
+              else if (cl && cl <= 3 && !this.testMode && this.crashKind !== 'win') { if (!this.pendingHome) this.goHome({ autoLaunch: true }); }
               else if (this.canRevive()) this.beginRevive(); else this.finishEndless();
             }
             break;
@@ -1042,6 +1048,7 @@
       for (const e of this.entities) if (e.update) e.update(dt, this);
       this.updatePickups(dt); this.updateGhost(dt); this.bossGuard(dt); this.bossHide();
       for (const m of this.missiles) m.update(dt, this);
+      if (this.l1run) CC.L1.tick(this, dt);   // v118 : ralenti automatique
       this.missiles = this.missiles.filter((m) => { if (!m.alive) this.scene.remove(m.object); return m.alive; });
       if (this.centerMsgT > 0 && (this.centerMsgT -= dt) <= 0) { this.centerMsg = null; this.centerMsgT = 0; }   // message passager (graine de la carte générée)
       if (this.state === 'FLIGHT') this.style.update(dt, rk); else this.style.update(dt, null);

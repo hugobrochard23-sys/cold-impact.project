@@ -33,7 +33,7 @@
   const zoneFix = (n, z) => (n <= 10 ? EARLY[n - 1] : n < 25 && HARD[z] ? SOFT[n % SOFT.length] : z);
   // v114 : les 10 premiers niveaux sont écrits à la main : suite de scènes imposée (un obstacle « signature » par niveau) et longueur choisie
   const CUR = {
-    1: { len: 420, scenes: ['vitrage'] }, 2: { len: 500, scenes: ['maison', 'maison'] }, 3: { len: 800, scenes: ['arches', 'hoodoos'] },
+    1: { len: 2000, scenes: ['boulevard', 'vitrage', 'toits', 'enfilade', 'city1'] },   // v118 : niveau 1 refait (parcours spectaculaire + boss à phases, voir src/systems/l1.js) 2: { len: 500, scenes: ['maison', 'maison'] }, 3: { len: 800, scenes: ['arches', 'hoodoos'] },
     4: { len: 1000, scenes: ['conteneurs', 'navire', 'lac', 'pont', 'levant'] }, 5: { len: 1100, scenes: ['icebergs', 'pontsGlace', 'cathedrale', 'grotte'] },
     6: { len: 1200, scenes: ['carrefour', 'viaduc', 'passage', 'slalom', 'chicane'] }, 7: { len: 1300, scenes: ['convoi', 'echangeurs', 'panneaux', 'tunnel', 'peage'] },
     8: { len: 1400, scenes: ['canopee', 'lianes', 'cascade', 'temple', 'riviere', 'arbrePorte'] }, 9: { len: 1500, scenes: ['champ', 'plateformes', 'cargos', 'portique'] },
@@ -46,7 +46,7 @@
     const mids = [];
     const pool = POOL[zone] || POOL.city, k = Math.floor((n - 1) / ZN.length), boss = pool[k % pool.length];
     for (let i = 0; i < nm; i++) { let mt = pool[(k + 1 + 2 * i) % pool.length]; if (mt === boss && zone !== 'eau') mt = pool[(k + 2 + 2 * i) % pool.length]; if (mt === boss && zone !== 'eau') mt = MINI[(n + i) % MINI.length]; mids.push({ d: Math.round(len * (i + 1) / (nm + 1)), type: mt, tint: (k + i + 3) % 6, variant: (k + i + 1) % 3, hp: Math.min(5, 2 + Math.floor(n / 12)) }); }
-    return {
+    const R = {
       n, zone, seed: 7000 + n * 131, len,
       // v112 : LES TROIS PREMIERS NIVEAUX, faits main. 1 = ville : une avenue, un immeuble à traverser en cassant une vitre, UNE cible derrière ; 2 = forêt : deux granges à traverser, un ennemi dans chacune ; 3 = canyon : arches puis un boss qui sort d'un mur de briques
       tutD: n <= 2 ? [] : null, winKills: n === 1 ? 1 : n === 2 ? 2 : 0,
@@ -64,6 +64,7 @@
       order: (flat ? [] : ['city']).concat(new Array(90).fill(zone)),
       chest: Math.round(10 + 3 * Math.min(n, 60) + 1.2 * Math.max(0, n - 60)),   // v086 : les écrous sont plus rares (le garage a maintenant 30 niveaux d'amélioration par pièce)
     };
+    return n === 1 && CC.L1 ? CC.L1.patchDef(R) : R;   // v118 : niveau 1 : boss à phases, aucune cible d'entraînement
   };
   CC.LM = { ZN, def, count: 300, THEMES, POOL };
 })();
