@@ -214,6 +214,8 @@
     // planeur : les ailes portent (elles annulent une partie de la gravité tant que la vitesse est suffisante)
     if (r.wing > 0 && !ev.preview) rk.vel.y += C.physics.gravity * r.wing * (r.tier >= 2 && rk.fuel <= 0.01 ? 0.25 : 0.62) * U.clamp((sp - 12) / 14, 0, 1.1) * dt;   // v125 : plus de carburant ou plus de vitesse = on pique   // v123 : lent = les ailes ne portent plus : elle pique, on peut redresser avec la vitesse reprise
     if (ev.preview) rk.vel.y += C.physics.gravity * 0.95 * U.clamp(sp / 17, 0, 1.1) * dt;
+    // filet de sécurité : la fusée ne s'enfonce jamais dans le sol (elle roule dessus, le glissement la fait s'écraser)
+    { const gyy = run.T.base(Math.max(0, run.dist)) + 0.32; if (rk.pos.y < gyy) { rk.pos.y = gyy; if (rk.vel.y < 0) rk.vel.y = 0; rk.sliding = Math.max(rk.sliding || 0, 0.03); } }
     // sans réacteur ou sans carburant : la fusée tombe ; au sol, le vol est fini
     const out = (r.tier < 2 || rk.fuel <= 0.01) && !ev.preview;
     if (out && !ev.preview && sp < 24 && rk.fwd.y > -0.55) g.input.addAim(0, -1.5 * U.clamp((24 - sp) / 8, 0, 1) * dt);   // v125 : décrochage : sans poussée et sans vitesse, le nez plonge (on récupère en reprenant de la vitesse)
@@ -268,11 +270,15 @@
       const grp = groups[k]; if (!grp.visible) continue;
       for (const ch of grp.children.slice()) {
         ch.updateWorldMatrix(true, false); const wp = new V(), wq = new THREE.Quaternion(), ws = new V(); ch.matrixWorld.decompose(wp, wq, ws); grp.remove(ch); sc.add(ch); ch.position.copy(wp); ch.quaternion.copy(wq); ch.scale.copy(ws);
-        add(ch, v0.clone().multiplyScalar(0.55).add(new V(rr(-3, 3), rr(2, 7), rr(-3, 3))), new V(rr(-9, 9), rr(-9, 9), rr(-9, 9)), 0.1);
+        add(ch, v0.clone().multiplyScalar(0.55).add(new V(rr(-3, 3), rr(2, 7), rr(-3, 3))), new V(rr(-9, 9), rr(-9, 9), rr(-9, 9)), 0.22);
       }
     }
-    const body = { m: rk.mesh, v: v0.clone().multiplyScalar(0.7), w: new V(0, 0, Math.random() < 0.5 ? 7 : -7), r: 0.14, rest: false, isBody: true };
+    const body = { m: rk.mesh, v: v0.clone().multiplyScalar(0.7), w: new V(0, 0, Math.random() < 0.5 ? 7 : -7), r: 0.4, rest: false, isBody: true };
     P.push(body); rk.mesh.visible = true;
+    // éclats du tube : petits morceaux de bois / carton qui se détachent dès le premier choc
+    { const cols = ['#b8925e', '#c9a46c', '#8a6a44', '#e8dcc0', '#6e5230'], bp = rk.pos.clone();
+      for (let i = 0; i < 12; i++) { const sz = rr(0.06, 0.2), ch = new THREE.Mesh(new THREE.BoxGeometry(sz, sz * rr(0.3, 0.8), sz * rr(1, 2.2)), new THREE.MeshLambertMaterial({ color: cols[i % cols.length] })); ch.position.copy(bp).add(new V(rr(-0.2, 0.2), rr(0, 0.3), rr(-0.3, 0.3))); ch.quaternion.setFromEuler(new THREE.Euler(rr(0, 6), rr(0, 6), rr(0, 6))); sc.add(ch);
+        add(ch, v0.clone().multiplyScalar(rr(0.2, 0.6)).add(new V(rr(-4, 4), rr(2, 8), rr(-4, 4))), new V(rr(-14, 14), rr(-14, 14), rr(-14, 14)), sz * 0.6); } }
     g.evoTumble = { P, t: 0, dur: 3.1, flag: null, kind, body, v0: v0.clone() };
     g.audio.play('clunk', pos); g.rig.shake = 0.5; g.style.dropCombos();
     sparks(g, pos, 26, 10);
