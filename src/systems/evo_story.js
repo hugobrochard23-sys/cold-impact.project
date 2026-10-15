@@ -12,15 +12,17 @@
     day:     { top: '#6c9ccc', hor: '#e2eaef', fog: '#cfdbe0', near: 140, far: 310, hemiS: '#d8e4f0', hemiG: '#6a7a58', hemiI: 0.74, amb: 0.16, sunC: '#fff0d6', sunI: 0.8, night: 0 },
     gold:    { top: '#6a86b8', hor: '#ffb878', fog: '#d8a878', near: 100, far: 290, hemiS: '#ffd8b0', hemiG: '#6a5a48', hemiI: 0.7, amb: 0.16, sunC: '#ff9a50', sunI: 0.95, night: 0.1 },
     deep:    { top: '#1c2234', hor: '#3a3a48', fog: '#2a2c38', near: 30, far: 190, hemiS: '#8a90b0', hemiG: '#30303a', hemiI: 0.55, amb: 0.22, sunC: '#9aa4c8', sunI: 0.3, night: 0.4 },
-    night:   { top: '#050a1e', hor: '#2a3a68', fog: '#18203a', near: 60, far: 290, hemiS: '#5a70b0', hemiG: '#20243a', hemiI: 0.6, amb: 0.24, sunC: '#8aa4ff', sunI: 0.45, night: 1 },
+    shaft:   { top: '#506080', hor: '#8a8a98', fog: '#4a4c58', near: 40, far: 240, hemiS: '#c0c8e0', hemiG: '#585860', hemiI: 0.9, amb: 0.35, sunC: '#ffd8a8', sunI: 0.6, night: 0.3 },
+    tunnel:  { top: '#202638', hor: '#4a4a58', fog: '#3a3c48', near: 40, far: 230, hemiS: '#b8c0d8', hemiG: '#484850', hemiI: 0.95, amb: 0.45, sunC: '#a8b0d0', sunI: 0.45, night: 0.35 },
+    night:   { top: '#050a1e', hor: '#2a3a68', fog: '#18203a', near: 60, far: 290, hemiS: '#5a70b0', hemiG: '#20243a', hemiI: 0.42, amb: 0.17, sunC: '#8aa4ff', sunI: 0.3, night: 1 },
     siege:   { top: '#0a0818', hor: '#5a2a3a', fog: '#2c1822', near: 60, far: 290, hemiS: '#a06078', hemiG: '#2a1a22', hemiI: 0.55, amb: 0.22, sunC: '#ff7a50', sunI: 0.5, night: 0.9 },
     fire:    { top: '#12080e', hor: '#8a3a28', fog: '#3a1c14', near: 60, far: 300, hemiS: '#c07048', hemiG: '#301810', hemiI: 0.6, amb: 0.22, sunC: '#ff7a3a', sunI: 0.6, night: 0.8 },
     core:    { top: '#0a1424', hor: '#1a3a5a', fog: '#102030', near: 40, far: 240, hemiS: '#6a9ac0', hemiG: '#1a2a3a', hemiI: 0.65, amb: 0.26, sunC: '#6aa8ff', sunI: 0.35, night: 0.7 },
     inferno: { top: '#200808', hor: '#e0501c', fog: '#5a2010', near: 40, far: 260, hemiS: '#ff9050', hemiG: '#401408', hemiI: 0.8, amb: 0.3, sunC: '#ff6a20', sunI: 0.8, night: 0.6 },
   };
   for (const k of Object.keys(MOOD)) { const m = MOOD[k]; for (const f of ['top', 'hor', 'fog', 'hemiS', 'hemiG', 'sunC']) m[f] = C3(m[f]); }
-  const SCENE_MOOD = { rampe: 'dawn', camp: 'morning', riviere: 'day', foret: 'day', vallee: 'day', grotte: 'deep', falaise: 'gold', entrepots: 'gold', carriere: 'gold', puits: 'deep', tunnel: 'deep', ville: 'night', approche: 'siege', porte: 'fire', noyau: 'core', arene: 'core', base: 'siege' };
-  const SCENE_AUDIO = { rampe: 'evoDawn', camp: 'evoDawn', riviere: 'evoDay', foret: 'evoDay', vallee: 'evoDay', grotte: 'evoMine', falaise: 'evoDusk', entrepots: 'evoDusk', carriere: 'evoDusk', puits: 'evoMine', tunnel: 'evoMine', ville: 'evoNight', approche: 'evoSiege', porte: 'evoBoss', noyau: 'evoBoss', arene: 'evoBoss', base: 'evoSiege' };
+  const SCENE_MOOD = { descente: 'gold', rampe: 'dawn', camp: 'morning', riviere: 'day', foret: 'day', vallee: 'day', grotte: 'deep', falaise: 'gold', entrepots: 'gold', carriere: 'gold', puits: 'shaft', tunnel: 'tunnel', ville: 'night', approche: 'siege', porte: 'fire', noyau: 'core', fuite: 'inferno', arene: 'core', base: 'siege' };
+  const SCENE_AUDIO = { descente: 'evoDusk', rampe: 'evoDawn', camp: 'evoDawn', riviere: 'evoDay', foret: 'evoDay', vallee: 'evoDay', grotte: 'evoMine', falaise: 'evoDusk', entrepots: 'evoDusk', carriere: 'evoDusk', puits: 'evoMine', tunnel: 'evoMine', ville: 'evoNight', approche: 'evoSiege', porte: 'evoBoss', noyau: 'evoBoss', fuite: 'evoEscape', arene: 'evoBoss', base: 'evoSiege' };
   const _m = { top: new THREE.Color(), hor: new THREE.Color(), fog: new THREE.Color(), hemiS: new THREE.Color(), hemiG: new THREE.Color(), sunC: new THREE.Color() };
   const mix = (a, b, t, out) => { for (const f of ['top', 'hor', 'fog', 'hemiS', 'hemiG', 'sunC']) out[f].copy(a[f]).lerp(b[f], t); for (const f of ['near', 'far', 'hemiI', 'amb', 'sunI', 'night']) out[f] = a[f] + (b[f] - a[f]) * t; return out; };
   const sm = (t) => { t = U.clamp(t, 0, 1); return t * t * (3 - 2 * t); };
@@ -29,7 +31,8 @@
     const CH = EVO.chapters || [], escaping = g.evoEscape && g.evoEscape.on;
     if (escaping) return mix(MOOD.inferno, MOOD.inferno, 0, _mood);
     let i = 0; for (let k = 0; k < CH.length; k++) if (dist >= CH[k].d) i = k;
-    const a = MOOD[SCENE_MOOD[CH[i] && CH[i].key] || 'day'], nx = CH[i + 1], b = nx ? MOOD[SCENE_MOOD[nx.key] || 'day'] : a, end = nx ? nx.d : dist + 1, t = nx ? sm((dist - (end - 160)) / 160) : 0;
+    const a = MOOD[SCENE_MOOD[CH[i] && CH[i].key] || 'day'], nx = CH[i + 1], b = nx ? MOOD[SCENE_MOOD[nx.key] || 'day'] : a, end = nx ? nx.d : dist + 1; let t = nx ? sm((dist - (end - 160)) / 160) : 0;
+    if (CH[i] && CH[i].key === 'fuite') { const F = EVO.scenePos('fuite'); if (F) { t = sm((dist - (F.d0 + F.len * 0.78)) / 90); return mix(a, MOOD.dawn, t, _mood); } }
     return mix(a, b, t, _mood);
   };
   EVO.applyMood = (g, m) => {
@@ -49,9 +52,9 @@
   EVO.radio = (g, txt, dur) => { g.evoRadio = { txt, t0: performance.now(), dur: (dur || 3.4) * 1000 }; g.audio.play('radio'); };
   const LINES = {
     rampe: ['CENTRE : TOUCHE LES ENNEMIS. CHAQUE CIBLE RAPPORTE DES PIECES.', 3.6], camp: ['CENTRE : SITE MILITAIRE. DETRUIS TOUT CE QUE TU PEUX.', 3.4], riviere: ['CENTRE : RIVIERE. PLONGE DEDANS POUR SURPRENDRE LA VEDETTE.', 3.6],
-    foret: ['CENTRE : FORET DENSE. RESTE BAS, ILS TE GUETTENT.', 3.2], carriere: ['CENTRE : LA CARRIERE. DESCENDS EN SPIRALE.', 3.2], puits: ['CENTRE : PUITS DE MINE. PLONGE ! PLONGE !', 3.0],
+    foret: ['CENTRE : FORET DENSE. RESTE BAS, ILS TE GUETTENT.', 3.2], carriere: ['CENTRE : LA CARRIERE. DESCENDS EN SPIRALE.', 3.2], descente: ['CENTRE : LA CARRIERE. DESCENDS EN SPIRALE.', 3.2], puits: ['CENTRE : PUITS DE MINE. PLONGE ! PLONGE !', 3.0],
     tunnel: ['CENTRE : TUNNEL. ATTENTION AUX TRAINS.', 3.0], ville: ['CENTRE : VILLE ENNEMIE. LA CITADELLE EST DEVANT TOI.', 3.6], approche: ['CENTRE : DEFENSES ANTIAERIENNES. RESTE BAS.', 3.2],
-    porte: ['CENTRE : LE GARDIEN ! PASSE ENTRE SES JAMBES !', 3.4], arene: ['CENTRE : TU Y ES. DETRUIS LE REACTEUR !', 3.4],
+    porte: ['CENTRE : LE GARDIEN ! PASSE ENTRE SES JAMBES !', 3.4], noyau: ['CENTRE : TU Y ES. DETRUIS LE REACTEUR AU FOND DU HALL !', 3.6], fuite: ['CENTRE : SORS DE LA ! VITE !', 2.4], arene: ['CENTRE : TU Y ES. DETRUIS LE REACTEUR !', 3.4],
   };
   EVO.onChapter = (g, c) => {
     const L = LINES[c.key]; if (L && (EVO.save(g).runs < 40 || c.i > 3)) EVO.radio(g, L[0], L[1]);

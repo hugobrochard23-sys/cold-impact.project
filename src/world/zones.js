@@ -430,7 +430,7 @@
       const q = 32; slab(-1, 2 * q, 2, 'concreteDark', '#7c828a');
       for (const s of [-1, 1]) bx2({ p: GP(s * (q + 120), ym - T.rel(m) - 3.6), s: [900, 2, len], r: [0, 0, 0], mat: 'water', ground: true });
     } else {
-      if (zone === 'campagne' && Z.evoGroundMesh) { slab(-1, 260, 2, 'col:#7d975f', undefined, { render: false }); Z.evoGroundMesh(ctx, d, e); }   // v124 : sol lisse (surface continue, collision invisible dessous)
+      if (zone === 'campagne' && Z.evoGroundMesh) { const pS = Z.plan(T, T.zoneIndex(m)), cS = pS.scenes.find((q) => m >= q.d0 && m < q.d1), gwS = cS && Z.defs.campagne.scenes[cS.name] && Z.defs.campagne.scenes[cS.name].gw; slab(-1, gwS ? 2 * gwS : 260, 2, 'col:#7d975f', undefined, { render: false }); Z.evoGroundMesh(ctx, d, e); }   // v124 : sol lisse (surface continue, collision invisible dessous)
       else slab(-1, 900, 2, Z.meta[zone] ? Z.meta[zone].ground : 'asphalt', Z.meta[zone] ? Z.meta[zone].groundTint : '#ffffff');   // v123 : campagne : le sol ne projette pas d'ombre sur ses voisins (plus de raies tous les 20 m)
     }
   }
@@ -488,6 +488,7 @@
     for (let dc = S.d0; dc < S.d1; dc += 40) S.item(dc + 20, () => { for (const sg of [-1, 1]) S.bx(dc + 20, sg * (V0 + 12), 55, 24, 110, 40.6, wl.mat, wl.tint); });
     const dEnd = T.levelLen + 800; if (zone !== 'campagne' && dEnd > S.d0 && dEnd <= S.d1 + 0.5) S.item(dEnd - 3, () => S.bx(dEnd - 3, 0, 55, 2 * (V0 + 24), 110, 6, wl.mat, wl.tint));
     // v080 : le boss a SON design (CC.BossModels), il entre en vol depuis le fond de l'arène ; en altitude (tour, chute) il vole à la hauteur de la trajectoire
+    if (zone === 'campagne' && CC.EVO && CC.EVO.on) return;   // v132 : pas de boss en arène : le final est la citadelle
     const dB = T.levelLen + 110, dS = T.levelLen + (T.bossEnt === 'rise' ? 200 : 380), ent = T.bossEnt;
     // v112/v113 : le boss est caché derrière un MUR géant (briques, planches, roche, glace… selon la zone) qui s'effondre quand il entre ; ou il plonge du ciel ; ou il remonte du sol / de l'eau
     const dW = T.levelLen + 348, WM = { city: ['brick', 'brick'], forest: ['planks', 'planks'], jungle: ['planks', 'planks'], canyon: ['rock', 'brick'], banquise: ['white', 'glass'], carriere: ['sand', 'brick'], autoroute: ['concrete', 'brick'], port: ['corrugated', 'planks'], usine: ['corrugated', 'planks'], eolien: ['metal', 'planks'], volcan: ['rock', 'brick'], barrage: ['concrete', 'brick'] }[zone] || ['brick', 'brick'];
