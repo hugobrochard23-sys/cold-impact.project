@@ -370,7 +370,7 @@
       this.startEndless(null, { home: true });
       this.fadeIn = 0.45;
       if (ph.opts.autoLaunch) { this.pad.queued = true; this.cine = true; }   // v112 : pas de menu : le lanceur se prépare et part tout seul
-      else if (CC.EVO && CC.EVO.on && !this.testMode) this.ui.overlay = 'evo';
+      else if (CC.EVO && CC.EVO.on && !this.testMode) CC.EVO.showHome(this);
     }
 
     // v034 : le toucher sur le lanceur → charge → allumage (Game.update, état LAUNCH)
@@ -1242,7 +1242,7 @@
       // v091 : tout premier lancement (ou après RÉINITIALISER) : on est jeté directement dans le niveau 1, sans menu — le tutoriel commence aussitôt
       if (!(CC.EVO && CC.EVO.on) && !((this.settings.tutStep || 0) >= 4) && ((this.save.lvl && this.save.lvl.max) || 1) <= 1 && this.pad && (this.settings.termsOk || this.testMode)) { this.pad.queued = true; this.cine = true; }
       if (!this.settings.termsOk && !this.testMode) this.ui.overlay = 'terms';
-      else if (CC.EVO && CC.EVO.on && !this.testMode) this.ui.overlay = 'evo';   // v119 : écran unique du mode évolution   // v094 : conditions d'utilisation à la première ouverture
+      else if (CC.EVO && CC.EVO.on && !this.testMode) CC.EVO.showHome(this);   // v119 : écran unique du mode évolution   // v094 : conditions d'utilisation à la première ouverture
       // v032 : lien partagé ?mission=<graine>&diff=<difficulté> → écran du générateur avec cette graine
       const ms = CC.Gen.parseSeed(this.params.get('mission'));
       if (ms !== null) { this.ui.overlay = 'missions'; this.ui.seedChoice = ms; this.ui.diffChoice = this.params.get('diff'); }

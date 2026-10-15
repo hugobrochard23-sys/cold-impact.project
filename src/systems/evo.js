@@ -43,7 +43,7 @@
   EVO.reset = (g) => {
     g.save.evo = undefined; EVO._cheat = 1; const S = EVO.save(g); g.evoLast = null; g.evoBought = null; g.evoResetArm = 0; g.evoAnim = null;
     if (g.rocket) EVO.applySkin(g); if (g.pad) EVO.dressPad(g.pad);
-    g.writeSave(); g.audio.play('uiTick'); g.telemetry.event('evoReset', {}); return S;
+    g.writeSave(); g.audio.play('uiTick'); g.telemetry.event('evoReset', {}); if (EVO.startIntro) EVO.startIntro(g); return S;
   };
 
   // ---------- statistiques ----------
@@ -54,8 +54,8 @@
     return { n, tier, s, name: RK_TIERS[tier], wing, vmax, drag, thrust: vmax * vmax * drag, gripOff: tier >= 1 ? 1.2 + 4.5 * wing : 0.7,
       dmg: 1.2 + 0.12 * n + 0.3 * tier, fuel: tier >= 2 ? [0, 0, 8, 16][tier] + [0, 0, 1.6, 2.2][tier] * s : 0, refuel: 3 + 0.15 * n, kick: tier === 0 ? 4 : tier === 1 ? 8 : 5 };
   };
-  EVO.launcher = (n) => { const tier = Math.min(2, Math.floor(n / 5)); return { n, tier, s: n - 5 * tier, name: LA_TIERS[tier], speed: 40 + 2.4 * n + 2 * tier }; };
-  EVO.mult = (n) => 1 + 0.1 * n;
+  EVO.launcher = (n) => { const tier = Math.min(2, Math.floor(n / 5)); return { n, tier, s: n - 5 * tier, name: LA_TIERS[tier], speed: (40 + 2.4 * n + 2 * tier) * (1 + 0.2 * tier) }; };
+  EVO.mult = (n) => 1 + 0.25 * n;   // v130 : chaque niveau de PIECES rapporte +25 % : il se rembourse en 2 vols
   EVO.cost = (id, n) => (id === 'rk' ? Math.round(55 * Math.pow(1.27, n)) : id === 'la' ? Math.round(45 * Math.pow(1.27, n)) : COIN_COST[n]);   // v129 : les premieres ameliorations (ailes) arrivent en 2-3 vols
   EVO.nextCost = (g, id) => { const S = EVO.save(g), n = S[id]; return n >= MAXN[id] ? null : EVO.cost(id, n); };
   EVO.dmgNow = (g) => { const r = EVO.rocket(EVO.save(g).rk), sp = g.rocket && g.rocket.active ? g.rocket.vel.length() : 38; return r.dmg * U.clamp(sp / 38, 0.85, 1.5); };
@@ -68,7 +68,7 @@
     const th = CC.LM.THEMES[0];
     if (g.evoPreview) return base({ n: 102, zone: 'jungle', seed: 777, len: 1100, scenes: null, order: new Array(90).fill('jungle'), theme: th, env: null, hp: 1, bossEnt: null, preview: true });
     const q = /[?&]evoscenes=([\w,]+)/.exec(location.search), sc = q ? q[1].split(',') : SCENES, Zs = CC.Zones.defs.campagne.scenes;
-    let len = 80; EVO.chapters = []; for (const n of sc) { const s = Zs[n]; if (s) { EVO.chapters.push({ d: len - 80, i: EVO.chapters.length, name: CH_NAME[n] || n.toUpperCase() }); len += s.len[0]; } }
+    let len = 80; EVO.chapters = []; for (const n of sc) { const s = Zs[n]; if (s) { EVO.chapters.push({ d: len - 80, i: EVO.chapters.length, name: CH_NAME[n] || n.toUpperCase(), key: n }); len += s.len[0]; } }
     return base({ zone: 'campagne', len: q ? len + 400 : len, scenes: sc, order: new Array(90).fill('campagne'), theme: th });
   };
 
@@ -210,7 +210,7 @@
     ev.maxD = Math.max(ev.maxD, run.dist);
     { const W = CC.Zones.evoWater; if (W) { const dy = rk.pos.y - W.y; if (W.prev !== undefined && W.prev * dy < 0 && run.dist > W.d0 - 30 && run.dist < W.d1 + 30) { const fx = g.effects, pp = rk.pos.clone(); pp.y = W.y; fx.ring(pp, new V(0, 1, 0), 0.4, 7, 0.6, '#d6eefc', 0.8); fx.ring(pp, new V(0, 1, 0), 0.2, 4, 0.45, '#ffffff', 0.7); g.rig.shake = Math.max(g.rig.shake, 0.25); g.audio.play('uiTick'); } W.prev = dy; } }
     const CH = EVO.chapters;   // v123 : bandeau et prime à chaque nouveau chapitre franchi
-    if (CH && !ev.preview) while (ev.chap < CH.length && run.dist >= CH[ev.chap].d) { const c = CH[ev.chap++], b = Math.round(40 * c.i * EVO.mult(S.cm)); ev.chapCoins += b; CC.L1.msg(g, 'CHAPITRE ' + (c.i + 1) + '  ' + c.name, 2.0, '#ffe9a0'); g.audio.play('levelUp'); }
+    if (CH && !ev.preview) while (ev.chap < CH.length && run.dist >= CH[ev.chap].d) { const c = CH[ev.chap++], b = Math.round(40 * c.i * EVO.mult(S.cm)); ev.chapCoins += b; CC.L1.msg(g, 'CHAPITRE ' + (c.i + 1) + '  ' + c.name, 2.0, '#ffe9a0'); g.audio.play('levelUp'); if (EVO.onChapter) EVO.onChapter(g, c, S); }
     // planeur : les ailes portent (elles annulent une partie de la gravité tant que la vitesse est suffisante)
     if (r.wing > 0 && !ev.preview) rk.vel.y += C.physics.gravity * r.wing * (r.tier >= 2 && rk.fuel <= 0.01 ? 0.25 : 0.62) * U.clamp((sp - 12) / 14, 0, 1.1) * dt;   // v125 : plus de carburant ou plus de vitesse = on pique   // v123 : lent = les ailes ne portent plus : elle pique, on peut redresser avec la vitesse reprise
     if (ev.preview) rk.vel.y += C.physics.gravity * 0.95 * U.clamp(sp / 17, 0, 1.1) * dt;
