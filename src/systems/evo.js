@@ -362,14 +362,14 @@
     const top = Math.max(10, H * 0.02);
     if (ev.preview) { F.draw(ctx, 'APERCU : ZONE 2', W / 2, top + px * 3, px * 1.1, '#9fe8b0', { align: 'center' }); return; }
     // distance : juste au-dessus de la fusée ; compteur de vitesse (cadran) en haut à gauche
-    if (rk.active) { _v.set(rk.pos.x, rk.pos.y + 1.7 + 0.6 * (rk.mesh.scale.x || 1), rk.pos.z); CC.Curve.apply(_v, g.camera).project(g.camera); if (_v.z < 1 && _v.z > -1) F.draw(ctx, Math.round(run.dist) + ' M', (_v.x * 0.5 + 0.5) * W, (-_v.y * 0.5 + 0.5) * H - px * 1.2, px * 1.0, '#ffffff', { align: 'center', alpha: 0.95 }); }
+    if (rk.active) { _v.set(rk.pos.x, rk.pos.y + 1.7 + 0.6 * (rk.mesh.scale.x || 1), rk.pos.z); CC.Curve.apply(_v, g.camera).project(g.camera); if (_v.z < 1 && _v.z > -1) F.draw(ctx, Math.round(run.dist) + ' M', (_v.x * 0.5 + 0.5) * W, (-_v.y * 0.5 + 0.5) * H - px * 1.2, px * 0.75, '#ffffff', { align: 'center', alpha: 0.95 }); }
     { const kmh = rk.active ? rk.vel.length() * 3.6 : 0, R = Math.max(26, W * 0.085), cx = W * 0.2 + R, cy = top + R + px * 1.5, a0 = Math.PI * 0.8, a1 = Math.PI * 2.2, k = U.clamp(kmh / 260, 0, 1);
       ctx.save(); ctx.fillStyle = 'rgba(10,16,26,0.62)'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.2832); ctx.fill(); ctx.lineWidth = R * 0.12; ctx.lineCap = 'butt';
       ctx.strokeStyle = 'rgba(160,190,230,0.35)'; ctx.beginPath(); ctx.arc(cx, cy, R * 0.82, a0, a1); ctx.stroke();
       ctx.strokeStyle = k < 0.55 ? '#46b8ff' : k < 0.8 ? '#5ae07a' : '#ffd23a'; ctx.beginPath(); ctx.arc(cx, cy, R * 0.82, a0, a0 + (a1 - a0) * k); ctx.stroke();
       const ang = a0 + (a1 - a0) * k; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(2, R * 0.07); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(ang) * R * 0.7, cy + Math.sin(ang) * R * 0.7); ctx.stroke();
       ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(cx, cy, R * 0.09, 0, 6.2832); ctx.fill(); ctx.restore();
-      F.draw(ctx, String(Math.round(kmh)), cx, cy + R * 0.3, px * 0.9, '#6aff9a', { align: 'center' }); F.draw(ctx, 'KM/H', cx, cy + R * 0.62, px * 0.5, '#cfe4ff', { align: 'center' }); }
+      F.draw(ctx, String(Math.round(kmh)), cx, cy + R * 0.18, R * 0.06, '#6aff9a', { align: 'center' }); F.draw(ctx, 'KM/H', cx, cy + R * 0.52, R * 0.032, '#cfe4ff', { align: 'center' }); }
     { const T = run.T, pct = U.clamp(run.dist / (T.levelLen || 5000), 0, 1), bw = Math.max(8, px * 3.2), bx = Math.max(10, W * 0.03), by0 = H * 0.2, bh = H * 0.34, yy = by0 + bh * (1 - pct);
       ctx.save(); ctx.globalAlpha = 0.85; ctx.fillStyle = 'rgba(10,14,22,0.55)'; ctx.fillRect(bx - 3, by0 - 3, bw + 6, bh + 6); ctx.fillStyle = '#ffd23a'; ctx.fillRect(bx, yy, bw, by0 + bh - yy);
       for (let k = 0; k < 4; k++) for (let j = 0; j < 2; j++) { ctx.fillStyle = (k + j) % 2 ? '#111' : '#fff'; ctx.fillRect(bx + j * bw / 2, by0 - px * 3.4 + k * px * 0.85, bw / 2, px * 0.85); }

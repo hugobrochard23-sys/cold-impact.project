@@ -75,7 +75,7 @@
   function haystack(S, dc, lx, r) { S.place(dc, lx, 8, 8, 0, 4, () => { S.cyl(dc, lx, 0, 2.4, 3.4, 'col:' + pick(r, ['#d8b860', '#c8a850']), undefined, 10, 2.4, false); }); }
 
   // ---------- sol lisse : une vraie surface continue (normales calculees sur le terrain, pas de tranches) avec un degrade de verts et de champs ----------
-  const GC = { a: new THREE.Color('#5f9a3a'), b: new THREE.Color('#8cc24e'), f: new THREE.Color('#b0ac5e'), c: new THREE.Color() };
+  const GC = { a: new THREE.Color('#5f9a3a'), b: new THREE.Color('#8cc24e'), f: new THREE.Color('#b0ac5e'), c: new THREE.Color(), g: new THREE.Color('#77797a') };
   const gcol = (x, z, out) => {
     const n = 0.5 + 0.5 * (Math.sin(x * 0.011 + z * 0.017) * 0.5 + Math.sin(x * 0.027 - z * 0.013 + 1.3) * 0.3 + Math.sin(x * 0.05 + z * 0.043) * 0.2);
     out.copy(GC.a).lerp(GC.b, n);
@@ -85,38 +85,43 @@
   const _v = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()], _Q = new THREE.Quaternion(), _O = new THREE.Vector3();
   Z.evoGroundMesh = function (ctx, d, e) {
     const T = ctx.T, b = ctx.b, m = (d + e) / 2, sloped = T.rel(d) !== 0 || T.rel(e) !== 0 || T.rel(m) !== 0, rows = sloped ? Math.max(1, Math.round((e - d) / 5)) : 1;
-    const V0 = T.vol(m) + 36, xs = [-(V0 + 360), -(V0 + 200), -(V0 + 90)]; for (let x = -V0; x <= V0 + 0.1; x += 15) xs.push(x); xs.push(V0 + 90, V0 + 200, V0 + 360);
-    const pl = Z.plan(T, T.zoneIndex(m)), sc = pl.scenes.find((q) => m >= q.d0 && m < q.d1), gf = sc && campagne.scenes[sc.name] && campagne.scenes[sc.name].ground;
-    const nC = xs.length, pos = [], nor = [], col = [], uv = [], idx = [], c = GC.c;
+    // colonnes : la zone de jeu suit le virage (T.at) ; au-delà, le sol part en LIGNE DROITE le long de la normale (jamais de pli dans un virage serré)
+    const V0 = T.vol(m) + 60, cols = [{ x: -330, o: -1 }, { x: -130, o: -1 }]; for (let x = -V0; x <= V0 + 0.1; x += 15) cols.push({ x, o: 0 }); cols.push({ x: 130, o: 1 }, { x: 330, o: 1 });
+    const pl = Z.plan(T, T.zoneIndex(m)), sc = pl.scenes.find((q) => m >= q.d0 && m < q.d1), sd = sc && campagne.scenes[sc.name], gf = sd && sd.ground, wet = sd && sd.wet;
+    const nC = cols.length, pos = [], nor = [], col = [], uv = [], idx = [], c = GC.c, grey = GC.g;
     for (let r = 0; r <= rows; r++) {
-      const dd = d + (e - d) * r / rows, pa = T.at(dd - 1.5, 0, 0), pb = T.at(dd + 1.5, 0, 0), qa = T.at(dd, -1.5, 0), qb = T.at(dd, 1.5, 0);
+      const dd = d + (e - d) * r / rows, pa = T.at(dd - 1.5, 0, 0), pb = T.at(dd + 1.5, 0, 0), qa = T.at(dd, -1.5, 0), qb = T.at(dd, 1.5, 0), eL = T.at(dd, -V0, 0), eR = T.at(dd, V0, 0);
       _v[0].set(pb[0] - pa[0], pb[1] - pa[1], pb[2] - pa[2]); _v[1].set(qb[0] - qa[0], qb[1] - qa[1], qb[2] - qa[2]); _v[2].crossVectors(_v[1], _v[0]).normalize(); if (_v[2].y < 0) _v[2].negate();
+      const lx_ = qb[0] - qa[0], lz_ = qb[2] - qa[2], ll = Math.hypot(lx_, lz_) || 1, ux = lx_ / ll, uz = lz_ / ll;
       for (let k = 0; k < nC; k++) {
-        const p = T.at(dd, xs[k], 0); pos.push(p[0], p[1], p[2]); nor.push(_v[2].x, _v[2].y, _v[2].z); uv.push(p[0], p[2]);
-        gcol(p[0], p[2], c); if (gf) gf(dd, xs[k], c, sc);
+        const cc = cols[k]; let p;
+        if (cc.o === 0) p = T.at(dd, cc.x, 0); else { const ed = cc.o < 0 ? eL : eR, off = Math.abs(cc.x) * cc.o; p = [ed[0] + ux * off, ed[1], ed[2] + uz * off]; }
+        pos.push(p[0], p[1], p[2]); nor.push(_v[2].x, _v[2].y, _v[2].z); uv.push(p[0], p[2]);
+        gcol(p[0], p[2], c); if (gf) gf(dd, cc.x, c, sc); if (wet && cc.o === 0 && wet(dd, cc.x, sc, T)) c.lerp(grey, 0.9);
         col.push(c.r, c.g, c.b);
       }
     }
     for (let r = 0; r < rows; r++) for (let k = 0; k < nC - 1; k++) { const a = r * nC + k, bq = a + 1, cq = a + nC, dq = cq + 1; idx.push(a, cq, bq, bq, cq, dq); }
-    { const A = new THREE.Vector3(pos[0], pos[1], pos[2]), B = new THREE.Vector3(pos[3 * nC], pos[3 * nC + 1], pos[3 * nC + 2]), Cc = new THREE.Vector3(pos[3], pos[4], pos[5]); if (B.sub(A).cross(Cc.sub(A)).y < 0) for (let i = 0; i < idx.length; i += 3) { const t = idx[i + 1]; idx[i + 1] = idx[i + 2]; idx[i + 2] = t; } }
+    { const kc = Math.floor(nC / 2), A_ = new THREE.Vector3(pos[3 * kc], pos[3 * kc + 1], pos[3 * kc + 2]), B = new THREE.Vector3(pos[3 * (kc + nC)], pos[3 * (kc + nC) + 1], pos[3 * (kc + nC) + 2]), Cc = new THREE.Vector3(pos[3 * (kc + 1)], pos[3 * (kc + 1) + 1], pos[3 * (kc + 1) + 2]); if (B.sub(A_).cross(Cc.sub(A_)).y < 0) for (let i = 0; i < idx.length; i += 3) { const t = idx[i + 1]; idx[i + 1] = idx[i + 2]; idx[i + 2] = t; } }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
     b.batch('evoGrass').shadow = false; b.addGeometry(g, _O, _Q, null, 'evoGrass', undefined, [1 / 7, 1 / 7]); g.dispose();
-    if (!gf) grassTufts(ctx, d, e);
+    if (!gf) grassTufts(ctx, d, e, wet, sd, sc);
   };
-  // touffes d'herbe en volume, peu nombreuses (la texture fait le gros du travail) : 12 brins courbes, dégradé de la base sombre à la pointe claire
+  // touffes d'herbe : une seule couleur, un peu plus sombre que le sol, assez grosses pour se lire de loin ; jamais dans l'eau
   const hsh = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
-  const GB = new THREE.Color('#3f8a22'), GT = new THREE.Color('#a8dc52'), _gc = new THREE.Color();
-  function grassTufts(ctx, d, e) {
-    const T = ctx.T, b = ctx.b, n = Math.max(1, Math.round((e - d) * 0.45)), pos = [], nor = [], col = [];
+  const GTC = new THREE.Color('#3f7a26');
+  function grassTufts(ctx, d, e, wet, sd, sc) {
+    const T = ctx.T, b = ctx.b, n = Math.max(1, Math.round((e - d) * 0.35)), pos = [], nor = [], col = [];
     for (let i = 0; i < n; i++) {
-      const dd = d + (e - d) * hsh(d + i * 0.37, i), lx = (hsh(i * 1.7, d * 0.13) * 2 - 1) * 46, h = 1.0 + hsh(i, d * 0.7) * 1.2, p = T.at(dd, lx, 0), a0 = hsh(d, i * 3.3) * 6.28, tone = 0.85 + 0.3 * hsh(i * 2.1, d), px = p[0], py = p[1] - 0.04, pz = p[2];
-      for (let j = 0; j < 12; j++) {
-        const a = a0 + j * 0.5236 + hsh(j, i) * 0.3, ca = Math.cos(a), sa = Math.sin(a), r0 = 0.12 + 0.2 * hsh(j * 3.1, i + d), bx = px + ca * r0, bz = pz + sa * r0, lean = 0.3 + 0.55 * hsh(j + i, d), hh = h * (0.55 + 0.45 * hsh(j * 5.1, i + d)), tx = bx + ca * lean, tz = bz + sa * lean, w = 0.075;
-        const mx = bx + ca * lean * 0.35, mz = bz + sa * lean * 0.35, my = py + hh * 0.6;
-        pos.push(bx - sa * w, py, bz + ca * w, bx + sa * w, py, bz - ca * w, mx - sa * w * 0.7, my, mz + ca * w * 0.7, bx + sa * w, py, bz - ca * w, mx + sa * w * 0.7, my, mz - ca * w * 0.7, mx - sa * w * 0.7, my, mz + ca * w * 0.7, mx - sa * w * 0.7, my, mz + ca * w * 0.7, mx + sa * w * 0.7, my, mz - ca * w * 0.7, tx, py + hh, tz);
-        for (let k = 0; k < 9; k++) { nor.push(0, 1, 0); _gc.copy(k < 3 ? GB : k < 6 ? GB : GT).lerp(GT, k < 3 ? 0 : k < 6 ? 0.45 : 1).multiplyScalar(tone); col.push(_gc.r, _gc.g, _gc.b); }
+      const dd = d + (e - d) * hsh(d + i * 0.37, i), lx = (hsh(i * 1.7, d * 0.13) * 2 - 1) * 46; if (wet && wet(dd, lx, sc, T)) continue;
+      const h = 1.5 + hsh(i, d * 0.7) * 1.4, p = T.at(dd, lx, 0), a0 = hsh(d, i * 3.3) * 6.28, px = p[0], py = p[1] - 0.04, pz = p[2];
+      for (let j = 0; j < 9; j++) {
+        const a = a0 + j * 0.698 + hsh(j, i) * 0.3, ca = Math.cos(a), sa = Math.sin(a), r0 = 0.1 + 0.18 * hsh(j * 3.1, i + d), bx = px + ca * r0, bz = pz + sa * r0, lean = 0.4 + 0.6 * hsh(j + i, d), hh = h * (0.6 + 0.4 * hsh(j * 5.1, i + d)), tx = bx + ca * lean, tz = bz + sa * lean, w = 0.16;
+        pos.push(bx - sa * w, py, bz + ca * w, bx + sa * w, py, bz - ca * w, tx, py + hh, tz);
+        for (let k = 0; k < 3; k++) { nor.push(0, 1, 0); col.push(GTC.r, GTC.g, GTC.b); }
       }
     }
+    if (!pos.length) return;
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
     b.batch('tree:#fefefe').shadow = false; b.addGeometry(g, _O, _Q, null, 'tree:#fefefe'); g.dispose();
   }
