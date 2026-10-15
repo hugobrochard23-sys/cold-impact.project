@@ -72,7 +72,6 @@
       const A = S.sc.A, L = S.len, half = 46, yb = -A - 8, mid = S.d0 + L * 0.5;
       cliffs(S, half, yb, 24, S.d0 + L * 0.06, S.d1 - L * 0.02, 14); cliffRocks(S, half, yb, 24, S.d0 + L * 0.06, S.d1 - L * 0.02, 13);
       // la rivière au fond (cote absolue −A+2) et ses rochers ; des arbres sur les berges
-      for (let dc = S.d0 + L * 0.2; dc < S.d1 - L * 0.22; dc += 14) S.item(dc + 7, (r) => { const m = dc + 7, fl = S.T.rel(m); S.bx(m, 0, -A + 2.2 - fl, 2 * half - 8, 0.3, 14.6, 'water', '#4d86a6', false, { shadow: false }); });
       S.rows(S.d0 + L * 0.18, S.d1 - L * 0.2, 9, 0.9, (dc) => S.item(dc, (r) => { const sg = r() < 0.5 ? -1 : 1, lx = S.lane(dc).lx + sg * r.between([half - 22, half - 4]); if (r() < 0.55) plant(S, dc, lx, r, { h: r.between([12, 22]), solid: false }); else boulder(S, dc, lx, 0, r.between([2, 5]), r); }));
       S.rows(S.d0 + L * 0.2, S.d1 - L * 0.2, 17, 0.9, (dc) => S.item(dc, (r) => { const lx = r.between([-half + 14, half - 14]); if (Math.abs(lx - S.lane(dc).lx) > 12) boulder(S, dc, lx, -A + 2 - S.T.rel(dc) + 0.2 + 0, r.between([2.5, 6]), r, '#8a8a84'); }));
       // cascade sur la falaise de gauche
@@ -85,7 +84,6 @@
         for (let k = -half; k <= half; k += 9) S.bx(mid, k, yd + 3.4, 0.5, 3.4, 0.5, 'metal', '#8e9298', false);
       });
       S.reserve(mid, 0, 2 * (half + 30), 22);
-      foe(S, 'boat', S.d0 + L * 0.36, -8, -A + 2.4, { name: 'VEDETTE', path: 120, speed: 11 });
       foe(S, 'tank', mid + 40, 20, 0, { name: 'CHAR DU PONT', hp: 2, armed: false });
       foe(S, 'sam', S.d0 + L * 0.74, 26, 0, { name: 'LANCE-MISSILES', armed: true });
       foe(S, 'heli', S.d0 + L * 0.58, 0, 26, { name: 'HELICO', armed: true, patrol: (SS, dc, lx, y) => [SS.at(dc, -30, y), SS.at(dc + 20, 0, y + 8), SS.at(dc, 30, y), SS.at(dc - 20, 0, y + 8)], speed: 11 });
@@ -124,7 +122,6 @@
       const A = S.sc.A, L = S.len, dE = S.d0 + L * 0.2, half = 62;
       cliffs(S, half, -A - 10, 40, S.d0 + L * 0.2 + 30, S.d1 - 6, 15); cliffRocks(S, half, -A - 10, 40, S.d0 + L * 0.2 + 30, S.d1 - 6, 14);
       // le plateau : le fleuve qui s'écoule jusqu'au bord et tombe en nappe
-      for (let dc = S.d0 + 10; dc < dE + 14; dc += 14) S.item(dc + 7, () => S.bx(dc + 7, 0, 0.12, 34, 0.3, 14.6, 'water', '#4d86a6', false, { shadow: false }));
       S.item(dE + 24, () => { const dc = dE + 24, fl = S.T.rel(dc); S.bx(dc, 0, (-A + 8) / 2 - fl + 1, 34, A, 1.2, 'waterSurf', '#f4fbff', false, { shadow: false }); S.bx(dc + 3, 0, -A + 1.8 - fl, 40, 3.4, 8, 'basic:#eef6f8', undefined, false, { shadow: false }); });
       S.rows(S.d0, dE, 9, 0.9, (dc) => S.item(dc, (r) => { const sg = r() < 0.5 ? -1 : 1; plant(S, dc, S.lane(dc).lx + sg * r.between([24, 64]), r); }));
       // ruines d'un fort au bord (murs et tour), des pylônes
@@ -145,13 +142,12 @@
     S.bx(dc, 0, hh + 0.5, 2 * hw + 3.6, 1, len + 2, 'corrugated', roofT);
     for (let k = -len / 2 + 8; k < len / 2; k += 14) { S.bx(dc + k, 0, hh - 0.4, 2 * hw, 0.4, 0.4, 'metal', '#7a7e84', false); S.bx(dc + k, 0, hh + 1.1, 12, 0.2, 5, 'emis:#e8f0e8', undefined, false); for (const s of [-1, 1]) { S.bx(dc + k, s * (hw - 3), 3, 3, 6, 9, 'col:#5a5e66'); S.bx(dc + k, s * (hw - 3), 6.4, 3.2, 0.5, 9.2, 'col:#8a6a3a', undefined, false); } }
   });
-  D.scenes.entrepots = { len: [760, 760], noDoor: true, noChaos: true,
+  const concrete = (d, lx, c, sc, w) => { const k = ss(sc.d0 - 6, sc.d0 + 30, d) * (1 - ss(sc.d1 - 30, sc.d1 + 6, d)) * (1 - ss(w, w + 26, Math.abs(lx))); if (k > 0) c.lerp(new THREE.Color('#7d7f7c'), k * 0.95); };
+  D.scenes.entrepots = { len: [760, 760], noDoor: true, noChaos: true, ground: (d, lx, c, sc) => concrete(d, lx, c, sc, 90),
     pin: (T, sc) => ({ lx: 0, y: 12, from: 24, to: sc.d1 - sc.d0 - 24 }),
     relief(T, sc) { return rel(sc, (d) => { const u = (d - sc.d0) / (sc.d1 - sc.d0); return 28 * ss(0.16, 0.42, u) * (1 - ss(0.76, 0.97, u)); }); },
     build(S) {
       const L = S.len;
-      slab(S, S.d0, S.d1, 150, 'concrete', CONCD, 0.07);
-      for (let dc = S.d0; dc < S.d1; dc += 40) S.item(dc + 20, () => { S.bx(dc + 20, 0, 0.12, 0.8, 0.05, 18, 'col:#e0dcc8', undefined, false, { shadow: false }); });
       HALL(S, S.d0 + 90, 100, 36, 26, '#8d9686', '#7a5446');
       // parc à conteneurs de chaque côté, avec une grue portique qui enjambe la trajectoire
       const cc = ['#8a4a3c', '#3c5a7a', '#6a7a4a', '#9a8a4a', '#7a7a76', '#5a4a6a'];
@@ -171,11 +167,10 @@
     } };
 
   // ===== BASE : le dernier tronçon avant le boss — clôture, miradors, réservoirs, bunkers, radars, la piste qui mène à l'aérodrome
-  D.scenes.base = { len: [560, 560], noDoor: true, noChaos: true,
+  D.scenes.base = { len: [560, 560], noDoor: true, noChaos: true, ground: (d, lx, c, sc) => concrete(d, lx, c, sc, 56),
     pin: (T, sc) => ({ lx: 0, y: 14, from: 24, to: sc.d1 - sc.d0 - 24 }),
     build(S) {
       const L = S.len;
-      slab(S, S.d0, S.d1, 90, 'concrete', CONCD, 0.07);
       for (let dc = S.d0; dc < S.d1; dc += 40) S.item(dc + 20, () => { S.bx(dc + 20, 0, 0.12, 1.2, 0.05, 20, 'col:#e0dcc8', undefined, false, { shadow: false }); for (const s of [-1, 1]) S.bx(dc + 20, s * 22, 0.12, 0.6, 0.05, 40, 'col:#e0dcc8', undefined, false, { shadow: false }); });
       for (const s of [-1, 1]) S.rows(S.d0, S.d1, 6, 0.4, (dc) => S.item(dc, () => { S.bx(dc, s * 62, 2.6, 0.2, 5.2, 6, 'metal', '#8e9298', false, { shadow: false }); if (Math.round(dc / 6) % 4 === 0) S.bx(dc, s * 62, 2.8, 0.5, 5.6, 0.5, 'concrete', '#a8a8a4'); }));
       for (const s of [-1, 1]) for (const f of [0.18, 0.5, 0.82]) { const dc = S.d0 + L * f; S.item(dc, () => { for (const a of [-1, 1]) for (const b of [-1, 1]) S.bx(dc + b * 2, s * 70 + a * 2, 9, 0.7, 18, 0.7, 'col:#6a6e66'); S.bx(dc, s * 70, 18.6, 7.5, 3.6, 7.5, 'col:#7a7e74'); S.bx(dc, s * 70, 20.8, 8.4, 0.7, 8.4, 'col:#5a5e56', undefined, false); }); }

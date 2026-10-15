@@ -19,11 +19,33 @@
 
   // ---------- ennemis posés à la main ----------
   // type, distance, décalage latéral, hauteur ; opts : { hp (blindé : PV affichés), armed, path, patrol, yaw, name }
+  // un ennemi ne doit JAMAIS etre dans un decor (falaise, colline, arbre, mur) : on cherche l'emplacement libre le plus proche, du cote de la trajectoire
+  const _P = new THREE.Vector3(), _D0 = new THREE.Vector3(), _tmp = { t: 0, normal: new THREE.Vector3(), inside: false, pen: 0 };
+  function blocked(S, x, y, z, R) {
+    const w = S.b.world; if (!w || !w.candidates) return false;
+    const cs = w.candidates(x - R, z - R, x + R, z + R); _P.set(x, y, z);
+    for (let i = 0; i < cs.length; i++) { const bx = cs[i]; if (bx.ground || bx.kind === 'target' || bx.max.y < y - R * 0.5 || bx.min.y > y + R) continue; if (w.constructor.segBox(bx, _P, _D0, R, _tmp)) return true; }
+    return false;
+  }
+  function freeAt(S, type, dc, lx, y, R, o) {
+    const yy = y + (CC.Roster.isAir(type) ? 0 : R * 0.55), pts = [S.at(dc, lx, yy)];
+    if (o.path) for (let k = 1; k <= 5; k++) pts.push(S.at(dc + o.path * k / 5, lx, yy));
+    if (o.patrol) for (const q of o.patrol(S, dc, lx, y)) pts.push(q);
+    for (const p of pts) if (blocked(S, p[0], p[1], p[2], R)) return false;
+    return true;
+  }
   function foe(S, type, dc, lx, y, o) {
     o = o || {};
     if (location.search.indexOf('notgt') >= 0) return;
     S.item(dc, () => {
-      const RO = CC.Roster, L = S.lane(dc), p = S.at(dc, lx, y || 0);
+      const RO = CC.Roster, R = Math.max(5, (RO.RAD && RO.RAD[type]) || 6) + 1.2, Lc = S.lane(dc).lx, toward = lx > Lc ? -1 : 1, vmax = S.vol(dc) - 8;
+      let ok = freeAt(S, type, dc, lx, y || 0, R, o);
+      if (!ok) search: for (const rho of [4, 8, 13, 19, 27, 37, 50, 66]) for (const [ddc, dlx] of [[0, toward * rho], [0, -toward * rho], [rho * 0.7, toward * rho * 0.5], [-rho * 0.7, toward * rho * 0.5], [rho * 0.7, 0], [-rho * 0.7, 0]]) {
+        const nl = lx + dlx, nd = dc + ddc; if (Math.abs(nl - Lc) > vmax || !S.inClip(nd)) continue;
+        if (freeAt(S, type, nd, nl, y || 0, R, o)) { (window.__evoMoved = window.__evoMoved || []).push([type, Math.round(dc), Math.round(lx), '>', Math.round(nd), Math.round(nl)]); dc = nd; lx = nl; ok = true; break search; }
+      }
+      if (!ok) { (window.__evoSkipped = window.__evoSkipped || []).push([type, Math.round(dc)]); return; }   // aucun emplacement libre : pas d'ennemi invisible
+      const L = S.lane(dc), p = S.at(dc, lx, y || 0);
       const ex = { unarmed: !o.armed, evoHp: o.hp, evoName: o.name || type, evoVal: o.val };
       if (o.patrol) ex.patrol = o.patrol(S, dc, lx, y || 0), ex.patrolSpeed = o.speed || 9, ex.patrolPhase = o.phase || 0;
       if (o.path) { const L2 = o.path; ex.path = [S.at(dc, lx, y || 0), S.at(dc + L2, lx, y || 0)]; ex.fleeSpeed = o.speed || 16; }
@@ -52,9 +74,36 @@
   function pylonLine(S, dc, lx) { S.place(dc, lx, 8, 4, 0, 32, () => { S.bx(dc, lx, 14, 1.2, 28, 1.2, 'metal', '#8a8e96', false); S.bx(dc, lx, 24, 14, 0.6, 0.6, 'metal', '#8a8e96', false); S.bx(dc, lx, 20, 10, 0.6, 0.6, 'metal', '#8a8e96', false); }); }
   function haystack(S, dc, lx, r) { S.place(dc, lx, 8, 8, 0, 4, () => { S.cyl(dc, lx, 0, 2.4, 3.4, 'col:' + pick(r, ['#d8b860', '#c8a850']), undefined, 10, 2.4, false); }); }
 
+  // ---------- sol lisse : une vraie surface continue (normales calculees sur le terrain, pas de tranches) avec un degrade de verts et de champs ----------
+  const GC = { a: new THREE.Color('#6f8d57'), b: new THREE.Color('#93a56c'), f: new THREE.Color('#a29c64'), c: new THREE.Color() };
+  const gcol = (x, z, out) => {
+    const n = 0.5 + 0.5 * (Math.sin(x * 0.011 + z * 0.017) * 0.5 + Math.sin(x * 0.027 - z * 0.013 + 1.3) * 0.3 + Math.sin(x * 0.05 + z * 0.043) * 0.2);
+    out.copy(GC.a).lerp(GC.b, n);
+    const f = Math.sin(x * 0.021 + 0.7) * Math.sin(z * 0.019 + 2.1); if (f > 0.35) out.lerp(GC.f, Math.min(0.75, (f - 0.35) * 2));
+    return out;
+  };
+  const _v = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()], _Q = new THREE.Quaternion(), _O = new THREE.Vector3();
+  Z.evoGroundMesh = function (ctx, d, e) {
+    const T = ctx.T, b = ctx.b, m = (d + e) / 2, sloped = T.rel(d) !== 0 || T.rel(e) !== 0 || T.rel(m) !== 0, rows = sloped ? Math.max(1, Math.round((e - d) / 5)) : 1;
+    const V0 = T.vol(m) + 36, xs = [-(V0 + 360), -(V0 + 200), -(V0 + 90)]; for (let x = -V0; x <= V0 + 0.1; x += 15) xs.push(x); xs.push(V0 + 90, V0 + 200, V0 + 360);
+    const pl = Z.plan(T, T.zoneIndex(m)), sc = pl.scenes.find((q) => m >= q.d0 && m < q.d1), gf = sc && campagne.scenes[sc.name] && campagne.scenes[sc.name].ground;
+    const nC = xs.length, pos = [], nor = [], col = [], idx = [], c = GC.c;
+    for (let r = 0; r <= rows; r++) {
+      const dd = d + (e - d) * r / rows, pa = T.at(dd - 1.5, 0, 0), pb = T.at(dd + 1.5, 0, 0), qa = T.at(dd, -1.5, 0), qb = T.at(dd, 1.5, 0);
+      _v[0].set(pb[0] - pa[0], pb[1] - pa[1], pb[2] - pa[2]); _v[1].set(qb[0] - qa[0], qb[1] - qa[1], qb[2] - qa[2]); _v[2].crossVectors(_v[1], _v[0]).normalize(); if (_v[2].y < 0) _v[2].negate();
+      for (let k = 0; k < nC; k++) {
+        const p = T.at(dd, xs[k], 0); pos.push(p[0], p[1], p[2]); nor.push(_v[2].x, _v[2].y, _v[2].z);
+        gcol(p[0], p[2], c); if (gf) gf(dd, xs[k], c, sc);
+        col.push(c.r, c.g, c.b);
+      }
+    }
+    for (let r = 0; r < rows; r++) for (let k = 0; k < nC - 1; k++) { const a = r * nC + k, bq = a + 1, cq = a + nC, dq = cq + 1; idx.push(a, cq, bq, bq, cq, dq); }
+    { const A = new THREE.Vector3(pos[0], pos[1], pos[2]), B = new THREE.Vector3(pos[3 * nC], pos[3 * nC + 1], pos[3 * nC + 2]), Cc = new THREE.Vector3(pos[3], pos[4], pos[5]); if (B.sub(A).cross(Cc.sub(A)).y < 0) for (let i = 0; i < idx.length; i += 3) { const t = idx[i + 1]; idx[i + 1] = idx[i + 2]; idx[i + 2] = t; } }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx);
+    b.batch('col:#fefefe').shadow = false; b.addGeometry(g, _O, _Q, null, 'col:#fefefe'); g.dispose();
+  };
+
   const campagne = { signature: 'rampe', scenes: {}, dress(S) {
-    // patchwork de champs au sol : rectangles plats de verts et d'ocres différents (pas de joints, relief doux)
-    S.rows(S.d0, S.d1, 36, 0.8, (dc) => S.item(dc, (r) => { const v = S.vol(dc), w = r.between([22, 60]), lx = (r() < 0.5 ? -1 : 1) * r.between([16, v - 6]); if (Math.abs(S.T.rel(dc - 34) - S.T.rel(dc + 34)) > 0.25 || Math.abs(S.T.rel(dc) - S.T.rel(dc + 34)) > 0.25) return; S.bx(dc, lx, -0.2, w, 0.5, r.between([26, 56]), 'col:' + pick(r, ['#86a066', '#72905a', '#8da46c', '#a29e66', '#6a8854', '#93a870']), undefined, false, { shadow: false }); }));
 
     // collines rondes à l'horizon, des deux côtés (ellipsoïdes aplaties : un vrai relief doux, pas des boîtes)
     for (const s of [-1, 1]) S.rows(S.d0, S.d1, 42, 0.7, (dc) => S.item(dc, (r) => { const v = S.vol(dc), rad = r.between([60, 190]), lx = s * (v + 14 + rad + r.between([0, 90])), sy = r.between([0.2, 0.42]); S.ball(dc, lx, -rad * sy * 0.12, rad, 'col:' + pick(r, GREENS), undefined, Math.abs(lx) < 150, sy); }));
