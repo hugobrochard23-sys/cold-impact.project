@@ -9,7 +9,7 @@
   const V = THREE.Vector3;
   const U = CC.U;
   // v030 (mobile) : objets de calcul réutilisés — la caméra est mise à jour à chaque image
-  const _wu = new V(), _tu = new V(), _nc = new V(), _f = new V(), _u = new V(), _o = new V(), _z = new V(0, 0, 1), _y = new V(0, 1, 0), _t1 = new V(), _t2 = new V(), _t3 = new V();
+  const _wu = new V(), _tu = new V(), _nc = new V(), _f = new V(), _u = new V(), _o = new V(), _z = new V(0, 0, 1), _y = new V(0, 1, 0), _t1 = new V(), _t2 = new V(), _t3 = new V(), _evoD = new V();
   const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _tq = new THREE.Quaternion();
 
   const _yAx = new THREE.Vector3(0, 1, 0), _nb = new THREE.Vector3(), _down = new THREE.Vector3(0, -1, 0);
@@ -81,7 +81,9 @@
 
     // décalage caméra→roquette (repère de visée) ; seul ce décalage est lissé : la caméra ne traîne pas derrière la roquette,
     // mais la roquette dérive à l'écran quand la visée tourne (OBSERVÉ : tuyère entre 44 et 57 % en x, 57 et 74 % en y)
-    wantedOffset(out) { const fk = this.fallK || 0; return out.copy(this.camDir).multiplyScalar(-(this.cfg.distance + this.pull + 2.5 * fk)).addScaledVector(this.camUp, this.cfg.height + 5 * fk); }
+    wantedOffset(out) { const fk = this.fallK || 0;
+      if (CC.EVO && CC.EVO.on) { const d = _evoD.copy(this.camDir), hy = Math.hypot(d.x, d.z) || 1e-4, py = U.clamp(d.y, -0.45, 0.22), k = Math.sqrt(1 - py * py) / hy; d.set(d.x * k, py, d.z * k); return out.copy(d).multiplyScalar(-(this.cfg.distance + this.pull + 2.5 * fk)).addScaledVector(_y, this.cfg.height + 1.6 * Math.max(0, this.camDir.y) + 5 * fk); }   // v125 : évolution : la caméra reste toujours AU-DESSUS de la fusée
+      return out.copy(this.camDir).multiplyScalar(-(this.cfg.distance + this.pull + 2.5 * fk)).addScaledVector(this.camUp, this.cfg.height + 5 * fk); }
 
     chaseTarget(rocket, out) {
       out.copy(rocket.pos).add(this.offset);
@@ -131,7 +133,8 @@
         }
         cam.position.copy(this.pos);
         const fk = this.fallK || 0;
-        if (fk > 0.01) this.orient(_t2.copy(this.camDir).lerp(_down, 0.5 * fk).normalize(), this.roll, this.camRight, this.camUp); else this.orient(this.camDir, this.roll, this.camRight, this.camUp);
+        if (CC.EVO && CC.EVO.on && rk.active) { const tp = _evoD.copy(rk.pos).addScaledVector(this.camDir, 9); tp.y -= 6 * fk; cam.up.set(0, 1, 0); cam.lookAt(tp); }
+        else if (fk > 0.01) this.orient(_t2.copy(this.camDir).lerp(_down, 0.5 * fk).normalize(), this.roll, this.camRight, this.camUp); else this.orient(this.camDir, this.roll, this.camRight, this.camUp);
       } else if (this.mode === 'impact') {
         const back = _t1.subVectors(this.pos, this.focus).normalize();
         this.pos.addScaledVector(back, dt * 1.5);

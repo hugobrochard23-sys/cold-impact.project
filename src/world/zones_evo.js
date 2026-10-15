@@ -101,7 +101,24 @@
     { const A = new THREE.Vector3(pos[0], pos[1], pos[2]), B = new THREE.Vector3(pos[3 * nC], pos[3 * nC + 1], pos[3 * nC + 2]), Cc = new THREE.Vector3(pos[3], pos[4], pos[5]); if (B.sub(A).cross(Cc.sub(A)).y < 0) for (let i = 0; i < idx.length; i += 3) { const t = idx[i + 1]; idx[i + 1] = idx[i + 2]; idx[i + 2] = t; } }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx);
     b.batch('col:#fefefe').shadow = false; b.addGeometry(g, _O, _Q, null, 'col:#fefefe'); g.dispose();
+    if (!gf) grassTufts(ctx, d, e);
   };
+  // touffes d'herbe (5 brins croisés, dégradé sombre → clair) semées au hasard sur le sol : de la matière près de la fusée, pas de plateau lisse
+  const hsh = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
+  const GB = new THREE.Color('#6e9e48'), GT = new THREE.Color('#c6e88c'), _gc = new THREE.Color();
+  function grassTufts(ctx, d, e) {
+    const T = ctx.T, b = ctx.b, n = Math.max(3, Math.round((e - d) * 150 / 15)), pos = [], nor = [], col = [];
+    for (let i = 0; i < n; i++) {
+      const dd = d + (e - d) * hsh(d + i * 0.37, i), lx = (hsh(i * 1.7, d * 0.13) * 2 - 1) * 78, h = 1.1 + hsh(i, d * 0.7) * 1.3, p = T.at(dd, lx, 0), a0 = hsh(d, i * 3.3) * 6.28, tone = 0.8 + 0.4 * hsh(i * 2.1, d), px = p[0], py = p[1] - 0.04, pz = p[2];
+      for (let j = 0; j < 5; j++) {
+        const a = a0 + j * 1.2566, ca = Math.cos(a), sa = Math.sin(a), bx = px + ca * 0.16, bz = pz + sa * 0.16, lean = 0.35 + 0.45 * hsh(j + i, d), hh = h * (0.65 + 0.35 * hsh(j * 5.1, i + d)), tx = bx + ca * lean, tz = bz + sa * lean, w = 0.14;
+        pos.push(bx - sa * w, py, bz + ca * w, bx + sa * w, py, bz - ca * w, tx, py + hh, tz);
+        for (let k = 0; k < 3; k++) { nor.push(0, 1, 0); _gc.copy(k < 2 ? GB : GT).multiplyScalar(tone); col.push(_gc.r, _gc.g, _gc.b); }
+      }
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    b.batch('tree:#fefefe').shadow = false; b.addGeometry(g, _O, _Q, null, 'tree:#fefefe'); g.dispose();
+  }
 
   const campagne = { signature: 'rampe', scenes: {}, dress(S) {
 
