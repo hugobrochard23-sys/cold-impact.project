@@ -86,26 +86,29 @@
   L1.bossFire = (t, g, from, rk, muzzle) => {
     const fr = t.hp / (t.hpMax || 6), ph = fr > 0.66 ? 1 : fr > 0.33 ? 2 : 3; t._n = (t._n || 0) + 1;
     const to = rk.pos.clone().sub(from), dist = to.length(), base = to.clone().normalize();
+    const EV = !!(CC.EVO && CC.EVO.on);   // v122 : mode Evolution : missiles lents, espaces, esquivables
     if (ph === 1) { t.aaCool = 3.0; return false; }
+    if (EV && ph === 2) { if (dist < 45) { t.aaCool = 1.5; return false; } t.aaCool = 4.6; g.spawnEnemyMissile(from.clone(), rk, { miss: 0, lead: 0.15, turn: 0.15, speed: 28, life: 6.5, quiet: true, visualFrom: muzzle }); return true; }
     if (ph === 2) {
       t.aaCool = 3.4;
       for (const a of [-0.24, 0, 0.24]) { const d = base.clone().applyAxisAngle(UPV, a); g.spawnEnemyMissile(from.clone(), { pos: from.clone().addScaledVector(d, dist) }, { miss: 1, lead: 0.3, turn: 0.38, speed: 46, life: 6, exact: true, quiet: true, visualFrom: muzzle }); }
       return true;
     }
-    if (t._n % 2 === 0) { t.aaCool = 2.2; return false; }   // entre deux murs : un missile guidé
-    t.aaCool = 3.8;
+    if (t._n % 2 === 0 && !EV) { t.aaCool = 2.2; return false; }   // entre deux murs : un missile guidé
+    t.aaCool = EV ? 6 : 3.8;
+    if (EV && dist < 45) { t.aaCool = 1.5; return false; }
     g.audio.play('alarm'); L1.msg(g, 'MUR !', 0.9, '#ff6a50'); g.flash = Math.max(g.flash || 0, 0.2); g.flashColor = '#ff3a2a';
     const run0 = g.l1run;
     setTimeout(() => {
       if (!t.alive || g.state !== 'FLIGHT' || !g.rocket.active || g.l1run !== run0) return;
       const r2 = g.rocket, f2 = t.firePoint ? t.firePoint(new V()) : from, d2 = r2.pos.distanceTo(f2), tH = d2 / 40;
       const aim = r2.pos.clone().addScaledVector(r2.vel, tH * 0.5), dir = aim.clone().sub(f2).normalize(), right = new V().crossVectors(dir, UPV).normalize();
-      const cols = 9, sp = 5.4, gi = 4 + (Math.random() < 0.5 ? -1 : 1) * (2 + Math.floor(Math.random() * 2)) - 0;   // ouverture de deux colonnes, loin du centre où se trouve la fusée
-      const g0 = Math.max(0, Math.min(cols - 2, gi));
-      for (let c = 0; c < cols; c++) { if (c === g0 || c === g0 + 1) continue;
+      const cols = 9, sp = 5.4, gap = EV ? 4 : 2, gi = 4 + (Math.random() < 0.5 ? -1 : 1) * (2 + Math.floor(Math.random() * 2)) - 0;   // ouverture de deux colonnes, loin du centre où se trouve la fusée
+      const g0 = Math.max(0, Math.min(cols - gap, gi));
+      for (let c = 0; c < cols; c++) { if (c >= g0 && c < g0 + gap) continue;
         for (const row of [-2.7, 2.7]) { const p = f2.clone().addScaledVector(right, (c - 4) * sp).addScaledVector(UPV, row);
-          g.spawnEnemyMissile(p, { pos: p.clone().addScaledVector(dir, 100) }, { miss: 0, lead: 0, turn: 0, speed: 40, life: 7, exact: true, quiet: true, puffGap: 0.07, visualFrom: f2 }); } }
-    }, 750);
+          g.spawnEnemyMissile(p, { pos: p.clone().addScaledVector(dir, 100) }, { miss: 0, lead: 0, turn: 0, speed: EV ? 30 : 40, life: 7, exact: true, quiet: true, puffGap: 0.07, visualFrom: f2 }); } }
+    }, EV ? 1100 : 750);
     return true;
   };
 

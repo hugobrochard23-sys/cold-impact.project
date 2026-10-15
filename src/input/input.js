@@ -64,6 +64,7 @@
     // v087 : un appui sur les menus (souris OU toucher direct) ; renvoie vrai si on est dans un menu
     uiPress(x, y, button) {
       const game = this.game;
+      if (game.evoAim && game.state === 'LAUNCH') { CC.EVO.lock(game); return true; }   // v122
       if (!(game.ui && (game.state === 'MENU' || game.state === 'RESULTS' || game.state === 'REVIVE' || game.paused || game.ui.overlay))) return false;
       if (game.ui.click(x, y)) return true;
       if (game.state === 'MENU' && game.padMode && !game.ui.overlay && button === 0) { game.beginLaunch(); return true; }   // v034 : un clic sur le lanceur = lancer
