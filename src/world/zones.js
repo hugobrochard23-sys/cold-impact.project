@@ -481,7 +481,7 @@
   function arenaBuild(S, zone) {
     const T = S.T, V0 = 64, meta = Z.meta[zone] || Z.meta.city, wl = meta.wall ? meta.wall(S.sr) : { mat: 'concrete', tint: '#c8ccd0' };
     if (zone === 'campagne') {
-      for (let dc = S.d0; dc < S.d1; dc += 40) { if ((dc / 40) % 2 === 0) S.item(dc + 20, () => { S.bx(dc + 20, 0, 0.15, 30, 0.3, 40, 'concreteDark', '#7d838c'); S.bx(dc + 20, 0, 0.32, 1.2, 0.06, 14, 'hazard', undefined, false); }); }
+      for (let dc = S.d0; dc < S.d1; dc += 40) S.item(dc + 20, () => { S.bx(dc + 20, 0, 0.1, 150, 0.2, 40.4, 'concrete', '#85878a', false, { shadow: false }); if ((dc / 40) % 2 === 0) { S.bx(dc + 20, 0, 0.22, 1.4, 0.05, 16, 'col:#e8e4d0', undefined, false, { shadow: false }); for (const sg of [-1, 1]) S.bx(dc + 20, sg * 14, 0.22, 0.7, 0.05, 40, 'col:#e8e4d0', undefined, false, { shadow: false }); } });
       for (let dc = S.d0 + 60; dc < S.d1; dc += 150) S.item(dc, () => { for (const sg of [-1, 1]) { S.bx(dc, sg * 95, 9, 34, 18, 46, 'corrugated', '#8a9a7a'); S.bx(dc + 40, sg * 70, 13, 5, 26, 5, 'concreteDark', '#c8ccd0'); } });
     } else
     for (let dc = S.d0; dc < S.d1; dc += 40) S.item(dc + 20, () => { for (const sg of [-1, 1]) S.bx(dc + 20, sg * (V0 + 12), 55, 24, 110, 40.6, wl.mat, wl.tint); });

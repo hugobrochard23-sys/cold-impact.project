@@ -5,9 +5,17 @@
   const U = CC.U, Z = CC.Zones, K = Z.kit, DEG = 180 / Math.PI;
   const pick = (r, a) => a[Math.floor(r() * a.length)];
   Z.PROFILE.campagne = { elev: 0, vol: 120, y: [8, 90], amp: 1.25 };
-  Z.meta.campagne = { label: 'CAMPAGNE', envs: ['plaineDay', 'goldenHour'], ground: 'white', groundTint: '#78a85a',
+  CC.Gen.Envs.add('campagneDay', { label: 'CAMPAGNE', dark: 0, vis: 1, skyline: '#d3dde2', make: (r) => ({
+    sky: { top: '#6c9ccc', horizon: '#e2eaef', bottom: '#c4d2da', sunColor: '#fff2d8', sunSize: 380 },
+    fog: { color: '#cfdbe0', near: 240, far: r.between([1000, 1150]) },
+    hemi: { sky: '#d8e4f0', ground: '#6a7a58', intensity: 0.74 }, ambient: { color: '#ffffff', intensity: 0.16 },
+    sun: { color: '#fff0d6', intensity: 0.8, dir: [0.35, 0.8, 0.5] },
+    postfx: { vignette: 0.2, vignetteColor: '#2c3a4c', halftone: 0, lift: '#080c12', saturation: 0.88, bloomThreshold: 0.98, bloomStrength: 0.07 },
+  }) });
+  Z.meta.campagne = { label: 'CAMPAGNE', envs: ['campagneDay'], ground: 'col:#7d975f', groundTint: undefined,
     wall: () => ({ mat: { side: 'rock', top: 'grass' }, tint: '#8a9a6a' }), obstacle: 'rock', obstacleTint: '#8a9a6a' };
-  const GREENS = ['#7aa65e', '#6e9c54', '#86ae68', '#5f8e4c', '#8ab46c'];
+  const GREENS = ['#6d8a58', '#668352', '#759060', '#5c7a4a', '#7d9566'];
+  const TR = CC.Trees;
 
   // ---------- ennemis posés à la main ----------
   // type, distance, décalage latéral, hauteur ; opts : { hp (blindé : PV affichés), armed, path, patrol, yaw, name }
@@ -26,16 +34,8 @@
   Z.evoFoe = foe;
 
   // ---------- décor ----------
-  function pineT(S, dc, lx, r, sc) {
-    const h = r.between([9, 18]) * (sc || 1);
-    S.cyl(dc, lx, 0, 0.45 * (sc || 1), 3.2, 'col:#5a3f28', undefined, 6, 0.35, false);
-    S.cyl(dc, lx, 2, h * 0.30, h * 0.50, 'col:#2f7a3a', undefined, 8, 0.15, false); S.cyl(dc, lx, 2 + h * 0.28, h * 0.23, h * 0.46, 'col:#388a42', undefined, 8, 0.12, false); S.cyl(dc, lx, 2 + h * 0.52, h * 0.15, h * 0.36, 'col:#40964a', undefined, 8, 0.1, false);
-  }
-  function oakT(S, dc, lx, r, sc) {
-    const h = r.between([6, 12]) * (sc || 1), c = pick(r, ['#3f8f3a', '#4a9a40', '#58a548', '#357f33']);
-    S.cyl(dc, lx, 0, 0.55 * (sc || 1), h * 0.5, 'col:#6b4a2e', undefined, 6, 0.4, false);
-    S.ball(dc, lx, h * 0.72, h * 0.5, 'col:' + c, undefined, false, 0.9); S.ball(dc + 2, lx + 2, h * 0.58, h * 0.36, 'col:' + c, undefined, false, 0.9);
-  }
+  function pineT(S, dc, lx, r, sc) { const p = S.at(dc, lx, 0); TR.conifer(S.b, p[0], p[1], p[2], r.between([14, 26]) * (sc || 1), r, {}); }
+  function oakT(S, dc, lx, r, sc) { const p = S.at(dc, lx, 0); TR.broadleaf(S.b, p[0], p[1], p[2], r.between([9, 18]) * (sc || 1), r, {}); }
   function knoll(S, dc, lx, rad, h, col) { S.ball(dc, lx, h - rad * 0.0 - rad * 0.0 - 0, rad, 'col:' + col, undefined, false, h / rad); }
   function farmhouse(S, dc, lx, r) {
     S.place(dc, lx, 16, 16, 0, 12, () => {
@@ -53,6 +53,9 @@
   function haystack(S, dc, lx, r) { S.place(dc, lx, 8, 8, 0, 4, () => { S.cyl(dc, lx, 0, 2.4, 3.4, 'col:' + pick(r, ['#d8b860', '#c8a850']), undefined, 10, 2.4, false); }); }
 
   const campagne = { signature: 'rampe', scenes: {}, dress(S) {
+    // patchwork de champs au sol : rectangles plats de verts et d'ocres différents (pas de joints, relief doux)
+    S.rows(S.d0, S.d1, 36, 0.8, (dc) => S.item(dc, (r) => { const v = S.vol(dc), w = r.between([22, 60]), lx = (r() < 0.5 ? -1 : 1) * r.between([16, v - 6]); S.bx(dc, lx, 0.04, w, 0.06, r.between([26, 56]), 'col:' + pick(r, ['#86a066', '#72905a', '#8da46c', '#a29e66', '#6a8854', '#93a870']), undefined, false, { shadow: false }); }));
+
     // collines rondes à l'horizon, des deux côtés (ellipsoïdes aplaties : un vrai relief doux, pas des boîtes)
     for (const s of [-1, 1]) S.rows(S.d0, S.d1, 42, 0.7, (dc) => S.item(dc, (r) => { const v = S.vol(dc), lx = s * (v + r.between([30, 280])), rad = r.between([60, 190]), sy = r.between([0.2, 0.42]); S.ball(dc, lx, -rad * sy * 0.12, rad, 'col:' + pick(r, GREENS), undefined, Math.abs(lx) < 150, sy); }));
     // bosquets et arbres épars

@@ -14,7 +14,7 @@
   C.pad.chargeTime = 0.55; C.pad.reloadTime = 0.35;
   C.pad.cam = [0, 1.5, 3.3]; C.pad.look = [0, -3.3, -5.5]; C.pad.fov = 54; C.pad.pushIn = 0.08;   // lanceur vu de derrière : on voit tout le monde devant
   C.endless.fuelDrain = 1;
-  C.endless.zoneLen = 3600;                                                                       // tout le niveau 1 tient dans la zone campagne
+  C.endless.zoneLen = 14000;                                                                       // tout le niveau 1 tient dans la zone campagne
   C.camera.distance = 3.8; C.camera.height = 1.05; C.camera.boostPull = 0.8;                       // la fusée est petite, le monde est grand
 
   const RK_TIERS = ['TUBE DE CARTON', 'AVION A AILES', 'REACTEUR', 'TURBO'], LA_TIERS = ['RAMPE EN BOIS', 'RAIL', 'CATAPULTE'];
@@ -22,7 +22,7 @@
   const COIN_COST = [100, 165, 272, 449, 741];
   const MAXN = { rk: 20, la: 15, cm: 5 };
   const BOSS_HP = 16;
-  const SCENES = ['rampe', 'camp', 'riviere', 'foret', 'route'];
+  const SCENES = ['rampe', 'camp', 'riviere', 'foret', 'vallee', 'grotte', 'falaise', 'entrepots', 'base'];
   EVO.RK_TIERS = RK_TIERS; EVO.LA_TIERS = LA_TIERS; EVO.RK_NEXT = RK_NEXT; EVO.LA_NEXT = LA_NEXT; EVO.MAXN = MAXN;
 
   // ---------- sauvegarde ----------
@@ -61,7 +61,7 @@
   EVO.canKill = (g, t) => !!(g.evo && g.evo.preview) || !t.evoHp || EVO.dmgNow(g) + 0.001 >= t.evoHp;
 
   // ---------- fiches de niveau ----------
-  const base = (o) => Object.assign({ n: 101, seed: 5151, chest: 0, winKills: 1e9, tutD: [], tutRel: null, mids: [], event: null, env: 'plaineDay', nightOk: false, look: 0, kit: 0, dens: 1, difK: 0.5, ease: 0.3, tgtGap: 50,
+  const base = (o) => Object.assign({ n: 101, seed: 5151, chest: 0, winKills: 1e9, tutD: [], tutRel: null, mids: [], event: null, env: 'campagneDay', nightOk: false, look: 0, kit: 0, dens: 1, difK: 0.5, ease: 0.3, tgtGap: 50,
     hp: BOSS_HP, boss: 'gunship', bossEnt: 'sky', bossWall: false, bossTint: 0, bossVar: 0, chapter: 1, evo: true }, o);
   EVO.levelDef = (g) => {
     const th = CC.LM.THEMES[0];
