@@ -496,7 +496,7 @@
       try { S.b.smashWall({ blocks, size: [bw + 0.05, bh, 3.2], yaw: S.yaw(dW), mat: WM[0], shatter: WM[1], reward: 2, bossWall: true }); } catch (e) { (window.__errs || (window.__errs = [])).push('bossWall ' + e); }   // v117 : un mur raté ne doit jamais casser la construction du niveau
     });
     if (dS >= S.d0 && dS < S.d1) S.item(dS, () => {
-      const bt = T.bossType || 'heli', fly = bt === 'heli' || (CC.BossFlying && CC.BossFlying[bt]), yy = fly ? U.clamp(S.lane(dB).y, 24, 270) : 0, face = bt === 'heli' ? 0 : 180;
+      const bt = T.bossType || 'heli', fly = bt === 'heli' || (CC.BossFlying && CC.BossFlying[bt]), yy = fly ? (zone === 'campagne' ? 26 : U.clamp(S.lane(dB).y, 24, 270)) : 0, face = bt === 'heli' ? 0 : 180;
       const st = S.at(dS, 0, yy + (ent === 'sky' ? 110 : ent === 'rise' ? -50 : 0)), en = S.at(dB, 0, yy);
       S.b.target(bt, st, S.yaw(dB) + face, { scale: 6.5, hp: T.bossHp || 1, boss: true, unarmed: false, drift: fly ? 7 : 3, driftSpeed: 0.35, tint: T.bossTint || 0, variant: T.bossVar || 0, arrive: en });
     });

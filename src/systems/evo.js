@@ -177,7 +177,6 @@
       const period = EVO.save(g).runs < 2 ? 2.0 : 1.2;
       a.c += a.dir * dt * (2 / period);
       if (a.c > 1) { a.c = 2 - a.c; a.dir = -1; } else if (a.c < -1) { a.c = -2 - a.c; a.dir = 1; }
-      if (a.t > 6) EVO.lock(g);
     }
     g.pad.charge = U.clamp(0.1 + 0.9 * (1 - Math.abs(a.c)), 0, 1);
     if (a.lock) { a.lockT += dt; if (a.lockT > 0.55) { g.evoAimLast = a; g.pad.manual = false; g.fire(); g.evoAim = null; } }
