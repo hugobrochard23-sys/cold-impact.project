@@ -835,31 +835,34 @@
     const f1 = (v) => (Math.round(v * 10) / 10).toFixed(1);
     // voiles : en bas pour lire les lignes ; en haut seulement quand il y a un récap
     { const g = ctx.createLinearGradient(0, Y(0.5), 0, Y(0.62)); g.addColorStop(0, 'rgba(8,10,16,0)'); g.addColorStop(1, 'rgba(8,10,16,0.82)'); ctx.fillStyle = g; ctx.fillRect(0, Y(0.5), W, Y(0.62) - Y(0.5)); ctx.fillStyle = 'rgba(8,10,16,0.82)'; ctx.fillRect(0, Y(0.62), W, HH - (Y(0.62) - Y(0))); }
-    if (last) { ctx.fillStyle = 'rgba(8,10,16,0.78)'; ctx.fillRect(0, Y(0), W, last.zone2 ? Y(0.5) : Y(0.352)); }
+    if (last) { ctx.fillStyle = 'rgba(8,10,16,0.78)'; ctx.fillRect(0, Y(0), W, last.zone2 ? Y(0.5) : Y(0.365)); }
     // en-tête : record à gauche, pièces à droite
     { const s = U.formatInt(S.coins), px = P([s], W * 0.3, u * 0.011), x = W * 0.95; T(s, x, Y(0.022), px, GOLD, { align: 'right' }); ICON.nut(ctx, x - tw(s, px) - px * 6, Y(0.022) + px * 3.5, px * 4.2, GOLD);
       const rl = 'RECORD ' + S.best + ' M', rp = P([rl], W * 0.45, u * 0.0065); T(rl, W * 0.05, Y(0.026), rp, '#c8d0dc'); }
     // consigne des premiers vols (fusée de carton, pas de réacteur)
     if (!last && S.runs < 4 && S.rk < 5) { const ls = ['TA FUSEE N A PAS DE REACTEUR', 'ELLE EST SEULEMENT LANCEE', 'DETRUIS L ENNEMI : TOUCHE LANCER']; ls.forEach((s, i) => T(s, cx, Y(0.11 + i * 0.04), P([s], W * 0.92, u * 0.0062), i === 2 ? GOLD : '#e8ecef', { align: 'center' })); }
+    if (!last && S.rk >= 5 && S.rk < 12) { const ls = ['DETRUIS DES ENNEMIS POUR GAGNER DU CARBURANT', 'PV VERT = TU PEUX LE DETRUIRE']; ls.forEach((s, i) => T(s, cx, Y(0.11 + i * 0.04), P([s], W * 0.94, u * 0.0058), i ? '#6aff9a' : '#e8ecef', { align: 'center' })); }
     // récap du dernier vol (compact : la fusée reste visible dessous)
     if (last && !last.zone2) {
-      const big = last.cause, bp = P([big], W * 0.88, u * 0.0115); T(big, cx, Y(0.072), bp, RED, { align: 'center', skew: -0.2 });
-      const ds = last.dist + ' M', dp = P([ds], W * 0.6, u * 0.018); T(ds, cx, Y(0.114), dp, '#ffffff', { align: 'center' });
-      if (last.record) { const rs = 'NOUVEAU RECORD !', rp = P([rs], W * 0.8, u * 0.0075); if (Math.sin(now / 150) > -0.4) T(rs, cx, Y(0.176), rp, GOLD, { align: 'center' }); }
-      if (last.detail) T(last.detail, cx, Y(0.196), P([last.detail], W * 0.94, u * 0.0058), '#ff9a8a', { align: 'center' });
-      const x0 = W * 0.14, x1 = W * 0.86, rh = u * 0.056, y0 = Y(0.222);
+      const big = last.cause, bp = P([big], W * 0.88, u * 0.0105); T(big, cx, Y(0.066), bp, RED, { align: 'center', skew: -0.2 });
+      const ds = last.dist + ' M', dp = P([ds], W * 0.6, u * 0.0165); T(ds, cx, Y(0.13), dp, '#ffffff', { align: 'center' });
+      if (last.record) { const rs = 'NOUVEAU RECORD !', rp = P([rs], W * 0.8, u * 0.0075); if (Math.sin(now / 150) > -0.4) T(rs, cx, Y(0.19), rp, GOLD, { align: 'center' }); }
+      if (last.detail) T(last.detail, cx, Y(0.104), P([last.detail], W * 0.94, u * 0.0052), '#ff9a8a', { align: 'center' });
+      const x0 = W * 0.14, x1 = W * 0.86, rh = u * 0.05, y0 = Y(0.226);
       last.lines.forEach((r, i) => { const st = 0.3 + i * 0.2; if (tt < st) return; const k = U.clamp((tt - st) / 0.25, 0, 1), v = Math.round(r[1] * k), px = P([r[0]], W * 0.5, u * 0.0052); T(r[0], x0, y0 + i * rh, px, '#e8ecef'); T('+' + v, x1, y0 + i * rh, px, GOLD, { align: 'right' }); });
       const yt = y0 + last.lines.length * rh + rh * 0.1; ctx.fillStyle = 'rgba(217,164,65,0.5)'; ctx.fillRect(Math.round(x0), Math.round(yt - rh * 0.2), Math.round(x1 - x0), 2);
-      { const s = '+' + U.formatInt(Math.round(last.total * U.clamp((tt - 0.3) / (0.2 * last.lines.length + 0.3), 0, 1))) + ' PIECES', px = P([s], W * 0.6, u * 0.0095); T(s, cx, yt + rh * 0.1, px, GOLD, { align: 'center' }); }
-      if (game.ads && game.ads.enabled() && !last.doubled && tt > 0.6) { const bw = W * 0.62, bh = Math.max(u * 0.075, 32 * pr), bx = cx - bw / 2, by = Y(0.298), on = inRect(ui, bx, by, bw, bh);
+      { const s = '+' + U.formatInt(Math.round(last.total * U.clamp((tt - 0.3) / (0.2 * last.lines.length + 0.3), 0, 1))) + ' PIECES', px = P([s], W * 0.6, u * 0.0085); T(s, cx, yt + rh * 0.1, px, GOLD, { align: 'center' }); }
+      if (game.ads && game.ads.enabled() && !last.doubled && tt > 0.6) { const bw = W * 0.62, bh = Math.max(u * 0.075, 32 * pr), bx = cx - bw / 2, by = Y(0.318), on = inRect(ui, bx, by, bw, bh);
         pxRect(ctx, bx, by, bw, bh, on ? 'rgba(86,255,90,0.35)' : 'rgba(86,255,90,0.2)', GREEN, undefined, Math.max(3, bh * 0.05)); ICON.play(ctx, bx + bh * 0.55, by + bh / 2, bh * 0.2, GREEN);
         const s = 'PIECES X2  PUB', lp = P([s], bw - bh * 1.15, bh * 0.03); T(s, bx + bh * 1.0, by + bh / 2 - lp * 3.5, lp, '#ffffff'); hit(ui, bx, by, bw, bh, () => game.ads.rewarded(() => E.double(game), null, 'coins')); }
     } else if (last && last.zone2) {
       T('ZONE 1 TERMINEE !', cx, Y(0.07), P(['ZONE 1 TERMINEE !'], W * 0.9, u * 0.014), GOLD, { align: 'center' });
       T('ZONE 2 : LA FORET', cx, Y(0.14), P(['ZONE 2 : LA FORET'], W * 0.9, u * 0.0155), '#9fe8b0', { align: 'center' });
       T('+' + (game.evoClearBonus || 300) + ' PIECES', cx, Y(0.215), P(['+300 PIECES'], W * 0.6, u * 0.011), GOLD, { align: 'center' });
-      const ls = ['FIN DU PROTOTYPE', 'LA SUITE : ZONES PLUS DURES', 'BOSS PLUS FORTS, FUSEE PLUS GROSSE'];
-      ls.forEach((s, i) => T(s, cx, Y(0.285 + i * 0.045), P([s], W * 0.9, u * 0.0065), i ? '#c8d0dc' : '#ffffff', { align: 'center' }));
+      const NAMES = { rk5: 'REACTEUR', rk10: 'AILERONS', rk15: 'TURBO', weak: '1ER ENNEMI TROP FORT', d600: '600 M', d1000: '1000 M', d1500: '1500 M', boss: 'BOSS VAINCU' };
+      const ms = Object.keys(S.marks || {}).filter((k) => NAMES[k]).sort((a, b) => S.marks[a].sec - S.marks[b].sec).slice(0, 7);
+      T('RAPPORT : VOLS ' + S.runs + '  TEMPS ' + E.fmt(E.elapsed(game)), cx, Y(0.275), P(['RAPPORT : VOLS 99  TEMPS 99:99'], W * 0.94, u * 0.0065), '#ffffff', { align: 'center' });
+      ms.forEach((k, i) => { const s = NAMES[k] + ' : VOL ' + S.marks[k].run + '  ' + E.fmt(S.marks[k].sec); T(s, cx, Y(0.318 + i * 0.027), P([s], W * 0.94, u * 0.0056), k === 'boss' ? GOLD : '#c8d0dc', { align: 'center' }); });
     }
     // LANCER
     { const bw = W * 0.84, bh = Math.max(u * 0.14, 54 * pr), bx = cx - bw / 2, by = Y(0.535), on = inRect(ui, bx, by, bw, bh), pulse = 1 + 0.025 * Math.sin(now / 260);
@@ -869,7 +872,7 @@
       hit(ui, bx, by, bw, bh, () => (last ? E.retry(game) : E.start(game))); }
     if (!last) hit(ui, 0, Y(0.1), W, Y(0.5) - Y(0.1), () => E.start(game));   // un toucher sur la fusée lance aussi
     // trois lignes d'amélioration
-    const rows = ['rk', 'la', 'cm'], y0 = Y(0.615), rh = HH * 0.113, gap = HH * 0.006, x0 = W * 0.03, rw = W * 0.94, col = { rk: '#ffb040', la: '#8fd0ff', cm: '#ffd23a' };
+    const rows = ['rk', 'la', 'cm'], y0 = Y(0.615), rh = HH * 0.108, gap = HH * 0.006, x0 = W * 0.03, rw = W * 0.94, col = { rk: '#ffb040', la: '#8fd0ff', cm: '#ffd23a' };
     rows.forEach((id, i) => {
       const n = S[id], max = E.MAXN[id], c = col[id], y = y0 + i * (rh + gap), cost = E.nextCost(game, id), can = cost !== null && S.coins >= cost;
       let name, tier, nexts, l1, l2, l3, tdone, tnext;
@@ -900,6 +903,11 @@
       const bt = game.evoBought; if (bt && bt.id === id) { const a = 1 - (now - bt.t0) / 700; if (a > 0) { ctx.fillStyle = 'rgba(255,255,255,' + (a * 0.5) + ')'; ctx.fillRect(Math.round(rx), Math.round(y), Math.round(rw), Math.round(rh)); } }
       hit(ui, rx, y, rw, rh, () => E.buy(game, id));
     });
+    // pied de page : vols et temps (pour mesurer), bouton de remise à zéro (deux touchers)
+    { const fy = Y(0.956), fh = HH * 0.03, st = 'VOLS ' + S.runs + '  TEMPS ' + E.fmt(E.elapsed(game)), sp = P([st], W * 0.5, u * 0.0052); T(st, W * 0.04, fy + fh / 2 - sp * 3.5, sp, '#8a96a8');
+      const armed = game.evoResetArm && now - game.evoResetArm < 4000, lab = armed ? 'SUR ? RE-TOUCHE' : 'REINITIALISER', rp = P([lab], W * 0.4, u * 0.0052), bw = tw(lab, rp) + rp * 7, bx = W * 0.96 - bw;
+      pxRect(ctx, bx, fy, bw, fh, armed ? 'rgba(208,71,62,0.5)' : 'rgba(255,255,255,0.07)', armed ? RED : 'rgba(159,176,200,0.35)'); T(lab, bx + rp * 3.5, fy + fh / 2 - rp * 3.5, rp, armed ? '#ffffff' : '#9fb0c8');
+      hit(ui, bx, fy, bw, fh, () => { if (armed) E.reset(game); else game.evoResetArm = performance.now(); }); }
     // évolution : une pièce passe au palier suivant
     { const bt = game.evoBought; if (bt && bt.evolve) { const a = (now - bt.t0) / 2600; if (a < 1) { ctx.save(); ctx.globalAlpha = a < 0.1 ? a / 0.1 : a > 0.75 ? (1 - a) / 0.25 : 1;
         T('EVOLUTION !', cx, Y(0.24), P(['EVOLUTION !'], W * 0.9, u * 0.02), GOLD, { align: 'center' }); T(bt.evolve, cx, Y(0.32), P([bt.evolve], W * 0.9, u * 0.013), '#ffffff', { align: 'center' }); ctx.restore(); } } }

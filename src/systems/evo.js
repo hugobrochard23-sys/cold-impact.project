@@ -23,6 +23,7 @@
   // ---------- sauvegarde ----------
   EVO.save = (g) => {
     const S = g.save.evo = g.save.evo || { coins: 0, rk: 0, la: 0, cm: 0, best: 0, runs: 0, kills: 0, cleared: 0 };
+    if (S.t0 === undefined) { S.t0 = 0; S.marks = {}; }
     if (!EVO._cheat) {
       EVO._cheat = 1; const q = (k) => { const m = new RegExp('[?&]' + k + '=(\\d+)').exec(location.search); return m ? parseInt(m[1], 10) : null; };
       const a = q('evocoins'); if (a !== null) S.coins = a; const b = q('evork'); if (b !== null) S.rk = b; const c = q('evola'); if (c !== null) S.la = c; const d = q('evocm'); if (d !== null) S.cm = d;
@@ -30,13 +31,24 @@
     return S;
   };
 
+  // ---------- chronomètre : étapes franchies (n° de vol et temps depuis le premier lancer) ----------
+  EVO.mark = (g, key) => { const S = EVO.save(g); if (S.marks[key]) return; S.marks[key] = { run: S.runs + 1, sec: S.t0 ? Math.round((Date.now() - S.t0) / 1000) : 0 }; };
+  EVO.elapsed = (g) => { const S = EVO.save(g); return S.t0 ? Math.round((Date.now() - S.t0) / 1000) : 0; };
+  EVO.fmt = (sec) => Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+  EVO.reset = (g) => {
+    g.save.evo = undefined; EVO._cheat = 1; const S = EVO.save(g); g.evoLast = null; g.evoBought = null; g.evoResetArm = 0;
+    if (g.rocket) EVO.applySkin(g); if (g.pad) EVO.dressPad(g.pad);
+    g.writeSave(); g.audio.play('uiTick'); g.telemetry.event('evoReset', {}); return S;
+  };
+
   // ---------- statistiques par niveau d'amélioration ----------
   EVO.rocket = (n) => {
     const tier = Math.min(3, Math.floor(n / 5)), s = n - 5 * tier;
-    return { n, tier, s, name: RK_TIERS[tier], dmg: 1.4 + 0.1 * n + 0.35 * tier, fuel: [0, 3, 9, 17][tier] + [0, 1, 1.5, 2][tier] * s,
-      thrust: tier ? [0, 22, 36, 46][tier] + 3 * s : 0, drag: tier ? 0.0095 : 0.0100 - 0.0006 * s, refuel: 0.5 + 0.06 * n };
+    const vmax = tier ? [0, 36, 44, 52][tier] + 1.5 * s : 0, drag = tier ? 0.0095 : 0.0100 - 0.0006 * s;   // vitesse de pointe : 36 > 58 m/s sur tout le parcours (avant : jusqu'à 77)
+    return { n, tier, s, name: RK_TIERS[tier], dmg: 1.4 + 0.1 * n + 0.35 * tier, fuel: [0, 3.6, 10.8, 20.4][tier] + [0, 1.2, 1.8, 2.4][tier] * s,
+      thrust: vmax * vmax * drag, vmax, drag, refuel: 0.5 + 0.06 * n };
   };
-  EVO.vmax = (r) => (r.thrust ? Math.sqrt(r.thrust / r.drag) : 0);
+  EVO.vmax = (r) => r.vmax;
   EVO.launcher = (n) => { const tier = Math.min(2, Math.floor(n / 5)); return { n, tier, s: n - 5 * tier, name: LA_TIERS[tier], speed: 27 + 1.8 * n + 2 * tier }; };
   EVO.mult = (n) => 1 + 0.2 * n;
   EVO.cost = (id, n) => (id === 'rk' ? Math.round(8 * Math.pow(1.29, n)) : id === 'la' ? Math.round(6 * Math.pow(1.29, n)) : COIN_COST[n]);
@@ -68,7 +80,7 @@
         { k: 'cyl', r: 0.05, h: 0.12, p: [0.17, 0, -0.6], rot: [90, 0, 0], c: '#2b2d31' }, { k: 'cyl', r: 0.05, h: 0.12, p: [-0.17, 0, -0.6], rot: [90, 0, 0], c: '#2b2d31' }, { k: 'box', w: 0.8, h: 0.025, d: 0.25, p: [0, 0, -0.2], c: '#e0402c' }] },
   ];
   for (const s of SKINS) { s.name = s.id; s.short = s.id; s.tier = 'base'; s.price = 0; s.tierLabel = ''; s.c = Object.assign({}, s.c); s.dims = Object.assign({ r: 0.1, len: 0.86, noseLen: 0.3, noseR: 0.012, fins: 4, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 }, s.dims); s.flame = s.flame || '#ff8a2a'; CC.Skins.byId[s.id] = s; }
-  EVO.applySkin = (g) => { const r = EVO.rocket(EVO.save(g).rk); g.rocket.setSkin(CC.Skins.get('evo' + r.tier)); };
+  EVO.applySkin = (g) => { const r = EVO.rocket(EVO.save(g).rk), b = CC.Skins.get('evo' + r.tier); g.rocket.setSkin(Object.assign({}, b, { dims: Object.assign({}, b.dims, { scale: 1 + 0.035 * r.n }) })); };   // v120 : +3,5 % par barre
   // lanceur : des anneaux d'accélération le long du rail, de plus en plus nombreux et lumineux
   EVO.dressPad = (pad) => {
     if (pad.evoG) { pad.cradle.remove(pad.evoG); pad.evoG.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
@@ -89,10 +101,11 @@
   };
   EVO.launchSpeed = (g) => EVO.launcher(EVO.save(g).la).speed;
   EVO.onLaunch = (g) => {
-    const S = EVO.save(g), rk = g.rocket, r = EVO.rocket(S.rk), ev = g.evo;
+    const S = EVO.save(g); if (!S.t0) S.t0 = Date.now();
+    const rk = g.rocket, r = EVO.rocket(S.rk), ev = g.evo;
     rk.cfg.thrust = r.thrust; rk.cfg.dragK = r.drag; rk.cfg.gripEngineOff = 0.7; rk.fuelMax = Math.max(0.01, r.fuel); rk.fuel = r.fuel; rk.throttle = true;   // moteur éteint : trajectoire balistique, la fusée tombe
     C.endless.fuelTarget = r.refuel;
-    if (ev && ev.preview) { rk.cfg.thrust = 46; rk.cfg.dragK = 0.0095; rk.fuelMax = rk.fuel = 999; rk.shieldT = 9999; }
+    if (ev && ev.preview) { rk.cfg.thrust = 55 * 55 * 0.0095; rk.cfg.dragK = 0.0095; rk.fuelMax = rk.fuel = 999; rk.shieldT = 9999; }
     g.telemetry.event('evoLaunch', { rk: S.rk, la: S.la, cm: S.cm });
   };
   EVO.tick = (g, dt) => {
@@ -125,8 +138,10 @@
     if (ev.kills) lines.push(['ENNEMIS ' + ev.kills, ev.coins - (ev.bossHits ? Math.round(12 * m) * ev.bossHits : 0)]);
     if (ev.bossHits) lines.push(['COUPS AU BOSS ' + ev.bossHits, Math.round(12 * m) * ev.bossHits]);
     const total = lines.reduce((a, l) => a + l[1], 0), record = dist > S.best;
+    for (const m of [300, 600, 1000, 1500, 1900]) if (dist >= m) EVO.mark(g, 'd' + m);
+    if (g.crashKind === 'weak') EVO.mark(g, 'weak');
     if (record) S.best = dist; S.coins += total; S.runs++; S.kills += ev.kills;
-    g.evoLast = { dist, kills: ev.kills, lines, total, record, cause: g.crashKind === 'stalled' ? (EVO.rocket(S.rk).tier ? (g.rocket.fuel > 0.5 ? 'BLOQUEE' : 'PLUS DE CARBURANT') : 'ELLE EST TOMBEE') : g.causeOf(g.crashKind), doubled: false, t0: 0, crash: g.crashKind, detail: g.crashKind === 'weak' && g.evoWeak ? 'ENNEMI ' + g.evoWeak.hp + ' PV : TES DEGATS ' + g.evoWeak.dmg.toFixed(1) : null };
+    g.evoLast = { dist, kills: ev.kills, lines, total, record, cause: g.crashKind === 'stalled' ? (EVO.rocket(S.rk).tier ? (g.rocket.fuel > 0.5 ? 'BLOQUEE' : 'PLUS DE CARBURANT') : 'ELLE EST TOMBEE') : g.causeOf(g.crashKind), doubled: false, t0: 0, crash: g.crashKind, detail: g.crashKind === 'weak' && g.evoWeak ? 'ENNEMI ' + g.evoWeak.hp + ' PV : TES DEGATS ' + g.evoWeak.dmg.toFixed(1) : g.crashKind === 'stalled' ? (EVO.rocket(S.rk).tier ? (g.rocket.fuel > 0.5 ? 'GLISSE LE DOIGT POUR ESQUIVER' : 'DETRUIS DES ENNEMIS POUR RECHARGER') : 'AMELIORE LA FUSEE : ELLE IRA PLUS LOIN') : 'GLISSE LE DOIGT POUR ESQUIVER' };
     g.state = 'REVIVE'; g.ui.overlay = 'evo'; g.writeSave();
     g.telemetry.event('evoEnd', { dist, kills: ev.kills, coins: total, rk: S.rk, la: S.la, cm: S.cm, cause: g.crashKind });
   };
@@ -137,7 +152,7 @@
     const S = EVO.save(g), c = EVO.nextCost(g, id);
     if (c === null || S.coins < c) { g.audio.play('uiTick'); g.evoShake = { id, t0: performance.now() }; return false; }
     const before = id === 'rk' ? EVO.rocket(S.rk).tier : id === 'la' ? EVO.launcher(S.la).tier : 0;
-    S.coins -= c; S[id]++; g.writeSave(); g.audio.play('levelUp'); if (CC.Haptics) CC.Haptics.tick('warn');
+    S.coins -= c; S[id]++; if (S[id] % 5 === 0) EVO.mark(g, id + S[id]); g.writeSave(); g.audio.play('levelUp'); if (CC.Haptics) CC.Haptics.tick('warn');
     const after = id === 'rk' ? EVO.rocket(S[id]).tier : id === 'la' ? EVO.launcher(S[id]).tier : 0;
     g.evoBought = { id, t0: performance.now(), evolve: after > before ? (id === 'rk' ? RK_TIERS[after] : LA_TIERS[after]) : null };
     if (id === 'rk') EVO.applySkin(g); if (id === 'la' && g.pad) EVO.dressPad(g.pad);
@@ -145,7 +160,7 @@
   };
   // boss vaincu : porte de zone franchie, on vole un instant dans la zone suivante
   EVO.onClear = (g) => {
-    const S = EVO.save(g); S.cleared = (S.cleared || 0) + 1; S.coins += 300; g.writeSave();
+    const S = EVO.save(g); EVO.mark(g, 'boss'); S.cleared = (S.cleared || 0) + 1; S.coins += 300; g.writeSave();
     g.evoPreview = true; g.evoClearBonus = 300; g.goHome({ autoLaunch: true });
   };
 

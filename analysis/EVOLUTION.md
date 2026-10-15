@@ -33,3 +33,9 @@ Fusée de carton **sans réacteur** : lancée à 27 m/s, elle retombe après ~30
 
 ## Limites
 Le pilote automatique du banc rate beaucoup d'ennemis : les durées de partie et les revenus sont des ordres de grandeur, pas des mesures humaines. Pubs = publicités d'exemple. Pas de nouvelle zone jouable après le boss (aperçu seulement).
+
+## v120 (retour du premier test)
+- **Réinitialiser** : bouton en bas à droite (deux touchers) ; pied de page « VOLS n  TEMPS m:ss » depuis le premier lancer ; le **rapport** (étapes avec n° de vol et temps : réacteur, ailerons, turbo, 1er ennemi trop fort, 600 / 1000 / 1500 m, boss) s'affiche à la fin du prototype (`save.evo.marks`).
+- **Vitesse** : vitesse de pointe par palier 36 / 44 / 52 m/s (+1,5 par barre), au lieu de 47 / 60 / 71 jusqu'à 77 ; carburant +20 % pour garder la portée.
+- **La fusée grossit de 3,5 % à chaque barre** (en plus du changement de palier) ; pas de nouveauté pour le lanceur.
+- **Explications** : consignes avant les premiers vols (carton, puis carburant et PV vert / rouge) et une phrase d'aide sous la cause de chaque fin de vol.
