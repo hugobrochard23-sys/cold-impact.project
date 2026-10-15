@@ -11,10 +11,10 @@
     if (speedK > 0.02) this.drawSpeedLines(W, H, speedK);
     const bump = 1 + 0.12 * Math.min(1, game.cellBump || 0), sc = String(run.score);
     ctx.save(); ctx.translate(W / 2, top + px * 5); ctx.scale(bump, bump); ctx.translate(-W / 2, -(top + px * 5));
-    F.draw(ctx, sc, W / 2, top, px * 1.35, '#ffffff', { align: 'center' });
+    if (!game.evo) F.draw(ctx, sc, W / 2, top, px * 1.35, '#ffffff', { align: 'center' });
     ctx.restore();
     const gh = Math.min(H * 0.34, 300), gw = Math.max(10, Math.round(px * 2.4)), gx = W - gw - Math.max(14, W * 0.05), gy = top + H * 0.02;
-    this.drawFuelBar(game, rk, gx, gy, gw, gh);
+    if (!game.evo || (!game.evo.preview && CC.EVO.rocket(CC.EVO.save(game).rk).tier >= 2)) this.drawFuelBar(game, rk, gx, gy, gw, gh);
     game.flyers.length = 0;
     // v075 : niveau — fine ligne de progression tout en haut ; vie du boss quand il est proche
     if (game.levelRun) {

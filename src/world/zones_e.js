@@ -212,7 +212,7 @@
     S.item(dc, (r) => { const L = S.lane(dc), tot = 2 * 40 + 2 * Math.abs(L.lx); S.frame(dc, L.lx, L.y, 56, 30, tot, L.y + 42, 22, 'metal', '#8a9098', 0); S.bx(dc, L.lx, L.y + 44, 62, 4, 22, 'hazard', undefined, false); S.bx(dc, L.lx - 40, 12, 18, 24, 20, 'metal', '#a0a6ae'); S.bx(dc, L.lx + 40, 12, 18, 24, 20, 'metal', '#a0a6ae'); S.gate(dc - 30, L.lx, L.y); S.gate(dc, L.lx, L.y); S.gate(dc + 30, L.lx, L.y); });
     S.reserve(dc, 0, 2 * S.vol(dc), 30);
   } };
-  Z.kit = { sideWalls, farShapes, arch, span, pick };   // v097 : briques réutilisées par zones_f.js
+  Z.kit = { sideWalls, farShapes, arch, span, pick, tent, drums, mast, truckBlock, sandbags, container, radome, tank, crates, tower, hangar, fence, windsock, oak, pine, turbine, platform, vessel, jet, tractor, buoy };   // v097 : briques réutilisées par zones_f.js
 })();
 
 /* v097 : EFFETS DE TERRAIN propres à chaque zone — des « champs » invisibles à effet doux et lisible (une colonne colorée + des chevrons les montrent) :
