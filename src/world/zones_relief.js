@@ -13,7 +13,7 @@
   const ZK = {
     city: { sg: 0, amp: 1.0, acc: '#e0b020' }, forest: { sg: 0, amp: 1.0, acc: '#c8a050' }, port: { sg: 1, amp: 0.9, acc: '#e0b020' }, usine: { sg: 0, amp: 0.55, acc: '#ff8a1a' },
     tour: { sg: 0, amp: 0.9, acc: '#2be8ff' }, sky: { sg: 0, amp: 0.9, acc: '#e8f0ff' }, metro: { sg: 0, amp: 0.5, acc: '#30c060' }, mini: { sg: 0, amp: 0.6, acc: '#ff5a3a' },
-    eau: { sg: -1, amp: 0.8, acc: '#4ab8a8' }, plaine: { sg: 0, amp: 0.12, acc: '#9ad060' }, chute: { sg: 0, amp: 1.0, acc: '#ff3ad8' },
+    eau: { sg: -1, amp: 0.8, acc: '#4ab8a8' }, plaine: { sg: 0, amp: 0.12, acc: '#9ad060' }, campagne: { sg: 0, amp: 0.8, acc: '#9ad060' }, chute: { sg: 0, amp: 1.0, acc: '#ff3ad8' },
     canyon: { sg: 0, amp: 1.0, acc: '#e8b070' }, banquise: { sg: 0, amp: 0.9, acc: '#9ad0ff' }, volcan: { sg: 0, amp: 1.0, acc: '#ff7a2a' }, jungle: { sg: 0, amp: 0.9, acc: '#9affb0' }, barrage: { sg: 0, amp: 0.8, acc: '#ffd23a' }, neon: { sg: 0, amp: 0.8, acc: '#ff3ad8' }, carriere: { sg: 0, amp: 1.0, acc: '#ffb02b' }, lancement: { sg: 0, amp: 0.8, acc: '#ff7a1a' }, autoroute: { sg: 0, amp: 0.7, acc: '#fff2c0' },   // v096 : nouvelles zones (le parc éolien et le porte-avions, sur l'eau, n'ont pas de relief)
   };
   const kA = (T, zone) => U.clamp(0.8 + 0.14 * ((T.difK || 1) - 0.7), 0.8, 1.45) * ZK[zone].amp;   // la hauteur des reliefs grandit avec le niveau
@@ -80,6 +80,7 @@
       (r) => { const h = r.between([30, 50]); return [['b', 0, h / 2, 1, h, 1, 'col:#3a3d42'], ['b', 0, h * 0.8, 8, 0.3, 0.3, 'col:#3a3d42'], ['b', 0, h + 1, 0.5, 2, 0.5, 'emis:#d83a2a']]; },
     ],
   };
+  PROPS.campagne = PROPS.plaine;
   function buildProp(S, dc, lx, parts) {
     for (const p of parts) {
       if (p[0] === 'b') S.bx(dc, lx + p[1], p[2], p[3], p[4], p[5], p[6] && p[6].side ? p[6] : p[6], undefined, true);

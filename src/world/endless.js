@@ -254,7 +254,7 @@
     }
 
     // v076 : FLECHES de chemin (copiées de l'ancien niveau City) : flèches vertes plates et translucides, une tous les 45 m, le long de la trajectoire
-    if (T.levelLen) for (let d = Math.ceil(Math.max(d0, 40) / 70) * 70; d < d1 - 1; d += 70) {   // v087 : une flèche tous les 70 m
+    if (T.levelLen && !(CC.EVO && CC.EVO.on)) for (let d = Math.ceil(Math.max(d0, 40) / 70) * 70; d < d1 - 1; d += 70) {   // v087 : une flèche tous les 70 m
       const sA = (CC.Zones.plan(T, T.zoneIndex(d)).scenes.find((q) => d >= q.d0 && d < q.d1)) || null;
       if (!sA || sA.name === 'arene' || d > T.levelLen - 30) continue;
       if (!((T.ease === undefined ? 1 : T.ease) < 0.25 || Math.abs(T.laneY(d + 70) - T.laneY(d)) > 8 || sA.name === 'city1' || sA.name === 'escalier' || (CC.Zones.reliefNames || []).indexOf(sA.name) >= 0)) continue;

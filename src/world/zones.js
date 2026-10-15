@@ -480,8 +480,12 @@
   // ARENE : un grand espace fermé (murs hauts, mur du fond), le BOSS (hélicoptère géant à plusieurs points de vie) vole au milieu
   function arenaBuild(S, zone) {
     const T = S.T, V0 = 64, meta = Z.meta[zone] || Z.meta.city, wl = meta.wall ? meta.wall(S.sr) : { mat: 'concrete', tint: '#c8ccd0' };
+    if (zone === 'campagne') {
+      for (let dc = S.d0; dc < S.d1; dc += 40) { if ((dc / 40) % 2 === 0) S.item(dc + 20, () => { S.bx(dc + 20, 0, 0.15, 30, 0.3, 40, 'concreteDark', '#7d838c'); S.bx(dc + 20, 0, 0.32, 1.2, 0.06, 14, 'hazard', undefined, false); }); }
+      for (let dc = S.d0 + 60; dc < S.d1; dc += 150) S.item(dc, () => { for (const sg of [-1, 1]) { S.bx(dc, sg * 95, 9, 34, 18, 46, 'corrugated', '#8a9a7a'); S.bx(dc + 40, sg * 70, 13, 5, 26, 5, 'concreteDark', '#c8ccd0'); } });
+    } else
     for (let dc = S.d0; dc < S.d1; dc += 40) S.item(dc + 20, () => { for (const sg of [-1, 1]) S.bx(dc + 20, sg * (V0 + 12), 55, 24, 110, 40.6, wl.mat, wl.tint); });
-    const dEnd = T.levelLen + 800; if (dEnd > S.d0 && dEnd <= S.d1 + 0.5) S.item(dEnd - 3, () => S.bx(dEnd - 3, 0, 55, 2 * (V0 + 24), 110, 6, wl.mat, wl.tint));
+    const dEnd = T.levelLen + 800; if (zone !== 'campagne' && dEnd > S.d0 && dEnd <= S.d1 + 0.5) S.item(dEnd - 3, () => S.bx(dEnd - 3, 0, 55, 2 * (V0 + 24), 110, 6, wl.mat, wl.tint));
     // v080 : le boss a SON design (CC.BossModels), il entre en vol depuis le fond de l'arène ; en altitude (tour, chute) il vole à la hauteur de la trajectoire
     const dB = T.levelLen + 110, dS = T.levelLen + (T.bossEnt === 'rise' ? 200 : 380), ent = T.bossEnt;
     // v112/v113 : le boss est caché derrière un MUR géant (briques, planches, roche, glace… selon la zone) qui s'effondre quand il entre ; ou il plonge du ciel ; ou il remonte du sol / de l'eau

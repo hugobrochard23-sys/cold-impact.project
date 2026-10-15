@@ -754,7 +754,7 @@
       setTimeout(() => { if (this.state === 'FLIGHT' && this.endlessRun) { const rk = this.rocket; rk.active = false; rk.mesh.visible = false; rk.light.intensity = 0; rk.rope.visible = false; if (this.evo && !this.evo.preview) CC.EVO.onClear(this); else this.finishEndless(); } }, 2000);
     }
     onTargetHit(t, rocket) {
-      if (this.evo && !t.boss && !t.mini && t.evoHp && !t.hazard) { if (!CC.EVO.canKill(this, t)) { this.evoWeak = { hp: t.evoHp, dmg: CC.EVO.dmgNow(this) }; this.onRocketCrash('weak', rocket.pos.clone(), new V(0, 1, 0)); return; } CC.EVO.onKill(this, t); t.hp = 1; }   // v119 : ennemi trop fort = la fusée se brise
+      if (this.evo && !t.boss && !t.mini && !t.hazard) { if (!CC.EVO.canKill(this, t)) { this.evoWeak = { hp: t.evoHp, dmg: CC.EVO.dmgNow(this) }; this.onRocketCrash('weak', rocket.pos.clone(), new V(0, 1, 0)); return; } CC.EVO.onKill(this, t); t.hp = 1; }   // v119 : ennemi trop fort = la fusée se brise
       const dm = this.evo ? CC.EVO.dmgNow(this) : CC.L1 && this.l1run ? CC.L1.bossDmg(this) : 1;   // v118 : EXPLOSION = plus de dégâts au boss
       if (this.endlessRun && t.hp > dm && !t.hazard) { this.hitBoss(t, rocket, dm); return; }
       if (t.hazard) { this.onRocketCrash(t.cause || (t.type === 'train' ? 'train' : 'drone'), rocket.pos.clone(), new V(0, 1, 0)); return; }   // v034 : un drone ne se détruit pas, il détruit
@@ -971,7 +971,7 @@
         case 'LAUNCH':   // v034 : charge (0,9 s) puis allumage
           this.input.setAim(0, this.pad.pitch); this.rig.setAim(0, this.pad.pitch);
           this.launchT += dt; this.pad.update(dt);
-          if (this.launchT >= CC.CONFIG.pad.chargeTime) this.fire();
+          if (this.evoAim) CC.EVO.aimTick(this, dt); else if (this.launchT >= CC.CONFIG.pad.chargeTime) this.fire();
           break;
         case 'REVIVE':   // v034 : l'offre de continuer (publicité récompensée) s'éteint toute seule
           if (this.ui.overlay === 'revive') { this.reviveT -= dt; const c = Math.ceil(this.reviveT); if (c !== this._rvC && c > 0) { this._rvC = c; this.audio.play(c <= 3 ? 'warnMissile' : 'uiTick', null, 8 - c); if (CC.Haptics) CC.Haptics.tick('touch'); }   // v086 : un tic par seconde (plus aigu, puis alerte)
@@ -1057,6 +1057,7 @@
       for (const m of this.missiles) m.update(dt, this);
       if (this.l1run && !this.evo) CC.L1.tick(this, dt);   // v118 : ralenti automatique
       if (this.evo) CC.EVO.tick(this, dt);
+      if (CC.EVO && CC.EVO.on) CC.EVO.frame(this, dt);
       this.missiles = this.missiles.filter((m) => { if (!m.alive) this.scene.remove(m.object); return m.alive; });
       if (this.centerMsgT > 0 && (this.centerMsgT -= dt) <= 0) { this.centerMsg = null; this.centerMsgT = 0; }   // message passager (graine de la carte générée)
       if (this.state === 'FLIGHT') this.style.update(dt, rk); else this.style.update(dt, null);

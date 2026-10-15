@@ -12,7 +12,7 @@
   const _wu = new V(), _tu = new V(), _nc = new V(), _f = new V(), _u = new V(), _o = new V(), _z = new V(0, 0, 1), _y = new V(0, 1, 0), _t1 = new V(), _t2 = new V(), _t3 = new V();
   const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _tq = new THREE.Quaternion();
 
-  const _yAx = new THREE.Vector3(0, 1, 0), _nb = new THREE.Vector3();
+  const _yAx = new THREE.Vector3(0, 1, 0), _nb = new THREE.Vector3(), _down = new THREE.Vector3(0, -1, 0);
   class CameraRig {
     constructor(camera, game) {
       this.cam = camera; this.game = game; this.cfg = CC.CONFIG.camera;
@@ -81,7 +81,7 @@
 
     // décalage caméra→roquette (repère de visée) ; seul ce décalage est lissé : la caméra ne traîne pas derrière la roquette,
     // mais la roquette dérive à l'écran quand la visée tourne (OBSERVÉ : tuyère entre 44 et 57 % en x, 57 et 74 % en y)
-    wantedOffset(out) { return out.copy(this.camDir).multiplyScalar(-(this.cfg.distance + this.pull)).addScaledVector(this.camUp, this.cfg.height); }
+    wantedOffset(out) { const fk = this.fallK || 0; return out.copy(this.camDir).multiplyScalar(-(this.cfg.distance + this.pull + 2.5 * fk)).addScaledVector(this.camUp, this.cfg.height + 5 * fk); }
 
     chaseTarget(rocket, out) {
       out.copy(rocket.pos).add(this.offset);
@@ -130,7 +130,8 @@
           this.pos.copy(want);
         }
         cam.position.copy(this.pos);
-        this.orient(this.camDir, this.roll, this.camRight, this.camUp);
+        const fk = this.fallK || 0;
+        if (fk > 0.01) this.orient(_t2.copy(this.camDir).lerp(_down, 0.5 * fk).normalize(), this.roll, this.camRight, this.camUp); else this.orient(this.camDir, this.roll, this.camRight, this.camUp);
       } else if (this.mode === 'impact') {
         const back = _t1.subVectors(this.pos, this.focus).normalize();
         this.pos.addScaledVector(back, dt * 1.5);

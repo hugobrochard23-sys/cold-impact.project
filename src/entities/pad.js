@@ -119,7 +119,7 @@
       }
       // déflecteur de flamme derrière la tuyère (chauffe à l'allumage)
       this.deflMat = new THREE.MeshLambertMaterial({ color: '#2a2d33', emissive: '#000000' });
-      const defl = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.75, 0.07), this.deflMat); defl.position.set(0, 0.1, 1.32); defl.rotation.x = -0.32; cradle.add(defl); defl.userData.noBake = true;   // matériau animé : jamais fusionné
+      const defl = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.75, 0.07), this.deflMat); defl.position.set(0, 0.1, 1.32); defl.rotation.x = -0.32; cradle.add(defl); this.defl = defl; defl.userData.noBake = true;   // matériau animé : jamais fusionné
       box(1.1, 0.06, 0.4, dark, 0, -0.32, 1.15, cradle);
       // évents à vapeur (jets) : de part et d'autre du rail
       this.vents = [];
@@ -148,7 +148,7 @@
       for (const c of this.clamps) c.arm.rotation.z = 0;
       this.deflMat.emissive.setRGB(0, 0, 0);
       const rk = this.game.rocket;
-      rk.reset(); rk.pos.copy(this.origin); rk.fwd.copy(this.dir); rk.vel.set(0, 0, 0); rk.speed = 0; rk.thrustK = 0; rk.roll = 0.785;
+      rk.reset(); rk.pos.copy(this.origin); rk.fwd.copy(this.dir); rk.vel.set(0, 0, 0); rk.speed = 0; rk.thrustK = 0; rk.roll = CC.EVO && CC.EVO.on ? 0 : 0.785;
       if (CC.EVO && CC.EVO.on) { CC.EVO.dressPad(this); CC.EVO.applySkin(this.game); }   // v119 : apparence selon les paliers
       this.placeRocket(0);
       this.game.rig.startPad();
@@ -204,7 +204,7 @@
       rk.fwd.copy(this.dir);
       rk.mesh.visible = true;
       // flamme de veille : petite au repos, grandit avec la charge (cônes de la tuyère) — mise à jour du maillage (assiette fixe)
-      rk.thrustK = this.mode === 'charge' ? 0.12 + 0.75 * ch : this.mode === 'idle' ? 0.05 + 0.03 * Math.sin(t * 9) : 0;
+      rk.thrustK = this.mode === 'charge' ? (this.manual ? 0.06 + 0.04 * Math.sin(t * 9) : 0.12 + 0.75 * ch) : this.mode === 'idle' ? 0.05 + 0.03 * Math.sin(t * 9) : 0;
       rk.flick = 0.3 + 0.7 * U.fx();
       const keep = rk.roll; rk.updateMesh(0); rk.roll = keep;   // dt = 0 : le roulis ne tourne pas
       rk.light.position.copy(rk.pos).addScaledVector(this.dir, -1.6);
@@ -225,6 +225,7 @@
       p.x += (U.fx() - 0.5) * s; p.y += (U.fx() - 0.5) * s;
       rig.padPos.copy(o).add(p); rig.padLook.copy(o).add(l);
       rig.padFov = C.fov * (1 - 0.1 * ch * ch);
+      if (CC.EVO && CC.EVO.on) { if (this.defl) this.defl.visible = false; CC.EVO.camHook(this.game, rig, o); }
     }
 
     update(dt) {
@@ -232,7 +233,7 @@
       this.t += dt;
       this.dish.rotation.y += dt * 1.6;
       const charging = this.mode === 'charge';
-      if (charging) {
+      if (charging && !this.manual) {
         this.chargeT += dt;
         this.charge = U.clamp(this.chargeT / C.chargeTime, 0, 1);
       } else if (this.mode === 'fired') { this.fireT += dt; this.charge = Math.max(0, this.charge - dt * 4); }

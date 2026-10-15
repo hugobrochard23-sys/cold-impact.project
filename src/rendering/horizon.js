@@ -9,7 +9,7 @@
   const U = CC.U;
   const SC = 0.36;                                       // v038g : l'anneau est réduit à 353 m de rayon (dans la distance de vue), mêmes angles
   const W = 3072, H = 384, R = 980, GROUND = 330;      // y du sol dans la bande (le bas est sous terre)
-  const STYLE = { city: 'city', port: 'port', sky: 'peaks', forest: 'forest', chute: 'megacity', tour: 'city', eau: 'seabed' };
+  const STYLE = { city: 'city', port: 'port', sky: 'peaks', forest: 'forest', campagne: 'campagne', chute: 'megacity', tour: 'city', eau: 'seabed' };
 
   function draw(style, seed, dark) {
     const rng = U.makeRng(seed), rr = (a, b) => a + (b - a) * rng();
@@ -57,6 +57,8 @@
       for (let i = 0; i < 5; i++) stack(rr(0, W), rr(40, 80), 0.45);
     } else if (style === 'peaks') {
       peaks(60, 190, 0.22, 240); peaks(50, 150, 0.36, 180); peaks(30, 100, 0.55, 140);
+    } else if (style === 'campagne') {
+      peaks(70, 200, 0.18, 260); hills(50, 140, 0.26, 0, 1.7); hills(34, 100, 0.38, 0, 1.1); pines(16, 44, 0.48, 12); hills(14, 52, 0.58, 5, 0.6); pines(9, 30, 0.7, 9);
     } else if (style === 'forest') {
       hills(40, 130, 0.22, 0, 1.6); hills(30, 90, 0.36, 0, 1.0); pines(18, 50, 0.46, 12); hills(14, 46, 0.55, 5, 0.6); pines(10, 32, 0.68, 9);
     } else if (style === 'seabed') {
