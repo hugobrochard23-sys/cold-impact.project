@@ -86,7 +86,8 @@
   Z.evoGroundMesh = function (ctx, d, e) {
     const T = ctx.T, b = ctx.b, m = (d + e) / 2, sloped = T.rel(d) !== 0 || T.rel(e) !== 0 || T.rel(m) !== 0, rows = sloped ? Math.max(1, Math.round((e - d) / 5)) : 1;
     // colonnes : la zone de jeu suit le virage (T.at) ; au-delà, le sol part en LIGNE DROITE le long de la normale (jamais de pli dans un virage serré)
-    const V0 = T.vol(m) + 60, cols = [{ x: -330, o: -1 }, { x: -130, o: -1 }]; for (let x = -V0; x <= V0 + 0.1; x += 15) cols.push({ x, o: 0 }); cols.push({ x: 130, o: 1 }, { x: 330, o: 1 });
+    const pl0 = Z.plan(T, T.zoneIndex(m)), sc0 = pl0.scenes.find((q) => m >= q.d0 && m < q.d1), gw0 = sc0 && campagne.scenes[sc0.name] && campagne.scenes[sc0.name].gw;
+    const V0 = gw0 ? gw0 + 10 : T.vol(m) + 60, cols = gw0 ? [] : [{ x: -330, o: -1 }, { x: -130, o: -1 }]; for (let x = -V0; x <= V0 + 0.1; x += 15) cols.push({ x, o: 0 }); if (!gw0) cols.push({ x: 130, o: 1 }, { x: 330, o: 1 });
     const pl = Z.plan(T, T.zoneIndex(m)), sc = pl.scenes.find((q) => m >= q.d0 && m < q.d1), sd = sc && campagne.scenes[sc.name], gf = sd && sd.ground, wet = sd && sd.wet;
     const nC = cols.length, pos = [], nor = [], col = [], uv = [], idx = [], c = GC.c, grey = GC.g;
     for (let r = 0; r <= rows; r++) {
