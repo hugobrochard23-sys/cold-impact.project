@@ -3,6 +3,7 @@
   const U = CC.U;
   CC.HUD.prototype.drawClassic = function (game, W, H, C, col, rk) {
     const ctx = this.ctx, run = game.endlessRun, F = CC.Font, s = game.state;
+    if (CC.EVO && CC.EVO.on && game.ui && game.ui.overlay === 'evo') return;   // v119 : l'écran d'évolution masque le HUD de vol
     const flying = s === 'FLIGHT' || s === 'IMPACT' || s === 'CRASHED' || s === 'RESPAWN' || s === 'REVIVE' || s === 'AIM';
     if (!flying) return;
     const alive = s === 'FLIGHT' || s === 'AIM', top = Math.max(10, H * 0.02), px = Math.max(3, Math.min(W * 0.012, H * 0.0075));
@@ -26,6 +27,7 @@
         F.draw(ctx, boss.boss ? 'BOSS' : 'MINI BOSS', W / 2, by + bh + px, px * 0.7, '#ffffff', { align: 'center' });
       }
     }
+    if (game.evo && CC.EVO) CC.EVO.drawHud(this, ctx, game, W, H, px);
     if (game.l1run && CC.L1) CC.L1.drawHud(ctx, game, W, H, px);   // v118 : bulles de bouclier, charges de ralenti, messages
   };
   // jauge d'essence : juste la barre (fond sombre translucide), aucun contour

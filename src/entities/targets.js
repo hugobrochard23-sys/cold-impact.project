@@ -61,7 +61,9 @@ const GOLD = new THREE.MeshPhongMaterial({ color: '#f2c230', specular: '#fff6c8'
       const SCL = opts.scale || 1; this.object.scale.setScalar(SCL);   // v067 : cibles agrandies (échelle du modèle ET de la boîte de collision)
       this.size = this.model.userData.size.map((v) => v * SCL); this.center = this.model.userData.center.map((v) => v * SCL);
       this.detectRange = opts.detectRange || 45;       // ESTIMATION
-      this.hp = opts.hp || 1; this.hpMax = this.hp; this.boss = !!opts.boss; this.mini = !!opts.mini; this.hitCool = 0;   // v075 : boss à plusieurs points de vie
+      this.hp = opts.hp || 1; this.hpMax = this.hp; this.evoHp = opts.evoHp;
+      if (this.evoHp === undefined && CC.EVO && CC.EVO.on && !opts.boss && !opts.mini && !opts.hazard && !(CC.game && CC.game.evoPreview) && Array.isArray(pos)) this.evoHp = CC.EVO.hpAtPos(pos);   // v119 : tous les ennemis ont des PV (formations, dorés…)
+      this.boss = !!opts.boss; this.mini = !!opts.mini; this.hitCool = 0;   // v075 : boss à plusieurs points de vie  // v075 : boss à plusieurs points de vie
       this.unarmed = !!opts.unarmed;                   // v032 : cible qui vise (tourelle) mais ne tire pas (missions FACILE / MOYEN)
       this.drift = opts.drift || 0; this.driftSpeed = opts.driftSpeed || 0.35;
       this.alert = CC.Models.alertSprite(); this.alert.visible = false;
@@ -335,7 +337,7 @@ const GOLD = new THREE.MeshPhongMaterial({ color: '#f2c230', specular: '#fff6c8'
         const joins = salvo && !this.burst && game.aaVolleyT !== undefined && now - game.aaVolleyT < 0.15 && this.aaCool < A.volleyJoin;
         if (!joins) return;
       }
-      const l1b = this.boss && game.l1run && CC.L1 && CC.L1.on(game);   // v118 : boss du niveau 1 : phases (éventail, mur)
+      const l1b = this.boss && game.l1run && CC.L1 && (CC.L1.on(game) || (CC.EVO && CC.EVO.on));   // v118 : boss du niveau 1 : phases (éventail, mur)
       const cap = l1b ? 40 : game.level && game.level.aaMaxAlive ? game.level.aaMaxAlive : salvo ? A.maxAliveSalvo : A.maxAlive;   // v032 : plafond du profil de mission
       if (game.missiles.filter((m) => m.alive).length >= cap) return;
       if (!salvo) this.aaCool = L(A.cooldown) * (this.rageK || 1);   // v080 : le boss blessé tire de plus en plus vite

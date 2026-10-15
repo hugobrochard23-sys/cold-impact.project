@@ -60,8 +60,8 @@
   };
   L1.onBossHit = (g, t) => {
     const r = g.l1run; if (r) r.bossHits++;
-    const ph = t.hp > 4 ? 1 : t.hp > 2 ? 2 : 3;
-    if (r && L1.on(g) && ph !== r.ph) { r.ph = ph; L1.msg(g, ph === 2 ? 'PHASE 2' : 'PHASE 3  MUR DE MISSILES', 1.6, '#ff6a50'); g.audio.play('alarm'); }
+    const fr = t.hp / (t.hpMax || 6), ph = fr > 0.66 ? 1 : fr > 0.33 ? 2 : 3;
+    if (r && (L1.on(g) || (CC.EVO && CC.EVO.on)) && ph !== r.ph) { r.ph = ph; L1.msg(g, ph === 2 ? 'PHASE 2' : 'PHASE 3  MUR DE MISSILES', 1.6, '#ff6a50'); g.audio.play('alarm'); }
   };
 
   // appelé à chaque image de vol : ralenti automatique (missile très proche ou mur imminent)
@@ -84,7 +84,7 @@
   // ---------- boss : phase 2 = éventail, phase 3 = mur de missiles avec une ouverture ----------
   const UPV = new V(0, 1, 0);
   L1.bossFire = (t, g, from, rk, muzzle) => {
-    const ph = t.hp > 4 ? 1 : t.hp > 2 ? 2 : 3; t._n = (t._n || 0) + 1;
+    const fr = t.hp / (t.hpMax || 6), ph = fr > 0.66 ? 1 : fr > 0.33 ? 2 : 3; t._n = (t._n || 0) + 1;
     const to = rk.pos.clone().sub(from), dist = to.length(), base = to.clone().normalize();
     if (ph === 1) { t.aaCool = 3.0; return false; }
     if (ph === 2) {

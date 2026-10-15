@@ -149,6 +149,7 @@
       this.deflMat.emissive.setRGB(0, 0, 0);
       const rk = this.game.rocket;
       rk.reset(); rk.pos.copy(this.origin); rk.fwd.copy(this.dir); rk.vel.set(0, 0, 0); rk.speed = 0; rk.thrustK = 0; rk.roll = 0.785;
+      if (CC.EVO && CC.EVO.on) { CC.EVO.dressPad(this); CC.EVO.applySkin(this.game); }   // v119 : apparence selon les paliers
       this.placeRocket(0);
       this.game.rig.startPad();
       this.updateCamera(0);
