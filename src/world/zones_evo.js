@@ -39,7 +39,7 @@
     if (location.search.indexOf('notgt') >= 0) return;
     S.item(dc, () => {
       const RO = CC.Roster, R = Math.max(5, (RO.RAD && RO.RAD[type]) || 6) + 1.2, Lc = S.lane(dc).lx, toward = lx > Lc ? -1 : 1, vmax = S.vol(dc) - 8;
-      let ok = freeAt(S, type, dc, lx, y || 0, R, o);
+      let ok = o.fixed || freeAt(S, type, dc, lx, y || 0, R, o);
       if (!ok) search: for (const rho of [4, 8, 13, 19, 27, 37, 50, 66]) for (const [ddc, dlx] of [[0, toward * rho], [0, -toward * rho], [rho * 0.7, toward * rho * 0.5], [-rho * 0.7, toward * rho * 0.5], [rho * 0.7, 0], [-rho * 0.7, 0]]) {
         const nl = lx + dlx, nd = dc + ddc; if (Math.abs(nl - Lc) > vmax || !S.inClip(nd)) continue;
         if (freeAt(S, type, nd, nl, y || 0, R, o)) { (window.__evoMoved = window.__evoMoved || []).push([type, Math.round(dc), Math.round(lx), '>', Math.round(nd), Math.round(nl)]); dc = nd; lx = nl; ok = true; break search; }
@@ -107,23 +107,26 @@
     b.batch('evoGrass').shadow = false; b.addGeometry(g, _O, _Q, null, 'evoGrass', undefined, [1 / 7, 1 / 7]); g.dispose();
     if (!gf) grassTufts(ctx, d, e, wet, sd, sc);
   };
-  // touffes d'herbe : une seule couleur, un peu plus sombre que le sol, assez grosses pour se lire de loin ; jamais dans l'eau
+  // touffes d'herbe : petites, plates, d'UNE seule couleur proche du sol (un peu plus sombre) ; chaque brin est dessiné des deux côtés (même éclairage dessus et dessous) ; jamais dans l'eau
   const hsh = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
-  const GTC = new THREE.Color('#3f7a26');
+  const GTC = new THREE.Color('#4c8a30');
   function grassTufts(ctx, d, e, wet, sd, sc) {
-    const T = ctx.T, b = ctx.b, n = Math.max(1, Math.round((e - d) * 0.35)), pos = [], nor = [], col = [];
+    const T = ctx.T, b = ctx.b, n = Math.max(1, Math.round((e - d) * 0.55)), pos = [], nor = [], col = [];
+    const tri = (a1, a2, a3) => { for (const q of [a1, a2, a3]) { pos.push(q[0], q[1], q[2]); nor.push(0, 1, 0); col.push(GTC.r, GTC.g, GTC.b); } };
     for (let i = 0; i < n; i++) {
       const dd = d + (e - d) * hsh(d + i * 0.37, i), lx = (hsh(i * 1.7, d * 0.13) * 2 - 1) * 46; if (wet && wet(dd, lx, sc, T)) continue;
-      const h = 1.5 + hsh(i, d * 0.7) * 1.4, p = T.at(dd, lx, 0), a0 = hsh(d, i * 3.3) * 6.28, px = p[0], py = p[1] - 0.04, pz = p[2];
-      for (let j = 0; j < 9; j++) {
-        const a = a0 + j * 0.698 + hsh(j, i) * 0.3, ca = Math.cos(a), sa = Math.sin(a), r0 = 0.1 + 0.18 * hsh(j * 3.1, i + d), bx = px + ca * r0, bz = pz + sa * r0, lean = 0.4 + 0.6 * hsh(j + i, d), hh = h * (0.6 + 0.4 * hsh(j * 5.1, i + d)), tx = bx + ca * lean, tz = bz + sa * lean, w = 0.16;
-        pos.push(bx - sa * w, py, bz + ca * w, bx + sa * w, py, bz - ca * w, tx, py + hh, tz);
-        for (let k = 0; k < 3; k++) { nor.push(0, 1, 0); col.push(GTC.r, GTC.g, GTC.b); }
+      for (let t = 0; t < 2; t++) {   // deux petites touffes côte à côte
+        const p = T.at(dd + (t ? 0.7 : 0), lx + (t ? 0.55 : 0), 0), a0 = hsh(d + t, i * 3.3) * 6.28, py = p[1] - 0.03, sz = 0.7 + 0.5 * hsh(i + t, d * 0.7);
+        for (let j = 0; j < 7; j++) {
+          const a = a0 + j * 0.8976 + hsh(j, i + t) * 0.3, ca = Math.cos(a), sa = Math.sin(a), r0 = 0.05 + 0.09 * hsh(j * 3.1, i + d) * sz, bx = p[0] + ca * r0, bz = p[2] + sa * r0, lean = (0.3 + 0.3 * hsh(j + i, d)) * sz, hh = (0.32 + 0.28 * hsh(j * 5.1, i + d)) * sz, tx = bx + ca * lean, tz = bz + sa * lean, w = 0.07 * sz;
+          const A1 = [bx - sa * w, py, bz + ca * w], B1 = [bx + sa * w, py, bz - ca * w], C1 = [tx, py + hh, tz];
+          tri(A1, B1, C1); tri(B1, A1, C1);
+        }
       }
     }
     if (!pos.length) return;
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-    b.batch('tree:#fefefe').shadow = false; b.addGeometry(g, _O, _Q, null, 'tree:#fefefe'); g.dispose();
+    b.batch('col:#fefefe').shadow = false; b.addGeometry(g, _O, _Q, null, 'col:#fefefe'); g.dispose();
   }
 
   const campagne = { signature: 'rampe', scenes: {}, dress(S) {
