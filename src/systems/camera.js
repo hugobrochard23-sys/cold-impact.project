@@ -122,7 +122,7 @@
           if (u.lengthSq() > 1e-6) this.upRef.copy(u.normalize());   // haut exactement opposé (rare) : on garde l'ancien
           this.updateCamBasis();
         }
-        this.offset.lerp(this.wantedOffset(_t1), U.damp(c.offsetLag, dt));
+        if (CC.EVO && CC.EVO.on) this.offset.copy(this.wantedOffset(_t1)); else this.offset.lerp(this.wantedOffset(_t1), U.damp(c.offsetLag, dt));   // v126 : évolution : la caméra colle à la fusée (jamais en retard)
         const want = this.chaseTarget(rk, _t2);
         if (this.mode === 'transition') {
           if (this.handT >= 0) this.pos.copy(want);    // v034 : le travelling est fait plus bas (startHandoff)
@@ -133,7 +133,7 @@
         }
         cam.position.copy(this.pos);
         const fk = this.fallK || 0;
-        if (CC.EVO && CC.EVO.on && rk.active) { const tp = _evoD.copy(rk.pos).addScaledVector(this.camDir, 9); tp.y -= 6 * fk; cam.up.set(0, 1, 0); cam.lookAt(tp); }
+        if (CC.EVO && CC.EVO.on && rk.active) { const tp = _evoD.copy(rk.pos).addScaledVector(this.camDir, 2.2); cam.up.set(0, 1, 0); cam.lookAt(tp); }   // la fusée reste au centre de l'écran
         else if (fk > 0.01) this.orient(_t2.copy(this.camDir).lerp(_down, 0.5 * fk).normalize(), this.roll, this.camRight, this.camUp); else this.orient(this.camDir, this.roll, this.camRight, this.camUp);
       } else if (this.mode === 'impact') {
         const back = _t1.subVectors(this.pos, this.focus).normalize();

@@ -42,7 +42,7 @@
   const roofLine = (S, dc, lx, w, dd, y, tint) => S.bx(dc, lx, y, w, 0.9, dd, 'corrugated', tint, true);
 
   // ===== FORET DENSE : sous-bois, deux collines, une clairière avec une scierie ; le lance-missiles tire depuis la colline, l'hélico patrouille au-dessus de la canopée
-  D.scenes.foret = { len: [700, 700], noDoor: true, noChaos: true,
+  D.scenes.foret = { len: [700, 700], noDoor: true, noChaos: true, turns: [[0.06, 0.5, 34], [0.56, 0.96, -44]],
     pin: (T, sc) => ({ lx: 0, y: 22, from: 24, to: sc.d1 - sc.d0 - 24 }),
     relief(T, sc) { return rel(sc, (d) => { const u = (d - sc.d0) / (sc.d1 - sc.d0); return 20 * ss(0.06, 0.26, u) * (1 - ss(0.34, 0.56, u)) + 14 * ss(0.66, 0.8, u) * (1 - ss(0.86, 0.98, u)); }); },
     build(S) {
@@ -143,7 +143,7 @@
     for (let k = -len / 2 + 8; k < len / 2; k += 14) { S.bx(dc + k, 0, hh - 0.4, 2 * hw, 0.4, 0.4, 'metal', '#7a7e84', false); S.bx(dc + k, 0, hh + 1.1, 12, 0.2, 5, 'emis:#e8f0e8', undefined, false); for (const s of [-1, 1]) { S.bx(dc + k, s * (hw - 3), 3, 3, 6, 9, 'col:#5a5e66'); S.bx(dc + k, s * (hw - 3), 6.4, 3.2, 0.5, 9.2, 'col:#8a6a3a', undefined, false); } }
   });
   const concrete = (d, lx, c, sc, w) => { const k = ss(sc.d0 - 6, sc.d0 + 30, d) * (1 - ss(sc.d1 - 30, sc.d1 + 6, d)) * (1 - ss(w, w + 26, Math.abs(lx))); if (k > 0) c.lerp(new THREE.Color('#7d7f7c'), k * 0.95); };
-  D.scenes.entrepots = { len: [760, 760], noDoor: true, noChaos: true, ground: (d, lx, c, sc) => concrete(d, lx, c, sc, 90),
+  D.scenes.entrepots = { len: [760, 760], noDoor: true, noChaos: true, turns: [[0.08, 0.92, -46]], ground: (d, lx, c, sc) => concrete(d, lx, c, sc, 90),
     pin: (T, sc) => ({ lx: 0, y: 12, from: 24, to: sc.d1 - sc.d0 - 24 }),
     relief(T, sc) { return rel(sc, (d) => { const u = (d - sc.d0) / (sc.d1 - sc.d0); return 28 * ss(0.16, 0.42, u) * (1 - ss(0.76, 0.97, u)); }); },
     build(S) {
@@ -167,7 +167,7 @@
     } };
 
   // ===== BASE : le dernier tronçon avant le boss — clôture, miradors, réservoirs, bunkers, radars, la piste qui mène à l'aérodrome
-  D.scenes.base = { len: [560, 560], noDoor: true, noChaos: true, ground: (d, lx, c, sc) => concrete(d, lx, c, sc, 56),
+  D.scenes.base = { len: [560, 560], noDoor: true, noChaos: true, turns: [[0.05, 0.55, 28], [0.55, 0.95, -28]], ground: (d, lx, c, sc) => concrete(d, lx, c, sc, 56),
     pin: (T, sc) => ({ lx: 0, y: 14, from: 24, to: sc.d1 - sc.d0 - 24 }),
     build(S) {
       const L = S.len;

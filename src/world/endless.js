@@ -218,7 +218,8 @@
 
     // v040 : ligne du RECORD — un portique jaune en travers de la route à la distance du meilleur vol
     { const gd = game.progress && game.progress.P && game.progress.P.bestDist;
-      if (gd && gd > d0 + 6 && gd < d1 - 6 && gd > 300) {
+      if (gd && gd > d0 + 6 && gd < d1 - 6 && gd > 300 && CC.EVO && CC.EVO.on) CC.EVO.recordBeam(b, T, gd);
+      else if (gd && gd > d0 + 6 && gd < d1 - 6 && gd > 300) {
         const hf = T.half(gd) + 4, yw = T.yawAcross(gd);
         for (const sgn of [-1, 1]) b.box({ p: T.at(gd, sgn * hf, 15), s: [1.2, 30, 1.2], r: [0, yw, 0], mat: 'basic:#ffd23a', collide: false, shadow: false });
         b.box({ p: T.at(gd, 0, 30), s: [2 * hf, 1.4, 1.2], r: [0, yw, 0], mat: 'basic:#ffd23a', collide: false, shadow: false });
