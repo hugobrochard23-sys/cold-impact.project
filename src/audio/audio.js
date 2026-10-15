@@ -10,6 +10,10 @@
     carrier: { wind: 0.07, windF: 600, low: 0.1, lowF: 85, hum: 0.03, humF: 70 }, volcan: { wind: 0.04, windF: 300, low: 0.16, lowF: 65, hum: 0.025, humF: 38 }, jungle: { wind: 0.03, windF: 420, hiss: 0.022, hissF: 5200, low: 0.02, lowF: 110 },
     barrage: { wind: 0.05, windF: 360, low: 0.13, lowF: 95, hum: 0.03, humF: 55 }, neon: { wind: 0.02, windF: 300, low: 0.05, lowF: 120, hum: 0.035, humF: 105, hiss: 0.006, hissF: 7000 }, carriere: { wind: 0.07, windF: 480, low: 0.09, lowF: 100 },
     epaves: { wind: 0.1, windF: 400, low: 0.06, lowF: 90, hiss: 0.006, hissF: 4200 }, lancement: { wind: 0.05, windF: 520, low: 0.07, lowF: 90, hum: 0.02, humF: 80 }, autoroute: { wind: 0.05, windF: 620, low: 0.09, lowF: 130, hum: 0.015, humF: 90 },
+    // v130 : mode évolution — un fond sonore par acte
+    evoDawn: { wind: 0.05, windF: 700, low: 0.02, lowF: 120, hiss: 0.006, hissF: 5600 }, evoDay: { wind: 0.06, windF: 620, low: 0.025, lowF: 120, hiss: 0.004, hissF: 5200 }, evoDusk: { wind: 0.09, windF: 520, low: 0.05, lowF: 110, hum: 0.012, humF: 60 },
+    evoMine: { wind: 0.02, windF: 260, low: 0.13, lowF: 90, hum: 0.045, humF: 48, pulse: 0.004, pulseF: 0.4, hiss: 0.003, hissF: 3600 }, evoNight: { wind: 0.03, windF: 380, low: 0.07, lowF: 110, hum: 0.03, humF: 82, hiss: 0.008, hissF: 6200 },
+    evoSiege: { wind: 0.03, windF: 360, low: 0.12, lowF: 80, hum: 0.045, humF: 60, pulse: 0.01, pulseF: 0.8 }, evoBoss: { wind: 0.0, low: 0.2, lowF: 70, hum: 0.055, humF: 45, pulse: 0.03, pulseF: 1.4 }, evoEscape: { wind: 0.0, low: 0.26, lowF: 60, hum: 0.06, humF: 40, pulse: 0.05, pulseF: 2.8, hiss: 0.02, hissF: 3000 },
     city:   { wind: 0.04, windF: 420, low: 0.07, lowF: 150, hum: 0.012, humF: 50, night: { wind: 0.03, hiss: 0.012 } },
     metro:  { wind: 0.012, windF: 260, low: 0.11, lowF: 110, hum: 0.05, humF: 60, pulse: 0.004, pulseF: 0.5 },
     port:   { wind: 0.06, windF: 700, low: 0.09, lowF: 260, hum: 0.008, humF: 48 },
@@ -23,6 +27,9 @@
   };
   // événements lointains : intervalle (s) entre deux sons, liste (jour) et liste de nuit
   const AMBIENT_EVENTS = {
+    evoDawn: { gap: [5, 10], list: ['birds', 'birds', 'horn'] }, evoDay: { gap: [6, 12], list: ['birds', 'jetPass'] }, evoDusk: { gap: [6, 12], list: ['jetPass', 'owl', 'clank'] },
+    evoMine: { gap: [3, 7], list: ['drip', 'clank', 'press', 'trainFar', 'drip'] }, evoNight: { gap: [4, 8], list: ['siren', 'horn', 'trainFar', 'jetPass'] }, evoSiege: { gap: [3, 6], list: ['alarm', 'jetPass', 'clank', 'siren'] },
+    evoBoss: { gap: [3, 6], list: ['alarm', 'press', 'clank'] }, evoEscape: { gap: [1.2, 2.6], list: ['boomSmall', 'alarm', 'press', 'boomSmall'] },
     city:   { gap: [6, 13], list: ['horn', 'siren', 'trainFar'], night: ['horn', 'siren', 'trainFar'] },
     metro:  { gap: [5, 11], list: ['trainFar', 'drip', 'drip', 'clank'] },
     port:   { gap: [5, 10], list: ['shipHorn', 'clank', 'trainFar'], night: ['shipHorn', 'clank'] },
@@ -134,6 +141,8 @@
       const bedH = loop(this.noise, 1.4); this.bedHissF = ctx.createBiquadFilter(); this.bedHissF.type = 'highpass'; this.bedHissF.frequency.value = 5200;
       this.bedHiss = ctx.createGain(); this.bedHiss.gain.value = 0; bedH.connect(this.bedHissF); this.bedHissF.connect(this.bedHiss); this.bedHiss.connect(this.ambBus);
       this.ambLfo = ctx.createOscillator(); this.ambLfo.frequency.value = 0.3; const lg = ctx.createGain(); lg.gain.value = 0.0; this.ambLfoG = lg; this.ambLfo.connect(lg); lg.connect(this.bedHum.gain); this.ambLfo.start();
+      // v130 : bruit de l'eau (rivière, lac) : un souffle filtré dont le niveau est piloté par la distance à l'eau
+      { const wsr = ctx.createBufferSource(); wsr.buffer = this.noise; wsr.loop = true; wsr.playbackRate.value = 0.85; const wf = ctx.createBiquadFilter(); wf.type = 'bandpass'; wf.frequency.value = 850; wf.Q.value = 0.5; this.waterG = ctx.createGain(); this.waterG.gain.value = 0; wsr.connect(wf); wf.connect(this.waterG); this.waterG.connect(this.sfx); wsr.start(); }
       this.music = new CC.Music(ctx, this.musicBus);
       if (this.zoneNow) this.setZone(this.zoneNow, this.darkNow);
     }
@@ -158,6 +167,7 @@
       this.bedHiss.gain.setTargetAtTime(g('hiss'), t, tc); this.bedHissF.frequency.setTargetAtTime(A.hissF || 5200, t, tc);
       if (this.music) this.music.setStyle(zone, dark);
     }
+    setWater(k) { if (this.ctx && this.waterG) this.waterG.gain.setTargetAtTime(Math.max(0, k) * 0.32, this.ctx.currentTime, 0.2); }
     // événements sonores lointains, tirés au hasard (klaxon, train lointain, corne de navire, oiseaux…) : le monde existe hors de l'écran
     updateAmbient(dt) {
       if (!this.ctx || !this.zoneNow) return;
@@ -384,6 +394,23 @@
         case 'boostOn': this.sweep(450, 3200, 'bandpass', 1.2, 0.36, 0.3); this.tone('sine', 96, 44, 0.55, 0.24); this.noiseHit(2600, 'highpass', 0.8, 0.16, 0.09); break;
         case 'shield': this.sweep(300, 2400, 'bandpass', 1.4, 0.3, 0.4); this.tone('triangle', 880, 1320, 0.1, 0.3); break;
         case 'record': [659, 784, 988, 1318].forEach((f, i) => this.tone('square', f, f, 0.08, 0.2, i * 0.07)); break;
+        // v130 : mode évolution — radio, robot géant, pièces, effondrements
+        case 'radio': this.noiseHit(4200, 'highpass', 1, 0.16, 0.12); this.tone('square', 1900, 1500, 0.04, 0.05); this.noiseHit(2600, 'bandpass', 2, 0.1, 0.06, 1.4); break;
+        case 'radioEnd': this.tone('square', 1500, 900, 0.05, 0.06); this.noiseHit(4200, 'highpass', 1, 0.14, 0.18); break;
+        case 'beep': this.tone('square', 1200 * (param || 1), 1200 * (param || 1), 0.07, 0.07); break;
+        case 'beepLow': this.tone('square', 600, 600, 0.09, 0.12); this.tone('sine', 150, 150, 0.2, 0.2); break;
+        case 'coinPing': { const k = (param | 0) % 8, f = 880 * Math.pow(1.0595, k * 2); this.tone('square', f, f * 1.01, 0.05, 0.06); this.tone('triangle', f * 2, f * 2, 0.04, 0.09, 0.015); break; }
+        case 'robotStep': this.tone('sine', 55, 22, 1.0, 0.55); this.noiseHit(260, 'lowpass', 0.6, 0.8, 0.5, 0.5); this.noiseHit(1800, 'bandpass', 3, 0.18, 0.14); for (let i = 0; i < 7; i++) setTimeout(() => { if (this.ctx) this.noiseHit(700 + Math.random() * 1800, 'bandpass', 3, 0.1, 0.05); }, 80 + i * 70); break;
+        case 'robotServo': { const f0 = 140 + (param || 0) * 60; this.sweep(f0, f0 * 2.6, 'bandpass', 4, 0.2, 0.5); this.tone('sawtooth', f0, f0 * 1.9, 0.07, 0.5); this.noiseHit(3000, 'highpass', 1, 0.05, 0.4, 0.8); break; }
+        case 'robotRoar': this.tone('sawtooth', 62, 38, 0.55, 1.8); this.tone('sawtooth', 93, 55, 0.35, 1.7); this.sweep(200, 1400, 'bandpass', 1.5, 0.4, 0.9); this.sweep(1400, 220, 'bandpass', 1.5, 0.35, 1.2, 0.8); this.noiseHit(500, 'lowpass', 0.8, 0.5, 1.6, 0.4); break;
+        case 'robotAlarm': for (let i = 0; i < 4; i++) { this.tone('sawtooth', 220, 330, 0.18, 0.25, i * 0.32); } break;
+        case 'rumble': this.noiseHit(200, 'lowpass', 0.6, 0.55, 1.6, 0.4); this.tone('sine', 48, 28, 0.6, 1.2); break;
+        case 'debris': this.noiseHit(900, 'lowpass', 0.8, 0.6, 0.5, 0.6); this.tone('sine', 60, 30, 0.5, 0.4); for (let i = 0; i < 6; i++) setTimeout(() => { if (this.ctx) this.noiseHit(1200 + Math.random() * 2400, 'bandpass', 3, 0.14, 0.05); }, 60 + i * 55); break;
+        case 'finish': [523, 659, 784, 1046, 1318, 1568, 2093].forEach((f, i) => { this.tone('square', f, f, 0.09, 0.4, i * 0.09); this.tone('triangle', f / 2, f / 2, 0.12, 0.5, i * 0.09); }); this.sweep(500, 6500, 'highpass', 0.8, 0.2, 1.2, 0.2); break;
+        case 'reactorHum': this.tone('sawtooth', 80, 160, 0.2, 1.5); this.tone('sine', 40, 90, 0.4, 1.5); break;
+        case 'reactorHit': this.explosion(0.8); this.sweep(200, 4000, 'bandpass', 1, 0.5, 0.6); break;
+        case 'hydraulic': this.sweep(600, 120, 'bandpass', 2, 0.2, 0.6); this.noiseHit(4200, 'highpass', 1, 0.07, 0.5, 1.2); break;
+        case 'trainHorn': this.tone('sawtooth', 196, 196, 0.2, 1.3); this.tone('sawtooth', 247, 247, 0.17, 1.3); this.tone('square', 98, 98, 0.1, 1.2); break;
       }
     }
   }
@@ -394,6 +421,15 @@
    * aérien en altitude, boîte à musique dans le monde miniature, martelé à l'usine, etc. */
   const P16 = (s) => Array.from({ length: 16 }, (_, i) => (s.indexOf(i) >= 0 ? 1 : 0));   // motif : liste des pas actifs (0–15)
   const STYLES = {
+    // v130 : mode évolution — la musique change à chaque acte, jusqu'à la course finale
+    evoDawn:   { bpm: 84, root: 45, scale: [0, 2, 4, 7, 9], prog: [0, 5, 3, 7], kick: P16([0, 8]), snare: [], hat: P16([4, 12]), bass: { type: 'triangle', steps: P16([0, 8]), oct: 0, len: 5, vol: 0.16, cut: 600 }, arp: { type: 'sine', steps: P16([0, 3, 6, 9, 12]), oct: 2, len: 2.4, vol: 0.06, cut: 2400, echo: 3 }, pad: { type: 'triangle', vol: 0.05, cut: 900, attack: 0.9, iv: [0, 7, 12, 16] } },
+    evoDay:    { bpm: 108, root: 45, scale: [0, 2, 4, 7, 9], prog: [0, 5, 3, 7], kick: P16([0, 6, 8, 12]), snare: P16([12]), hat: P16([2, 6, 10, 14]), bass: { type: 'triangle', steps: P16([0, 2, 4, 6, 8, 10, 12, 14]), oct: 0, len: 1.6, vol: 0.15, cut: 700 }, arp: { type: 'triangle', steps: P16([0, 2, 4, 6, 8, 10, 12, 14]), oct: 2, len: 1.2, vol: 0.06, cut: 3200 }, pad: { type: 'sine', vol: 0.04, cut: 800, attack: 0.8, iv: [0, 7, 12] } },
+    evoDusk:   { bpm: 98, root: 43, scale: [0, 3, 5, 7, 10], prog: [0, -2, -4, -5], kick: P16([0, 6, 8, 12]), snare: P16([4, 12]), hat: P16([2, 6, 10, 14]), bass: { type: 'sawtooth', steps: P16([0, 3, 6, 8, 11, 14]), oct: 0, len: 2, vol: 0.14, cut: 480 }, arp: { type: 'triangle', steps: P16([2, 5, 8, 11, 14]), oct: 2, len: 1.8, vol: 0.05, cut: 2200, echo: 3 }, pad: { type: 'sawtooth', vol: 0.035, cut: 800, attack: 0.9, iv: [0, 7, 10, 15] } },
+    evoMine:   { bpm: 90, root: 36, scale: [0, 1, 5, 7, 10], prog: [0, 0, -2, -4], kick: P16([0, 10]), snare: [], hat: P16([6, 14]), clank: P16([3, 11]), bass: { type: 'sine', steps: P16([0, 8]), oct: 0, len: 7, vol: 0.22, cut: 300 }, arp: { type: 'sine', steps: P16([2, 7, 11]), oct: 2, len: 2.6, vol: 0.05, cut: 1400, echo: 3 }, pad: { type: 'sawtooth', vol: 0.03, cut: 420, attack: 1.0, iv: [0, 7, 10] }, ping: { p: 0.03, oct: 3 } },
+    evoNight:  { bpm: 128, root: 38, scale: [0, 3, 5, 7, 10], prog: [0, 0, -2, -5], kick: P16([0, 4, 8, 12]), snare: P16([4, 12]), hat: P16([2, 6, 10, 14, 15]), bass: { type: 'sawtooth', steps: P16([0, 2, 4, 6, 8, 10, 12, 14]), oct: 0, len: 1.4, vol: 0.15, cut: 560 }, arp: { type: 'square', steps: P16([0, 2, 3, 6, 8, 10, 11, 14]), oct: 2, len: 1.3, vol: 0.045, cut: 2600, echo: 3 }, pad: { type: 'sawtooth', vol: 0.04, cut: 1000, attack: 0.6, iv: [0, 7, 12, 15] } },
+    evoSiege:  { bpm: 112, root: 36, scale: [0, 3, 6, 7, 10], prog: [0, 0, -1, -3], kick: P16([0, 3, 6, 10, 12]), snare: P16([4, 12]), hat: P16([0, 2, 4, 6, 8, 10, 12, 14]), clank: P16([7, 15]), bass: { type: 'square', steps: P16([0, 3, 6, 8, 10, 14]), oct: -12, len: 1.2, vol: 0.12, cut: 420 }, arp: { type: 'sawtooth', steps: P16([2, 5, 10, 13]), oct: 2, len: 1.6, vol: 0.04, cut: 1800, echo: 2 }, pad: { type: 'sawtooth', vol: 0.04, cut: 700, attack: 0.5, iv: [0, 6, 12] } },
+    evoBoss:   { bpm: 146, root: 34, scale: [0, 1, 3, 6, 7], prog: [0, -1, 0, -3], kick: P16([0, 2, 4, 6, 8, 10, 12, 14]), snare: P16([4, 12]), hat: P16([1, 3, 5, 7, 9, 11, 13, 15]), clank: P16([2, 6, 10, 14]), bass: { type: 'sawtooth', steps: P16([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]), oct: -12, len: 0.9, vol: 0.13, cut: 520 }, arp: { type: 'square', steps: P16([0, 3, 6, 8, 11, 14]), oct: 2, len: 1.0, vol: 0.05, cut: 2800 }, pad: { type: 'sawtooth', vol: 0.045, cut: 900, attack: 0.3, iv: [0, 6, 7, 13] } },
+    evoEscape: { bpm: 172, root: 36, scale: [0, 3, 5, 7, 10], prog: [0, -2, -4, -2], kick: P16([0, 4, 8, 10, 12, 14]), snare: P16([4, 12, 15]), hat: P16([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]), clank: P16([2, 6, 10, 14]), bass: { type: 'sawtooth', steps: P16([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]), oct: -12, len: 0.8, vol: 0.14, cut: 700 }, arp: { type: 'square', steps: P16([0, 2, 4, 6, 8, 10, 12, 14]), oct: 2, len: 0.9, vol: 0.05, cut: 3200, rise: true }, pad: { type: 'sawtooth', vol: 0.05, cut: 1200, attack: 0.2, iv: [0, 7, 12, 15] } },
     city:    { bpm: 112, root: 40, scale: [0, 3, 5, 7, 10], prog: [0, 0, -4, -2], kick: P16([0, 4, 8, 12]), snare: P16([4, 12]), hat: P16([1, 3, 5, 7, 9, 11, 13, 15]),
                bass: { type: 'sawtooth', steps: P16([0, 2, 4, 6, 8, 10, 12, 14]), oct: 0, len: 1.8, vol: 0.16, cut: 500 }, arp: { type: 'square', steps: P16([2, 6, 10, 11]), oct: 2, len: 1.4, vol: 0.05, cut: 2600 } },
     cityNight: { bpm: 100, root: 38, scale: [0, 3, 5, 7, 10], prog: [0, -2, -4, -5], kick: P16([0, 6, 8, 14]), snare: P16([4, 12]), hat: P16([2, 6, 10, 14]),

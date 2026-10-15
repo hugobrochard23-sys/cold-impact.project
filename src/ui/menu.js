@@ -71,6 +71,7 @@
       else if (this.overlay === 'unlock') { this.buttons = []; CC.Home.drawUnlock(this, ctx, game, W, H); }          // v086
       else if (this.overlay === 'daily') { this.buttons = []; CC.Home.drawDaily(this, ctx, game, W, H); }
       else if (this.overlay === 'msettings') { this.buttons = []; CC.Home.drawSettings(this, ctx, game, W, H); }
+      else if (this.overlay === 'evoIntro') { this.buttons = []; CC.Home.drawEvoIntro(this, ctx, game, W, H); }   // v130
       else if (this.overlay === 'evo') { this.buttons = []; CC.Home.drawEvo(this, ctx, game, W, H); }   // v119
       else if (this.overlay === 'l1death') { this.buttons = []; CC.Home.drawL1Death(this, ctx, game, W, H); }   // v118
       else if (this.overlay === 'revive') { this.buttons = []; CC.Home.drawRevive(this, ctx, game, W, H); }
