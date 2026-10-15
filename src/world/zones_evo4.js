@@ -10,6 +10,41 @@
   const lamp = (S, dc, lx, y, col) => { S.bx(dc, lx, y, 1.2, 0.35, 0.8, 'emis:' + (col || '#ffe2a8'), undefined, false); S.glow(dc, lx, y - 0.4, col || '#ffe2a8', 12); };
   const sandbags = (S, dc, lx, n, r) => { for (let i = 0; i < n; i++) S.bx(dc, lx + i * 2.7, 0.55 + 0, 2.6, 1.1, 1.5, 'sand', '#c8b078', true); };
 
+
+  // ---------- le départ (170 m) : bosquets de chaque côté, un petit garage de briques à traverser, le premier ennemi plus loin, un camion qui file ----------
+  const GR = ['#8d8a80', '#85837a', '#948f84', '#7e7b72'];
+  const boulder = (S, dc, lx, y, s, r) => { const p = S.at(dc, lx, y); TR.rock(S.b, p[0], p[1], p[2], s, r, { gray: pk(r, GR), noMoss: true }); S.b.box({ p: [p[0], p[1] + s * 0.5, p[2]], s: [s * 1.6, s * 1.1, s * 1.6], render: false }); };
+  const tree = (S, dc, lx, r, h) => { const p = S.at(dc, lx, 0); if (r() < 0.55) TR.conifer(S.b, p[0], p[1], p[2], h, r, {}); else TR.broadleaf(S.b, p[0], p[1], p[2], h * 0.85, r, {}); S.b.box({ p: [p[0], p[1] + h * 0.4, p[2]], s: [h * 0.06 + 0.7, h * 0.8, h * 0.06 + 0.7], render: false }); };
+  function garage(S, dc) {
+    const len = 38, hw = 15, hh = 13;
+    S.reserve(dc, 0, 2 * hw + 10, len + 10);
+    S.item(dc, (r) => {
+      const t = pk(r, BR);
+      for (const s of [-1, 1]) { S.bx(dc, s * (hw + 0.7), 3, 1.4, 6, len, 'brick', t, true); S.bx(dc, s * (hw + 0.7), 11.5, 1.4, 3, len, 'brick', t, true); S.bx(dc, s * (hw + 0.7), 7.5, 0.3, 3, len - 6, 'glass', undefined, false); }
+      for (const e of [-1, 1]) S.wall(dc + e * len / 2, -hw - 1.4, hw + 1.4, 0, hh + 2, 1.6, 'brick', t, { lx: 0, yc: 6, w: 26, h: 12 });
+      S.bx(dc, 0, hh + 0.4, 2 * hw + 3, 0.8, len + 2, 'corrugated', pk(r, RUST), true); S.bx(dc, 0, 0.14, 2 * hw, 0.3, len, 'concrete', '#a0a29e', false);
+      for (let k = -1; k <= 1; k++) { S.bx(dc + k * 12, 0, hh - 0.8, 2 * hw, 0.5, 0.5, 'metal', '#7a7e84', false); lamp(S, dc + k * 12, 0, hh - 2); }
+      for (let i = 0; i < 4; i++) { const s = r() < 0.5 ? -1 : 1; if (r() < 0.6) crate(S, dc + r.between([-14, 14]), s * r.between([9, 13]), r, 1 + Math.floor(r() * 2)); else drum(S, dc + r.between([-14, 14]), s * r.between([9, 13]), r); }
+      // murets de briques qui prolongent le garage de chaque côté : on sait où passer, on ne voit pas ce qui vient après
+      for (const s of [-1, 1]) for (let k = 0; k < 4; k++) S.bx(dc, s * (hw + 8 + k * 10), 2.2 + k * 0.6, 8, 4.4 + k * 1.2, len + 8 - k * 4, 'brick', pk(r, BR), true);
+    });
+    foe(S, 'jeep', dc + 2, -4, 0, { name: 'JEEP' });
+  }
+  D.scenes.rampe = { len: [170, 170], noDoor: true, noChaos: true,
+    pin: (T, sc) => ({ lx: 0, y: 8, from: 20, to: sc.d1 - sc.d0 - 20 }),
+    build(S) {
+      const d0 = S.d0;
+      for (const sg of [-1, 1]) {
+        S.rows(d0 + 14, S.d1, 8, 0.9, (dc) => S.item(dc, (r) => { if (Math.abs(dc - (d0 + 112)) < 30) return; tree(S, dc, S.lane(dc).lx + sg * r.between([22, 62]), r, r.between([13, 25])); }));
+        S.rows(d0 + 10, S.d1, 22, 0.8, (dc) => S.item(dc, (r) => boulder(S, dc, S.lane(dc).lx + sg * r.between([14, 30]), 0, r.between([2, 4.5]), r)));
+        S.item(d0 + 40, (r) => sandbags(S, d0 + 40, sg * 26, 4, r));
+      }
+      S.item(d0 + 20, () => { for (const s of [-1, 1]) S.bx(d0 + 20, s * 9, 0.06, 0.9, 0.1, 40, 'col:#e8e8dc', undefined, false, { shadow: false }); });
+      garage(S, d0 + 112);
+      foe(S, 'tank', d0 + 62, 5, 0, { name: 'CHAR', val: 240 });
+      foe(S, 'truck', d0 + 150, -8, 0, { name: 'CAMION', path: 60, speed: 14 });
+    } };
+
   // ---------- 1. HANGAR DE BRIQUES : un grand portail à chaque bout, des fenêtres qui laissent entrer la lumière, une travée de toit effondrée ----------
   function hangar(S, dc) {
     const len = 84, hw = 27, hh = 24, bay = len / 6;
@@ -40,6 +75,9 @@
     });
     // à l'extérieur : sacs de sable, bidons, un portique rouillé devant l'entrée
     S.item(dc - len / 2 - 14, (r) => { sandbags(S, dc - len / 2 - 14, -24, 4, r); sandbags(S, dc - len / 2 - 14, 14, 4, r); for (let i = 0; i < 5; i++) drum(S, dc - len / 2 - 10 + r.between([-5, 5]), r.between([-30, 30]), r); });
+
+    // falaises de roche qui rejoignent les flancs du hangar : on ne voit pas ce qu'il y a derrière avant de l'avoir traversé
+    S.item(dc, (r) => { for (const sg of [-1, 1]) for (let dd = dc - len / 2 + 4; dd < dc + len / 2 - 3; dd += 14) for (let k = 0; k < 5; k++) for (const y of [0, 16, 32]) boulder(S, dd + r.between([-3, 3]), sg * (hw + 38 + k * 17 + r.between([-3, 3])), y + 1, r.between([13, 21]), r); });
     foe(S, 'tank', dc - 4, 6, 0, { name: 'BLINDE', hp: 2, armed: false });
     foe(S, 'truck', dc + len / 2 + 40, -6, 0, { name: 'CAMION', path: 70, speed: 14 });
   }

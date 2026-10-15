@@ -7,7 +7,7 @@
   Z.PROFILE.campagne = { elev: 0, vol: 120, y: [8, 90], amp: 1.25 };
   CC.Gen.Envs.add('campagneDay', { label: 'CAMPAGNE', dark: 0, vis: 1, skyline: '#d3dde2', make: (r) => ({
     sky: { top: '#6c9ccc', horizon: '#e2eaef', bottom: '#c4d2da', sunColor: '#fff2d8', sunSize: 380 },
-    fog: { color: '#cfdbe0', near: 240, far: r.between([1000, 1150]) },
+    fog: { color: '#cfdbe0', near: 150, far: r.between([620, 720]) },
     hemi: { sky: '#d8e4f0', ground: '#6a7a58', intensity: 0.74 }, ambient: { color: '#ffffff', intensity: 0.16 },
     sun: { color: '#fff0d6', intensity: 0.8, dir: [0.35, 0.8, 0.5] },
     postfx: { vignette: 0.2, vignetteColor: '#2c3a4c', halftone: 0, lift: '#080c12', saturation: 0.88, bloomThreshold: 0.98, bloomStrength: 0.07 },
