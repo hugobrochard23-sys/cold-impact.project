@@ -50,11 +50,11 @@
   // FUSEE : palier (0 tube, 1 ailes, 2 réacteur, 3 turbo) et barre dans le palier. Les ailes (portance) montent de 0,55 à 1 pendant le palier 1.
   EVO.rocket = (n) => {
     const tier = Math.min(3, Math.floor(n / 5)), s = n - 5 * tier, wing = tier >= 1 ? Math.min(1, 0.55 + 0.1 * Math.min(n - 5, 4.5)) : 0;
-    const vmax = tier >= 2 ? [0, 0, 36, 44][tier] + 1.5 * s : 0, drag = tier >= 1 ? 0.0078 - 0.0042 * wing : 0.0100 - 0.0006 * s;
+    const vmax = tier >= 2 ? [0, 0, 46, 56][tier] + 1.8 * s : 0, drag = tier >= 1 ? 0.0078 - 0.0042 * wing : 0.0100 - 0.0006 * s;
     return { n, tier, s, name: RK_TIERS[tier], wing, vmax, drag, thrust: vmax * vmax * drag, gripOff: tier >= 1 ? 1.2 + 4.5 * wing : 0.7,
       dmg: 1.2 + 0.12 * n + 0.3 * tier, fuel: tier >= 2 ? [0, 0, 8, 16][tier] + [0, 0, 1.6, 2.2][tier] * s : 0, refuel: 3 + 0.15 * n, kick: tier === 0 ? 4 : tier === 1 ? 8 : 5 };
   };
-  EVO.launcher = (n) => { const tier = Math.min(2, Math.floor(n / 5)); return { n, tier, s: n - 5 * tier, name: LA_TIERS[tier], speed: 22 + 1.4 * n + 1.5 * tier }; };
+  EVO.launcher = (n) => { const tier = Math.min(2, Math.floor(n / 5)); return { n, tier, s: n - 5 * tier, name: LA_TIERS[tier], speed: 40 + 2.4 * n + 2 * tier }; };
   EVO.mult = (n) => 1 + 0.1 * n;
   EVO.cost = (id, n) => (id === 'rk' ? Math.round(120 * Math.pow(1.3, n)) : id === 'la' ? Math.round(100 * Math.pow(1.3, n)) : COIN_COST[n]);
   EVO.nextCost = (g, id) => { const S = EVO.save(g), n = S[id]; return n >= MAXN[id] ? null : EVO.cost(id, n); };
@@ -211,12 +211,14 @@
     const CH = EVO.chapters;   // v123 : bandeau et prime à chaque nouveau chapitre franchi
     if (CH && !ev.preview) while (ev.chap < CH.length && run.dist >= CH[ev.chap].d) { const c = CH[ev.chap++], b = Math.round(40 * c.i * EVO.mult(S.cm)); ev.chapCoins += b; CC.L1.msg(g, 'CHAPITRE ' + (c.i + 1) + '  ' + c.name, 2.0, '#ffe9a0'); g.audio.play('levelUp'); }
     // planeur : les ailes portent (elles annulent une partie de la gravité tant que la vitesse est suffisante)
-    if (r.wing > 0 && !ev.preview) rk.vel.y += C.physics.gravity * r.wing * U.clamp((sp - 9) / 9, 0, 1.15) * dt;   // v123 : lent = les ailes ne portent plus : elle pique, on peut redresser avec la vitesse reprise
+    if (r.wing > 0 && !ev.preview) rk.vel.y += C.physics.gravity * r.wing * (r.tier >= 2 && rk.fuel <= 0.01 ? 0.25 : 0.62) * U.clamp((sp - 12) / 14, 0, 1.1) * dt;   // v125 : plus de carburant ou plus de vitesse = on pique   // v123 : lent = les ailes ne portent plus : elle pique, on peut redresser avec la vitesse reprise
     if (ev.preview) rk.vel.y += C.physics.gravity * 0.95 * U.clamp(sp / 17, 0, 1.1) * dt;
     // sans réacteur ou sans carburant : la fusée tombe ; au sol, le vol est fini
     const out = (r.tier < 2 || rk.fuel <= 0.01) && !ev.preview;
+    if (out && !ev.preview && sp < 24 && rk.fwd.y > -0.55) g.input.addAim(0, -1.5 * U.clamp((24 - sp) / 8, 0, 1) * dt);   // v125 : décrochage : sans poussée et sans vitesse, le nez plonge (on récupère en reprenant de la vitesse)
     if (out && rk.sliding > 0 && (ev.slideT = (ev.slideT || 0) + dt) > 0.7) { ev.slideT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; }
     if (!out || rk.sliding <= 0) ev.slideT = 0;
+    if (out && sp < 4 && g.flightTime > 1) { if ((ev.lowT = (ev.lowT || 0) + dt) > 1.2) { ev.lowT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; } } else ev.lowT = 0;   // v125 : immobile = fini
     if (r.tier >= 2 && !ev.fuelOut && !ev.preview && rk.fuel <= 0.01 && g.flightTime > 0.6) { ev.fuelOut = true; CC.L1.msg(g, 'PLUS DE CARBURANT', 1.3, '#ff8a5a'); }
     if (rk.fuel > 0.3) ev.fuelOut = false;
     // caméra de chute : on regarde vers le sol quand on tombe
@@ -287,6 +289,11 @@
     const top = Math.max(10, H * 0.02);
     if (ev.preview) { F.draw(ctx, 'APERCU : ZONE 2', W / 2, top + px * 3, px * 1.1, '#9fe8b0', { align: 'center' }); return; }
     F.draw(ctx, Math.round(run.dist) + ' M', W / 2, top + px * 2, px * 1.0, '#ffffff', { align: 'center', alpha: 0.9 });
+    { const T = run.T, pct = U.clamp(run.dist / (T.levelLen || 5000), 0, 1), bw = Math.max(8, px * 3.2), bx = Math.max(10, W * 0.03), by0 = H * 0.2, bh = H * 0.34, yy = by0 + bh * (1 - pct);
+      ctx.save(); ctx.globalAlpha = 0.85; ctx.fillStyle = 'rgba(10,14,22,0.55)'; ctx.fillRect(bx - 3, by0 - 3, bw + 6, bh + 6); ctx.fillStyle = '#ffd23a'; ctx.fillRect(bx, yy, bw, by0 + bh - yy);
+      for (let k = 0; k < 4; k++) for (let j = 0; j < 2; j++) { ctx.fillStyle = (k + j) % 2 ? '#111' : '#fff'; ctx.fillRect(bx + j * bw / 2, by0 - px * 3.4 + k * px * 0.85, bw / 2, px * 0.85); }
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(bx + bw + 4, yy); ctx.lineTo(bx + bw + 4 + px * 2, yy - px * 1.1); ctx.lineTo(bx + bw + 4 + px * 2, yy + px * 1.1); ctx.closePath(); ctx.fill(); ctx.restore();
+      F.draw(ctx, Math.round(pct * 100) + '%', bx, by0 + bh + px * 2.2, px * 0.85, '#ffffff', {}); }
     const dmg = EVO.dmgNow(g);
     for (const t of g.targets) {
       if (!t.alive || t.boss || t.mini || !t.evoHp || !t.obb) continue;

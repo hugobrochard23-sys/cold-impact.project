@@ -49,27 +49,27 @@
 
   // ===== GROTTE : 920 m ; entrée dans la montagne, descente en piqué, puits, lac souterrain, cristaux, galeries qui tournent, remontée vers la lumière
   D.scenes.grotte = { len: [920, 920], noDoor: true, noChaos: true,
-    pin: (T, sc) => ({ lx: 0, y: 12, from: 24, to: sc.d1 - sc.d0 - 24, fx: (d) => { const u = (d - sc.d0) / (sc.d1 - sc.d0); return 24 * Math.sin((d - sc.d0) / 60) * ss(0.15, 0.26, u) * (1 - ss(0.74, 0.85, u)); } }),
+    pin: (T, sc) => ({ lx: 0, y: 20, from: 24, to: sc.d1 - sc.d0 - 24, fx: (d) => { const u = (d - sc.d0) / (sc.d1 - sc.d0); return 14 * Math.sin((d - sc.d0) / 85) * ss(0.15, 0.26, u) * (1 - ss(0.74, 0.85, u)); } }),
     relief(T, sc) { return rel(sc, (d) => { const u = (d - sc.d0) / (sc.d1 - sc.d0); return (-42 * ss(0.13, 0.3, u) - 36 * ss(0.44, 0.5, u)) * (1 - ss(0.62, 0.86, u)) * 1; }); },
     ground: (d, lx, c, sc) => { const e0 = sc.d0 + (sc.d1 - sc.d0) * 0.12, e1 = sc.d0 + (sc.d1 - sc.d0) * 0.88, k = ss(e0 - 14, e0 + 6, d) * (1 - ss(e1 - 6, e1 + 14, d)) * (1 - ss(70, 110, Math.abs(lx))); if (k > 0) c.lerp(new THREE.Color('#5f584e'), k); },
     build(S) {
-      const L = S.len, e0 = S.d0 + L * 0.12, e1 = S.d0 + L * 0.88, H = 36;
-      const Rn = (m) => 25 + 14 * Math.max(0, Math.sin((m - e0) / 95)) + 10 * ss(0.4, 0.5, (m - S.d0) / L) * (1 - ss(0.6, 0.66, (m - S.d0) / L)), Hn = (m) => H + 12 * Math.max(0, Math.sin((m - e0) / 140 + 1)) + 22 * ss(0.5, 0.52, (m - S.d0) / L) * (1 - ss(0.6, 0.64, (m - S.d0) / L));
+      const L = S.len, e0 = S.d0 + L * 0.12, e1 = S.d0 + L * 0.88, H = 52;
+      const Rn = (m) => 40 + 16 * Math.max(0, Math.sin((m - e0) / 95)) + 10 * ss(0.4, 0.5, (m - S.d0) / L) * (1 - ss(0.6, 0.66, (m - S.d0) / L)), Hn = (m) => H + 14 * Math.max(0, Math.sin((m - e0) / 140 + 1)) + 22 * ss(0.5, 0.52, (m - S.d0) / L) * (1 - ss(0.6, 0.64, (m - S.d0) / L));
       // la montagne : deux parois percées, flancs et toit qui suivent le sol, masses rocheuses au-dessus
-      for (const [dc, k] of [[e0, 0], [e1, 1]]) S.item(dc, () => { const Lc = S.lane(dc).lx; S.wall(dc, Lc - 170, Lc + 170, -40, 100, 7, 'concreteWarm', k ? '#5a544a' : '#625c52', { lx: Lc, yc: 20, w: 62, h: 42 }); S.bx(dc, Lc, 42, 66, 1.6, 8, 'col:#5a4a38', undefined, false); });
+      for (const [dc, k] of [[e0, 0], [e1, 1]]) S.item(dc, () => { const Lc = S.lane(dc).lx; S.wall(dc, Lc - 170, Lc + 170, -40, 110, 7, 'concreteWarm', k ? '#5a544a' : '#625c52', { lx: Lc, yc: 26, w: 86, h: 58 }); S.bx(dc, Lc, 56, 90, 1.6, 8, 'col:#5a4a38', undefined, false); });
       for (let dc = e0; dc < e1; dc += 12) S.item(dc + 6, (r) => {
         const m = dc + 6, Lc = S.lane(m).lx, R = Rn(m), Hc = Hn(m), fl = S.T.rel(m);
-        for (const s of [-1, 1]) S.bx(m, Lc + s * (R + 7), 40, 14, 120, 12.8, 'concreteWarm', pk(r, CAVE));
+        for (const s of [-1, 1]) S.bx(m, Lc + s * (R + 7), 50, 14, 140, 12.8, 'concreteWarm', pk(r, CAVE));
         S.bx(m, Lc, Hc + 6, 2 * R + 28, 12, 12.8, 'concreteWarm', pk(r, CAVE));
-        for (const s of [-1, 1]) for (const y of [0, 12, 24]) boulder(S, m + r.between([-3, 3]), Lc + s * (R - 3 + r.between([-2, 3])), y + 1, r.between([11, 17]), r, pk(r, CAVE));
-        if (r() < 0.5) boulder(S, m, Lc + r.between([-R + 6, R - 6]), Hc - 2, r.between([9, 15]), r, pk(r, CAVE));
+        for (const s of [-1, 1]) for (const y of [0, 13, 26, 39]) boulder(S, m + r.between([-3, 3]), Lc + s * (R + 2 + r.between([-1, 3])), y + 1, r.between([9, 14]), r, pk(r, CAVE));
+        if (r() < 0.45) boulder(S, m, Lc + r.between([-R + 8, R - 8]), Hc + 1, r.between([8, 12]), r, pk(r, CAVE));
         // plancher de la galerie sous la zone des rochers : on ne voit jamais l'herbe
       });
       S.item((e0 + e1) / 2, (r) => { for (const [x, s] of [[-0.35, 150], [-0.1, 190], [0.18, 170], [0.4, 150]]) { const dc = (e0 + e1) / 2 + x * (e1 - e0) * 0.5, fl = S.T.rel(dc); S.ball(dc, 0, 70 - fl, s, 'col:' + pk(r, ['#7d7a6a', '#7a7866', '#82806e']), undefined, false, 0.42); } });
       // stalactites, stalagmites, piliers, cristaux, rails, lampes
-      S.rows(e0 + 14, e1 - 14, 9, 0.95, (dc) => S.item(dc, (r) => { const Lc = S.lane(dc).lx, R = Rn(dc), Hc = Hn(dc), lx = Lc + r.between([-R + 5, R - 5]); if (Math.abs(lx - Lc) < 11) return; const h = r.between([4, 12]); S.cyl(dc, lx, Hc - h, 0.25, h, 'concreteWarm', '#5a5448', 7, r.between([1, 2.4]), true); }));
-      S.rows(e0 + 14, e1 - 14, 12, 0.95, (dc) => S.item(dc, (r) => { const Lc = S.lane(dc).lx, R = Rn(dc), lx = Lc + r.between([-R + 5, R - 5]); if (Math.abs(lx - Lc) < 11) return; const h = r.between([3, 9]); S.cyl(dc, lx, 0, r.between([1, 2.4]), h, 'concreteWarm', '#524c42', 7, 0.25, true); }));
-      for (let dc = e0 + 40; dc < e1 - 30; dc += 46) S.item(dc, (r) => { const Lc = S.lane(dc).lx, R = Rn(dc), Hc = Hn(dc), lx = Lc + (r() < 0.5 ? -1 : 1) * r.between([14, Math.max(15, R - 8)]); S.cyl(dc, lx, 0, 3.4, Hc + 4, 'concreteWarm', '#5c564c', 9, 3.0, true); });
+      S.rows(e0 + 14, e1 - 14, 9, 0.95, (dc) => S.item(dc, (r) => { const Lc = S.lane(dc).lx, R = Rn(dc), Hc = Hn(dc), lx = Lc + r.between([-R + 5, R - 5]); if (Math.abs(lx - Lc) < 11) return; const h = r.between([3, 8]); S.cyl(dc, lx, Hc - h, 0.25, h, 'concreteWarm', '#5a5448', 7, r.between([1, 2]), true); }));
+      S.rows(e0 + 14, e1 - 14, 12, 0.95, (dc) => S.item(dc, (r) => { const Lc = S.lane(dc).lx, R = Rn(dc), lx = Lc + r.between([-R + 5, R - 5]); if (Math.abs(lx - Lc) < 11) return; const h = r.between([2, 6]); S.cyl(dc, lx, 0, r.between([1, 2]), h, 'concreteWarm', '#524c42', 7, 0.25, true); }));
+      for (let dc = e0 + 40; dc < e1 - 30; dc += 70) S.item(dc, (r) => { const Lc = S.lane(dc).lx, R = Rn(dc), Hc = Hn(dc), lx = Lc + (r() < 0.5 ? -1 : 1) * r.between([22, Math.max(23, R - 6)]); S.cyl(dc, lx, 0, 3.0, Hc + 4, 'concreteWarm', '#5c564c', 9, 3.0, true); });
       for (let dc = e0 + 10; dc < e1 - 10; dc += 15) S.item(dc, (r) => {
         const Lc = S.lane(dc).lx, R = Rn(dc), s = r() < 0.5 ? -1 : 1, col = pk(r, ['#5cf0ff', '#7af0c0', '#9a8cff']);
         for (let k = 0; k < 3; k++) S.cyl(dc + k * 1.4, Lc + s * (R - 3 - k * 1.2), 0, r.between([0.9, 1.5]), r.between([3, 9]), 'emis:' + col, undefined, 5, 0.08, false);
@@ -79,7 +79,7 @@
       for (let dc = e0 + 10; dc < e1 - 10; dc += 24) S.item(dc, () => { const Lc = S.lane(dc).lx, R = Rn(dc); for (const s of [-1, 1]) { S.bx(dc, Lc + s * (R - 1.4), 9, 0.6, 0.6, 0.6, 'emis:#ffcf8a', undefined, false); S.glow(dc, Lc + s * (R - 2), 9, '#ffcf8a', 10); } });
       for (let dc = e0 + 50; dc < e1 - 40; dc += 70) S.item(dc, () => { const Lc = S.lane(dc).lx, R = Rn(dc), Hc = Hn(dc); S.frame(dc, Lc, (Hc - 2) / 2, 2 * R - 14, Hc - 6, 2 * R - 4, Hc, 1.4, 'planks', '#7a5e40'); });
       // lac souterrain au fond (la surface suit le sol)
-      Z.evoWaves(S, S.d0 + L * 0.51, S.d0 + L * 0.61, 34, -78 + 1.4, 'water', '#4a7f9a', 0.3);
+      Z.evoWaves(S, S.d0 + L * 0.51, S.d0 + L * 0.61, 34, -78 + 1.4, 'waterSurf', '#a6d0e4', 0.45);
       foe(S, 'truck', e0 + 60, -4, 0, { name: 'CAMION', path: 80, speed: 13 });
       foe(S, 'tank', S.d0 + L * 0.37, 6, 0, { name: 'BLINDE', hp: 3, armed: false });
       foe(S, 'aaturret', S.d0 + L * 0.56, -16, 0, { name: 'TOURELLE', armed: true });
@@ -89,6 +89,6 @@
 
   // l'eau des autres chapitres devient en 3D elle aussi (rivière du vallon, fleuve de la falaise)
   const oldVallee = D.scenes.vallee, oldFalaise = D.scenes.falaise;
-  if (oldVallee) D.scenes.vallee = Object.assign({}, oldVallee, { build(S) { oldVallee.build.call(this, S); const A = S.sc.A, L = S.len; Z.evoWaves(S, S.d0 + L * 0.2, S.d1 - L * 0.22, 40, -A + 1.2, 'water', '#4d86a6', 0.4); } });
-  if (oldFalaise) D.scenes.falaise = Object.assign({}, oldFalaise, { build(S) { oldFalaise.build.call(this, S); Z.evoWaves(S, S.d0 + 10, S.d0 + S.len * 0.2 + 12, 16, 0.3, 'water', '#4d86a6', 0.3); } });
+  if (oldVallee) D.scenes.vallee = Object.assign({}, oldVallee, { build(S) { oldVallee.build.call(this, S); const A = S.sc.A, L = S.len; Z.evoWaves(S, S.d0 + L * 0.2, S.d1 - L * 0.22, 40, -A + 1.2, 'waterSurf', '#a6d0e4', 0.45); } });
+  if (oldFalaise) D.scenes.falaise = Object.assign({}, oldFalaise, { build(S) { oldFalaise.build.call(this, S); Z.evoWaves(S, S.d0 + 10, S.d0 + S.len * 0.2 + 12, 16, 0.3, 'waterSurf', '#a6d0e4', 0.45); } });
 })();
