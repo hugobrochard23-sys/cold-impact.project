@@ -821,9 +821,11 @@
       if (this.rocket.shieldT > 0 && kind !== 'outOfBounds' && kind !== 'stalled') return;   // v034 : bouclier du revive
       const rk = this.rocket, runH = this.endlessRun;
       this.lastSpeed = 0; this.crashKind = kind;
-      rk.active = false; rk.mesh.visible = false; rk.light.intensity = 0; rk.rope.visible = false; rk.grapple.active = false;
+      const soft = !!(this.evo && CC.EVO.softCrash && CC.EVO.softCrash(kind));   // v126 : evolution : on s'ecrase (ailes arrachees, roule-boule) au lieu d'exploser
+      rk.active = false; if (!soft) rk.mesh.visible = false; rk.light.intensity = 0; rk.rope.visible = false; rk.grapple.active = false;
+      if (soft) { CC.EVO.startTumble(this, kind, pos); } else {
       this.effects.explosion(pos, normal, false, 'orange');
-      this.audio.play('boom', pos);
+      this.audio.play('boom', pos); }
       this.style.dropCombos();
       this.rig.startImpact(pos); this.rig.shake = 0.8;
       this.state = 'CRASHED'; this.impactT = 0;
@@ -1029,7 +1031,7 @@
         case 'CRASHED':
           this.impactT += dt;
           if (this.endlessRun) {   // v033 : une seule vie ; v034 : une chance de continuer (publicité récompensée) avant l'écran de fin
-            if (this.impactT > 0.9) {
+            if (this.impactT > (this.evoTumble ? this.evoTumble.dur : 0.9)) {
               // v093 : niveaux 1-3 : pas d'écran, la partie se relance aussitôt (essayer = instantané)
               const cl = this.endlessRun.T.levelLen && this.levelRun && this.levelRun.n;
               if (this.evo) { if (!this.pendingHome && this.state === 'CRASHED') CC.EVO.beginEnd(this); break; }

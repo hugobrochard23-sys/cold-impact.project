@@ -133,6 +133,7 @@
   };
   EVO.applySkinOnly = (g) => { const r = EVO.rocket(EVO.save(g).rk); g.rocket.setSkin(CC.Skins.get('evoT' + r.tier)); EVO.attachParts(g); };
   EVO.frame = (g, dt) => {
+    if (g.evoTumble) EVO.tumbleFrame(g, dt);
     const wt = CC.Textures && CC.Textures.get && CC.Textures.get('water'); if (wt && wt.offset) wt.offset.y += dt * 0.12;   // v123 : l'eau coule (rivière, cascades)
     const A = g.evoAnim; if (!A) return;
     A.t += dt;
@@ -246,8 +247,80 @@
   };
   EVO.onBossHit = (g, t) => { if (g.evo) { g.evo.bossHits++; g.evo.coins += Math.round(150 * EVO.mult(EVO.save(g).cm)); } };
 
+  // ---------- ligne du record : un rideau de lumière bleue qui sort du sol (dégradé : bleu en bas, transparent en haut) ----------
+  let _beamTex = null;
+  EVO.recordBeam = (b, T, gd) => {
+    if (!_beamTex) { const c = document.createElement('canvas'); c.width = 4; c.height = 128; const x = c.getContext('2d'), gr = x.createLinearGradient(0, 0, 0, 128); gr.addColorStop(0, 'rgba(90,170,255,0)'); gr.addColorStop(0.7, 'rgba(90,170,255,0.45)'); gr.addColorStop(1, 'rgba(170,220,255,0.95)'); x.fillStyle = gr; x.fillRect(0, 0, 4, 128); _beamTex = new THREE.CanvasTexture(c); }
+    const hf = T.half(gd) + 4, m = new THREE.Mesh(new THREE.PlaneGeometry(2 * hf, 36), new THREE.MeshBasicMaterial({ map: _beamTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false }));
+    const p = T.at(gd, 0, 18); m.position.set(p[0], p[1], p[2]); m.rotation.y = T.yawAcross(gd); m.renderOrder = 5; b.root.add(m);
+  };
+
+  // ---------- écrasement : la fusée perd ses ailes, sa queue, roule et rebondit ; un drapeau avec la distance se plante là où elle s'arrête ----------
+  EVO.softCrash = (kind) => kind === 'stalled' || kind === 'weak' || kind === 'wall';
+  const _tq = new THREE.Quaternion(), _ta = new V();
+  const rr = (a, b) => a + Math.random() * (b - a);
+  const sparks = (g, p, n, sp) => { const fx = g.effects; for (let i = 0; i < n; i++) fx.sparks.emit({ pos: p, vel: new V(rr(-1, 1), rr(0.3, 1), rr(-1, 1)).multiplyScalar(rr(sp * 0.5, sp)), life: rr(0.3, 0.8), s0: 0.05, s1: 0.04, s2: 0.01, cols: fx.pal.ember, drag: 1.2, grav: 6, a: 1, fout: 0.4 }); };
+  EVO.startTumble = (g, kind, pos) => {
+    const rk = g.rocket, sc = g.scene, v0 = rk.vel.clone(), P = [];
+    const add = (m, v, w, r) => { P.push({ m, v, w, r: r || 0.12, rest: false }); };
+    const groups = g.evoParts || {};
+    for (const k of Object.keys(groups)) {
+      const grp = groups[k]; if (!grp.visible) continue;
+      for (const ch of grp.children.slice()) {
+        ch.updateWorldMatrix(true, false); const wp = new V(), wq = new THREE.Quaternion(), ws = new V(); ch.matrixWorld.decompose(wp, wq, ws); grp.remove(ch); sc.add(ch); ch.position.copy(wp); ch.quaternion.copy(wq); ch.scale.copy(ws);
+        add(ch, v0.clone().multiplyScalar(0.55).add(new V(rr(-3, 3), rr(2, 7), rr(-3, 3))), new V(rr(-9, 9), rr(-9, 9), rr(-9, 9)), 0.1);
+      }
+    }
+    const body = { m: rk.mesh, v: v0.clone().multiplyScalar(0.7), w: new V(0, 0, Math.random() < 0.5 ? 7 : -7), r: 0.14, rest: false, isBody: true };
+    P.push(body); rk.mesh.visible = true;
+    g.evoTumble = { P, t: 0, dur: 3.1, flag: null, kind, body, v0: v0.clone() };
+    g.audio.play('clunk', pos); g.rig.shake = 0.5; g.style.dropCombos();
+    sparks(g, pos, 26, 10);
+  };
+  const plantFlag = (g, p, dist) => {
+    const grp = new THREE.Group(), c = document.createElement('canvas'); c.width = 256; c.height = 128; const x = c.getContext('2d');
+    x.fillStyle = '#d8402c'; x.fillRect(0, 0, 256, 128); x.fillStyle = '#ffffff'; x.fillRect(0, 0, 256, 10); x.fillRect(0, 118, 256, 10); x.font = 'bold 66px monospace'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(dist + ' M', 128, 66);
+    const tex = new THREE.CanvasTexture(c), pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.2, 6), new THREE.MeshLambertMaterial({ color: '#e8e8e8' })), cloth = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.9), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide }));
+    pole.position.y = 1.6; cloth.position.set(0.92, 2.65, 0); grp.add(pole, cloth); grp.position.copy(p); grp.userData.cloth = cloth; g.scene.add(grp); return grp;
+  };
+  EVO.endTumble = (g) => {
+    const Tm = g.evoTumble; if (!Tm) return;
+    for (const q of Tm.P) if (!q.isBody && q.m.parent) { q.m.parent.remove(q.m); if (q.m.geometry) q.m.geometry.dispose(); }
+    if (Tm.flag) g.scene.remove(Tm.flag);
+    g.evoTumble = null;
+  };
+  EVO.tumbleFrame = (g, dt) => {
+    const Tm = g.evoTumble; if (!Tm) return; Tm.t += dt;
+    const run = g.endlessRun, T = run && run.T, gy = T ? T.base(Math.max(0, run.dist)) : 0;
+    for (const q of Tm.P) {
+      if (q.rest) continue;
+      q.v.y -= 16 * dt; q.m.position.addScaledVector(q.v, dt);
+      const lim = gy + q.r * (q.isBody ? 1.2 : 1);
+      if (q.m.position.y < lim) {
+        q.m.position.y = lim;
+        if (Math.abs(q.v.y) > 2.5) { q.v.y = -q.v.y * 0.32; if (Math.random() < 0.5) sparks(g, q.m.position, 3, 5); } else q.v.y = 0;
+        const f = Math.max(0, 1 - (q.isBody ? 1.5 : 3.2) * dt); q.v.x *= f; q.v.z *= f; q.w.multiplyScalar(Math.max(0, 1 - 2.2 * dt));
+        if (q.v.lengthSq() < 0.15 && q.w.lengthSq() < 0.5) q.rest = true;
+      }
+      const wl = q.w.length(); if (wl > 0.01) { _ta.copy(q.w).divideScalar(wl); _tq.setFromAxisAngle(_ta, wl * dt); q.m.quaternion.premultiply(_tq); }
+      if (q.isBody && Math.random() < 0.5 && q.m.position.y < gy + 0.6) sparks(g, q.m.position, 1, 3);
+    }
+    g.rig.focus.copy(Tm.body.m.position);
+    { const bp = Tm.body.m.position, bk = Tm.back || (Tm.back = new V(-Tm.v0.x, 0, -Tm.v0.z).normalize()); const want = new V(bp.x + bk.x * 4.2, Math.max(bp.y + 2.0, gy + 2.0), bp.z + bk.z * 4.2); g.rig.pos.lerp(want, 1 - Math.exp(-4 * dt)); g.camera.position.copy(g.rig.pos); }
+    if (!Tm.flag && Tm.t > 2.15) {
+      const p = Tm.body.m.position.clone(); p.y = gy; Tm.flag = plantFlag(g, p, Math.round(Math.max(0, run.dist))); Tm.flag.scale.y = 0.01; Tm.flagT = 0;
+      g.effects.ring(p.clone().setY(gy + 0.2), new V(0, 1, 0), 0.3, 4, 0.5, '#ffffff', 0.7); g.audio.play('clunk', p); g.rig.shake = Math.max(g.rig.shake, 0.3);
+    }
+    if (Tm.flag) {
+      Tm.flagT += dt; const k = Math.min(1, Tm.flagT / 0.35), e = 1 + 2.2 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2);
+      Tm.flag.scale.y = Math.max(0.01, e); Tm.flag.userData.cloth.rotation.y = 0.25 * Math.sin(Tm.flagT * 7);
+      Tm.flag.rotation.y = Math.atan2(g.camera.position.x - Tm.flag.position.x, g.camera.position.z - Tm.flag.position.z);
+    }
+  };
+
   // ---------- fin d'un vol : on revient sur le lanceur avec le récap ----------
   EVO.beginEnd = (g) => {
+    EVO.endTumble(g);
     if (g.evo && g.evo.preview) { g.evoPreview = false; g.evoLast = { zone2: true, t0: 0 }; g.goHome({}); return; }
     const S = EVO.save(g), ev = g.evo || { kills: 0, coins: 0, maxD: 0 }, run = g.endlessRun, dist = Math.round(Math.max(ev.maxD, run ? run.dist : 0)), m = EVO.mult(S.cm);
     const distCoins = Math.floor(dist * m), lines = [['DISTANCE ' + dist + ' M', distCoins]];
@@ -288,7 +361,15 @@
     const F = CC.Font, ev = g.evo, run = g.endlessRun, rk = g.rocket; if (!ev || !run) return;
     const top = Math.max(10, H * 0.02);
     if (ev.preview) { F.draw(ctx, 'APERCU : ZONE 2', W / 2, top + px * 3, px * 1.1, '#9fe8b0', { align: 'center' }); return; }
-    F.draw(ctx, Math.round(run.dist) + ' M', W / 2, top + px * 2, px * 1.0, '#ffffff', { align: 'center', alpha: 0.9 });
+    // distance : juste au-dessus de la fusée ; compteur de vitesse (cadran) en haut à gauche
+    if (rk.active) { _v.set(rk.pos.x, rk.pos.y + 1.7 + 0.6 * (rk.mesh.scale.x || 1), rk.pos.z); CC.Curve.apply(_v, g.camera).project(g.camera); if (_v.z < 1 && _v.z > -1) F.draw(ctx, Math.round(run.dist) + ' M', (_v.x * 0.5 + 0.5) * W, (-_v.y * 0.5 + 0.5) * H - px * 1.2, px * 1.0, '#ffffff', { align: 'center', alpha: 0.95 }); }
+    { const kmh = rk.active ? rk.vel.length() * 3.6 : 0, R = Math.max(26, W * 0.085), cx = W * 0.2 + R, cy = top + R + px * 1.5, a0 = Math.PI * 0.8, a1 = Math.PI * 2.2, k = U.clamp(kmh / 260, 0, 1);
+      ctx.save(); ctx.fillStyle = 'rgba(10,16,26,0.62)'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.2832); ctx.fill(); ctx.lineWidth = R * 0.12; ctx.lineCap = 'butt';
+      ctx.strokeStyle = 'rgba(160,190,230,0.35)'; ctx.beginPath(); ctx.arc(cx, cy, R * 0.82, a0, a1); ctx.stroke();
+      ctx.strokeStyle = k < 0.55 ? '#46b8ff' : k < 0.8 ? '#5ae07a' : '#ffd23a'; ctx.beginPath(); ctx.arc(cx, cy, R * 0.82, a0, a0 + (a1 - a0) * k); ctx.stroke();
+      const ang = a0 + (a1 - a0) * k; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(2, R * 0.07); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(ang) * R * 0.7, cy + Math.sin(ang) * R * 0.7); ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(cx, cy, R * 0.09, 0, 6.2832); ctx.fill(); ctx.restore();
+      F.draw(ctx, String(Math.round(kmh)), cx, cy + R * 0.3, px * 0.9, '#6aff9a', { align: 'center' }); F.draw(ctx, 'KM/H', cx, cy + R * 0.62, px * 0.5, '#cfe4ff', { align: 'center' }); }
     { const T = run.T, pct = U.clamp(run.dist / (T.levelLen || 5000), 0, 1), bw = Math.max(8, px * 3.2), bx = Math.max(10, W * 0.03), by0 = H * 0.2, bh = H * 0.34, yy = by0 + bh * (1 - pct);
       ctx.save(); ctx.globalAlpha = 0.85; ctx.fillStyle = 'rgba(10,14,22,0.55)'; ctx.fillRect(bx - 3, by0 - 3, bw + 6, bh + 6); ctx.fillStyle = '#ffd23a'; ctx.fillRect(bx, yy, bw, by0 + bh - yy);
       for (let k = 0; k < 4; k++) for (let j = 0; j < 2; j++) { ctx.fillStyle = (k + j) % 2 ? '#111' : '#fff'; ctx.fillRect(bx + j * bw / 2, by0 - px * 3.4 + k * px * 0.85, bw / 2, px * 0.85); }

@@ -75,7 +75,7 @@
   function haystack(S, dc, lx, r) { S.place(dc, lx, 8, 8, 0, 4, () => { S.cyl(dc, lx, 0, 2.4, 3.4, 'col:' + pick(r, ['#d8b860', '#c8a850']), undefined, 10, 2.4, false); }); }
 
   // ---------- sol lisse : une vraie surface continue (normales calculees sur le terrain, pas de tranches) avec un degrade de verts et de champs ----------
-  const GC = { a: new THREE.Color('#6f8d57'), b: new THREE.Color('#93a56c'), f: new THREE.Color('#a29c64'), c: new THREE.Color() };
+  const GC = { a: new THREE.Color('#5f9a3a'), b: new THREE.Color('#8cc24e'), f: new THREE.Color('#b0ac5e'), c: new THREE.Color() };
   const gcol = (x, z, out) => {
     const n = 0.5 + 0.5 * (Math.sin(x * 0.011 + z * 0.017) * 0.5 + Math.sin(x * 0.027 - z * 0.013 + 1.3) * 0.3 + Math.sin(x * 0.05 + z * 0.043) * 0.2);
     out.copy(GC.a).lerp(GC.b, n);
@@ -87,33 +87,34 @@
     const T = ctx.T, b = ctx.b, m = (d + e) / 2, sloped = T.rel(d) !== 0 || T.rel(e) !== 0 || T.rel(m) !== 0, rows = sloped ? Math.max(1, Math.round((e - d) / 5)) : 1;
     const V0 = T.vol(m) + 36, xs = [-(V0 + 360), -(V0 + 200), -(V0 + 90)]; for (let x = -V0; x <= V0 + 0.1; x += 15) xs.push(x); xs.push(V0 + 90, V0 + 200, V0 + 360);
     const pl = Z.plan(T, T.zoneIndex(m)), sc = pl.scenes.find((q) => m >= q.d0 && m < q.d1), gf = sc && campagne.scenes[sc.name] && campagne.scenes[sc.name].ground;
-    const nC = xs.length, pos = [], nor = [], col = [], idx = [], c = GC.c;
+    const nC = xs.length, pos = [], nor = [], col = [], uv = [], idx = [], c = GC.c;
     for (let r = 0; r <= rows; r++) {
       const dd = d + (e - d) * r / rows, pa = T.at(dd - 1.5, 0, 0), pb = T.at(dd + 1.5, 0, 0), qa = T.at(dd, -1.5, 0), qb = T.at(dd, 1.5, 0);
       _v[0].set(pb[0] - pa[0], pb[1] - pa[1], pb[2] - pa[2]); _v[1].set(qb[0] - qa[0], qb[1] - qa[1], qb[2] - qa[2]); _v[2].crossVectors(_v[1], _v[0]).normalize(); if (_v[2].y < 0) _v[2].negate();
       for (let k = 0; k < nC; k++) {
-        const p = T.at(dd, xs[k], 0); pos.push(p[0], p[1], p[2]); nor.push(_v[2].x, _v[2].y, _v[2].z);
+        const p = T.at(dd, xs[k], 0); pos.push(p[0], p[1], p[2]); nor.push(_v[2].x, _v[2].y, _v[2].z); uv.push(p[0], p[2]);
         gcol(p[0], p[2], c); if (gf) gf(dd, xs[k], c, sc);
         col.push(c.r, c.g, c.b);
       }
     }
     for (let r = 0; r < rows; r++) for (let k = 0; k < nC - 1; k++) { const a = r * nC + k, bq = a + 1, cq = a + nC, dq = cq + 1; idx.push(a, cq, bq, bq, cq, dq); }
     { const A = new THREE.Vector3(pos[0], pos[1], pos[2]), B = new THREE.Vector3(pos[3 * nC], pos[3 * nC + 1], pos[3 * nC + 2]), Cc = new THREE.Vector3(pos[3], pos[4], pos[5]); if (B.sub(A).cross(Cc.sub(A)).y < 0) for (let i = 0; i < idx.length; i += 3) { const t = idx[i + 1]; idx[i + 1] = idx[i + 2]; idx[i + 2] = t; } }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx);
-    b.batch('col:#fefefe').shadow = false; b.addGeometry(g, _O, _Q, null, 'col:#fefefe'); g.dispose();
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
+    b.batch('evoGrass').shadow = false; b.addGeometry(g, _O, _Q, null, 'evoGrass', undefined, [1 / 7, 1 / 7]); g.dispose();
     if (!gf) grassTufts(ctx, d, e);
   };
-  // touffes d'herbe (5 brins croisés, dégradé sombre → clair) semées au hasard sur le sol : de la matière près de la fusée, pas de plateau lisse
+  // touffes d'herbe en volume, peu nombreuses (la texture fait le gros du travail) : 12 brins courbes, dégradé de la base sombre à la pointe claire
   const hsh = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
-  const GB = new THREE.Color('#6e9e48'), GT = new THREE.Color('#c6e88c'), _gc = new THREE.Color();
+  const GB = new THREE.Color('#3f8a22'), GT = new THREE.Color('#a8dc52'), _gc = new THREE.Color();
   function grassTufts(ctx, d, e) {
-    const T = ctx.T, b = ctx.b, n = Math.max(3, Math.round((e - d) * 150 / 15)), pos = [], nor = [], col = [];
+    const T = ctx.T, b = ctx.b, n = Math.max(1, Math.round((e - d) * 0.45)), pos = [], nor = [], col = [];
     for (let i = 0; i < n; i++) {
-      const dd = d + (e - d) * hsh(d + i * 0.37, i), lx = (hsh(i * 1.7, d * 0.13) * 2 - 1) * 78, h = 1.1 + hsh(i, d * 0.7) * 1.3, p = T.at(dd, lx, 0), a0 = hsh(d, i * 3.3) * 6.28, tone = 0.8 + 0.4 * hsh(i * 2.1, d), px = p[0], py = p[1] - 0.04, pz = p[2];
-      for (let j = 0; j < 5; j++) {
-        const a = a0 + j * 1.2566, ca = Math.cos(a), sa = Math.sin(a), bx = px + ca * 0.16, bz = pz + sa * 0.16, lean = 0.35 + 0.45 * hsh(j + i, d), hh = h * (0.65 + 0.35 * hsh(j * 5.1, i + d)), tx = bx + ca * lean, tz = bz + sa * lean, w = 0.14;
-        pos.push(bx - sa * w, py, bz + ca * w, bx + sa * w, py, bz - ca * w, tx, py + hh, tz);
-        for (let k = 0; k < 3; k++) { nor.push(0, 1, 0); _gc.copy(k < 2 ? GB : GT).multiplyScalar(tone); col.push(_gc.r, _gc.g, _gc.b); }
+      const dd = d + (e - d) * hsh(d + i * 0.37, i), lx = (hsh(i * 1.7, d * 0.13) * 2 - 1) * 46, h = 1.0 + hsh(i, d * 0.7) * 1.2, p = T.at(dd, lx, 0), a0 = hsh(d, i * 3.3) * 6.28, tone = 0.85 + 0.3 * hsh(i * 2.1, d), px = p[0], py = p[1] - 0.04, pz = p[2];
+      for (let j = 0; j < 12; j++) {
+        const a = a0 + j * 0.5236 + hsh(j, i) * 0.3, ca = Math.cos(a), sa = Math.sin(a), r0 = 0.12 + 0.2 * hsh(j * 3.1, i + d), bx = px + ca * r0, bz = pz + sa * r0, lean = 0.3 + 0.55 * hsh(j + i, d), hh = h * (0.55 + 0.45 * hsh(j * 5.1, i + d)), tx = bx + ca * lean, tz = bz + sa * lean, w = 0.075;
+        const mx = bx + ca * lean * 0.35, mz = bz + sa * lean * 0.35, my = py + hh * 0.6;
+        pos.push(bx - sa * w, py, bz + ca * w, bx + sa * w, py, bz - ca * w, mx - sa * w * 0.7, my, mz + ca * w * 0.7, bx + sa * w, py, bz - ca * w, mx + sa * w * 0.7, my, mz - ca * w * 0.7, mx - sa * w * 0.7, my, mz + ca * w * 0.7, mx - sa * w * 0.7, my, mz + ca * w * 0.7, mx + sa * w * 0.7, my, mz - ca * w * 0.7, tx, py + hh, tz);
+        for (let k = 0; k < 9; k++) { nor.push(0, 1, 0); _gc.copy(k < 3 ? GB : k < 6 ? GB : GT).lerp(GT, k < 3 ? 0 : k < 6 ? 0.45 : 1).multiplyScalar(tone); col.push(_gc.r, _gc.g, _gc.b); }
       }
     }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
@@ -124,6 +125,8 @@
 
     // collines rondes à l'horizon, des deux côtés (ellipsoïdes aplaties : un vrai relief doux, pas des boîtes)
     for (const s of [-1, 1]) S.rows(S.d0, S.d1, 42, 0.7, (dc) => S.item(dc, (r) => { const v = S.vol(dc), rad = r.between([60, 190]), lx = s * (v + 14 + rad + r.between([0, 90])), sy = r.between([0.2, 0.42]); S.ball(dc, lx, -rad * sy * 0.12, rad, 'col:' + pick(r, GREENS), undefined, Math.abs(lx) < 150, sy); }));
+    // petits blocs de pierre posés dans l'herbe : des reliefs à frôler
+    S.rows(S.d0, S.d1, 24, 0.85, (dc) => S.item(dc, (r) => { const lx = S.lane(dc).lx + (r() < 0.5 ? -1 : 1) * r.between([16, 62]), sz = r.between([1.6, 4.6]), p = S.at(dc, lx, 0); TR.rock(S.b, p[0], p[1], p[2], sz, r, {}); S.b.box({ p: [p[0], p[1] + sz * 0.5, p[2]], s: [sz * 1.6, sz * 1.1, sz * 1.6], render: false }); }));
     // bosquets et arbres épars
     for (const s of [-1, 1]) S.rows(S.d0, S.d1, 22, 0.9, (dc) => S.item(dc, (r) => { const lx = s * (S.vol(dc) - r.between([2, 70])); (r() < 0.5 ? oakT : pineT)(S, dc, lx, r); }));
     // fermes, moulins, lignes électriques au loin
@@ -140,7 +143,7 @@
   function sandbagsRow(S, dc, lx, r) { S.place(dc, lx, 12, 4, 0, 2, () => { for (let i = 0; i < 4; i++) S.bx(dc, lx - 4 + i * 2.7, 0.6, 2.6, 1.2, 1.6, 'sand', '#c8b078'); }); }
 
   // ===== CAMP : un camp militaire dans la prairie
-  campagne.scenes.camp = { len: [300, 300], noDoor: true, noChaos: true, build(S) {
+  campagne.scenes.camp = { len: [300, 300], noDoor: true, noChaos: true, turns: [[0.12, 0.88, 38]], build(S) {
     const kit = [K.tent, K.truckBlock, K.container, K.crates, K.drums, K.mast, K.sandbags];
     for (let i = 0; i < 14; i++) { const dc = S.d0 + 14 + S.sr() * (S.len - 28), s = S.sr() < 0.5 ? -1 : 1, lx = s * S.sr.between([22, S.vol(dc) - 20]); S.item(dc, (r) => pick(r, kit)(S, dc, lx, r)); }
     S.item(S.d0 + 120, (r) => K.hangar(S, S.d0 + 120, -46, r));

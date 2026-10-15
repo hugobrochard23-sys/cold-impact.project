@@ -9,7 +9,7 @@
     facadeDark: [12, 14], facadeGlass: [12, 14], facadeSand: [12, 14], facadeBrick: [12, 14], facadeMint: [12, 14], facadeNavy: [12, 14], facadeLilac: [12, 14], facadeWhite: [12, 14], facadeOchre: [12, 14], storefront: [8, 4.2], brick: [2.6, 2.6], planks: [2, 2], grass: [4, 4], rock: [6, 6], hazard: [1.2, 1.2],
     metal: [2, 2], tankGreen: [2, 2], camo: [3, 3], blueFloor: [2, 2], cream: [2, 2], bark: [1.2, 2.4],
     houseWall: [2, 2], roofBrown: [1.5, 1.5], white: [14, 14], dirt: [11, 11], rail: [1, 1], asphalt: [4, 4], grass: [12, 12],
-    sand: [12, 12], water: [15, 15], waterSurf: [15, 15], corrugated: [2.4, 2.6], chainlink: [2, 2],   // v032 : générateur de missions
+    sand: [12, 12], evoGrass: [7, 7], water: [15, 15], waterSurf: [15, 15], corrugated: [2.4, 2.6], chainlink: [2, 2],   // v032 : générateur de missions
   };
 
   function make(name, w, h, draw) {
@@ -138,6 +138,20 @@
       paint(g, w, (x, y) => { const f = F[y * w + x], d = D[y * w + x]; let c = ramp(gr, f); if (d > 0.58) c = mix3(c, dry, Math.min(0.55, (d - 0.58) * 3.2)); if (d < 0.22) c = mix3(c, soil, Math.min(0.4, (0.22 - d) * 3)); return c; });
       for (let k = 0; k < 2600; k++) { const x = Math.floor(r() * w), y = Math.floor(r() * h), L = 2 + Math.floor(r() * 4), dk = r() < 0.5, lean = r() < 0.5 ? -1 : 1; for (let j = 0; j < L; j++) dot(g, w, (x + Math.round(j * 0.3 * lean) + w) % w, (y - j + h) % h, 1, 1, dk ? 'rgba(28,62,22,0.55)' : 'rgba(170,205,100,' + (0.35 + 0.1 * (L - j)) + ')'); }
       for (let k = 0; k < 40; k++) dot(g, w, Math.floor(r() * w), Math.floor(r() * h), 2, 2, pickCol(r, ['#f2efe0', '#f5d76a', '#e9e6f4']));
+    },
+    // v126 : HERBE EN TOUFFES (mode évolution) — niveaux de gris : le sol la teinte par sommet ; des centaines de touffes de brins effilés (clairs, sombres) sur un fond en plaques
+    evoGrass: (g, w, h, r) => {
+      const F = fbmField(w, r, [3, 6, 12, 24], [0.4, 0.3, 0.2, 0.1]);
+      paint(g, w, (x, y) => { const v = 175 + 55 * F[y * w + x]; return [v, v, v]; });
+      for (let k = 0; k < 340; k++) {
+        const cx = r() * w, cy = r() * h, n = 8 + Math.floor(r() * 8), L = 10 + r() * 18;
+        for (let j = 0; j < n; j++) {
+          const a = -Math.PI / 2 + (r() - 0.5) * 2.0, len = L * (0.55 + 0.45 * r()), light = r() < 0.55, bw = 1.2 + r() * 1.0;
+          g.fillStyle = light ? 'rgba(255,255,255,' + (0.5 + 0.4 * r()).toFixed(2) + ')' : 'rgba(95,95,95,' + (0.3 + 0.25 * r()).toFixed(2) + ')';
+          const tx = Math.cos(a) * len, ty = Math.sin(a) * len, px_ = -Math.sin(a) * bw * 0.5, py_ = Math.cos(a) * bw * 0.5;
+          for (const ox of [0, -w, w]) for (const oy of [0, -h, h]) { g.beginPath(); g.moveTo(cx + ox - px_, cy + oy - py_); g.lineTo(cx + ox + px_, cy + oy + py_); g.lineTo(cx + ox + tx, cy + oy + ty); g.closePath(); g.fill(); }
+        }
+      }
     },
     // SOUS-BOIS : terre brune, mousse en plaques, feuilles mortes, aiguilles de pin, petites pierres, ombres de racines
     dirt: (g, w, h, r) => {
@@ -308,7 +322,7 @@
     if (!cache[name]) {
       const d = defs[name];
       if (!d) throw new Error('Texture inconnue : ' + name);
-      const nat = name === 'grass' || name === 'dirt' || name === 'white' || name === 'sand';   // v117 : sols naturels
+      const nat = name === 'grass' || name === 'dirt' || name === 'white' || name === 'sand' || name === 'evoGrass';   // v117 : sols naturels
       const big = nat ? [256, 256] : /^facade/.test(name) ? [128, 128] : name === 'storefront' ? [64, 32] : [32, 32];   // design : façades 4 × 4 travées
       cache[name] = make(name, big[0], big[1], d);
       if (nat) { cache[name].magFilter = THREE.LinearFilter; cache[name].anisotropy = 8; }
