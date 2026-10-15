@@ -91,16 +91,17 @@
   // ---------- anneaux à traverser : arches de pierre en ruine, troncs creux, tuyaux géants, portiques de la base (on passe DEDANS) ----------
   const ring = (S, dc, mat, tint, R, len, th) => S.item(dc, () => { const L = S.lane(dc), yc = Math.max(L.y, R - 3); S.tube(dc, L.lx, yc, R, len || 3, mat, tint, 10, th || 2.6, true); S.gate(dc, L.lx, L.y); S.reserve(dc, L.lx, 2 * R + 8, (len || 3) + 6); });
   const DECOR = {
-    camp: [[110, 'concreteWarm', '#a8a090', 15], [225, 'concreteWarm', '#9c9484', 13]],
-    foret: [[110, 'col:#7a5a3a', '#ffffff', 6, 16, 1.6], [250, 'concreteWarm', '#9c9484', 15], [420, 'col:#6b5237', '#ffffff', 6, 16, 1.6], [560, 'concreteWarm', '#a8a090', 14], [650, 'col:#7a5a3a', '#ffffff', 5.5, 14, 1.5]],
     falaise: [[70, 'brick', '#a08870', 15, 3, 3], [150, 'brick', '#9a8268', 13, 3, 3]],
     entrepots: [[170, 'metal', '#8a8e96', 12, 8, 2], [330, 'metal', '#c8a028', 13, 4, 2.4], [560, 'metal', '#8a8e96', 12, 8, 2], [700, 'metal', '#c8a028', 13, 4, 2.4]],
     base: [[110, 'concrete', '#b0b0ac', 14, 4, 3], [250, 'concrete', '#b0b0ac', 13, 4, 3], [400, 'concrete', '#b0b0ac', 12, 4, 3]],
   };
   for (const name of Object.keys(DECOR)) { const sc = D.scenes[name]; if (!sc) continue; const b0 = sc.build; sc.build = function (S) { b0.call(this, S); for (const q of DECOR[name]) if (q[0] < S.len - 20) ring(S, S.d0 + q[0], q[1], q[2], q[3], q[4], q[5]); }; }
 
+  // zones mouillées : le sol y est un lit de galets gris, sans herbe
+  D.scenes.riviere.wet = (d, lx, sc, T) => d > sc.d0 + (sc.d1 - sc.d0) * 0.18 && d < sc.d0 + (sc.d1 - sc.d0) * 0.82 && T.rel(d) < -1.2;
+  D.scenes.grotte.wet = (d, lx, sc) => d > sc.d0 + (sc.d1 - sc.d0) * 0.5 && d < sc.d0 + (sc.d1 - sc.d0) * 0.62 && Math.abs(lx) < 40;
   // l'eau des autres chapitres devient en 3D elle aussi (rivière du vallon, fleuve de la falaise)
   const oldVallee = D.scenes.vallee, oldFalaise = D.scenes.falaise;
-  if (oldVallee) D.scenes.vallee = Object.assign({}, oldVallee, { build(S) { oldVallee.build.call(this, S); const A = S.sc.A, L = S.len; Z.evoWaves(S, S.d0 + L * 0.2, S.d1 - L * 0.22, 40, -A + 1.2, 'waterSurf', '#a6d0e4', 0.45); } });
-  if (oldFalaise) D.scenes.falaise = Object.assign({}, oldFalaise, { build(S) { oldFalaise.build.call(this, S); Z.evoWaves(S, S.d0 + 10, S.d0 + S.len * 0.2 + 12, 16, 0.3, 'waterSurf', '#a6d0e4', 0.45); } });
+  if (oldVallee) D.scenes.vallee = Object.assign({}, oldVallee, { wet: (d, lx, sc) => d > sc.d0 + (sc.d1 - sc.d0) * 0.19 && d < sc.d1 - (sc.d1 - sc.d0) * 0.21 && Math.abs(lx) < 46, build(S) { oldVallee.build.call(this, S); const A = S.sc.A, L = S.len; Z.evoWaves(S, S.d0 + L * 0.2, S.d1 - L * 0.22, 40, -A + 1.2, 'waterSurf', '#a6d0e4', 0.45); } });
+  if (oldFalaise) D.scenes.falaise = Object.assign({}, oldFalaise, { wet: (d, lx, sc) => d > sc.d0 + 6 && d < sc.d0 + (sc.d1 - sc.d0) * 0.2 + 14 && Math.abs(lx) < 19, build(S) { oldFalaise.build.call(this, S); Z.evoWaves(S, S.d0 + 10, S.d0 + S.len * 0.2 + 12, 16, 0.3, 'waterSurf', '#a6d0e4', 0.45); } });
 })();
