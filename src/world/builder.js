@@ -82,6 +82,7 @@
       if (this.materials.has(key)) return this.materials.get(key);
       let m;
       if (key.startsWith('basic:')) m = new THREE.MeshBasicMaterial({ color: key.slice(6), fog: true, vertexColors: true });
+      else if (key.startsWith('tree:')) m = new THREE.MeshLambertMaterial({ color: '#ffffff', vertexColors: true, side: THREE.DoubleSide });   // v123 : arbres : jamais d'intérieur visible
       else if (key.startsWith('col:')) m = new THREE.MeshLambertMaterial({ color: key.slice(4), vertexColors: true });
       else if (key === 'glass') m = new THREE.MeshLambertMaterial({ color: '#8fd0ff', transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide });
       else if (key === 'glassWarm') m = new THREE.MeshLambertMaterial({ color: '#d8d28a', transparent: true, opacity: 0.45, depthWrite: false, side: THREE.DoubleSide });

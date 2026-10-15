@@ -430,7 +430,7 @@
       const q = 32; slab(-1, 2 * q, 2, 'concreteDark', '#7c828a');
       for (const s of [-1, 1]) bx2({ p: GP(s * (q + 120), ym - T.rel(m) - 3.6), s: [900, 2, len], r: [0, 0, 0], mat: 'water', ground: true });
     } else {
-      slab(-1, 900, 2, Z.meta[zone] ? Z.meta[zone].ground : 'asphalt', Z.meta[zone] ? Z.meta[zone].groundTint : '#ffffff');
+      slab(-1, 900, 2, Z.meta[zone] ? Z.meta[zone].ground : 'asphalt', Z.meta[zone] ? Z.meta[zone].groundTint : '#ffffff', zone === 'campagne' ? { shadow: false } : undefined);   // v123 : campagne : le sol ne projette pas d'ombre sur ses voisins (plus de raies tous les 20 m)
     }
   }
 

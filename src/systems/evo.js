@@ -22,6 +22,7 @@
   const COIN_COST = [100, 165, 272, 449, 741];
   const MAXN = { rk: 20, la: 15, cm: 5 };
   const BOSS_HP = 16;
+  const CH_NAME = { rampe: 'LE DEPART', camp: 'LE CAMP', riviere: 'LA RIVIERE', foret: 'LA FORET', vallee: 'LA VALLEE', grotte: 'LA GROTTE', falaise: 'LA FALAISE', entrepots: 'LES ENTREPOTS', base: 'LA BASE' };
   const SCENES = ['rampe', 'camp', 'riviere', 'foret', 'vallee', 'grotte', 'falaise', 'entrepots', 'base'];
   EVO.RK_TIERS = RK_TIERS; EVO.LA_TIERS = LA_TIERS; EVO.RK_NEXT = RK_NEXT; EVO.LA_NEXT = LA_NEXT; EVO.MAXN = MAXN;
 
@@ -67,7 +68,7 @@
     const th = CC.LM.THEMES[0];
     if (g.evoPreview) return base({ n: 102, zone: 'jungle', seed: 777, len: 1100, scenes: null, order: new Array(90).fill('jungle'), theme: th, env: null, hp: 1, bossEnt: null, preview: true });
     const q = /[?&]evoscenes=([\w,]+)/.exec(location.search), sc = q ? q[1].split(',') : SCENES, Zs = CC.Zones.defs.campagne.scenes;
-    let len = 80; for (const n of sc) { const s = Zs[n]; if (s) len += s.len[0]; }
+    let len = 80; EVO.chapters = []; for (const n of sc) { const s = Zs[n]; if (s) { EVO.chapters.push({ d: len, i: EVO.chapters.length, name: CH_NAME[n] || n.toUpperCase() }); len += s.len[0]; } }
     return base({ zone: 'campagne', len: q ? len + 400 : len, scenes: sc, order: new Array(90).fill('campagne'), theme: th });
   };
 
@@ -132,6 +133,7 @@
   };
   EVO.applySkinOnly = (g) => { const r = EVO.rocket(EVO.save(g).rk); g.rocket.setSkin(CC.Skins.get('evoT' + r.tier)); EVO.attachParts(g); };
   EVO.frame = (g, dt) => {
+    const wt = CC.Textures && CC.Textures.get && CC.Textures.get('water'); if (wt && wt.offset) wt.offset.y += dt * 0.12;   // v123 : l'eau coule (rivière, cascades)
     const A = g.evoAnim; if (!A) return;
     A.t += dt;
     const rk = g.rocket;
@@ -186,7 +188,7 @@
   // ---------- vol ----------
   EVO.beginRun = (g) => {
     g.l1run = { slow: 0, slowK: 0.4, slowDur: 0, slowT: 0, cool: 0, bossHits: 0, wall: 0, ph: 1, tAcc: 0, evo: true };
-    g.evo = { kills: 0, coins: 0, preview: !!g.evoPreview, previewT: 14, fuelOut: false, maxD: 0, bossHits: 0, scan: 0, perfect: false };
+    g.evo = { kills: 0, coins: 0, preview: !!g.evoPreview, previewT: 14, fuelOut: false, chap: 1, chapCoins: 0, maxD: 0, bossHits: 0, scan: 0, perfect: false };
     g.progress.P.bestDist = EVO.save(g).best;
     g.settings.ctl = 'free';
     if (g.evoPreview) { if (g._ctlSave === undefined) g._ctlSave = 'free'; g.settings.ctl = 'simple'; }
@@ -205,8 +207,10 @@
     const ev = g.evo, rk = g.rocket, run = g.endlessRun; if (!ev || !run || g.state !== 'FLIGHT' || !rk.active) { if (g.rig) g.rig.fallK = (g.rig.fallK || 0) * Math.max(0, 1 - dt * 4); return; }
     const S = EVO.save(g), r = EVO.rocket(S.rk), sp = rk.vel.length();
     ev.maxD = Math.max(ev.maxD, run.dist);
+    const CH = EVO.chapters;   // v123 : bandeau et prime à chaque nouveau chapitre franchi
+    if (CH && !ev.preview) while (ev.chap < CH.length && run.dist >= CH[ev.chap].d) { const c = CH[ev.chap++], b = Math.round(40 * c.i * EVO.mult(S.cm)); ev.chapCoins += b; CC.L1.msg(g, 'CHAPITRE ' + (c.i + 1) + '  ' + c.name, 2.0, '#ffe9a0'); g.audio.play('levelUp'); }
     // planeur : les ailes portent (elles annulent une partie de la gravité tant que la vitesse est suffisante)
-    if (r.wing > 0 && !ev.preview) rk.vel.y += C.physics.gravity * r.wing * U.clamp(sp / 17, 0, 1.15) * dt;
+    if (r.wing > 0 && !ev.preview) rk.vel.y += C.physics.gravity * r.wing * U.clamp((sp - 9) / 9, 0, 1.15) * dt;   // v123 : lent = les ailes ne portent plus : elle pique, on peut redresser avec la vitesse reprise
     if (ev.preview) rk.vel.y += C.physics.gravity * 0.95 * U.clamp(sp / 17, 0, 1.1) * dt;
     // sans réacteur ou sans carburant : la fusée tombe ; au sol, le vol est fini
     const out = (r.tier < 2 || rk.fuel <= 0.01) && !ev.preview;
@@ -246,6 +250,7 @@
     const distCoins = Math.floor(dist * m), lines = [['DISTANCE ' + dist + ' M', distCoins]];
     if (ev.kills) lines.push(['ENNEMIS ' + ev.kills, ev.coins - (ev.bossHits ? Math.round(150 * m) * ev.bossHits : 0)]);
     if (ev.bossHits) lines.push(['COUPS AU BOSS ' + ev.bossHits, Math.round(150 * m) * ev.bossHits]);
+    if (ev.chapCoins) lines.push(['CHAPITRE ' + ev.chap + ' SUR ' + (EVO.chapters ? EVO.chapters.length : 1), ev.chapCoins]);
     const total = lines.reduce((a, l) => a + l[1], 0), record = dist > S.best;
     for (const mk of [100, 300, 600, 1000, 1500, 2000, 2500, 3000]) if (dist >= mk) EVO.mark(g, 'd' + mk);
     if (g.crashKind === 'weak') EVO.mark(g, 'weak');
