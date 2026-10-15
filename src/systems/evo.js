@@ -56,7 +56,7 @@
   };
   EVO.launcher = (n) => { const tier = Math.min(2, Math.floor(n / 5)); return { n, tier, s: n - 5 * tier, name: LA_TIERS[tier], speed: 40 + 2.4 * n + 2 * tier }; };
   EVO.mult = (n) => 1 + 0.1 * n;
-  EVO.cost = (id, n) => (id === 'rk' ? Math.round(120 * Math.pow(1.3, n)) : id === 'la' ? Math.round(100 * Math.pow(1.3, n)) : COIN_COST[n]);
+  EVO.cost = (id, n) => (id === 'rk' ? Math.round(55 * Math.pow(1.27, n)) : id === 'la' ? Math.round(45 * Math.pow(1.27, n)) : COIN_COST[n]);   // v129 : les premieres ameliorations (ailes) arrivent en 2-3 vols
   EVO.nextCost = (g, id) => { const S = EVO.save(g), n = S[id]; return n >= MAXN[id] ? null : EVO.cost(id, n); };
   EVO.dmgNow = (g) => { const r = EVO.rocket(EVO.save(g).rk), sp = g.rocket && g.rocket.active ? g.rocket.vel.length() : 38; return r.dmg * U.clamp(sp / 38, 0.85, 1.5); };
   EVO.canKill = (g, t) => !!(g.evo && g.evo.preview) || !t.evoHp || EVO.dmgNow(g) + 0.001 >= t.evoHp;
@@ -241,7 +241,7 @@
   // chaque ennemi détruit : pièces, souffle qui pousse la fusée, carburant (réacteur)
   EVO.onKill = (g, t) => {
     const ev = g.evo; if (!ev || ev.preview) return;
-    const S = EVO.save(g), r = EVO.rocket(S.rk), rk = g.rocket, m = EVO.mult(S.cm), c = Math.round((t.evoVal || (t.evoHp ? 200 : 80)) * m);
+    const S = EVO.save(g), r = EVO.rocket(S.rk), rk = g.rocket, m = EVO.mult(S.cm), c = Math.round((t.evoVal || (t.evoHp ? 320 : 130)) * m);
     ev.kills++; ev.coins += c;
     rk.vel.addScaledVector(rk.fwd, r.kick); rk.vel.y += 1.5;
     g.rig.punch = 1;
@@ -329,7 +329,7 @@
     EVO.endTumble(g);
     if (g.evo && g.evo.preview) { g.evoPreview = false; g.evoLast = { zone2: true, t0: 0 }; g.goHome({}); return; }
     const S = EVO.save(g), ev = g.evo || { kills: 0, coins: 0, maxD: 0 }, run = g.endlessRun, dist = Math.round(Math.max(ev.maxD, run ? run.dist : 0)), m = EVO.mult(S.cm);
-    const distCoins = Math.floor(dist * m), lines = [['DISTANCE ' + dist + ' M', distCoins]];
+    const distCoins = Math.floor(dist * 2 * m), lines = [['DISTANCE ' + dist + ' M', distCoins]];
     if (ev.kills) lines.push(['ENNEMIS ' + ev.kills, ev.coins - (ev.bossHits ? Math.round(150 * m) * ev.bossHits : 0)]);
     if (ev.bossHits) lines.push(['COUPS AU BOSS ' + ev.bossHits, Math.round(150 * m) * ev.bossHits]);
     if (ev.chapCoins) lines.push(['CHAPITRE ' + ev.chap + ' SUR ' + (EVO.chapters ? EVO.chapters.length : 1), ev.chapCoins]);
