@@ -54,10 +54,10 @@
 
   const campagne = { signature: 'rampe', scenes: {}, dress(S) {
     // patchwork de champs au sol : rectangles plats de verts et d'ocres différents (pas de joints, relief doux)
-    S.rows(S.d0, S.d1, 36, 0.8, (dc) => S.item(dc, (r) => { const v = S.vol(dc), w = r.between([22, 60]), lx = (r() < 0.5 ? -1 : 1) * r.between([16, v - 6]); S.bx(dc, lx, 0.04, w, 0.06, r.between([26, 56]), 'col:' + pick(r, ['#86a066', '#72905a', '#8da46c', '#a29e66', '#6a8854', '#93a870']), undefined, false, { shadow: false }); }));
+    S.rows(S.d0, S.d1, 36, 0.8, (dc) => S.item(dc, (r) => { const v = S.vol(dc), w = r.between([22, 60]), lx = (r() < 0.5 ? -1 : 1) * r.between([16, v - 6]); if (Math.abs(S.T.rel(dc - 34) - S.T.rel(dc + 34)) > 0.25 || Math.abs(S.T.rel(dc) - S.T.rel(dc + 34)) > 0.25) return; S.bx(dc, lx, -0.2, w, 0.5, r.between([26, 56]), 'col:' + pick(r, ['#86a066', '#72905a', '#8da46c', '#a29e66', '#6a8854', '#93a870']), undefined, false, { shadow: false }); }));
 
     // collines rondes à l'horizon, des deux côtés (ellipsoïdes aplaties : un vrai relief doux, pas des boîtes)
-    for (const s of [-1, 1]) S.rows(S.d0, S.d1, 42, 0.7, (dc) => S.item(dc, (r) => { const v = S.vol(dc), lx = s * (v + r.between([30, 280])), rad = r.between([60, 190]), sy = r.between([0.2, 0.42]); S.ball(dc, lx, -rad * sy * 0.12, rad, 'col:' + pick(r, GREENS), undefined, Math.abs(lx) < 150, sy); }));
+    for (const s of [-1, 1]) S.rows(S.d0, S.d1, 42, 0.7, (dc) => S.item(dc, (r) => { const v = S.vol(dc), rad = r.between([60, 190]), lx = s * (v + 14 + rad + r.between([0, 90])), sy = r.between([0.2, 0.42]); S.ball(dc, lx, -rad * sy * 0.12, rad, 'col:' + pick(r, GREENS), undefined, Math.abs(lx) < 150, sy); }));
     // bosquets et arbres épars
     for (const s of [-1, 1]) S.rows(S.d0, S.d1, 22, 0.9, (dc) => S.item(dc, (r) => { const lx = s * (S.vol(dc) - r.between([2, 70])); (r() < 0.5 ? oakT : pineT)(S, dc, lx, r); }));
     // fermes, moulins, lignes électriques au loin

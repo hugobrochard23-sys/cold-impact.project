@@ -68,7 +68,7 @@
     // cime
     const top = [cx(1), y + h * 1.02, cz(1)], tb = y + h * 0.9, tr = h * 0.03 + 0.15, ca = mul(light, 1.05), cb = mul(dark, 0.9);
     for (let k = 0; k < 5; k++) { const a0 = k / 5 * 6.2832, a1 = (k + 1) / 5 * 6.2832; m.tri(top, [cx(1) + Math.cos(a0) * tr, tb, cz(1) + Math.sin(a0) * tr], [cx(1) + Math.cos(a1) * tr, tb, cz(1) + Math.sin(a1) * tr], ca, cb, cb); }
-    const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'col:#ffffff', o.tint); g.dispose();
+    const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff', o.tint); g.dispose();
   };
 
   // blob irrégulier (icosphère jittérée, couleurs en dégradé bas → haut)
@@ -95,13 +95,13 @@
       const a = i / nbl * 6.2832 + rnd() * 0.8, d = i === 0 ? 0 : cr * rr(rnd, 0.5, 0.85), rad = cr * (i === 0 ? rr(rnd, 0.85, 1.0) : rr(rnd, 0.5, 0.72));
       blob(m, x + lean + Math.cos(a) * d, y + th + cr * (i === 0 ? 0.55 : rr(rnd, 0.15, 0.55)), z + Math.sin(a) * d, rad, 0.82, rnd, mul(cDark, 0.75), mul(cLight, 1.05), seed + i * 9.1, o.far);
     }
-    const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'col:#ffffff', o.tint); g.dispose();
+    const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff', o.tint); g.dispose();
   };
 
   T.bush = function (b, x, y, z, s, rnd) {
     const m = new Mesh(), pal = BROAD[Math.floor(rnd() * BROAD.length)], n = 2 + Math.floor(rnd() * 2), seed = rnd() * 100;
     for (let i = 0; i < n; i++) blob(m, x + rr(rnd, -0.6, 0.6) * s, y + s * 0.38, z + rr(rnd, -0.6, 0.6) * s, s * rr(rnd, 0.6, 0.95), 0.75, rnd, mul(hex(pal[0]), 0.6), mul(hex(pal[1]), 0.82), seed + i * 5.3);
-    const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'col:#ffffff'); g.dispose();
+    const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
   };
 
   T.rock = function (b, x, y, z, s, rnd, o) {
@@ -113,20 +113,20 @@
       const col = top > 0.35 && !o.noMoss ? lerp3(mul(base, tw), moss, Math.min(0.85, (top - 0.3) * 1.6)) : mul(base, tw * (0.78 + 0.3 * Math.max(0, top + 0.3)));
       m.tri([a[0], a[1], a[2]], [c[0], c[1], c[2]], [d[0], d[1], d[2]], col, col, col);
     }
-    ico.dispose(); const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'col:#ffffff'); g.dispose();
+    ico.dispose(); const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
   };
 
   T.stump = function (b, x, y, z, s, rnd) {
     const m = new Mesh(), bark = hex(BARK[Math.floor(rnd() * BARK.length)]);
     m.tube([x, y - 0.3, z], s * 0.55, [x, y + s * 0.7, z], s * 0.42, mul(bark, 0.7), mul(bark, 0.95), 9);
     const ring = hex('#c8a46a'); for (let k = 0; k < 9; k++) { const a0 = k / 9 * 6.2832, a1 = (k + 1) / 9 * 6.2832; m.tri([x, y + s * 0.7, z], [x + Math.cos(a0) * s * 0.42, y + s * 0.7, z + Math.sin(a0) * s * 0.42], [x + Math.cos(a1) * s * 0.42, y + s * 0.7, z + Math.sin(a1) * s * 0.42], ring, mul(ring, 0.85), mul(ring, 0.85)); }
-    const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'col:#ffffff'); g.dispose();
+    const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
   };
 
   T.log = function (b, x, y, z, len, rnd) {
     const m = new Mesh(), bark = hex(BARK[Math.floor(rnd() * BARK.length)]), a = rnd() * 3.14, dx = Math.cos(a) * len / 2, dz = Math.sin(a) * len / 2, r = len * 0.07 + 0.2;
     m.tube([x - dx, y + r * 0.7, z - dz], r, [x + dx, y + r * 0.7, z + dz], r * 0.9, mul(bark, 0.85), mul(bark, 0.95), 8);
-    const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'col:#ffffff'); g.dispose();
+    const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
   };
 
   CC.Trees = T;
