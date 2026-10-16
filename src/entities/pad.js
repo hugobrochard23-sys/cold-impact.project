@@ -201,6 +201,7 @@
         const k = U.clamp(this.reloadT / this.cfg.reloadTime, 0, 1), e = 1 - Math.pow(1 - k, 3);
         rk.pos.y += 2.6 * (1 - e) * (1 - e); rk.pos.x -= 0.25 * (1 - e) * (1 - e);
       }
+      if (this.pullBack) rk.pos.addScaledVector(this.dir, -this.pullBack);
       rk.fwd.copy(this.dir);
       rk.mesh.visible = true;
       // flamme de veille : petite au repos, grandit avec la charge (cônes de la tuyère) — mise à jour du maillage (assiette fixe)
