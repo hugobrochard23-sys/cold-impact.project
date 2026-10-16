@@ -140,6 +140,18 @@
         }
       }
     }
+    // v152 : fleurs sauvages (blanches, jaunes, mauves, rosees) par taches : de la vie dans l'herbe
+    { const FL = ['#e6e2d2', '#dcc858', '#b08cc4', '#d88e8e', '#e6e2d2'].map((h) => new THREE.Color(h)), nf = Math.max(1, Math.round((e - d) * 0.16));
+      for (let i = 0; i < nf; i++) {
+        const dd0 = d + (e - d) * hsh(d + i * 1.13, i * 2.9), lx0 = (hsh(i * 3.1, d * 0.31) * 2 - 1) * 44; if (wet && wet(dd0, lx0, sc, T)) continue;
+        const fc = FL[Math.floor(hsh(i, d * 0.77) * FL.length)], cnt = 5 + Math.floor(hsh(d, i) * 5);
+        for (let j = 0; j < cnt; j++) {
+          const p = T.at(dd0 + (hsh(j, i) - 0.5) * 3, lx0 + (hsh(i, j * 1.7) - 0.5) * 3, 0), bx = p[0], bz = p[2], py = p[1] - 0.02, hgt = 0.35 + 0.22 * hsh(j * 2.3, i), r0 = 0.15 + 0.07 * hsh(j, i * 1.9);
+          const S0 = [bx, py, bz], S1 = [bx + 0.05, py, bz], S2 = [bx, py + hgt, bz]; for (const q of [S0, S1, S2]) { pos.push(q[0], q[1], q[2]); nor.push(0, 1, 0); col.push(GTC.r, GTC.g, GTC.b); }
+          for (let k = 0; k < 5; k++) { const a = k / 5 * 6.2832 + hsh(j, k), a2 = (k + 1) / 5 * 6.2832 + hsh(j, k), A1 = [bx + Math.cos(a) * r0, py + hgt - 0.02, bz + Math.sin(a) * r0], B1 = [bx + Math.cos(a2) * r0, py + hgt - 0.02, bz + Math.sin(a2) * r0], C1 = [bx, py + hgt + 0.07, bz]; for (const q of [A1, B1, C1]) { pos.push(q[0], q[1], q[2]); nor.push(0, 1, 0); col.push(fc.r, fc.g, fc.b); } for (const q of [B1, A1, C1]) { pos.push(q[0], q[1], q[2]); nor.push(0, 1, 0); col.push(fc.r, fc.g, fc.b); } }
+          const hc = FL[1]; for (const q of [[bx - 0.04, py + hgt + 0.06, bz], [bx + 0.04, py + hgt + 0.06, bz], [bx, py + hgt + 0.06, bz + 0.05]]) { pos.push(q[0], q[1], q[2]); nor.push(0, 1, 0); col.push(hc.r * 0.9, hc.g * 0.8, hc.b * 0.4); }
+        }
+      } }
     if (!pos.length) return;
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
     b.batch('col:#fefefe').shadow = false; b.addGeometry(g, _O, _Q, null, 'col:#fefefe'); g.dispose();
