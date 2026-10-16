@@ -52,13 +52,13 @@
     const tier = Math.min(3, Math.floor(n / 5)), s = n - 5 * tier, wing = tier >= 1 ? Math.min(1, 0.55 + 0.1 * Math.min(n - 5, 4.5)) : 0;
     const vmax = tier >= 2 ? [0, 0, 34, 38][tier] + 0.8 * s : 0, drag = tier >= 1 ? 0.0078 - 0.0042 * wing : 0.0100 - 0.0006 * s;
     return { n, tier, s, name: RK_TIERS[tier], wing, vmax, drag, thrust: vmax * vmax * drag, gripOff: tier >= 1 ? 1.2 + 4.5 * wing : 0.7,
-      dmg: 1.2 + 0.12 * n + 0.3 * tier, fuel: tier >= 2 ? [0, 0, 12, 20][tier] + [0, 0, 2, 2.6][tier] * s : 0, refuel: 3 + 0.15 * n, kick: tier === 0 ? 4 : tier === 1 ? 8 : 5 };
+      dmg: 1.2 + 0.2 * n + 0.4 * tier, fuel: tier >= 2 ? [0, 0, 12, 20][tier] + [0, 0, 2, 2.6][tier] * s : 0, refuel: 3 + 0.15 * n, kick: tier === 0 ? 4 : tier === 1 ? 8 : 5 };
   };
   EVO.launcher = (n) => { const tier = Math.min(2, Math.floor(n / 5)); return { n, tier, s: n - 5 * tier, name: LA_TIERS[tier], speed: 30 + 1.2 * n + 1.5 * tier }; };
   EVO.mult = (n) => 1 + 0.25 * n;   // v130 : chaque niveau de PIECES rapporte +25 % : il se rembourse en 2 vols
   EVO.cost = (id, n) => (id === 'rk' ? Math.round(90 * Math.pow(1.27, n)) : id === 'la' ? Math.round(70 * Math.pow(1.27, n)) : COIN_COST[n]);   // v129 : les premieres ameliorations (ailes) arrivent en 2-3 vols
   EVO.nextCost = (g, id) => { const S = EVO.save(g), n = S[id]; return n >= MAXN[id] ? null : EVO.cost(id, n); };
-  EVO.dmgNow = (g) => { const r = EVO.rocket(EVO.save(g).rk), sp = g.rocket && g.rocket.active ? g.rocket.vel.length() : 38; return r.dmg * U.clamp(sp / 38, 0.85, 1.5); };
+  EVO.dmgNow = (g) => { const r = EVO.rocket(EVO.save(g).rk), sp = g.rocket && g.rocket.active ? g.rocket.vel.length() : 38; return r.dmg * U.clamp(sp / 38, 0.9, 1.5); };
   EVO.canKill = (g, t) => !!(g.evo && g.evo.preview) || !t.evoHp || EVO.dmgNow(g) + 0.001 >= t.evoHp;
 
   // ---------- fiches de niveau ----------
