@@ -137,8 +137,13 @@
     const g = CC.game, la = EVO.launcher(EVO.save(g).la), G = pad.evoG = new THREE.Group(); pad.cradle.add(G);
     const mk = (w, h, d, color, x, y, z, basic) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), basic ? new THREE.MeshBasicMaterial({ color }) : new THREE.MeshLambertMaterial({ color })); m.position.set(x, y, z); G.add(m); return m; };
     if (la.tier === 0) { mk(0.5, 0.06, 4.4, '#9a7448', 0, -0.285, -0.75); for (let i = 0; i < 9; i++) mk(0.52, 0.02, 0.03, '#6e5230', 0, -0.25, 1.2 - i * 0.5); }
-    const col = ['#ffb040', '#39d4ff', '#c07bff'][la.tier], n = [0, 3 + la.s, 4 + la.s][la.tier];
-    for (let i = 0; i < n; i++) { const z = 0.2 - i * 0.55, hw = 0.3 + (la.tier > 1 ? 0.05 : 0); mk(0.05, hw * 2, 0.07, col, hw, 0.05, z, true); mk(0.05, hw * 2, 0.07, col, -hw, 0.05, z, true); mk(hw * 2, 0.05, 0.07, col, 0, hw + 0.05, z, true); }
+    // v152 : acceleration = vrais anneaux lisses (acier + liseret lumineux + halo) sur deux rails de guidage, plus de cadres carres
+    if (la.tier >= 1) {
+      const col = ['#ffb040', '#39d4ff', '#c07bff'][la.tier], n = [0, 3 + la.s, 4 + la.s][la.tier], hw = 0.34 + (la.tier > 1 ? 0.04 : 0);
+      const steel = new THREE.MeshLambertMaterial({ color: la.tier > 1 ? '#3a4250' : '#566070' }), lite = new THREE.MeshBasicMaterial({ color: col }), halo = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false });
+      for (const sx of [-1, 1]) { const r = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.5 + n * 0.55), steel); r.position.set(sx * (hw + 0.02), -0.2, 0.2 - (n - 1) * 0.275); G.add(r); const s2 = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.02, 0.3 + n * 0.55), lite); s2.position.set(sx * (hw + 0.02), -0.15, 0.2 - (n - 1) * 0.275); G.add(s2); }
+      for (let i = 0; i < n; i++) { const z = 0.2 - i * 0.55, k = 1 - i / (n + 2) * 0.3; const t1 = new THREE.Mesh(new THREE.TorusGeometry(hw * k, 0.028, 8, 28), steel); t1.position.set(0, 0.0, z); G.add(t1); const t2 = new THREE.Mesh(new THREE.TorusGeometry(hw * k, 0.012, 6, 28), lite); t2.position.set(0, 0, z + 0.03); G.add(t2); const t3 = new THREE.Mesh(new THREE.TorusGeometry(hw * k, 0.07, 6, 28), halo); t3.position.set(0, 0, z); G.add(t3); }
+    }
     if (la.tier === 2) mk(0.5, 0.5, 0.5, '#58616d', 0, -0.05, 1.4);
   };
 
@@ -370,7 +375,14 @@
       detail: g.crashKind === 'weak' && g.evoWeak ? 'ENNEMI ' + g.evoWeak.hp + ' PV : TES DEGATS ' + g.evoWeak.dmg.toFixed(1) : g.crashKind === 'stalled' ? (r.tier >= 2 ? 'DETRUIS DES ENNEMIS POUR RECHARGER' : 'AMELIORE LA FUSEE : ELLE IRA PLUS LOIN') : 'GLISSE LE DOIGT POUR ESQUIVER' };
     g.writeSave();
     g.telemetry.event('evoEnd', { dist, kills: ev.kills, coins: total, rk: S.rk, la: S.la, cm: S.cm, cause: g.crashKind });
-    g.goHome({});
+    g.evoReport = true; g.evoAdDone = false; g.ui.overlay = 'evoReport';   // v152 : le rapport de vol s'affiche sur le lieu du crash ; SUIVANT ramene au menu
+  };
+  // SUIVANT : mini pub de 5 s des le 5e vol (sauf pub de fin deja regardee), puis retour au menu
+  EVO.afterReport = (g) => {
+    if (!g.evoReport) return; const S = EVO.save(g);
+    const go = () => { g.evoReport = false; g.evoLast = null; g.goHome({}); };
+    if (S.runs >= 5 && !g.evoAdDone && g.ads && g.ads.forced()) { g.ui.overlay = null; g.ads.open('interstitial', go, null, 5); return; }
+    go();
   };
   // v150 : la pub de fin de vol multiplie les pieces du vol par le multiplicateur lu sur le curseur (x1,5 a x4)
   EVO.multiply = (g, m) => { const L = g.evoLast; if (!L || L.doubled || !L.total) return; const extra = Math.round(L.total * (m - 1)); L.doubled = m; L.lines.push(['PUB X' + m, extra]); EVO.save(g).coins += extra; L.total += extra; g.evoAdDone = true; g.writeSave(); g.audio.play('target'); (g.killPops = g.killPops || []).length; };
@@ -389,12 +401,7 @@
     const coins = Math.max(150, Math.round(EVO.cost('rk', S.rk) * 0.7)); S.coins += coins; S.gems = (S.gems || 0) + 1; S.chestAt = Date.now() + 2 * 3600 * 1000; g.writeSave();
     g.evoChest = { t0: performance.now(), coins, gems: 1 }; g.audio.play('levelUp'); g.audio.play('target'); if (CC.Haptics) CC.Haptics.tick('warn'); g.telemetry.event('evoChest', { coins });
   };
-  // v150 : des le 5e vol, une mini pub de 5 s avant de relancer apres une mort (sauf si on vient de regarder la pub de fin de vol, ou sans pub)
-  EVO.start = (g) => {
-    if (g.evoAnim) return; const S = EVO.save(g);
-    if (g.evoLast && !g.evoLast.zone2 && S.runs >= 5 && !g.evoAdDone && g.ads && g.ads.forced() && !g.evoPreview) { g.evoLast = null; g.ads.open('interstitial', () => EVO.startAim(g), null, 5); return; }
-    g.evoAdDone = false; EVO.startAim(g);
-  };
+  EVO.start = (g) => { if (g.evoAnim) return; EVO.startAim(g); };
   EVO.buy = (g, id, free) => {
     const S = EVO.save(g), c = EVO.nextCost(g, id);
     if (g.evoAnim) return false;
