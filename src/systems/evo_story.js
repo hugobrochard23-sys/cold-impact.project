@@ -7,10 +7,10 @@
 
   // ---------- ambiances du niveau : une par scène, fondues sur les 150 derniers mètres de chaque scène ----------
   const MOOD = {
-    dawn:    { top: '#5c8fcf', hor: '#ffcf9a', fog: '#f0d2b2', near: 110, far: 300, hemiS: '#ffe4c8', hemiG: '#6a7a58', hemiI: 0.78, amb: 0.16, sunC: '#ffc58a', sunI: 0.95, night: 0 },
-    morning: { top: '#6aa0d8', hor: '#f2e4cc', fog: '#e4dccb', near: 130, far: 310, hemiS: '#f0e6d4', hemiG: '#6a7a58', hemiI: 0.76, amb: 0.16, sunC: '#fff0d0', sunI: 0.9, night: 0 },
-    day:     { top: '#6c9ccc', hor: '#e2eaef', fog: '#cfdbe0', near: 140, far: 310, hemiS: '#d8e4f0', hemiG: '#6a7a58', hemiI: 0.74, amb: 0.16, sunC: '#fff0d6', sunI: 0.8, night: 0 },
-    gold:    { top: '#6a86b8', hor: '#ffb878', fog: '#d8a878', near: 100, far: 290, hemiS: '#ffd8b0', hemiG: '#6a5a48', hemiI: 0.7, amb: 0.16, sunC: '#ff9a50', sunI: 0.95, night: 0.1 },
+    dawn:    { top: '#6f95c4', hor: '#f0c8a0', fog: '#e6cdb4', near: 110, far: 300, hemiS: '#ffe4c8', hemiG: '#6a7a58', hemiI: 0.78, amb: 0.16, sunC: '#ffc58a', sunI: 0.95, night: 0 },
+    morning: { top: '#7aa0cc', hor: '#eadfcb', fog: '#dcd6c8', near: 130, far: 310, hemiS: '#f0e6d4', hemiG: '#6a7a58', hemiI: 0.76, amb: 0.16, sunC: '#fff0d0', sunI: 0.9, night: 0 },
+    day:     { top: '#7898bc', hor: '#dfe5e8', fog: '#c8d3d8', near: 140, far: 310, hemiS: '#d8e4f0', hemiG: '#6a7a58', hemiI: 0.74, amb: 0.16, sunC: '#fff0d6', sunI: 0.8, night: 0 },
+    gold:    { top: '#6b7fa6', hor: '#f2b27c', fog: '#cfa47c', near: 100, far: 290, hemiS: '#ffd8b0', hemiG: '#6a5a48', hemiI: 0.7, amb: 0.16, sunC: '#ff9a50', sunI: 0.95, night: 0.1 },
     deep:    { top: '#1c2234', hor: '#3a3a48', fog: '#2a2c38', near: 30, far: 190, hemiS: '#8a90b0', hemiG: '#30303a', hemiI: 0.55, amb: 0.22, sunC: '#9aa4c8', sunI: 0.3, night: 0.4 },
     shaft:   { top: '#506080', hor: '#8a8a98', fog: '#4a4c58', near: 40, far: 240, hemiS: '#c0c8e0', hemiG: '#585860', hemiI: 0.9, amb: 0.35, sunC: '#ffd8a8', sunI: 0.6, night: 0.3 },
     tunnel:  { top: '#202638', hor: '#4a4a58', fog: '#3a3c48', near: 40, far: 230, hemiS: '#b8c0d8', hemiG: '#484850', hemiI: 0.95, amb: 0.45, sunC: '#a8b0d0', sunI: 0.45, night: 0.35 },
@@ -20,12 +20,14 @@
     core:    { top: '#0a1424', hor: '#1a3a5a', fog: '#102030', near: 40, far: 240, hemiS: '#6a9ac0', hemiG: '#1a2a3a', hemiI: 0.65, amb: 0.26, sunC: '#6aa8ff', sunI: 0.35, night: 0.7 },
     inferno: { top: '#200808', hor: '#e0501c', fog: '#5a2010', near: 40, far: 260, hemiS: '#ff9050', hemiG: '#401408', hemiI: 0.8, amb: 0.3, sunC: '#ff6a20', sunI: 0.8, night: 0.6 },
   };
-  for (const k of Object.keys(MOOD)) { const m = MOOD[k]; for (const f of ['top', 'hor', 'fog', 'hemiS', 'hemiG', 'sunC']) m[f] = C3(m[f]); }
+  // v152 : etalonnage par ambiance (saturation, contraste, ombres froides / hautes lumieres chaudes) : chaque lieu est un tableau
+  const GRADE = { dawn: [0.84, 1.08, '#e8eeff', '#fff0e0'], morning: [0.86, 1.06, '#eaf0ff', '#fff4e6'], day: [0.86, 1.06, '#e6eeff', '#fff6ea'], gold: [0.84, 1.1, '#e4e8ff', '#ffe6c8'], deep: [0.78, 1.1, '#dce6ff', '#e8f0ff'], shaft: [0.8, 1.08, '#e0e8ff', '#fff0d8'], tunnel: [0.78, 1.1, '#dce4ff', '#ffecd0'], night: [0.82, 1.1, '#dce2ff', '#ffe0c0'], siege: [0.8, 1.12, '#e0e0ff', '#ffdcc0'], fire: [0.82, 1.12, '#e0e4ff', '#ffd8b0'], core: [0.8, 1.1, '#d8e8ff', '#e8f4ff'], inferno: [0.86, 1.12, '#ffe8e0', '#ffd8b0'] };
+  for (const k of Object.keys(MOOD)) { const m = MOOD[k]; for (const f of ['top', 'hor', 'fog', 'hemiS', 'hemiG', 'sunC']) m[f] = C3(m[f]); const q = GRADE[k] || GRADE.day; m.sat = q[0]; m.con = q[1]; m.shT = C3(q[2]); m.hiT = C3(q[3]); }
   const SCENE_MOOD = { descente: 'gold', rampe: 'dawn', camp: 'morning', riviere: 'day', foret: 'day', vallee: 'day', grotte: 'deep', falaise: 'gold', entrepots: 'gold', carriere: 'gold', puits: 'shaft', tunnel: 'tunnel', ville: 'night', approche: 'siege', porte: 'fire', noyau: 'core', fuite: 'inferno', arene: 'core', base: 'siege' };
   const SCENE_AUDIO = { descente: 'evoDusk', rampe: 'evoDawn', camp: 'evoDawn', riviere: 'evoDay', foret: 'evoDay', vallee: 'evoDay', grotte: 'evoMine', falaise: 'evoDusk', entrepots: 'evoDusk', carriere: 'evoDusk', puits: 'evoMine', tunnel: 'evoMine', ville: 'evoNight', approche: 'evoSiege', porte: 'evoBoss', noyau: 'evoBoss', fuite: 'evoEscape', arene: 'evoBoss', base: 'evoSiege' };
   EVO.MOOD = MOOD; EVO.SCENE_MOOD = SCENE_MOOD; EVO.SCENE_AUDIO = SCENE_AUDIO;
-  const _m = { top: new THREE.Color(), hor: new THREE.Color(), fog: new THREE.Color(), hemiS: new THREE.Color(), hemiG: new THREE.Color(), sunC: new THREE.Color() };
-  const mix = (a, b, t, out) => { for (const f of ['top', 'hor', 'fog', 'hemiS', 'hemiG', 'sunC']) out[f].copy(a[f]).lerp(b[f], t); for (const f of ['near', 'far', 'hemiI', 'amb', 'sunI', 'night']) out[f] = a[f] + (b[f] - a[f]) * t; return out; };
+  const _m = { top: new THREE.Color(), hor: new THREE.Color(), fog: new THREE.Color(), hemiS: new THREE.Color(), hemiG: new THREE.Color(), sunC: new THREE.Color(), shT: new THREE.Color(), hiT: new THREE.Color() };
+  const mix = (a, b, t, out) => { for (const f of ['top', 'hor', 'fog', 'hemiS', 'hemiG', 'sunC', 'shT', 'hiT']) out[f].copy(a[f]).lerp(b[f], t); for (const f of ['near', 'far', 'hemiI', 'amb', 'sunI', 'night', 'sat', 'con']) out[f] = a[f] + (b[f] - a[f]) * t; return out; };
   const sm = (t) => { t = U.clamp(t, 0, 1); return t * t * (3 - 2 * t); };
   const _mood = _m;
   EVO.moodAt = (g, dist) => {
@@ -45,6 +47,7 @@
     g.renderer.setClearColor(g.scene.fog.color);
     g.hemi.color.copy(m.hemiS); g.hemi.groundColor.copy(m.hemiG); g.hemi.intensity = m.hemiI; g.ambient.intensity = m.amb; g.sun.color.copy(m.sunC); g.sun.intensity = m.sunI;
     g.nightK = m.night;
+    if (g.postParams) { g.postParams.saturation = m.sat; g.postParams.contrast = m.con; g.postParams.shT = '#' + m.shT.getHexString(); g.postParams.hiT = '#' + m.hiT.getHexString(); }
     if (g.postParams) { g.postParams.bloomStrength = 0.07 + 0.16 * m.night; g.postParams.bloomThreshold = 0.98 - 0.2 * m.night; g.postParams.vignette = 0.2 + 0.25 * m.night; }
     if (g.horizon && g.horizon.setEnv) { const k = Math.round(m.night * 6); if (k !== g._hzK) { g._hzK = k; g.horizon.setEnv({ fog: { color: '#' + m.fog.getHexString() }, dark: m.night * 0.6 }); } }
   };

@@ -34,8 +34,8 @@
   };
   function this_quad(m, a, b, c, d, ca, cb, cc, cd) { m.quad(a, b, c, d, ca, cb, cc, cd); }
 
-  const CONIFER = [['#2a5130', '#37653c'], ['#2f5a36', '#3f7344'], ['#264a30', '#34603b'], ['#335f3b', '#46784a'], ['#2c5436', '#3b6e41']];
-  const BROAD = [['#3a5a2c', '#58803a'], ['#35542a', '#527a36'], ['#445f2c', '#6a8a3c'], ['#3d5a2e', '#5d8038'], ['#506a2c', '#76923c']];
+  const CONIFER = [['#233f2b', '#33543a'], ['#294a31', '#3b6240'], ['#21392a', '#2f4f37'], ['#2d5236', '#42684a'], ['#27452f', '#37593e']];   // v152 : verts plus sourds, plus naturels
+  const BROAD = [['#374c2c', '#566e3a'], ['#32472a', '#4d6636'], ['#415629', '#667c3a'], ['#3a4f2c', '#5a7237'], ['#4c6029', '#718538']], BIRCH = [['#5a7034', '#8aa04a'], ['#62773a', '#96a850']];
   const AUTUMN = [['#8a5a22', '#c0873a'], ['#7a4a1e', '#b8742c']];
   const BARK = ['#6b5237', '#5e4630', '#76593b', '#54402c'];
 
@@ -84,15 +84,16 @@
   }
 
   T.broadleaf = function (b, x, y, z, h, rnd, o) {
-    o = o || {}; const m = new Mesh(), pal = (o.autumn ? AUTUMN : BROAD)[Math.floor(rnd() * (o.autumn ? AUTUMN : BROAD).length)], cDark = hex(pal[0]), cLight = hex(pal[1]), bark = hex(BARK[Math.floor(rnd() * BARK.length)]);
-    const th = h * rr(rnd, 0.38, 0.48), cr = h * rr(rnd, 0.3, 0.38), seed = rnd() * 100, lean = rr(rnd, -0.06, 0.06) * h;
+    o = o || {}; const birch = !o.autumn && !o.far && rnd() < 0.24, m = new Mesh(), PL = o.autumn ? AUTUMN : birch ? BIRCH : BROAD, pal = PL[Math.floor(rnd() * PL.length)], cDark = hex(pal[0]), cLight = hex(pal[1]), bark = birch ? hex('#d6d2c4') : hex(BARK[Math.floor(rnd() * BARK.length)]);
+    const th = h * (birch ? rr(rnd, 0.5, 0.6) : rr(rnd, 0.38, 0.48)), cr = h * (birch ? rr(rnd, 0.22, 0.28) : rr(rnd, 0.3, 0.38)), seed = rnd() * 100, lean = rr(rnd, -0.06, 0.06) * h;
     m.tube([x, y - 0.8, z], h * 0.05 + 0.45, [x, y + th * 0.25, z], h * 0.034 + 0.3, mul(bark, 0.65), mul(bark, 0.8), 8);
     m.tube([x, y + th * 0.25, z], h * 0.034 + 0.3, [x + lean, y + th, z], h * 0.022 + 0.18, mul(bark, 0.8), mul(bark, 0.95), 7);
     const nb = 2 + Math.floor(rnd() * 2);
     for (let i = 0; i < nb; i++) { const a = rnd() * 6.28, s = rr(rnd, 0.28, 0.42) * h; m.tube([x + lean * 0.6, y + th * 0.62, z], h * 0.016 + 0.14, [x + lean + Math.cos(a) * s, y + th + s * 0.55, z + Math.sin(a) * s], 0.07, mul(bark, 0.85), mul(bark, 1), 6); }
-    const nbl = o.far ? 4 : 5 + Math.floor(rnd() * 3);
+    if (birch) for (let k = 0; k < 5; k++) { const yy = y + th * (0.12 + k * 0.17); m.tube([x + lean * k * 0.1, yy, z], h * 0.03 + 0.3, [x + lean * k * 0.1, yy + th * 0.03, z], h * 0.03 + 0.32, hex('#2a2822'), hex('#2a2822'), 7); }   // marques sombres de l'ecorce
+    const nbl = o.far ? 4 : (birch ? 6 : 7) + Math.floor(rnd() * 4);
     for (let i = 0; i < nbl; i++) {
-      const a = i / nbl * 6.2832 + rnd() * 0.8, d = i === 0 ? 0 : cr * rr(rnd, 0.5, 0.85), rad = cr * (i === 0 ? rr(rnd, 0.85, 1.0) : rr(rnd, 0.5, 0.72));
+      const a = i / nbl * 6.2832 + rnd() * 0.8, d = i === 0 ? 0 : cr * rr(rnd, 0.5, 0.95), rad = cr * (i === 0 ? rr(rnd, 0.8, 0.95) : rr(rnd, 0.42, 0.64));
       blob(m, x + lean + Math.cos(a) * d, y + th + cr * (i === 0 ? 0.55 : rr(rnd, 0.15, 0.55)), z + Math.sin(a) * d, rad, 0.82, rnd, mul(cDark, 0.75), mul(cLight, 1.05), seed + i * 9.1, o.far);
     }
     const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff', o.tint); g.dispose();

@@ -61,11 +61,25 @@
   function oakT(S, dc, lx, r, sc) { const p = S.at(dc, lx, 0); TR.broadleaf(S.b, p[0], p[1], p[2], r.between([9, 18]) * (sc || 1), r, {}); }
   function knoll(S, dc, lx, rad, h, col) { S.ball(dc, lx, h - rad * 0.0 - rad * 0.0 - 0, rad, 'col:' + col, undefined, false, h / rad); }
   function farmhouse(S, dc, lx, r) {
-    S.place(dc, lx, 16, 16, 0, 12, () => {
-      const c = pick(r, ['#e8dcc0', '#d8c8a0', '#e0d0b0']), roof = pick(r, ['#a8452c', '#8a3a2a', '#b8603a']);
-      S.bx(dc, lx, 2.6, 9, 5.2, 12, 'col:' + c, undefined, true); S.bx(dc, lx, 6.3, 9.6, 1.4, 12.6, 'col:' + roof, undefined, false); S.bx(dc, lx, 7.7, 5.2, 1.6, 12.4, 'col:' + roof, undefined, false);
-      S.bx(dc, lx + 8, 2.2, 6, 4.4, 8, 'col:#8a6a48', undefined, true); S.bx(dc, lx + 8, 5, 6.4, 1, 8.4, 'col:#5a4a38', undefined, false);
-      S.cyl(dc, lx - 10, 0, 1.8, 9, 'col:#c8c8c0', undefined, 10, 1.8, false);   // silo
+    // v152 : maison de ferme detaillee (toit a deux pans, cheminee, fenetres eclairees, porte, perron, cloture, grange, silo)
+    S.place(dc, lx, 18, 18, 0, 14, () => {
+      const c = pick(r, ['#d8cdb4', '#cfc0a0', '#d4c6aa', '#c9bba0']), roof = pick(r, ['#8a4a34', '#7a3e2c', '#9a5a3c']), trim = '#efe8d8', W = 9, Ln = 12, H0 = 5.2, R = 3.4, sl = Math.atan2(R, W / 2) / DEG;
+      S.bx(dc, lx, 0.45, W + 1, 0.9, Ln + 1, 'col:#8a8478', undefined, true);                                   // soubassement de pierre
+      S.bx(dc, lx, 0.9 + (H0 - 0.9) / 2, W, H0 - 0.9, Ln, 'col:' + c, undefined, true);
+      for (const [dx, dy, dz] of [[-1, 1, 1], [1, 1, 1], [-1, 1, -1], [1, 1, -1]]) S.bx(dc + dx * (Ln / 2), lx + dz * (W / 2), H0 / 2, 0.5, H0, 0.5, 'col:' + trim, undefined, false);   // chainages d'angle
+      // toit a deux pans + pignons
+      for (const s of [-1, 1]) S.bxr(dc, lx + s * (W / 4 + 0.2), H0 + R / 2 + 0.1, Math.hypot(W / 2 + 0.9, R), 0.45, Ln + 1.6, 'col:' + roof, undefined, -s * sl, 0, false);
+      for (let k = 0; k < 3; k++) for (const e of [-1, 1]) S.bx(dc + e * (Ln / 2 - 0.2), lx, H0 + 0.55 + k * 1.05, W - 1.6 - k * 2.6, 1.05, 0.5, 'col:' + c, undefined, false);
+      S.bx(dc, lx, H0 + R + 0.35, 0.7, 0.5, Ln + 1.8, 'col:#5a3a2a', undefined, false);
+      S.bx(dc + 3.2, lx + 2.2, H0 + R + 0.6, 1.6, 4.2, 1.6, 'col:#9a6a58', undefined, false); S.bx(dc + 3.2, lx + 2.2, H0 + R + 2.8, 2.0, 0.4, 2.0, 'col:#3a3028', undefined, false);   // cheminee
+      // facade : porte, perron, fenetres eclairees avec volets
+      S.bx(dc - Ln / 2 - 0.2, lx, 1.9, 0.4, 2.8, 1.5, 'col:#5a3a24', undefined, false); S.bx(dc - Ln / 2 - 1.2, lx, 0.2, 2, 0.4, 3.2, 'col:#8a8478', undefined, false); S.bx(dc - Ln / 2 - 0.1, lx, 3.5, 0.4, 0.3, 2.4, 'col:' + trim, undefined, false);
+      for (const sd of [-1, 1]) for (const z of [-3.6, 3.6]) { S.bx(dc + z * 0.9, lx + sd * (W / 2 + 0.05), 3, 1.3, 1.5, 0.2, 'emis:#f0d890', undefined, false); S.bx(dc + z * 0.9, lx + sd * (W / 2 + 0.12), 3, 1.5, 1.7, 0.12, 'col:' + trim, undefined, false); S.bx(dc + z * 0.9 - 1.0, lx + sd * (W / 2 + 0.2), 3, 0.7, 1.7, 0.14, 'col:#4a6a4a', undefined, false); S.bx(dc + z * 0.9 + 1.0, lx + sd * (W / 2 + 0.2), 3, 0.7, 1.7, 0.14, 'col:#4a6a4a', undefined, false); }
+      S.glow(dc - Ln / 2 - 1, lx, 3.2, '#ffd890', 10);
+      // grange attenante, silo, cloture
+      S.bx(dc + 3, lx + 10, 2.4, 6.4, 4.8, 8.2, 'col:#7a5a3e', undefined, true); for (const s of [-1, 1]) S.bxr(dc + 3, lx + 10 + s * 1.7, 5.4, 4.2, 0.35, 8.8, 'col:#4a3c34', undefined, -s * 26, 0, false);
+      S.cyl(dc, lx - 10, 0, 1.8, 9, 'col:#c8c8c0', undefined, 12, 1.8, false); S.cyl(dc, lx - 10, 9, 1.9, 0.6, 'col:#8a9098', undefined, 12, 0.2, false);
+      for (let k = 0; k < 8; k++) { S.bx(dc - 9 + k * 2.4, lx + 13, 0.6, 0.18, 1.2, 0.18, 'col:#8a6a48', undefined, false); } S.bx(dc - 1, lx + 13, 0.9, 0.12, 0.12, 17, 'col:#8a6a48', undefined, false);
     });
   }
   function windmill(S, dc, lx, r) {
@@ -76,7 +90,7 @@
   function haystack(S, dc, lx, r) { S.place(dc, lx, 8, 8, 0, 4, () => { S.cyl(dc, lx, 0, 2.4, 3.4, 'col:' + pick(r, ['#d8b860', '#c8a850']), undefined, 10, 2.4, false); }); }
 
   // ---------- sol lisse : une vraie surface continue (normales calculees sur le terrain, pas de tranches) avec un degrade de verts et de champs ----------
-  const GC = { a: new THREE.Color('#5f9a3a'), b: new THREE.Color('#8cc24e'), f: new THREE.Color('#b0ac5e'), c: new THREE.Color(), g: new THREE.Color('#77797a') };
+  const GC = { a: new THREE.Color('#587838'), b: new THREE.Color('#7e9a4c'), f: new THREE.Color('#9f9a60'), c: new THREE.Color(), g: new THREE.Color('#77797a') };
   const gcol = (x, z, out) => {
     const n = 0.5 + 0.5 * (Math.sin(x * 0.011 + z * 0.017) * 0.5 + Math.sin(x * 0.027 - z * 0.013 + 1.3) * 0.3 + Math.sin(x * 0.05 + z * 0.043) * 0.2);
     out.copy(GC.a).lerp(GC.b, n);
@@ -111,7 +125,7 @@
   };
   // touffes d'herbe : petites, plates, d'UNE seule couleur proche du sol (un peu plus sombre) ; chaque brin est dessiné des deux côtés (même éclairage dessus et dessous) ; jamais dans l'eau
   function hsh(a, b) { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); }
-  const GTC = new THREE.Color('#4c8a30');
+  const GTC = new THREE.Color('#486e2c');
   function grassTufts(ctx, d, e, wet, sd, sc) {
     const T = ctx.T, b = ctx.b, n = Math.max(1, Math.round((e - d) * 0.55)), pos = [], nor = [], col = [];
     const tri = (a1, a2, a3) => { for (const q of [a1, a2, a3]) { pos.push(q[0], q[1], q[2]); nor.push(0, 1, 0); col.push(GTC.r, GTC.g, GTC.b); } };
