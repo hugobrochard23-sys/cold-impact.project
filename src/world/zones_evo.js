@@ -129,15 +129,15 @@
   const GTC = new THREE.Color('#3f8228');
   // v176 : HERBE a la maniere de la reference : touffes de longs brins fins vert olive (base sombre, pointe plus claire) qui ondulent, buissons ronds vert sauge, petites fleurs blanches et jaunes ;
   // les brins retrecissent et disparaissent avec la distance (aFar), les buissons restent visibles plus loin
-  const GU = { value: 0 };
+  const GU = { value: 0 }, GCAM = { value: new THREE.Vector3() };
   let GM = null;
   const grassMat = () => GM || (GM = (() => {
     const m = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
     m.onBeforeCompile = (sh) => {
-      sh.uniforms.uTime = GU;
-      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float uTime;\nattribute float aSway;\nattribute float aFar;').replace('#include <begin_vertex>', `vec3 transformed = vec3( position );
+      sh.uniforms.uTime = GU; sh.uniforms.uCam = GCAM;
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float uTime;\nuniform vec3 uCam;\nattribute float aSway;\nattribute float aFar;').replace('#include <begin_vertex>', `vec3 transformed = vec3( position );
         vec3 gw = ( modelMatrix * vec4( position, 1.0 ) ).xyz;
-        float gf = 1.0 - smoothstep( aFar * 0.55, aFar, distance( gw, cameraPosition ) );
+        float gf = 1.0 - smoothstep( aFar * 0.55, aFar, distance( gw, uCam ) );
         float gs = aSway * ( 0.6 + 0.4 * sin( gw.x * 0.11 + gw.z * 0.13 ) );
         transformed.x += ( sin( uTime * 1.9 + gw.x * 0.31 + gw.z * 0.19 ) * 0.14 + sin( uTime * 3.4 + gw.z * 0.8 ) * 0.04 ) * gs;
         transformed.z += cos( uTime * 1.5 + gw.z * 0.27 + gw.x * 0.15 ) * 0.1 * gs;
@@ -159,18 +159,18 @@
     for (const jb of jobs) {
       const { d, e, wet, sd, sc, gf } = jb, len = e - d;
       const spots = (n, lo, hi, fn) => { for (let i = 0; i < n; i++) { const dd = d + len * hsh(d + i * 0.37 + lo, i * 1.9), lx = (hsh(i * 1.7 + hi, d * 0.13) * 2 - 1) * (lo + (hi - lo) * hsh(i * 2.9, d * 0.7 + hi)); if (wet && wet(dd, lx, sc, T)) continue; if (covered(dd, lx)) continue;
-        const p = T.at(dd, lx, 0); gcol(p[0], p[2], _gc); if (gf) gf(dd, lx, _gc, sc); if (!(_gc.g > _gc.b * 1.6 + 0.02 && _gc.g >= _gc.r * 0.9)) continue; fn(i, dd, lx, p, _gc); } };
+        const p = T.at(dd, lx, 0); gcol(p[0], p[2], _gc); if (gf) gf(dd, lx, _gc, sc); if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82)) continue; fn(i, dd, lx, p, _gc); } };
       const tuft = (i, dd, lx, p, gcl) => {
-        const sz = 0.75 + 0.7 * hsh(i, d * 0.7), L = (0.9 + 1.6 * hsh(i * 3.3, d)) * sz, th = hsh(d + i, i * 3.3) * 3.1416, ca = Math.cos(th), sa = Math.sin(th), py = p[1] - 0.04, nb = 14 + Math.floor(hsh(i, d * 2.1) * 8), k = 0.94 + 0.12 * hsh(i * 5.1, d);
-        _b.copy(gcl).multiplyScalar(0.58 * k); _t.copy(gcl).multiplyScalar(1.22 * k);
+        const sz = 0.75 + 0.7 * hsh(i, d * 0.7), L = (0.9 + 1.6 * hsh(i * 3.3, d)) * sz, th = hsh(d + i, i * 3.3) * 3.1416, ca = Math.cos(th), sa = Math.sin(th), py = p[1] - 0.04, nb = 14 + Math.floor(hsh(i, d * 2.1) * 8), k = 1;
+        _b.set('#4a5f12'); _t.set('#62801c');   // meme teinte pour toutes les touffes (plus de touffes plus sombres)
         for (let j = 0; j < nb; j++) {
           const s = (hsh(j * 3.7, i + d) * 2 - 1) * 0.5, side = (hsh(j * 5.3, i * 1.1 + d) - 0.5) * 0.4 * sz, bx = p[0] + ca * s * L - sa * side, bz = p[2] + sa * s * L + ca * side;
           const hp = 0.45 + 0.55 * Math.cos(s * 3.1416), hh = (0.55 + 0.55 * hsh(j * 5.1, i + d)) * hp * sz * 1.25, w = 0.075 * sz, lean = hh * 0.3 * (hsh(j * 7.1, i) - 0.4), dx = -sa * lean * 0.6 + ca * lean * 0.5, dz = ca * lean * 0.6 + sa * lean * 0.5;
-          v(bx - ca * w * 0.4 - sa * w, py, bz - sa * w * 0.4 + ca * w, _b, 0, 210); v(bx + ca * w * 0.4 + sa * w, py, bz + sa * w * 0.4 - ca * w, _b, 0, 210); v(bx + dx, py + hh, bz + dz, _t, hh, 210);
+          v(bx - ca * w * 0.4 - sa * w, py, bz - sa * w * 0.4 + ca * w, _b, 0, 230); v(bx + ca * w * 0.4 + sa * w, py, bz + sa * w * 0.4 - ca * w, _b, 0, 230); v(bx + dx, py + hh, bz + dz, _t, hh, 230);
         }
       };
       spots(Math.max(4, Math.round(len * 22)), 0, 13, tuft);
-      spots(Math.max(2, Math.round(len * 6)), 13, 40, tuft);
+      spots(Math.max(2, Math.round(len * 9)), 13, 60, tuft);
       // petites fleurs par-ci par-la
       const FL = ['#f4efdc', '#f4efdc', '#f0cf55', '#f6f0d0'].map((h) => new THREE.Color(h));
       spots(Math.max(1, Math.round(len * 0.8)), 0, 30, (i, dd, lx, p, gcl) => {
@@ -179,10 +179,9 @@
         for (let q = 0; q < 5; q++) { const a = q / 5 * 6.2832, a2 = (q + 1) / 5 * 6.2832; v(bx + Math.cos(a) * r0, py + hgt, bz + Math.sin(a) * r0, fc, hgt * 0.5, 70); v(bx + Math.cos(a2) * r0, py + hgt, bz + Math.sin(a2) * r0, fc, hgt * 0.5, 70); v(bx, py + hgt + 0.04, bz, fc, hgt * 0.5, 70); }
       });
     }
-    void ([ctx.d0, pave.length, pos.length / 3, jobs.length, pave.filter((q) => q.w * q.dd > 2000).map((q) => [Math.round(q.d), Math.round(q.lx), Math.round(q.w), Math.round(q.dd)])]);
     if (!pos.length) return;
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('aSway', new THREE.Float32BufferAttribute(sway, 1)); g.setAttribute('aFar', new THREE.Float32BufferAttribute(far, 1));
-    const mesh = new THREE.Mesh(g, grassMat()); mesh.frustumCulled = true; mesh.receiveShadow = false; mesh.onBeforeRender = () => { GU.value = performance.now() / 1000; }; b.add(mesh);
+    const mesh = new THREE.Mesh(g, grassMat()); mesh.frustumCulled = true; mesh.receiveShadow = false; mesh.onBeforeRender = (r, sc, cam) => { GU.value = performance.now() / 1000; GCAM.value.copy(cam.position); }; b.add(mesh);
   };
   // les dalles de beton / asphalte et l'emprise des batiments (boites posees au sol) empechent l'herbe de pousser dessous
   if (Z.Scene && !Z.Scene.prototype._bxPave) {
