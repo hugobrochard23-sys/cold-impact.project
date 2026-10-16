@@ -45,10 +45,9 @@
   const setF = (ctx, px) => { ctx.font = px + 'px ' + T.font; if ('letterSpacing' in ctx) ctx.letterSpacing = (T.ls * px) + 'px'; };
   // texte epais : remplissage clair, contour sombre, petite ombre portee
   function txt(ctx, s, x, y, px, fill, o) {
-    o = o || {}; ctx.save(); setF(ctx, px); ctx.textAlign = o.align || 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.miterLimit = 2;
-    const sw = px * (o.sw === undefined ? 0.24 : o.sw) * T.swk;
-    if (o.shadow !== false) { ctx.fillStyle = C('rgba(0,0,0,0.32)'); ctx.lineWidth = sw; ctx.strokeStyle = C('rgba(0,0,0,0.32)'); ctx.strokeText(s, x, y + px * 0.09); ctx.fillText(s, x, y + px * 0.09); }
-    if (sw > 0) { ctx.lineWidth = sw; ctx.strokeStyle = o.stroke || K.navy; ctx.strokeText(s, x, y); }
+    // v161 : plus aucun contour de texte : remplissage seul, avec une ombre douce pour rester lisible
+    o = o || {}; ctx.save(); setF(ctx, px); ctx.textAlign = o.align || 'center'; ctx.textBaseline = 'middle';
+    if (o.shadow !== false) { ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = px * 0.14; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = px * 0.07; }
     if (o.grad) { const g = ctx.createLinearGradient(0, y - px * 0.5, 0, y + px * 0.5); g.addColorStop(0, o.grad[0]); g.addColorStop(1, o.grad[1]); ctx.fillStyle = g; } else ctx.fillStyle = fill || K.white;
     ctx.fillText(s, x, y); ctx.restore();
   }
