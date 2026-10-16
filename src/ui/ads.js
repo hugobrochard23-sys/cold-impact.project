@@ -65,7 +65,7 @@
     close(watched) {
       const A = this.cur, g = this.game;
       if (!A) return;
-      this.cur = null; g.ui.overlay = (A.back === 'shop' || A.back === 'daily' || A.back === 'pass' || A.back === 'l1death') ? A.back : null;
+      this.cur = null; g.ui.overlay = (A.back === 'shop' || A.back === 'daily' || A.back === 'pass' || A.back === 'l1death' || A.back === 'evo') ? A.back : null;
       this.duck(false);
       if (A.kind === 'interstitial') this.sinceAd = 0;
       if (A.kind === 'rewarded') this.sinceAd = 0;   // v034 : une publicité regardée repart à zéro le compteur
