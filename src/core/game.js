@@ -815,7 +815,8 @@
 
     onRocketCrash(kind, pos, normal) {
       if (!this.rocket.active) return;
-      if (this.evoFinish) return;   // v149 : mission accomplie : plus rien ne peut tuer la fusee
+      if (this.evoFinish) return;
+      if (kind === 'missile' && this.evo && !this.evo.preview && CC.EVO.missileHit) { CC.EVO.missileHit(this, pos); return; }   // v150 : un missile ne tue plus : il freine, brule du carburant et secoue   // v149 : mission accomplie : plus rien ne peut tuer la fusee
       if (kind === 'missile' && this.modRun && this.modRun.shield > 0) {   // v082 : module BOUCLIER : il arrête un missile
         this.modRun.shield--; const fx = this.effects, up = new V(0, 1, 0);
         fx.ring(pos, up, 2, 34, 0.7, '#8fd0ff', 0.95); fx.ring(pos, new V(1, 0, 0), 1, 26, 0.6, '#ffffff', 0.9); fx.flash(pos, '#8fd0ff', 8, 90, 0.35, '#4a9aff');
@@ -866,6 +867,7 @@
 
     spawnEnemyMissile(from, rocket, opts) {
       const m = new CC.EnemyMissile(from, rocket, opts);
+      if (this.evo && !this.evo.preview) { m.vmax *= 0.8; m.speed *= 0.8; m.turn *= 0.6; m.fuse = Math.min(m.fuse, 1.4); }   // v150 : missiles plus lents et moins accrocheurs : on peut les esquiver
       this.scene.add(m.object); this.missiles.push(m);
       if (!opts || !opts.quiet) this.audio.play('launch');   // design : tirs de char / d'hélicoptère → leur propre son (onFire)
       this.telemetry.event('enemyMissile', {});

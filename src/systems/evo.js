@@ -30,6 +30,7 @@
   EVO.save = (g) => {
     const S = g.save.evo = g.save.evo || { coins: 0, rk: 0, la: 0, cm: 0, best: 0, runs: 0, kills: 0, cleared: 0 };
     if (S.t0 === undefined) { S.t0 = 0; S.marks = {}; }
+    if (S.gems === undefined) { S.gems = 0; S.chestAt = 0; }
     if (!S.seen) S.seen = {};
     if (!EVO._cheat) {
       EVO._cheat = 1; const q = (k) => { const m = new RegExp('[?&]' + k + '=(\\d+)').exec(location.search); return m ? parseInt(m[1], 10) : null; };
@@ -277,6 +278,14 @@
   };
 
   // ---------- écrasement : la fusée perd ses ailes, sa queue, roule et rebondit ; un drapeau avec la distance se plante là où elle s'arrête ----------
+  // v150 : un missile ne tue jamais : explosion, perte de vitesse et de carburant, puis 1,5 s de grace
+  EVO.missileHit = (g, pos) => {
+    const rk = g.rocket, now = performance.now(); if (!rk || !rk.active) return; if (g.evoMissT && now < g.evoMissT) return; g.evoMissT = now + 1500;
+    const v = rk.vel.length(), nv = Math.max(Math.min(v, 30), v * 0.72); if (v > 1e-3) rk.vel.multiplyScalar(nv / v);
+    if (rk.fuelMax > 0) rk.fuel = Math.max(0, rk.fuel - rk.fuelMax * 0.18);
+    g.effects.explosion(pos.clone(), null, false, 'orange'); g.audio.play('boomSmall', pos); g.rig.shake = Math.max(g.rig.shake, 0.9); g.flash = 0.25; g.flashColor = '#ffb070';
+    (g.killPops = g.killPops || []).push({ p: rk.pos.clone().add(new V(0, 2.5, 0)), t0: performance.now() - 200, txt: 'TOUCHE !' });
+  };
   EVO.softCrash = (kind) => kind === 'stalled' || kind === 'weak' || kind === 'wall';
   const _tq = new THREE.Quaternion(), _ta = new V();
   const rr = (a, b) => a + Math.random() * (b - a);
@@ -363,14 +372,35 @@
     g.telemetry.event('evoEnd', { dist, kills: ev.kills, coins: total, rk: S.rk, la: S.la, cm: S.cm, cause: g.crashKind });
     g.goHome({});
   };
-  EVO.double = (g) => { const L = g.evoLast; if (!L || L.doubled || !L.total) return; L.doubled = true; L.lines.push(['PUB X2', L.total]); EVO.save(g).coins += L.total; L.total *= 2; g.writeSave(); g.audio.play('target'); };
-  EVO.start = (g) => { if (g.evoAnim) return; EVO.startAim(g); };
-  EVO.buy = (g, id) => {
+  // v150 : la pub de fin de vol multiplie les pieces du vol par le multiplicateur lu sur le curseur (x1,5 a x4)
+  EVO.multiply = (g, m) => { const L = g.evoLast; if (!L || L.doubled || !L.total) return; const extra = Math.round(L.total * (m - 1)); L.doubled = m; L.lines.push(['PUB X' + m, extra]); EVO.save(g).coins += extra; L.total += extra; g.evoAdDone = true; g.writeSave(); g.audio.play('target'); (g.killPops = g.killPops || []).length; };
+  // gemmes : 1 gemme = 1 amelioration offerte quand les pieces manquent ; la 2e fois sur la meme amelioration (meme session) coute 2, la 3e 3...
+  EVO.gemCost = (g, id) => ((g.evoGemUse && g.evoGemUse[id]) || 0) + 1;
+  EVO.gemAd = (g) => { if (!g.ads) return; g.ads.rewarded(() => { const S = EVO.save(g); S.gems = (S.gems || 0) + 1; g.writeSave(); g.audio.play('levelUp'); }, null, 'gem'); };
+  EVO.buyGem = (g, id) => {
+    const S = EVO.save(g), c = EVO.nextCost(g, id), gc = EVO.gemCost(g, id); if (c === null || g.evoAnim) return;
+    const pay = () => { if ((S.gems || 0) < gc) return; S.gems -= gc; g.evoGemUse = g.evoGemUse || {}; g.evoGemUse[id] = (g.evoGemUse[id] || 0) + 1; EVO.buy(g, id, true); };
+    if ((S.gems || 0) >= gc) pay(); else if (g.ads) g.ads.rewarded(() => { S.gems = (S.gems || 0) + 1; g.writeSave(); pay(); }, null, 'gem');
+  };
+  // coffre : disponible des le 3e vol, puis toutes les 2 heures
+  EVO.chestReady = (g) => { const S = EVO.save(g); return S.runs >= 3 && Date.now() >= (S.chestAt || 0); };
+  EVO.openChest = (g) => {
+    const S = EVO.save(g); if (!EVO.chestReady(g) || g.evoChest) return;
+    const coins = Math.max(150, Math.round(EVO.cost('rk', S.rk) * 0.7)); S.coins += coins; S.gems = (S.gems || 0) + 1; S.chestAt = Date.now() + 2 * 3600 * 1000; g.writeSave();
+    g.evoChest = { t0: performance.now(), coins, gems: 1 }; g.audio.play('levelUp'); g.audio.play('target'); if (CC.Haptics) CC.Haptics.tick('warn'); g.telemetry.event('evoChest', { coins });
+  };
+  // v150 : des le 5e vol, une mini pub de 5 s avant de relancer apres une mort (sauf si on vient de regarder la pub de fin de vol, ou sans pub)
+  EVO.start = (g) => {
+    if (g.evoAnim) return; const S = EVO.save(g);
+    if (g.evoLast && !g.evoLast.zone2 && S.runs >= 5 && !g.evoAdDone && g.ads && g.ads.forced() && !g.evoPreview) { g.evoLast = null; g.ads.open('interstitial', () => EVO.startAim(g), null, 5); return; }
+    g.evoAdDone = false; EVO.startAim(g);
+  };
+  EVO.buy = (g, id, free) => {
     const S = EVO.save(g), c = EVO.nextCost(g, id);
     if (g.evoAnim) return false;
-    if (c === null || S.coins < c) { g.audio.play('uiTick'); g.evoShake = { id, t0: performance.now() }; return false; }
+    if (c === null || (!free && S.coins < c)) { g.audio.play('uiTick'); g.evoShake = { id, t0: performance.now() }; return false; }
     const before = id === 'rk' ? EVO.rocket(S.rk).tier : id === 'la' ? EVO.launcher(S.la).tier : 0;
-    S.coins -= c; S[id]++; if (S[id] % 5 === 0) EVO.mark(g, id + S[id]); g.writeSave(); g.audio.play('levelUp'); if (CC.Haptics) CC.Haptics.tick('warn');
+    if (!free) S.coins -= c; S[id]++; if (S[id] % 5 === 0) EVO.mark(g, id + S[id]); g.writeSave(); g.audio.play('levelUp'); if (CC.Haptics) CC.Haptics.tick('warn');
     const after = id === 'rk' ? EVO.rocket(S[id]).tier : id === 'la' ? EVO.launcher(S[id]).tier : 0;
     g.evoBought = { id, t0: performance.now() };
     if (id === 'rk') { if (after > before) EVO.playEvolve(g, after, RK_NEXT[before]); else { g.rocket.mesh.scale.setScalar(1 + 0.012 * EVO.rocket(S.rk).n); } }

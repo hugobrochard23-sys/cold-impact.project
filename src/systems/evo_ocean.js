@@ -65,6 +65,24 @@
   };
   const _r = new V();
   // niveau 2 : à la place de la rampe, un tube de lancement (anneaux d'acier) autour du missile, qui laisse échapper des bulles
+  // v150 : une mer qui s'etend jusqu'a l'horizon (la bande d'eau du niveau ne depasse pas 140 m de chaque cote : on en voyait les bords de haut)
+  let sea = null, seaFog = '';
+  const SEA_R = [0, 150, 400, 1200, 4000, 20000], SEA_K = [0, 0, 0.22, 0.55, 0.85, 1], SEA_N = 28, NEAR = new T3.Color('#4f95b6');
+  const seaTick = (g) => {
+    if (!sea) {
+      const geo = new T3.BufferGeometry(), pos = [], col = [], idx = [];
+      for (let r = 0; r < SEA_R.length; r++) for (let k = 0; k < SEA_N; k++) { const a = k / SEA_N * 6.2832; pos.push(Math.cos(a) * SEA_R[r], 0, Math.sin(a) * SEA_R[r]); col.push(1, 1, 1); }
+      for (let r = 0; r < SEA_R.length - 1; r++) for (let k = 0; k < SEA_N; k++) { const a = r * SEA_N + k, b = r * SEA_N + (k + 1) % SEA_N, c = (r + 1) * SEA_N + k, d = (r + 1) * SEA_N + (k + 1) % SEA_N; idx.push(a, c, b, b, c, d); }
+      geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(col, 3)); geo.setIndex(idx);
+      sea = new T3.Mesh(geo, new T3.MeshBasicMaterial({ vertexColors: true, fog: false, depthWrite: false })); sea.renderOrder = -5; sea.frustumCulled = false;
+    }
+    const st2 = EVO.seaLevel !== undefined && g.evo && !g.cine3d && g.rocket && (g.uwK || 0) < 0.5;
+    if (sea.parent !== g.scene) g.scene.add(sea);
+    sea.visible = !!st2; if (!st2) return;
+    sea.position.set(g.rocket.pos.x, EVO.seaLevel - 1.2, g.rocket.pos.z);
+    const fc = g.scene.fog ? g.scene.fog.color : null, hx = fc ? fc.getHexString() : '';
+    if (hx !== seaFog) { seaFog = hx; const a = sea.geometry.attributes.color, c = new T3.Color(); for (let r = 0; r < SEA_R.length; r++) { c.copy(NEAR); if (fc) c.lerp(fc, SEA_K[r]); for (let k = 0; k < SEA_N; k++) a.setXYZ(r * SEA_N + k, c.r, c.g, c.b); } a.needsUpdate = true; }
+  };
   let tube = null;
   const padTick = (g, dt) => {
     if (!g.pad || !g.pad.group) return;
@@ -77,7 +95,7 @@
     if (Math.random() < dt * 10 && g.effects) { const p = g.pad.origin.clone().add(new V(rr(-1, 1), rr(-0.8, 0.8), rr(-2, 2))); g.effects.sparks.emit({ pos: p, vel: new V(rr(-0.3, 0.3), rr(0.8, 2), rr(-0.3, 0.3)), life: rr(1.5, 3), s0: 0.08, s1: 0.05, s2: 0.02, cols: [new T3.Color('#e8fbff')], drag: 0.4, grav: -1.2, a: 0.8, fout: 0.5 }); }
   };
   const _fr = EVO.frame;
-  EVO.frame = (g, dt) => { _fr(g, dt); snowTick(g, dt); stormTick(g, dt); padTick(g, dt); if (g.audio && g.audio.setUnder) g.audio.setUnder(EVO.seaLevel !== undefined && !g.cine3d ? U.clamp(g.uwK || 0, 0, 1) : 0); };
+  EVO.frame = (g, dt) => { _fr(g, dt); snowTick(g, dt); stormTick(g, dt); padTick(g, dt); seaTick(g); if (g.audio && g.audio.setUnder) g.audio.setUnder(EVO.seaLevel !== undefined && !g.cine3d ? U.clamp(g.uwK || 0, 0, 1) : 0); };
   // pictogramme de rafale (flèches de chaque côté de l'écran) dans le HUD
   const _hd = EVO.drawHud;
   EVO.drawHud = (hud, ctx, g, W, H, px) => {

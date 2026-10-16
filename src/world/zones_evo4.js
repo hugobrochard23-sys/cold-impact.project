@@ -28,7 +28,24 @@
       // murets de briques qui prolongent le garage de chaque côté : on sait où passer, on ne voit pas ce qui vient après
       for (const s of [-1, 1]) for (let k = 0; k < 4; k++) S.bx(dc, s * (hw + 8 + k * 10), 2.2 + k * 0.6, 8, 4.4 + k * 1.2, len + 8 - k * 4, 'brick', pk(r, BR), true);
     });
-    foe(S, 'jeep', dc + 2, -4, 0, { name: 'JEEP' });
+    // v150 : le garage est plus riche : bandes de danger, barrieres, atelier (etabli, etagere, pneus, cric), ventilateurs et antenne sur le toit, projecteurs, lumieres chaudes
+    S.item(dc, (r) => {
+      for (const s of [-1, 1]) for (let k = 0; k < 10; k++) S.bx(dc - len / 2 - 0.6, s * (hw + 0.2 - k * 2.9), 0.9, 0.3, 0.5, 1.4, 'col:' + (k % 2 ? '#1d1f23' : '#f2c200'), undefined, false);
+      for (let k = -1; k <= 1; k += 2) { S.bx(dc - len / 2 - 6, k * 10, 1.1, 0.5, 2.2, 0.5, 'col:#c8352a', undefined, true); S.bx(dc - len / 2 - 6, k * 10 + 0, 1.8, 0.4, 0.5, 0.4, 'col:#ffffff', undefined, false); }
+      S.bx(dc - len / 2 - 6, 0, 0.12, 2 * hw + 8, 0.24, 9, 'concrete', '#a8aaa6', false);
+      for (let k = 0; k < 7; k++) S.bx(dc - len / 2 - 6 + 0, -9 + k * 3, 0.26, 0.5, 0.06, 9, 'col:#e8e8dc', undefined, false, { shadow: false });
+      const sx = r() < 0.5 ? -1 : 1;
+      S.bx(dc + 8, sx * 11, 1.0, 7, 0.4, 2, 'planks', '#7a5a3a', true); for (const e of [-1, 1]) S.bx(dc + 8 + e * 3, sx * 11, 0.5, 0.4, 1, 1.6, 'col:#3a3e44', undefined, true);
+      for (let k = 0; k < 3; k++) S.bx(dc + 8 + (k - 1) * 2, sx * 11, 1.5, 1, 0.5, 0.8, 'col:' + ['#c8352a', '#2f6fb0', '#c8a028'][k], undefined, false);
+      for (let k = 0; k < 3; k++) { S.bx(dc - 10, sx * 13.4, 1.3 + k * 2.4, 0.5, 0.25, 7, 'col:#5a626c', undefined, false); for (let j = 0; j < 3; j++) S.bx(dc - 10 + (j - 1) * 2, sx * 13.4, 1.8 + k * 2.4, 1.4, 1, 1.2, 'planks', ['#a8793c', '#9a6e38', '#b08448'][(j + k) % 3], false); }
+      for (const q of [S.bx(dc + 2, -sx * 10, 0.5, 0, 0, 0, 'col:#000', undefined, false)]) void q;
+      for (let k = 0; k < 4; k++) S.cyl(dc - 4, -sx * 12 + (k % 2) * 0.1, k * 0.62, 0.95, 0.6, 'col:#22252a', undefined, 12, 0.95, false);
+      for (let k = 0; k < 4; k++) { S.bx(dc - len / 2 + 4 + k * 9, 0, hh + 1.3, 3, 1.2, 3, 'col:#5a626c', undefined, true); S.cyl(dc - len / 2 + 4 + k * 9, 0, hh + 1.8, 1.3, 0.3, 'col:#2a2e34', undefined, 10, 1.3, false); }
+      S.cyl(dc + len / 2 - 4, hw - 3, hh + 0.8, 0.12, 9, 'col:#8a9098', undefined, 6, 0.12, false); S.glow(dc + len / 2 - 4, hw - 3, hh + 10, '#ff3a2a', 6);
+      for (const e of [-1, 1]) { S.cyl(dc + e * 10, hw + 6, 0, 0.18, 8, 'col:#5a626c', undefined, 6, 0.18, true); S.bx(dc + e * 10, hw + 5.2, 8.1, 1.8, 0.5, 1, 'emis:#fff4d0', undefined, false); S.glow(dc + e * 10, hw + 4.6, 7.6, '#fff0c0', 20); S.cyl(dc + e * 10, -hw - 6, 0, 0.18, 8, 'col:#5a626c', undefined, 6, 0.18, true); S.bx(dc + e * 10, -hw - 5.2, 8.1, 1.8, 0.5, 1, 'emis:#fff4d0', undefined, false); S.glow(dc + e * 10, -hw - 4.6, 7.6, '#fff0c0', 20); }
+      for (let k = -2; k <= 2; k++) S.glow(dc + k * 7, 0, hh - 3.2, '#ffe2a8', 16);
+    });
+    foe(S, 'jeep', dc + 2, -4, hh + 1.0, { name: 'JEEP', keep: true });
   }
   D.scenes.rampe = { len: [170, 170], noDoor: true, noChaos: true,
     pin: (T, sc) => ({ lx: 0, y: 8, from: 20, to: sc.d1 - sc.d0 - 20 }),
@@ -41,7 +58,10 @@
       }
       S.item(d0 + 20, () => { for (const s of [-1, 1]) S.bx(d0 + 20, s * 9, 0.06, 0.9, 0.1, 40, 'col:#e8e8dc', undefined, false, { shadow: false }); });
       garage(S, d0 + 112);
-      foe(S, 'tank', d0 + 62, 5, 0, { name: 'CHAR', val: 240 });
+      // v150 : le lanceur envoie la fusee haut : les premiers ennemis sont sur une butte et en l'air, dans l'axe du tir
+      S.item(d0 + 58, (r) => { S.bx(d0 + 58, 5, 8, 16, 16, 16, 'col:#6e5f45', undefined, true); S.bx(d0 + 58, 5, 16.4, 17, 0.8, 17, 'col:#6a8a42', undefined, true); for (let k = 0; k < 4; k++) boulder(S, d0 + 58 + r.between([-8, 8]), 5 + r.between([-9, 9]), 0, r.between([2, 3.5]), r); });
+      foe(S, 'tank', d0 + 58, 5, 17.2, { name: 'CHAR', val: 240, keep: true });
+      foe(S, 'heli', d0 + 84, 0, 25, { name: 'HELICO', keep: true, armed: false, patrol: (SS, dd, lx, y) => [SS.at(dd, -14, y), SS.at(dd + 10, 0, y + 3), SS.at(dd, 14, y), SS.at(dd - 10, 0, y + 3)], speed: 8 });
       foe(S, 'truck', d0 + 150, -8, 0, { name: 'CAMION', path: 60, speed: 14 });
     } };
 
