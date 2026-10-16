@@ -20,46 +20,70 @@
   // ============================== LE GARDIEN ==============================
   function buildRobot() {
     const G = new T3.Group(), S = 0.85, root = new T3.Group(); root.scale.setScalar(S); G.add(root);
-    const body = lam('#3b4048'), dark = lam('#262a30'), plate = lam('#515862'), warn = lam('#c8a028', '#2a2000'), glass = emi('#ff3a2a'), vent = emi('#ff8a2a'), cyan = emi('#46e0ff');
-    const cols = [], legs = [], pods = [];
+    // v152 : un mecha realiste — coque gris acier bleute, plaques biseautees, verins chromes, oeil bleu et fentes ambrees (references : mechas de cinema, usures et rivets)
+    const ph = (c, sp, sh) => new T3.MeshPhongMaterial({ color: c, specular: sp || '#5a6a7a', shininess: sh || 38, fog: false });
+    const body = ph('#222b34'), dark = ph('#12171c', '#2a3440', 20), plateL = ph('#323e4a', '#6a7a8a', 46), plateM = ph('#2a343f', '#566676', 40), chrome = ph('#7a8692', '#d0e0f0', 70), warn = ph('#9a7a20', '#e0d090', 24);
+    const cyan = emi('#5ad2ff'), amber = emi('#ff9a30'), amberD = emi('#c8641c');
+    const cols = [], legs = [], pods = [], cache = {};
     const col = (parent, w, h, d, x, y, z) => { const c = EVO.colBox(parent, w * S, h * S, d * S, x, y, z); c.scale.setScalar(1 / S); c.userData.size = [w * S, h * S, d * S]; cols.push(c); return c; };
-    // bassin et ventre
-    mb(root, 66, 12, 28, dark, 0, 62, 0); mb(root, 40, 8, 30, plate, 0, 55, 2); for (const sx of [-1, 1]) mb(root, 6, 3, 31, warn, sx * 14, 66.5, 0);
+    const shapeGeo = (key, pts, d, b) => { const k = key + '|' + d + '|' + b; if (cache[k]) return cache[k]; const sh = new T3.Shape(); pts.forEach((p, i) => (i ? sh.lineTo(p[0], p[1]) : sh.moveTo(p[0], p[1]))); sh.closePath(); const dd = Math.max(0.2, d - 2 * b); const g = new T3.ExtrudeGeometry(sh, { depth: dd, bevelEnabled: b > 0, bevelThickness: b, bevelSize: b, bevelSegments: 1, curveSegments: 4 }); g.translate(0, 0, -dd / 2); return (cache[k] = g); };
+    const cham = (w, h, c) => { const x = w / 2, y = h / 2; return [[-x + c, -y], [x - c, -y], [x, -y + c], [x, y - c], [x - c, y], [-x + c, y], [-x, y - c], [-x, -y + c]]; };
+    // plaque d'armure biseautee (w x h, epaisseur d)
+    const plate = (grp, w, h, d, m, x, y, z, c, b) => { b = b === undefined ? Math.min(1.1, d * 0.3) : b; c = c === undefined ? Math.min(w, h) * 0.2 : c; const o = new T3.Mesh(shapeGeo('c' + w + 'x' + h + 'x' + c, cham(Math.max(0.2, w - 2 * b), Math.max(0.2, h - 2 * b), Math.max(0.05, c - b)), d, b), m); o.position.set(x, y, z); grp.add(o); return o; };
+    // plaque trapezoidale (largeur haute, largeur basse)
+    const trap = (grp, wt, wb, h, d, m, x, y, z, b) => { b = b === undefined ? Math.min(1.1, d * 0.3) : b; const o = new T3.Mesh(shapeGeo('t' + wt + 'x' + wb + 'x' + h, [[-wb / 2 + b, -h / 2 + b], [wb / 2 - b, -h / 2 + b], [wt / 2 - b, h / 2 - b], [-wt / 2 + b, h / 2 - b]], d, b), m); o.position.set(x, y, z); grp.add(o); return o; };
+    const cy = (grp, rt, rb, h, m, x, y, z, seg, rx, rz) => { const o = new T3.Mesh(new T3.CylinderGeometry(rt, rb, h, seg || 12), m); o.position.set(x, y, z); if (rx) o.rotation.x = rx; if (rz) o.rotation.z = rz; grp.add(o); return o; };
+    const ball = (grp, r, m, x, y, z, sx, sy, sz) => { const o = new T3.Mesh(new T3.SphereGeometry(r, 14, 10), m); o.position.set(x, y, z); o.scale.set(sx || 1, sy || 1, sz || 1); grp.add(o); return o; };
+    const rivets = (grp, m, pts) => { for (const p of pts) ball(grp, 0.55, m, p[0], p[1], p[2]); };
+    // ---- bassin ----
+    plate(root, 62, 14, 28, dark, 0, 62, 0, 4); plate(root, 44, 10, 31, plateM, 0, 55, 1, 3); for (const sx of [-1, 1]) { plate(root, 7, 4, 30, warn, sx * 15, 67, 0, 1); ball(root, 8.5, dark, sx * 24, 58, 0); }
+    for (const sx of [-1, 1]) { trap(root, 14, 20, 16, 4, plateL, sx * 18, 50, 15.5); trap(root, 14, 20, 16, 4, plateL, sx * 18, 50, -15.5); }
     const pel = EVO.colBox(root, 66 * S, 12 * S, 28 * S, 0, 62, 0); pel.scale.setScalar(1 / S); pel.userData.size = [66 * S, 12 * S, 28 * S]; cols.push(pel);
-    // jambes : deux articulations (hanche, genou), pied large
+    // ---- jambes : cuisse blindee, verins, genou a coque, tibia en trapeze, pied large a trois orteils ----
     for (const sx of [-1, 1]) {
       const hip = new T3.Group(); hip.position.set(sx * 24, 58, 0); root.add(hip);
-      mc(hip, 7.5, 7.5, 16, dark, 0, 0, 0, 14, false).rotation.z = Math.PI / 2;
-      mb(hip, 13, 31, 13, body, 0, -15.5, 0); mb(hip, 15, 12, 15, plate, 0, -6, 1); mb(hip, 14, 3, 14, warn, 0, -27, 0);
+      cy(hip, 7.4, 7.4, 17, dark, 0, 0, 0, 16, 0, Math.PI / 2); cy(hip, 8.2, 8.2, 2, chrome, sx * 8.6, 0, 0, 16, 0, Math.PI / 2);
+      trap(hip, 15, 13, 30, 15, body, 0, -15.5, 0); plate(hip, 14, 20, 5, plateL, 0, -12, 8.6, 3); plate(hip, 14, 20, 5, plateM, 0, -12, -8.6, 3); plate(hip, 5, 24, 16, dark, sx * 7.4, -16, 0, 1);
+      for (const k of [-1, 1]) { cy(hip, 0.9, 0.9, 24, chrome, k * 3.2, -16, 10.2, 8); cy(hip, 1.5, 1.5, 12, dark, k * 3.2, -8, 10.2, 8); }
+      rivets(hip, chrome, [[-5.5, -4, 11.3], [5.5, -4, 11.3], [-5.5, -18, 11.3], [5.5, -18, 11.3]]);
       const knee = new T3.Group(); knee.position.set(0, -31, 0); hip.add(knee);
-      mc(knee, 6.5, 6.5, 15, dark, 0, 0, 0, 14, false).rotation.z = Math.PI / 2;
-      mb(knee, 9.5, 29, 9.5, dark, 0, -14.5, 0); mb(knee, 12, 22, 5, plate, 0, -12, 6); mb(knee, 3, 14, 3, body, sx * 6.5, -10, -4);
-      const ankle = new T3.Group(); ankle.position.set(0, -29, 0); knee.add(ankle);
-      mb(ankle, 17, 4.5, 27, body, 0, 2.2, 4); mb(ankle, 15, 3, 10, plate, 0, 5.5, 9); mb(ankle, 3, 5, 12, warn, sx * 6, 2.5, 18); mb(ankle, 17, 2, 5, dark, 0, 1, 18);
+      ball(knee, 7.2, dark, 0, 0, 0); cy(knee, 7.6, 7.6, 2.2, chrome, sx * 7.6, 0, 0, 16, 0, Math.PI / 2); plate(knee, 12, 13, 9, plateL, 0, 1, 7.4, 4); plate(knee, 3, 9, 2, amberD, 0, 1, 12.2, 1);
+      trap(knee, 11.5, 8.5, 28, 11, body, 0, -15, 0); trap(knee, 13, 9.4, 22, 5, plateM, 0, -13, 6.6, 1.2); plate(knee, 12, 18, 6, dark, 0, -14, -7, 3); cy(knee, 1, 1, 18, chrome, 4, -10, -9, 8);
+      const ankle = new T3.Group(); ankle.position.set(0, -30, 0); knee.add(ankle);
+      cy(ankle, 5, 5, 12, dark, 0, 1, 0, 12, 0, Math.PI / 2); plate(ankle, 18, 5.2, 29, body, 0, 2.4, 5, 2); plate(ankle, 15, 3.4, 12, plateL, 0, 6, 10, 1.5); for (const k of [-1, 0, 1]) plate(ankle, 4.6, 4, 10, plateM, k * 5.6, 2.2, 21, 1.2, 0.8); plate(ankle, 18, 2, 6, dark, 0, 0.6, 19, 0.5); plate(ankle, 3, 1.4, 13, warn, sx * 6, 5.6, 7, 0.4, 0.4);
       col(hip, 14, 31, 14, 0, -15.5, 0); col(knee, 11, 29, 11, 0, -14.5, 0); col(ankle, 17, 5, 27, 0, 2.2, 4);
       legs.push({ hip, knee, ankle, side: sx });
     }
-    // torse : coque, plastron, grilles lumineuses, épaulières, sac de réacteur
-    mb(root, 58, 36, 34, body, 0, 86, 0); mb(root, 46, 22, 6, plate, 0, 90, 19); mb(root, 50, 6, 36, dark, 0, 105, 0); mb(root, 52, 8, 30, dark, 0, 70, 0);
-    for (let i = 0; i < 5; i++) mb(root, 36, 1.4, 0.8, vent, 0, 80 + i * 4, 22.4); for (const sx of [-1, 1]) { mb(root, 4, 20, 0.8, vent, sx * 25, 90, 17.4); mb(root, 8, 3, 8, warn, sx * 22, 106, 6); }
-    mb(root, 30, 30, 14, dark, 0, 88, -22); mc(root, 5, 5, 20, cyan, -8, 90, -30, 10, true); mc(root, 5, 5, 20, cyan, 8, 90, -30, 10, true);
-    for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) mc(root, 2.4, 2.4, 14, dark, sx * (20 + k * 3.6), 112, -14, 8, false);
+    // ---- torse : coque en trapeze, plastron, fentes ambrees, epaulieres bombees, bloc propulseur dorsal ----
+    trap(root, 60, 46, 36, 34, body, 0, 86, 0, 1.6); trap(root, 50, 38, 24, 7, plateL, 0, 91, 19.6, 1.4); trap(root, 52, 56, 7, 36, dark, 0, 105, 0, 1); plate(root, 50, 9, 30, dark, 0, 70, 0, 3);
+    for (let i = 0; i < 4; i++) for (const sx of [-1, 1]) plate(root, 14 - i * 1.4, 1.6, 1.2, i % 2 ? amberD : amber, sx * 11, 82 + i * 4.6, 23.6, 0.5, 0.3);
+    ball(root, 5.2, dark, 0, 91, 23.4, 1, 1, 0.5); ball(root, 3.4, cyan, 0, 91, 24.4, 1, 1, 0.5);
+    for (const sx of [-1, 1]) { plate(root, 4, 22, 1.2, dark, sx * 25.6, 89, 17.6, 1, 0.4); for (let k = 0; k < 4; k++) plate(root, 3, 1.2, 1, amberD, sx * 25.6, 82 + k * 4.4, 18.4, 0.3, 0.3); }
+    plate(root, 36, 3, 34, plateM, 0, 104.5, 0, 1.5); rivets(root, chrome, [[-22, 99, 22.6], [22, 99, 22.6], [-22, 80, 22.6], [22, 80, 22.6], [0, 99, 22.8]]);
+    plate(root, 32, 32, 16, dark, 0, 88, -23, 5); cy(root, 5, 5.5, 22, ph('#2a323a'), -8, 90, -33, 12, Math.PI / 2); cy(root, 5, 5.5, 22, ph('#2a323a'), 8, 90, -33, 12, Math.PI / 2); cy(root, 4.2, 4.2, 2, cyan, -8, 90, -44.4, 12, Math.PI / 2); cy(root, 4.2, 4.2, 2, cyan, 8, 90, -44.4, 12, Math.PI / 2);
+    for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) cy(root, 1.4, 1.8, 15, chrome, sx * (22 + k * 3.8), 113, -12, 8);
     col(root, 58, 36, 34, 0, 86, 0);
-    // tête qui suit la fusée
+    // ---- tete : dome, visiere, grand oeil bleu et deux fentes ambrees ----
     const head = new T3.Group(); head.position.set(0, 110, 4); root.add(head);
-    mb(head, 20, 14, 22, body, 0, 0, 0); mb(head, 16, 4.2, 1.4, glass, 0, 1.4, 11.4); mb(head, 10, 2, 1.4, glass, 0, -2.6, 11.4); mb(head, 24, 3, 18, plate, 0, 8.6, -1); mb(head, 4, 8, 4, dark, -11, 0, 0); mb(head, 4, 8, 4, dark, 11, 0, 0);
-    for (const sx of [-1, 1]) { mc(head, 0.3, 0.5, 18, dark, sx * 6, 17, -6, 6, false); mb(head, 1.6, 1.6, 1.6, emi('#ff3a2a'), sx * 6, 26.5, -6); }
-    const eyeL = new T3.PointLight('#ff3a2a', 0, 120); eyeL.position.set(0, 1.4, 14); head.add(eyeL);
+    cy(head, 5, 6, 6, dark, 0, -8, -1, 10); ball(head, 12, body, 0, 0.6, 0, 1, 0.82, 1.02); plate(head, 22, 9, 8, plateL, 0, 5.4, -2, 3); plate(head, 18, 7.5, 5, dark, 0, -0.6, 10.2, 2.4);
+    cy(head, 3.3, 3.3, 2.4, cyan, 0, -0.4, 12.2, 16, Math.PI / 2); cy(head, 4.4, 4.4, 1.2, chrome, 0, -0.4, 11.3, 16, Math.PI / 2); for (const sx of [-1, 1]) { plate(head, 4.6, 1, 1.4, amber, sx * 7.4, -0.6, 12.1, 0.3, 0.3); plate(head, 3, 6, 9, dark, sx * 12, -0.4, 0, 1, 0.6); plate(head, 5, 7, 5, plateM, sx * 11, 3.4, 5.5, 1.5); }
+    cy(head, 0.3, 0.5, 20, dark, -7, 17, -6, 6); cy(head, 0.3, 0.5, 14, dark, 7, 15, -6, 6); ball(head, 0.9, emi('#ff3a2a'), -7, 27.4, -6);
+    const eyeL = new T3.PointLight('#5ad2ff', 0, 120); eyeL.position.set(0, -0.4, 15); head.add(eyeL);
+    { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(180,235,255,1)'); gr.addColorStop(0.25, 'rgba(90,210,255,0.55)'); gr.addColorStop(1, 'rgba(90,210,255,0)'); x.fillStyle = gr; x.fillRect(0, 0, 64, 64);
+      const sp = new T3.Sprite(new T3.SpriteMaterial({ map: new T3.CanvasTexture(c), transparent: true, blending: T3.AdditiveBlending, depthWrite: false, fog: false })); sp.scale.set(15, 15, 1); sp.position.set(0, -0.4, 13.5); head.add(sp);
+      for (const sx of [-1, 1]) { const s2 = sp.clone(); s2.scale.set(5, 5, 1); s2.material = sp.material.clone(); s2.material.color.set('#ff9a30'); s2.position.set(sx * 7.4, -0.6, 12.8); head.add(s2); } }
     col(head, 22, 16, 24, 0, 0, 0);
-    // bras : épaule, coude, bloc d'armes avec deux tubes
+    // ---- bras : epaulette bombee, bras a verins, canon a frein de bouche (droit) et mitrailleuse rotative (gauche) ----
     const arms = [];
     for (const sx of [-1, 1]) {
-      mb(root, 16, 16, 22, plate, sx * 38, 98, 0); mb(root, 18, 3, 24, warn, sx * 38, 106.5, 0);
+      const pg = new T3.Mesh(new T3.SphereGeometry(13, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), plateL); pg.position.set(sx * 39, 100, 0); pg.scale.set(1.15, 0.95, 1.45); root.add(pg); plate(root, 24, 3, 28, warn, sx * 39, 99.4, 0, 1, 0.5); ball(root, 9, dark, sx * 40, 94, 0);
       const sh = new T3.Group(); sh.position.set(sx * 40, 96, 0); root.add(sh);
-      mc(sh, 7, 7, 14, dark, 0, 0, 0, 12, false).rotation.z = Math.PI / 2; mb(sh, 11, 32, 11, body, 0, -16, 0); mb(sh, 3, 24, 13, plate, sx * 6, -14, 0);
+      cy(sh, 6.2, 6.8, 30, body, 0, -16, 0, 8); plate(sh, 5, 22, 14, plateL, sx * 6.5, -14, 0, 1.5); cy(sh, 1, 1, 22, chrome, -sx * 4, -14, 6.5, 8); cy(sh, 1.6, 1.6, 12, dark, -sx * 4, -8, 6.5, 8);
       const el = new T3.Group(); el.position.set(0, -32, 0); sh.add(el);
-      mc(el, 6, 6, 13, dark, 0, 0, 0, 12, false).rotation.z = Math.PI / 2; mb(el, 13, 24, 17, body, 0, -12, 4); mb(el, 15, 6, 17, warn, 0, -24, 4);
-      for (const k of [-1, 1]) { mc(el, 2.6, 3.2, 22, dark, k * 3.6, -22, 18, 10, true); const m = new T3.Object3D(); m.position.set(k * 3.6, -22, 30); el.add(m); pods.push(m); }
+      ball(el, 6, dark, 0, 0, 0); trap(el, 15, 12, 26, 18, plateM, 0, -13, 4, 1.6); plate(el, 16, 7, 19, warn, 0, -25, 4, 1.4, 0.8); plate(el, 12, 14, 6, plateL, 0, -9, 13.4, 3, 1);
+      if (sx > 0) { cy(el, 2.8, 3.2, 30, dark, 0, -20, 22, 12, Math.PI / 2); cy(el, 3.6, 3.6, 3, chrome, 0, -20, 34, 12, Math.PI / 2); cy(el, 3.3, 3.3, 2, plateM, 0, -20, 30, 12, Math.PI / 2); for (const k of [-1, 1]) cy(el, 2.4, 2.4, 6, dark, k * 7.6, -18, 13, 8, Math.PI / 2); }
+      else { for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4; cy(el, 1, 1, 32, dark, Math.cos(a) * 2.6, -20 + Math.sin(a) * 2.6, 22, 8, Math.PI / 2); } cy(el, 3.8, 3.8, 3, chrome, 0, -20, 36, 12, Math.PI / 2); cy(el, 4.4, 4.4, 8, plateM, 0, -20, 14, 12, Math.PI / 2); plate(el, 8, 10, 9, dark, -3, -12, -4, 2); }
+      for (const k of [-1, 1]) { const m = new T3.Object3D(); m.position.set(k * 3.6, -22, 30); el.add(m); pods.push(m); }
       col(sh, 12, 32, 12, 0, -16, 0); col(el, 14, 26, 18, 0, -12, 4);
       arms.push({ sh, el, side: sx });
     }

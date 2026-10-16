@@ -17,7 +17,7 @@
   const compFrag = `
     uniform sampler2D tScene; uniform sampler2D tBloom; uniform vec2 res;
     uniform float vig, vigR, vigS, ca, halftone, cell, bloomStr, grain, time, flash;
-    uniform vec3 vigColor, tint, flashColor, lift; uniform float saturation;
+    uniform vec3 vigColor, tint, flashColor, lift, shT, hiT; uniform float saturation, contrast;
     varying vec2 vUv;
     float luma(vec3 c){ return dot(c, vec3(0.299, 0.587, 0.114)); }
     float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
@@ -45,6 +45,8 @@
       // v005 : ombres relevées et légère désaturation (MESURÉ : les ombres de la vidéo sont grisées/bleutées)
       float lf = luma(col);
       col = mix(vec3(lf), col, saturation);
+      col = (col - 0.5) * contrast + 0.5;   // v152 : etalonnage (contraste, ombres froides, hautes lumieres chaudes)
+      col *= mix(shT, hiT, smoothstep(0.12, 0.85, lf));
       col += lift * (1.0 - clamp(lf * 1.6, 0.0, 1.0));
       col = mix(col, flashColor, flash);
       col += (hash(gl_FragCoord.xy + time * 61.0) - 0.5) * grain;
@@ -70,7 +72,7 @@
           vig: { value: 0.5 }, vigR: { value: 0.8 }, vigS: { value: 0.5 }, ca: { value: 0.004 }, halftone: { value: 0.3 },
           cell: { value: 3 }, bloomStr: { value: 0.5 }, grain: { value: 0.02 }, time: { value: 0 }, flash: { value: 0 },
           vigColor: { value: new THREE.Color('#1a0c0c') }, tint: { value: new THREE.Color('#ffffff') }, flashColor: { value: new THREE.Color('#ffffff') },
-          lift: { value: new THREE.Color('#000000') }, saturation: { value: 1 },
+          lift: { value: new THREE.Color('#000000') }, saturation: { value: 1 }, contrast: { value: 1 }, shT: { value: new THREE.Color('#ffffff') }, hiT: { value: new THREE.Color('#ffffff') },
         },
       });
       this.w = 0; this.h = 0;
@@ -115,7 +117,7 @@
       u.bloomStr.value = bloom ? p.bloomStrength : 0; u.grain.value = p.grain; u.time.value = time % 100;
       u.vigColor.value.set(p.vignetteColor || '#1a0c0c'); u.tint.value.set(p.tint || '#ffffff');
       u.flash.value = p.flash || 0; u.flashColor.value.set(p.flashColor || '#ffffff');
-      u.lift.value.set(p.lift || '#000000'); u.saturation.value = p.saturation === undefined ? 1 : p.saturation;
+      u.lift.value.set(p.lift || '#000000'); u.saturation.value = p.saturation === undefined ? 1 : p.saturation; u.contrast.value = p.contrast === undefined ? 1 : p.contrast; u.shT.value.set(p.shT || '#ffffff'); u.hiT.value.set(p.hiT || '#ffffff');
       this.pass(this.comp, null);
     }
   }
