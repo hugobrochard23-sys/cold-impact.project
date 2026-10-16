@@ -20,7 +20,7 @@
   const RK_TIERS = ['TUBE DE CARTON', 'AVION A AILES', 'REACTEUR', 'TURBO'], LA_TIERS = ['RAMPE EN BOIS', 'RAIL', 'CATAPULTE'];
   const RK_NEXT = ['AILES', 'REACTEUR', 'TURBO', 'MAX'], LA_NEXT = ['RAIL', 'CATAPULTE', 'MAX'];
   const COIN_COST = [150, 250, 420, 700, 1100];
-  const MAXN = { rk: 20, la: 15, cm: 5 };
+  const MAXN = { rk: 99999, la: 99999, cm: 99999 };   // v158 : plus de maximum : le carburant grandit avec chaque amelioration, a l'infini
   const BOSS_HP = 16;
   const CH_NAME = { rampe: 'LE DEPART', camp: 'LE CAMP', riviere: 'LA RIVIERE', foret: 'LA FORET', vallee: 'LA VALLEE', grotte: 'LA GROTTE', falaise: 'LA FALAISE', entrepots: 'LES ENTREPOTS', base: 'LA BASE', descente: 'LA DESCENTE', ville: 'LA VILLE', approche: 'LE SIEGE', porte: 'LE GARDIEN', noyau: 'LE NOYAU', fuite: 'LA FUITE' };
   const SCENES = ['rampe', 'camp', 'riviere', 'foret', 'descente', 'ville', 'approche', 'porte', 'noyau', 'fuite'];
@@ -50,14 +50,14 @@
   // ---------- statistiques ----------
   // FUSEE : palier (0 tube, 1 ailes, 2 réacteur, 3 turbo) et barre dans le palier. Les ailes (portance) montent de 0,55 à 1 pendant le palier 1.
   EVO.rocket = (n) => {
-    const tier = Math.min(3, Math.floor(n / 5)), s = n - 5 * tier, wing = tier >= 1 ? Math.min(1, 0.55 + 0.1 * Math.min(n - 5, 4.5)) : 0;
+    const tier = Math.min(3, Math.floor(n / 5)), s = Math.min(5, n - 5 * tier), wing = tier >= 1 ? Math.min(1, 0.55 + 0.1 * Math.min(n - 5, 4.5)) : 0;
     const vmax = tier >= 2 ? [0, 0, 34, 38][tier] + 0.8 * s : 0, drag = tier >= 1 ? 0.0078 - 0.0042 * wing : 0.0100 - 0.0006 * s;
     return { n, tier, s, name: RK_TIERS[tier], wing, vmax, drag, thrust: vmax * vmax * drag, gripOff: tier >= 1 ? 1.2 + 4.5 * wing : 0.7,
-      dmg: 1.2 + 0.2 * n + 0.4 * tier, fuel: tier >= 2 ? [0, 0, 12, 20][tier] + [0, 0, 2, 2.6][tier] * s : 0, refuel: 3 + 0.15 * n, kick: tier === 0 ? 4 : tier === 1 ? 8 : 5 };
+      dmg: 1.2 + 0.2 * n + 0.4 * tier, fuel: tier >= 2 ? 10 + 3.5 * (n - 10) : 0, refuel: 0, kick: tier === 0 ? 4 : tier === 1 ? 8 : 5 };
   };
-  EVO.launcher = (n) => { const tier = Math.min(2, Math.floor(n / 5)); return { n, tier, s: n - 5 * tier, name: LA_TIERS[tier], speed: 30 + 1.2 * n + 1.5 * tier }; };
+  EVO.launcher = (n) => { const tier = Math.min(2, Math.floor(n / 5)); return { n, tier, s: Math.min(5, n - 5 * tier), name: LA_TIERS[tier], speed: 30 + 1.2 * Math.min(n, 15) + 1.5 * tier, fuelBonus: 1.5 * Math.max(0, n - 15) }; };
   EVO.mult = (n) => 1 + 0.25 * n;   // v130 : chaque niveau de PIECES rapporte +25 % : il se rembourse en 2 vols
-  EVO.cost = (id, n) => (id === 'rk' ? Math.round(90 * Math.pow(1.27, n)) : id === 'la' ? Math.round(70 * Math.pow(1.27, n)) : COIN_COST[n]);   // v129 : les premieres ameliorations (ailes) arrivent en 2-3 vols
+  EVO.cost = (id, n) => (id === 'rk' ? Math.round(90 * Math.pow(1.27, Math.min(n, 19)) * Math.pow(1.12, Math.max(0, n - 19))) : id === 'la' ? Math.round(70 * Math.pow(1.27, Math.min(n, 14)) * Math.pow(1.12, Math.max(0, n - 14))) : n < 5 ? COIN_COST[n] : Math.round(1100 * Math.pow(1.45, n - 4)));   // v129 : les premieres ameliorations (ailes) arrivent en 2-3 vols
   EVO.nextCost = (g, id) => { const S = EVO.save(g), n = S[id]; return n >= MAXN[id] ? null : EVO.cost(id, n); };
   EVO.dmgNow = (g) => { const r = EVO.rocket(EVO.save(g).rk), sp = g.rocket && g.rocket.active ? g.rocket.vel.length() : 38; return r.dmg * U.clamp(sp / 38, 0.9, 1.5); };
   EVO.canKill = (g, t) => !!(g.evo && g.evo.preview) || !t.evoHp || EVO.dmgNow(g) + 0.001 >= t.evoHp;
@@ -158,6 +158,7 @@
   EVO.applySkinOnly = (g) => { const r = EVO.rocket(EVO.save(g).rk); g.rocket.setSkin(CC.Skins.get('evoT' + r.tier)); EVO.attachParts(g); };
   EVO.frame = (g, dt) => {
     if (g.evoTumble) EVO.tumbleFrame(g, dt);
+    EVO.kbFrame(g);
     const wt = CC.Textures && CC.Textures.get && CC.Textures.get('water'); if (wt && wt.offset) wt.offset.y += dt * 0.12;   // v123 : l'eau coule (rivière, cascades)
     const A = g.evoAnim; if (!A) return;
     A.t += dt;
@@ -229,8 +230,8 @@
     const S = EVO.save(g); if (!S.t0) S.t0 = Date.now();
     const rk = g.rocket, r = EVO.rocket(S.rk), ev = g.evo;
     rk.cfg.thrust = r.thrust; rk.cfg.dragK = r.drag; rk.cfg.gripEngineOff = r.gripOff; rk.cfg.grip = 9;
-    rk.fuelMax = Math.max(0.01, r.fuel); rk.fuel = r.fuel; rk.throttle = true;
-    C.endless.fuelTarget = r.refuel;
+    { const Lc = EVO.launcher(S.la), f = r.fuel + (r.tier >= 2 ? Lc.fuelBonus : 0); rk.fuelMax = Math.max(0.01, f); rk.fuel = f; rk.throttle = true; }
+    C.endless.fuelTarget = 0;   // v158 : un ennemi detruit ne rend aucun carburant
     if (g.evoAimLast && g.evoAimLast.zone === 'gold') rk.fuel = Math.min(rk.fuelMax, rk.fuel + rk.fuelMax * 0.2);
     if (ev && ev.preview) { rk.cfg.thrust = 44 * 44 * 0.0035; rk.cfg.dragK = 0.0035; rk.fuelMax = rk.fuel = 999; rk.shieldT = 9999; rk.cfg.gripEngineOff = 5; }
     g.telemetry.event('evoLaunch', { rk: S.rk, la: S.la, cm: S.cm, q: g.evoLaunchMult });
@@ -239,7 +240,7 @@
     const ev = g.evo, rk = g.rocket, run = g.endlessRun; if (!ev || !run || g.state !== 'FLIGHT' || !rk.active) { if (g.rig) g.rig.fallK = (g.rig.fallK || 0) * Math.max(0, 1 - dt * 4); return; }
     const S = EVO.save(g), r = EVO.rocket(S.rk), sp = rk.vel.length();
     ev.maxD = Math.max(ev.maxD, run.dist);
-    C.endless.fuelTarget = r.refuel * (1 - 0.5 * U.clamp(run.dist / Math.max(1000, run.T.levelLen || 5000), 0, 1));   // v140 : plus on avance, moins un ennemi rend de carburant
+    C.endless.fuelTarget = 0;
     { const W = CC.Zones.evoWater; if (W) { const dy = rk.pos.y - W.y; if (W.prev !== undefined && W.prev * dy < 0 && run.dist > W.d0 - 30 && run.dist < W.d1 + 30) { const fx = g.effects, pp = rk.pos.clone(); pp.y = W.y; fx.ring(pp, new V(0, 1, 0), 0.4, 7, 0.6, '#d6eefc', 0.8); fx.ring(pp, new V(0, 1, 0), 0.2, 4, 0.45, '#ffffff', 0.7); g.rig.shake = Math.max(g.rig.shake, 0.25); g.audio.play('uiTick'); } W.prev = dy; } }
     const CH = EVO.chapters;   // v123 : bandeau et prime à chaque nouveau chapitre franchi
     if (CH && !ev.preview) while (ev.chap < CH.length && run.dist >= CH[ev.chap].d) { const c = CH[ev.chap++], b = Math.round(40 * c.i * EVO.mult(S.cm)); ev.chapCoins += b; CC.L1.msg(g, c.name, 1.6, '#ffe9a0'); g.audio.play('levelUp'); if (EVO.onChapter) EVO.onChapter(g, c, S); }
@@ -297,6 +298,19 @@
     if (rk.fuelMax > 0) rk.fuel = Math.max(0, rk.fuel - rk.fuelMax * 0.18);
     g.effects.explosion(pos.clone(), null, false, 'orange'); g.audio.play('boomSmall', pos); g.rig.shake = Math.max(g.rig.shake, 0.9); g.flash = 0.25; g.flashColor = '#ffb070';
     (g.killPops = g.killPops || []).push({ p: rk.pos.clone().add(new V(0, 2.5, 0)), t0: performance.now() - 200, txt: 'TOUCHE !' });
+  };
+  // v158 : ennemi plus fort que la fusee : il encaisse (sa barre de vie baisse), la fusee rebondit et l'ennemi recule ; on peut le retaper
+  EVO.partialHit = (g, t, rk) => {
+    const now = performance.now(), dmg = EVO.dmgNow(g); t.evoHpMax = t.evoHpMax || t.evoHp; t.evoHp = Math.max(0.1, Math.round((t.evoHp - dmg) * 100) / 100); t.evoCool = now + 900; t.hitCool = 0.9; t.evoHitT = now;
+    const c = t.obb.c, n = new V().copy(rk.pos).sub(c); n.y = Math.max(n.y, 0.25 * n.length()); if (n.lengthSq() < 1e-6) n.set(0, 1, 0); n.normalize();
+    const sp = rk.vel.length(); rk.vel.copy(n).multiplyScalar(Math.max(24, sp * 0.6)); if (rk.fwd) rk.fwd.copy(rk.vel).normalize();
+    g.hitStop = 0.07; g.hitScale = 0.2; g.rig.shake = Math.max(g.rig.shake, 0.9); g.flash = 0.18; g.flashColor = '#ffe9c0';
+    g.effects.explosion(c.clone().add(new V(0, 1.5, 0)), null, false, 'orange'); g.effects.ring(c.clone().add(new V(0, 1.5, 0)), n, 0.4, 7, 0.4, '#ffffff', 0.8); g.audio.play('boomSmall', c);
+    t._kb = { t0: now, dir: n.clone().multiplyScalar(-1), done: 0 };
+    (g.killPops = g.killPops || []).push({ p: c.clone().add(new V(0, 4, 0)), t0: now - 200, txt: '-' + (Math.round(dmg * 10) / 10) });
+  };
+  EVO.kbFrame = (g) => {
+    const now = performance.now(); for (const t of g.targets) { const k = t._kb; if (!k || !t.object) continue; const e = Math.min(1, (now - k.t0) / 350), v = 1 - Math.pow(1 - e, 3), d = 3.2 * (v - k.done); k.done = v; t.object.position.addScaledVector(k.dir, d); if (e >= 1) t._kb = null; }
   };
   EVO.softCrash = (kind) => kind === 'stalled' || kind === 'weak' || kind === 'wall';
   const _tq = new THREE.Quaternion(), _ta = new V();
@@ -458,7 +472,9 @@
       const c = t.obb.c, d = c.distanceTo(rk.pos); if (d > 190 || d < 4) continue;
       _v.set(c.x, c.y + (t.size ? t.size[1] * 0.5 : 2) + 2.4, c.z); CC.Curve.apply(_v, g.camera).project(g.camera); if (_v.z > 1 || _v.z < -1) continue;
       const sx = (_v.x * 0.5 + 0.5) * W, sy = (-_v.y * 0.5 + 0.5) * H, ok = dmg + 0.001 >= t.evoHp, s = px * U.clamp(2.0 - d / 120, 0.8, 1.7);
-      F.draw(ctx, String(t.evoHp), sx, sy - s * 3.5, s, ok ? '#6aff9a' : '#ff5a4a', { align: 'center' });
+      const hv = t.evoHp, lab = Number.isInteger(hv) ? String(hv) : (Math.round(hv * 10) / 10).toFixed(1);
+      F.draw(ctx, lab, sx, sy - s * 3.5, s, ok ? '#6aff9a' : '#ff5a4a', { align: 'center' });
+      if (t.evoHpMax && t.evoHp < t.evoHpMax) { const bw = s * 14, bh = Math.max(4, s * 1.5), bx = sx - bw / 2, by = sy - s * 6.4, f = U.clamp(t.evoHp / t.evoHpMax, 0, 1), fl = t.evoHitT && performance.now() - t.evoHitT < 300; ctx.fillStyle = 'rgba(8,10,14,0.75)'; ctx.fillRect(bx - 2, by - 2, bw + 4, bh + 4); ctx.fillStyle = fl ? '#ffffff' : f > 0.5 ? '#46d86a' : f > 0.25 ? '#ffc531' : '#ff5a4a'; ctx.fillRect(bx, by, bw * f, bh); }
     }
   };
 })();

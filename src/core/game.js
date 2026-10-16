@@ -757,7 +757,7 @@
       setTimeout(() => { if (this.state === 'FLIGHT' && this.endlessRun) { const rk = this.rocket; rk.active = false; rk.mesh.visible = false; rk.light.intensity = 0; rk.rope.visible = false; if (this.evo && !this.evo.preview) CC.EVO.onClear(this); else this.finishEndless(); } }, 2000);
     }
     onTargetHit(t, rocket) {
-      if (this.evo && !t.boss && !t.mini && !t.hazard) { if (!CC.EVO.canKill(this, t)) { this.evoWeak = { hp: t.evoHp, dmg: CC.EVO.dmgNow(this) }; this.onRocketCrash('weak', rocket.pos.clone(), new V(0, 1, 0)); return; } CC.EVO.onKill(this, t); t.hp = 1; }   // v119 : ennemi trop fort = la fusée se brise
+      if (this.evo && !t.boss && !t.mini && !t.hazard) { if (t.evoCool && performance.now() < t.evoCool) return; if (!CC.EVO.canKill(this, t)) { CC.EVO.partialHit(this, t, rocket); return; } CC.EVO.onKill(this, t); t.hp = 1; }   // v119 : ennemi trop fort = la fusée se brise
       const dm = this.evo ? CC.EVO.dmgNow(this) : CC.L1 && this.l1run ? CC.L1.bossDmg(this) : 1;   // v118 : EXPLOSION = plus de dégâts au boss
       if (this.endlessRun && t.hp > dm && !t.hazard) { this.hitBoss(t, rocket, dm); return; }
       if (t.hazard) { this.onRocketCrash(t.cause || (t.type === 'train' ? 'train' : 'drone'), rocket.pos.clone(), new V(0, 1, 0)); return; }   // v034 : un drone ne se détruit pas, il détruit

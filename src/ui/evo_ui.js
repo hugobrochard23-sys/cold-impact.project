@@ -110,7 +110,7 @@
       ctx.save(); ctx.globalAlpha = a; txt(ctx, name, cx, Y(0.2), fit(ctx, name, W * 0.9, u * 0.15), C.gold); txt(ctx, 'NOUVELLE PIECE', cx, Y(0.275), u * 0.05, C.text); ctx.restore(); return;
     }
     // voile bas
-    { const g = ctx.createLinearGradient(0, Y(0.56), 0, Y(0.62)); g.addColorStop(0, 'rgba(6,7,9,0)'); g.addColorStop(1, 'rgba(6,7,9,0.82)'); ctx.fillStyle = g; ctx.fillRect(0, Y(0.56), W, Y(0.62) - Y(0.56)); ctx.fillStyle = 'rgba(6,7,9,0.82)'; ctx.fillRect(0, Y(0.62), W, HH); }
+    { const g = ctx.createLinearGradient(0, Y(0.62), 0, Y(0.68)); g.addColorStop(0, 'rgba(6,7,9,0)'); g.addColorStop(1, 'rgba(6,7,9,0.82)'); ctx.fillStyle = g; ctx.fillRect(0, Y(0.62), W, Y(0.68) - Y(0.62)); ctx.fillStyle = 'rgba(6,7,9,0.82)'; ctx.fillRect(0, Y(0.68), W, HH); }
     // rapport de zone (victoire)
     if (last && last.zone2) {
       const NAMES = { rk5: 'AILES', rk10: 'REACTEUR', rk15: 'TURBO', weak: '1ER ENNEMI TROP FORT', d300: '300 M', d1000: '1000 M', d2000: '2000 M', boss: 'BOSS VAINCU' };
@@ -119,13 +119,13 @@
       ms.forEach((k, i) => txt(ctx, NAMES[k] + '  -  VOL ' + S.marks[k].run + '  ' + E.fmt(S.marks[k].sec), cx, Y(0.255 + i * 0.045), fit(ctx, NAMES[k] + '  -  VOL 99  99:99', W * 0.8, u * 0.05), k === 'boss' ? C.gold : C.text, { shadow: false }));
     }
     // appuyez pour voler
-    { const p = 0.65 + 0.35 * Math.sin(now / 420), s = 'APPUYEZ POUR VOLER'; ctx.save(); ctx.globalAlpha = p; txt(ctx, s, cx, Y(0.585), fit(ctx, s, W * 0.8, u * 0.052), '#ffffff', { ls: u * 0.012 }); ctx.restore(); }
+    { const p = 0.65 + 0.35 * Math.sin(now / 420), s = 'APPUYEZ POUR VOLER'; ctx.save(); ctx.globalAlpha = p; txt(ctx, s, cx, Y(0.645), fit(ctx, s, W * 0.8, u * 0.052), '#ffffff', { ls: u * 0.012 }); ctx.restore(); }
     // --- trois cartes d'amelioration ---
-    const ids = ['rk', 'la', 'cm'], cy0 = Y(0.625), chh = HH * 0.255, gap = W * 0.02, cw = (W * 0.92 - gap * 2) / 3, tint = { rk: C.green, la: C.blue, cm: C.orange };
+    const ids = ['rk', 'la', 'cm'], cy0 = Y(0.69), chh = HH * 0.265, gap = W * 0.02, cw = (W * 0.92 - gap * 2) / 3, tint = { rk: C.green, la: C.blue, cm: C.orange };
     const cards = [];
     ids.forEach((id, i) => {
       const n = S[id], max = E.MAXN[id], x = W * 0.04 + i * (cw + gap), cost = E.nextCost(game, id), can = cost !== null && S.coins >= cost, done = n >= max, tc = tint[id];
-      const name = id === 'rk' ? 'FUSEE' : id === 'la' ? 'LANCEUR' : 'REVENU', tdone = id === 'rk' ? E.rocket(n).s : id === 'la' ? E.launcher(n).s : n;
+      const name = id === 'rk' ? 'FUSEE' : id === 'la' ? 'LANCEUR' : 'REVENU', tdone = id === 'rk' ? E.rocket(n).s : id === 'la' ? E.launcher(n).s : Math.min(5, n);
       const shk = game.evoShake && game.evoShake.id === id && now - game.evoShake.t0 < 350 ? Math.sin((now - game.evoShake.t0) / 25) * u * 0.012 : 0, bt = game.evoBought, bk = bt && bt.id === id ? U.clamp(1 - (now - bt.t0) / 520, 0, 1) : 0, k2 = 1 + 0.06 * Math.sin(bk * 3.1416);
       const rx = x + shk, ccx = rx + cw / 2, ccy = cy0 + chh / 2;
       ctx.save(); ctx.translate(ccx, ccy); ctx.scale(k2, k2); ctx.translate(-ccx, -ccy);
@@ -152,20 +152,18 @@
       ctx.beginPath(); ctx.arc(gx, gy, r, 0, 6.2832); ctx.fillStyle = have ? C.magD : '#26212a'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.gem; ctx.stroke(); if (have) txt(ctx, String(gc), gx, gy + r * 0.05, r * 1.25, '#fff', { shadow: false, ls: 0 }); else { gem(ctx, gx, gy, r * 0.62); }
       hit(ui, gx - r * 1.3, gy - r * 1.3, r * 2.6, r * 2.6, () => E.buyGem(game, c.id)); }
     for (const c of cards) hit(ui, c.rx, c.cy0, c.cw, c.chh, () => E.buy(game, c.id));
-    // --- barre du bas : niveaux, coffre, JOUER, gemmes, reglages ---
-    ctx.fillStyle = '#0a0b0d'; ctx.fillRect(0, Y(0.9), W, HH); ctx.fillStyle = C.line; ctx.fillRect(0, Y(0.9), W, Math.max(2, HH * 0.003));
-    const slots = [0.1, 0.3, 0.5, 0.7, 0.9], iy = Y(0.9) + HH * 0.05, ir = u * 0.055, unlocked = S.runs >= 3, ready = E.chestReady(game), wait = Math.max(0, (S.chestAt || 0) - Date.now());
-    { const x = W * slots[0]; levelsIcon(ctx, x, iy, ir * 0.9); if (E.stage) txt(ctx, String(E.stage(game)), x + ir * 1.2, iy - ir * 0.7, ir * 0.9, C.gold, { shadow: false }); hit(ui, x - W * 0.09, Y(0.9), W * 0.18, HH * 0.1, () => { game.evoLvPop = !game.evoLvPop; }); }
-    { const x = W * slots[1]; if (unlocked) { chest(ctx, x, iy - ir * 0.15, ir * 0.95, false, ready ? 0.3 + 0.25 * Math.sin(now / 240) : 0); const lab = ready ? 'OUVRIR' : secFmt(wait); txt(ctx, lab, x, iy + ir * 1.2, fit(ctx, lab, W * 0.17, ir * 0.62), ready ? C.gold : C.sub, { shadow: false }); hit(ui, x - W * 0.09, Y(0.9), W * 0.18, HH * 0.1, () => E.openChest(game)); }
-      else { ctx.save(); ctx.globalAlpha = 0.35; chest(ctx, x, iy - ir * 0.15, ir * 0.95, false, 0); ctx.restore(); txt(ctx, '3 VOLS', x, iy + ir * 1.2, ir * 0.62, C.sub, { shadow: false }); } }
-    { const x = W * slots[2], r = u * 0.085, on = inRect(ui, x - r, iy - r, r * 2, r * 2); ctx.beginPath(); ctx.arc(x, iy - HH * 0.004, r, 0, 6.2832); ctx.fillStyle = on ? '#1c2a20' : '#121614'; ctx.fill(); ctx.lineWidth = Math.max(3, r * 0.08); ctx.strokeStyle = '#fff'; ctx.stroke(); playIcon(ctx, x + r * 0.08, iy - HH * 0.004, r * 0.5, '#fff'); hit(ui, x - r, iy - r, r * 2, r * 2, () => E.start(game)); }
-    { const x = W * slots[3]; gem(ctx, x, iy - ir * 0.1, ir * 0.85); txt(ctx, '+1', x + ir * 1.35, iy - ir * 0.75, ir * 0.7, C.green, { shadow: false }); adTicket(ctx, x + ir * 1.1, iy + ir * 0.8, ir * 0.42); hit(ui, x - W * 0.09, Y(0.9), W * 0.18, HH * 0.1, () => E.gemAd(game)); }
-    { const x = W * slots[4]; gear(ctx, x, iy, ir * 0.95, '#fff'); hit(ui, x - W * 0.09, Y(0.9), W * 0.18, HH * 0.1, () => { ui.overlay = 'msettings'; }); }
+    // --- coin droit : reglages, coffre (toutes les 2 h), choix du niveau ; rien d'autre ---
+    const unlocked = S.runs >= 3, ready = E.chestReady(game), wait = Math.max(0, (S.chestAt || 0) - Date.now()), cs0 = u * 0.15, colx = W * 0.96 - cs0, ir = u * 0.05;
+    { const gr = u * 0.052, gx = W * 0.96 - gr, gy = T0 + u * 0.035 + u * 0.0475; gear(ctx, gx, gy, gr * 0.95, '#fff'); hit(ui, gx - gr * 1.3, gy - gr * 1.3, gr * 2.6, gr * 2.6, () => { ui.overlay = 'msettings'; }); }
+    { const y = Y(0.15); panel(ctx, colx, y, cs0, cs0, 10, C.bg, null, ready ? C.gold : C.line);
+      if (unlocked) { chest(ctx, colx + cs0 / 2, y + cs0 * 0.45, cs0 * 0.3, false, ready ? 0.3 + 0.25 * Math.sin(now / 240) : 0); const lab = ready ? 'OUVRIR' : secFmt(wait); txt(ctx, lab, colx + cs0 / 2, y + cs0 * 0.86, fit(ctx, lab, cs0 * 0.92, cs0 * 0.15), ready ? C.gold : C.sub, { shadow: false, ls: 0 }); hit(ui, colx, y, cs0, cs0, () => E.openChest(game)); }
+      else { ctx.save(); ctx.globalAlpha = 0.35; chest(ctx, colx + cs0 / 2, y + cs0 * 0.45, cs0 * 0.3, false, 0); ctx.restore(); txt(ctx, '3 VOLS', colx + cs0 / 2, y + cs0 * 0.86, cs0 * 0.15, C.sub, { shadow: false, ls: 0 }); } }
+    { const y = Y(0.15) + cs0 + u * 0.03; panel(ctx, colx, y, cs0, cs0 * 0.7, 10, C.bg, null, C.line); levelsIcon(ctx, colx + cs0 * 0.36, y + cs0 * 0.35, cs0 * 0.2); if (E.stage) txt(ctx, String(E.stage(game)), colx + cs0 * 0.74, y + cs0 * 0.35, cs0 * 0.3, C.gold, { shadow: false, ls: 0 }); hit(ui, colx, y, cs0, cs0 * 0.7, () => { game.evoLvPop = !game.evoLvPop; }); }
     // choix du niveau
-    if (game.evoLvPop && E.stage) { const stg = E.stage(game), pw = W * 0.62, rh = u * 0.14, px0 = W * 0.04, py0 = Y(0.9) - rh * 2 - u * 0.05;
+    if (game.evoLvPop && E.stage) { const stg = E.stage(game), pw = W * 0.62, rh = u * 0.14, px0 = W * 0.96 - pw, py0 = Y(0.15) + cs0 * 2 + u * 0.1;
       hit(ui, px0, py0, pw, rh * 2, () => {});
       panel(ctx, px0, py0 - u * 0.02, pw, rh * 2 + u * 0.04, 10, C.bg, null, C.line2);
-      for (let n = 1; n <= 2; n++) { const y = py0 + (n - 1) * rh, open = n === 1 || !!S.clr1, on = stg === n; if (on) { ctx.fillStyle = 'rgba(47,180,87,0.25)'; ctx.fillRect(px0 + 3, y, pw - 6, rh); } txt(ctx, 'NIVEAU ' + n + '  -  ' + (n === 1 ? 'ASSAUT' : 'TRIDENT'), px0 + u * 0.05, y + rh / 2, u * 0.05, open ? C.text : '#5a5e68', { align: 'left', shadow: false });
+      for (let n = 1; n <= 2; n++) { const y = py0 + (n - 1) * rh, open = n === 1 || !!S.clr1, on = stg === n; if (on) { ctx.fillStyle = 'rgba(47,180,87,0.25)'; ctx.fillRect(px0 + 3, y, pw - 6, rh); } txt(ctx, 'NIVEAU ' + n, px0 + u * 0.05, y + rh / 2, u * 0.05, open ? C.text : '#5a5e68', { align: 'left', shadow: false });
         if (!open) { ctx.fillStyle = '#6a6e78'; ctx.fillRect(px0 + pw - u * 0.1, y + rh * 0.42, u * 0.05, u * 0.04); } hit(ui, px0, y, pw, rh, () => { game.evoLvPop = false; if (open && !on) E.switchStage(game, n); }); }
       hit(ui, 0, T0, W, HH, () => { game.evoLvPop = false; }); }
     // --- coffre ouvert ---
@@ -173,7 +171,7 @@
       const a = U.clamp(k / 0.25, 0, 1) * U.clamp((3.2 - k) / 0.4, 0, 1); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = 'rgba(0,0,0,0.78)'; ctx.fillRect(0, T0, W, HH); chest(ctx, cx, Y(0.32), u * 0.2, k > 0.35, 0.55);
       const t1 = '+' + U.formatInt(ch.coins), t2 = '+' + ch.gems, p1 = u * 0.11; coin(ctx, cx - tw(ctx, t1, p1) / 2 - p1 * 0.6, Y(0.5), p1 * 0.45); txt(ctx, t1, cx + p1 * 0.3, Y(0.5), p1, C.gold); gem(ctx, cx - tw(ctx, t2, p1) / 2 - p1 * 0.6, Y(0.59), p1 * 0.45); txt(ctx, t2, cx + p1 * 0.3, Y(0.59), p1, C.gem); ctx.restore(); hit(ui, 0, T0, W, HH, () => { game.evoChest = null; }); } } }
     // --- toucher la scene : lancer (en dernier : les boutons gardent la priorite) ---
-    hit(ui, 0, Y(0.1), W, Y(0.62) - Y(0.1), () => { game.evoLvPop = false; E.start(game); });
+    hit(ui, 0, Y(0.1), W, Y(0.68) - Y(0.1), () => { game.evoLvPop = false; E.start(game); });
   };
 
   // ---------- RAPPORT DE VOL (sur le lieu du crash) ----------
@@ -273,6 +271,8 @@
     else { const col = { gold: C.gold, green: '#6aff9a', yellow: '#ffe08a', red: '#ff7a6a' }[a.zone], k = U.clamp(a.lockT / 0.12, 0, 1); txt(ctx, a.word, cx, Y(0.42) - (1 - k) * u * 0.03, fit(ctx, a.word, W * 0.9, u * 0.12) * (0.8 + 0.2 * k), col, { ls: u * 0.012 }); }
   };
 
+  // ---------- plus aucun texte parasite en vol (noms de zones, annonces d'ennemis, alertes) ----------
+  if (CC.L1 && CC.L1.msg) { const _m = CC.L1.msg; CC.L1.msg = function (g) { if (g && g.evo) return; return _m.apply(this, arguments); }; }
   // ---------- garde-fous : le rapport se ferme des qu'une nouvelle partie commence ----------
   if (CC.EVO) { const _br = CC.EVO.beginRun; CC.EVO.beginRun = (g) => { g.evoReport = false; g.evoLvPop = false; return _br(g); }; }
 })();

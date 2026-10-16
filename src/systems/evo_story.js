@@ -119,8 +119,10 @@
     const F = CC.Font, ev = g.evo; if (!ev || ev.preview) return;
     const now = performance.now(), top = Math.max(10, H * 0.02);
     // pièces gagnées pendant ce vol
-    { const tot = Math.round(ev.coins + (ev.chapCoins || 0)); if (tot !== ev._coinShown) { ev._coinShown = tot; ev._coinBump = now; } const bump = 1 + 0.35 * Math.max(0, 1 - (now - (ev._coinBump || 0)) / 260), s = '+' + U.formatInt(tot);
-      F.draw(ctx, s, W * 0.95, top + px * 2.4, px * 0.9 * bump, '#ffd23a', { align: 'right' }); }
+    { const run = g.endlessRun, m = EVO.mult(EVO.save(g).cm), tot = Math.round(ev.coins + (ev.chapCoins || 0) + Math.floor(Math.max(0, run ? run.dist : 0) * 1.1 * m)), UI = CC.Home && CC.Home.evoUI;
+      if (tot !== ev._coinShown) { ev._coinShown = tot; if (ev.coins !== ev._coinKills) { ev._coinKills = ev.coins; ev._coinBump = now; } }
+      if (UI) { const bump = 1 + 0.3 * Math.max(0, 1 - (now - (ev._coinBump || 0)) / 260), h = px * 4.4, fs = h * 0.56 * bump, s = U.formatInt(tot), w = UI.tw(ctx, s, fs) + h * 1.25, x = W * 0.96 - w, y = top + px * 0.4;
+        UI.panel(ctx, x, y, w, h, 8, 'rgba(10,11,14,0.72)', null, 'rgba(255,255,255,0.18)'); UI.coin(ctx, x + h * 0.56, y + h / 2, h * 0.3); UI.txt(ctx, s, x + h * 1.02, y + h / 2, fs, '#f2b84a', { align: 'left' }); } }
     // radio
     const R = g.evoRadio;
     if (R) {
