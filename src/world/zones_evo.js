@@ -122,7 +122,7 @@
     { const kc = Math.floor(nC / 2), A_ = new THREE.Vector3(pos[3 * kc], pos[3 * kc + 1], pos[3 * kc + 2]), B = new THREE.Vector3(pos[3 * (kc + nC)], pos[3 * (kc + nC) + 1], pos[3 * (kc + nC) + 2]), Cc = new THREE.Vector3(pos[3 * (kc + 1)], pos[3 * (kc + 1) + 1], pos[3 * (kc + 1) + 2]); if (B.sub(A_).cross(Cc.sub(A_)).y < 0) for (let i = 0; i < idx.length; i += 3) { const t = idx[i + 1]; idx[i + 1] = idx[i + 2]; idx[i + 2] = t; } }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
     { const tx = sd && sd.seabed ? 'sand' : 'col:#fefefe'; b.batch(tx).shadow = false; b.addGeometry(g, _O, _Q, null, tx, undefined, tx === 'sand' ? [1 / 12, 1 / 12] : [1 / 7, 1 / 7]); g.dispose(); }   // v176 : sol d'un vert olive uni (comme la reference), sans texture
-    if (!(sd && sd.seabed) && (sd && sd.grass !== undefined ? sd.grass : !gf)) grassTufts(ctx, d, e, wet, sd, sc);
+    if (!(sd && sd.seabed) && !(sd && sd.grass === false)) (ctx.grassJobs = ctx.grassJobs || []).push({ d, e, wet, sd, sc, gf });   // v177 : herbe partout ou le sol est vert (posee en fin de troncon)
   };
   // touffes d'herbe : petites, plates, d'UNE seule couleur proche du sol (un peu plus sombre) ; chaque brin est dessiné des deux côtés (même éclairage dessus et dessous) ; jamais dans l'eau
   function hsh(a, b) { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); }
@@ -148,43 +148,49 @@
   // couleurs relevees sur la reference : base sombre #3f5a14, milieu #6e811d, pointe #8aa030 ; buisson sauge #7f9560 / #9bb070
   const GB = ['#3f5a14', '#47621a', '#3a5a1c', '#4f6a1c'].map((h) => new THREE.Color(h)), GM2 = ['#6e811d', '#76891f', '#667d1c'].map((h) => new THREE.Color(h)), GT = ['#8aa030', '#94a834', '#7f982c', '#9ab038'].map((h) => new THREE.Color(h));
   const SG = ['#7f9560', '#8aa066', '#728a58'].map((h) => new THREE.Color(h)), SGT = ['#a4b87a', '#9bb070', '#b0c286'].map((h) => new THREE.Color(h));
-  function grassTufts(ctx, d, e, wet, sd, sc) {
-    const T = ctx.T, b = ctx.b, len = e - d, pos = [], nor = [], col = [], sway = [], far = [];
+  // v177 : HERBE EN TOUFFES ALLONGEES, d'UNE seule couleur (celle du sol sous elles) avec un degrade : plus sombre en bas, plus clair en haut.
+  // Chaque touffe est une ligne de brins fins (monticule), orientee au hasard ; tres serrees et partout ou le sol est vert ; jamais sur le beton ni sous les batiments.
+  const _gc = new THREE.Color(), _tc = new THREE.Color(), _b = new THREE.Color(), _t = new THREE.Color();
+  Z.flushGrass = function (ctx) {
+    const jobs = ctx.grassJobs; if (!jobs || !jobs.length) return; ctx.grassJobs = null;
+    const T = ctx.T, b = ctx.b, pave = ctx.pave || [], pos = [], nor = [], col = [], sway = [], far = [];
+    const covered = (dd, lx) => { for (let k = 0; k < pave.length; k++) { const q = pave[k]; if (Math.abs(dd - q.d) < q.dd / 2 + 0.6 && Math.abs(lx - q.lx) < q.w / 2 + 0.6) return true; } return false; };
     const v = (x, y, z, c, w, f) => { pos.push(x, y, z); nor.push(0, 1, 0); col.push(c.r, c.g, c.b); sway.push(w); far.push(f); };
-    // touffes : 8 a 11 longs brins fins courbes, serres
-    const nT = Math.max(3, Math.round(len * 9));
-    for (let i = 0; i < nT; i++) {
-      const dd = d + len * hsh(d + i * 0.37, i), lx = (hsh(i * 1.7, d * 0.13) * 2 - 1) * (5 + 13 * hsh(i * 2.9, d * 0.7)); if (wet && wet(dd, lx, sc, T)) continue;
-      const p = T.at(dd, lx, 0), a0 = hsh(d + i, i * 3.3) * 6.28, py = p[1] - 0.05, sz = 1.1 + 0.8 * hsh(i, d * 0.7), cb = GB[Math.floor(hsh(i, d) * GB.length)], cm = GM2[Math.floor(hsh(i + 3, d) * GM2.length)], ct = GT[Math.floor(hsh(d, i * 1.3) * GT.length)], nb = 8 + Math.floor(hsh(i, d * 2.1) * 4);
-      for (let j = 0; j < nb; j++) {
-        const a = a0 + j * 2.4 + hsh(j, i + d) * 0.5, ca = Math.cos(a), sa = Math.sin(a), r0 = 0.03 + 0.17 * hsh(j * 3.1, i + d), bx = p[0] + ca * r0, bz = p[2] + sa * r0, hh = (0.7 + 0.8 * hsh(j * 5.1, i + d)) * sz, w = 0.045 * sz, bend = hh * (0.18 + 0.25 * hsh(j + 2, i)), lx2 = ca * bend, lz2 = sa * bend;
-        v(bx - sa * w, py, bz + ca * w, cb, 0, 150); v(bx + sa * w, py, bz - ca * w, cb, 0, 150); v(bx - sa * w * 0.7 + lx2 * 0.4, py + hh * 0.55, bz + ca * w * 0.7 + lz2 * 0.4, cm, hh * 0.5, 150);
-        v(bx + sa * w, py, bz - ca * w, cb, 0, 150); v(bx + sa * w * 0.7 + lx2 * 0.4, py + hh * 0.55, bz - ca * w * 0.7 + lz2 * 0.4, cm, hh * 0.5, 150); v(bx - sa * w * 0.7 + lx2 * 0.4, py + hh * 0.55, bz + ca * w * 0.7 + lz2 * 0.4, cm, hh * 0.5, 150);
-        v(bx - sa * w * 0.7 + lx2 * 0.4, py + hh * 0.55, bz + ca * w * 0.7 + lz2 * 0.4, cm, hh * 0.5, 150); v(bx + sa * w * 0.7 + lx2 * 0.4, py + hh * 0.55, bz - ca * w * 0.7 + lz2 * 0.4, cm, hh * 0.5, 150); v(bx + lx2, py + hh, bz + lz2, ct, hh, 150);
-      }
+    for (const jb of jobs) {
+      const { d, e, wet, sd, sc, gf } = jb, len = e - d;
+      const spots = (n, lo, hi, fn) => { for (let i = 0; i < n; i++) { const dd = d + len * hsh(d + i * 0.37 + lo, i * 1.9), lx = (hsh(i * 1.7 + hi, d * 0.13) * 2 - 1) * (lo + (hi - lo) * hsh(i * 2.9, d * 0.7 + hi)); if (wet && wet(dd, lx, sc, T)) continue; if (covered(dd, lx)) continue;
+        const p = T.at(dd, lx, 0); gcol(p[0], p[2], _gc); if (gf) gf(dd, lx, _gc, sc); if (!(_gc.g > _gc.b * 1.6 + 0.02 && _gc.g >= _gc.r * 0.9)) continue; fn(i, dd, lx, p, _gc); } };
+      const tuft = (i, dd, lx, p, gcl) => {
+        const sz = 0.75 + 0.7 * hsh(i, d * 0.7), L = (0.9 + 1.6 * hsh(i * 3.3, d)) * sz, th = hsh(d + i, i * 3.3) * 3.1416, ca = Math.cos(th), sa = Math.sin(th), py = p[1] - 0.04, nb = 14 + Math.floor(hsh(i, d * 2.1) * 8), k = 0.94 + 0.12 * hsh(i * 5.1, d);
+        _b.copy(gcl).multiplyScalar(0.58 * k); _t.copy(gcl).multiplyScalar(1.22 * k);
+        for (let j = 0; j < nb; j++) {
+          const s = (hsh(j * 3.7, i + d) * 2 - 1) * 0.5, side = (hsh(j * 5.3, i * 1.1 + d) - 0.5) * 0.4 * sz, bx = p[0] + ca * s * L - sa * side, bz = p[2] + sa * s * L + ca * side;
+          const hp = 0.45 + 0.55 * Math.cos(s * 3.1416), hh = (0.55 + 0.55 * hsh(j * 5.1, i + d)) * hp * sz * 1.25, w = 0.075 * sz, lean = hh * 0.3 * (hsh(j * 7.1, i) - 0.4), dx = -sa * lean * 0.6 + ca * lean * 0.5, dz = ca * lean * 0.6 + sa * lean * 0.5;
+          v(bx - ca * w * 0.4 - sa * w, py, bz - sa * w * 0.4 + ca * w, _b, 0, 210); v(bx + ca * w * 0.4 + sa * w, py, bz + sa * w * 0.4 - ca * w, _b, 0, 210); v(bx + dx, py + hh, bz + dz, _t, hh, 210);
+        }
+      };
+      spots(Math.max(4, Math.round(len * 22)), 0, 13, tuft);
+      spots(Math.max(2, Math.round(len * 6)), 13, 40, tuft);
+      // petites fleurs par-ci par-la
+      const FL = ['#f4efdc', '#f4efdc', '#f0cf55', '#f6f0d0'].map((h) => new THREE.Color(h));
+      spots(Math.max(1, Math.round(len * 0.8)), 0, 30, (i, dd, lx, p, gcl) => {
+        const fc = FL[Math.floor(hsh(i, d * 0.77) * FL.length)], hgt = 0.35 + 0.4 * hsh(i, d), bx = p[0], bz = p[2], py = p[1] - 0.03, r0 = 0.07 + 0.03 * hsh(i * 2, d); _b.copy(gcl).multiplyScalar(0.6);
+        v(bx, py, bz, _b, 0, 70); v(bx + 0.02, py, bz, _b, 0, 70); v(bx, py + hgt, bz, gcl, hgt * 0.5, 70);
+        for (let q = 0; q < 5; q++) { const a = q / 5 * 6.2832, a2 = (q + 1) / 5 * 6.2832; v(bx + Math.cos(a) * r0, py + hgt, bz + Math.sin(a) * r0, fc, hgt * 0.5, 70); v(bx + Math.cos(a2) * r0, py + hgt, bz + Math.sin(a2) * r0, fc, hgt * 0.5, 70); v(bx, py + hgt + 0.04, bz, fc, hgt * 0.5, 70); }
+      });
     }
-    // buissons ronds vert sauge : faisceaux de feuilles qui partent du centre
-    const nB = Math.max(1, Math.round(len * 0.45));
-    for (let i = 0; i < nB; i++) {
-      const dd = d + len * hsh(d + i * 1.9, i * 0.7), lx = (hsh(i * 4.1, d * 0.29) * 2 - 1) * (9 + 30 * hsh(i * 5.3, d * 0.5)); if (wet && wet(dd, lx, sc, T)) continue;
-      const p = T.at(dd, lx, 0), py = p[1] - 0.05, s0 = 0.9 + 0.9 * hsh(i, d * 1.7), cb = SG[Math.floor(hsh(i, d * 0.3) * SG.length)], ct = SGT[Math.floor(hsh(d * 0.7, i) * SGT.length)];
-      for (let j = 0; j < 14; j++) {
-        const a = j * 0.449 + hsh(j, i) * 0.3, el = 0.45 + 0.9 * hsh(j * 2.3, i + d), L0 = (0.55 + 0.45 * hsh(j * 7.7, i)) * s0, ca = Math.cos(a), sa = Math.sin(a), tx = p[0] + ca * L0 * 0.7 * Math.cos(el * 0.5), tz = p[2] + sa * L0 * 0.7 * Math.cos(el * 0.5), ty = py + L0 * Math.sin(el), w = 0.16 * s0;
-        v(p[0] - sa * w * 0.4, py + 0.05, p[2] + ca * w * 0.4, cb, 0, 190); v(p[0] + sa * w * 0.4, py + 0.05, p[2] - ca * w * 0.4, cb, 0, 190); v(tx - sa * w, ty, tz + ca * w, ct, L0 * 0.3, 190);
-        v(p[0] + sa * w * 0.4, py + 0.05, p[2] - ca * w * 0.4, cb, 0, 190); v(tx + sa * w, ty, tz - ca * w, ct, L0 * 0.3, 190); v(tx - sa * w, ty, tz + ca * w, ct, L0 * 0.3, 190);
-      }
-    }
-    // fleurs : tige fine + corolle blanche ou jaune
-    { const FL = ['#f4efdc', '#f4efdc', '#e8c85a', '#f0e6c0'].map((h) => new THREE.Color(h)), nf = Math.max(1, Math.round(len * 0.5));
-      for (let i = 0; i < nf; i++) {
-        const dd0 = d + len * hsh(d + i * 1.13, i * 2.9), lx0 = (hsh(i * 3.1, d * 0.31) * 2 - 1) * 22; if (wet && wet(dd0, lx0, sc, T)) continue;
-        const p = T.at(dd0, lx0, 0), fc = FL[Math.floor(hsh(i, d * 0.77) * FL.length)], hgt = 0.5 + 0.5 * hsh(i, d), bx = p[0], bz = p[2], py = p[1] - 0.03, r0 = 0.11;
-        v(bx, py, bz, GB[1], 0, 70); v(bx + 0.025, py, bz, GB[1], 0, 70); v(bx, py + hgt, bz, GM2[0], hgt * 0.5, 70);
-        for (let k = 0; k < 5; k++) { const a = k / 5 * 6.2832, a2 = (k + 1) / 5 * 6.2832; v(bx + Math.cos(a) * r0, py + hgt, bz + Math.sin(a) * r0, fc, hgt * 0.5, 70); v(bx + Math.cos(a2) * r0, py + hgt, bz + Math.sin(a2) * r0, fc, hgt * 0.5, 70); v(bx, py + hgt + 0.05, bz, fc, hgt * 0.5, 70); }
-      } }
+    void ([ctx.d0, pave.length, pos.length / 3, jobs.length, pave.filter((q) => q.w * q.dd > 2000).map((q) => [Math.round(q.d), Math.round(q.lx), Math.round(q.w), Math.round(q.dd)])]);
     if (!pos.length) return;
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('aSway', new THREE.Float32BufferAttribute(sway, 1)); g.setAttribute('aFar', new THREE.Float32BufferAttribute(far, 1));
     const mesh = new THREE.Mesh(g, grassMat()); mesh.frustumCulled = true; mesh.receiveShadow = false; mesh.onBeforeRender = () => { GU.value = performance.now() / 1000; }; b.add(mesh);
+  };
+  // les dalles de beton / asphalte et l'emprise des batiments (boites posees au sol) empechent l'herbe de pousser dessous
+  if (Z.Scene && !Z.Scene.prototype._bxPave) {
+    const _bx = Z.Scene.prototype.bx; Z.Scene.prototype._bxPave = true;
+    Z.Scene.prototype.bx = function (dc, lx, yc, w, h, dd, mat, tint, collide, o) {
+      if (this.inClip(dc) && yc - h / 2 < 0.7 && w * dd > 3 && mat !== 'waterSurf' && mat !== 'glass' && !(o && o.noPave)) (this.ctx.pave = this.ctx.pave || []).push({ d: dc, lx, w, dd });
+      return _bx.apply(this, arguments);
+    };
   }
 
   const campagne = { signature: 'rampe', scenes: {}, dress(S) {
