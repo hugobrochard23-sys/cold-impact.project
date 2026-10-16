@@ -58,7 +58,8 @@
       // v023 : limiteur en sortie : explosions et moteur ensemble ne saturent jamais les haut-parleurs (téléphone)
       const lim = ctx.createDynamicsCompressor();
       lim.threshold.value = -8; lim.knee.value = 6; lim.ratio.value = 12; lim.attack.value = 0.003; lim.release.value = 0.25;
-      this.master.connect(lim); lim.connect(ctx.destination);
+      this.uwF = ctx.createBiquadFilter(); this.uwF.type = 'lowpass'; this.uwF.frequency.value = 22000; this.uwF.Q.value = 0.4;   // v147 : sous l'eau les sons sont étouffés
+      this.master.connect(this.uwF); this.uwF.connect(lim); lim.connect(ctx.destination);
       this.sfx = ctx.createGain(); this.sfx.gain.value = this.cfg.sfx; this.sfx.connect(this.master);
       this.musicBus = ctx.createGain(); this.musicBus.gain.value = this.cfg.music; this.musicBus.connect(this.master);
       // bruit blanc partagé
@@ -167,6 +168,7 @@
       this.bedHiss.gain.setTargetAtTime(g('hiss'), t, tc); this.bedHissF.frequency.setTargetAtTime(A.hissF || 5200, t, tc);
       if (this.music) this.music.setStyle(zone, dark);
     }
+    setUnder(k) { if (this.ctx && this.uwF) this.uwF.frequency.setTargetAtTime(22000 - k * 21200, this.ctx.currentTime, 0.12); }
     setWater(k) { if (this.ctx && this.waterG) this.waterG.gain.setTargetAtTime(Math.max(0, k) * 0.32, this.ctx.currentTime, 0.2); }
     // événements sonores lointains, tirés au hasard (klaxon, train lointain, corne de navire, oiseaux…) : le monde existe hors de l'écran
     updateAmbient(dt) {
