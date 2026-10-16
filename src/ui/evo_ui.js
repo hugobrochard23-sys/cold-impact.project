@@ -79,6 +79,11 @@
     for (let k = 2; k >= 0; k--) { const y = cy + s * 0.5 - k * s * 0.38; ctx.save(); ctx.beginPath(); ctx.ellipse(cx, y, s * 0.95, s * 0.4, 0, 0, 6.2832); const g = ctx.createLinearGradient(0, y - s * 0.4, 0, y + s * 0.4); g.addColorStop(0, '#ffe680'); g.addColorStop(1, '#e09010'); ctx.fillStyle = g; ctx.fill(); ctx.lineWidth = Math.max(1.5, s * 0.1); ctx.strokeStyle = '#8a4c0c'; ctx.stroke(); ctx.restore(); }
     coin(ctx, cx + s * 0.9, cy - s * 0.55, s * 0.5);
   }
+  function star(ctx, cx, cy, r) {
+    ctx.save(); ctx.beginPath(); for (let k = 0; k < 10; k++) { const a = -1.5708 + k * 0.6283, rad = k % 2 ? r * 0.46 : r; ctx.lineTo(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad); } ctx.closePath();
+    const g = ctx.createLinearGradient(0, cy - r, 0, cy + r); g.addColorStop(0, '#fff6a8'); g.addColorStop(0.5, '#ffc828'); g.addColorStop(1, '#e88a10'); ctx.fillStyle = g; ctx.fill(); ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(2, r * 0.12); ctx.strokeStyle = '#8a4c0c'; ctx.stroke(); ctx.restore();
+  }
+  Home.evoUI = { txt, tw, fit, panel, coin, gem, star, path };
   const secFmt = (ms) => { const t = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60; return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0'); };
   const f1 = (v) => (Math.round(v * 10) / 10).toFixed(1).replace('.', ',');
   const MULT = [[0.2, 4], [0.45, 3], [0.75, 2], [1.01, 1.5]];
@@ -242,5 +247,37 @@
     } else {
       const bw = W * 0.6, b2h = u * 0.2, b2y = by0 + u * 0.1, nx = cx - bw / 2; panel(ctx, nx, b2y, bw, b2h, b2h * 0.3, '#4cd844', '#26a02a', '#0e4a14'); txt(ctx, 'SUIVANT', cx, b2y + b2h / 2, b2h * 0.4, '#ffffff', { stroke: '#0e4a14' }); hit(ui, nx, b2y, bw, b2h, () => E.afterReport(game));
     }
+  };
+  // ---------- REGLAGES (meme style) ----------
+  const _oldSettings = Home.drawSettings;
+  Home.drawSettings = function (ui, ctx, game, W, H) {
+    if (!(CC.EVO && CC.EVO.on)) return _oldSettings.call(this, ui, ctx, game, W, H);
+    const L = Home.layout(ui, W, H), { HH, u, Y } = L, T0 = Y(0), s = game.settings, E = CC.EVO, cx = W / 2, now = performance.now();
+    const vib = ['NON', 'FAIBLE', 'MOYEN', 'FORT'], vibV = s.vibration !== undefined ? s.vibration : 2;
+    ctx.fillStyle = 'rgba(8,14,28,0.86)'; ctx.fillRect(0, T0, W, HH);
+    txt(ctx, 'REGLAGES', cx, Y(0.075), fit(ctx, 'REGLAGES', W * 0.8, u * 0.14), '#ffffff', { grad: ['#fff2a0', '#ffa818'], stroke: '#7a3a08', sw: 0.2 });
+    const rows = [
+      ['SON', s.sfx > 0, s.sfx > 0 ? 'OUI' : 'NON', () => ui.toggleVolume(game, 'sfx')],
+      ['MUSIQUE', s.music > 0, s.music > 0 ? 'OUI' : 'NON', () => ui.toggleVolume(game, 'music')],
+      ['VIBRATION', vibV > 0, vib[vibV], () => { s.vibration = (vibV + 1) % 4; if (CC.Haptics) { CC.Haptics.setLevel(s.vibration); CC.Haptics.tick('fire'); } game.applySettings(); }],
+      ['GRAPHISMES', true, ui.graphicsLabel(game), () => ui.cycleGraphics(game)],
+      ['COMMANDES', true, (s.ctl || 'free') === 'simple' ? 'SIMPLES' : 'LIBRES', () => { s.ctl = (s.ctl || 'free') === 'simple' ? 'free' : 'simple'; game.applySettings(); }],
+      ['SENSIBILITE', true, ['DOUCE', 'NORMALE', 'VIVE'][s.touchSens !== undefined ? s.touchSens : 1], () => { s.touchSens = ((s.touchSens !== undefined ? s.touchSens : 1) + 1) % 3; game.applySettings(); }],
+      ['PUBS', s.ads !== false, s.ads === false ? 'NON' : 'OUI', () => { s.ads = s.ads === false; game.applySettings(); }],
+      ['CODE DE SAUVEGARDE', true, 'COPIER', () => { const c = game.meta.exportCode(); if (!c) return; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(() => Home.toast(ui, 'CODE COPIE'), () => window.prompt('Copie ce code', c)); else window.prompt('Copie ce code', c); }],
+      ['RESTAURER UN CODE', true, 'COLLER', () => { const c = window.prompt('Colle ton code de sauvegarde'); if (c) { if (game.meta.importCode(c)) location.reload(); else Home.toast(ui, 'CODE INVALIDE'); } }],
+      ['REINITIALISER', false, ui._rst && now - ui._rst < 4000 ? 'SUR ?' : 'GO', () => { if (ui._rst && performance.now() - ui._rst < 4000) { try { localStorage.removeItem('coldimpact.save'); localStorage.removeItem('closecall.save'); } catch (e) { /* ignore */ } location.reload(); } else ui._rst = performance.now(); }],
+    ];
+    const gap = HH * 0.012, rh = Math.min(u * 0.15, (HH * 0.74) / rows.length - gap), y0 = Y(0.135), x0 = W * 0.06, w = W * 0.88;
+    rows.forEach((r, i) => {
+      const y = y0 + i * (rh + gap), on = inRect(ui, x0, y, w, rh); panel(ctx, x0, y, w, rh, rh * 0.3, on ? '#4a5c86' : '#33405e', '#222e4a', '#0c1630');
+      txt(ctx, r[0], x0 + rh * 0.4, y + rh / 2, fit(ctx, r[0], w * 0.5, rh * 0.42), '#ffffff', { align: 'left', sw: 0.16 });
+      const vw = Math.max(rh * 1.7, tw(ctx, r[2], rh * 0.4) + rh * 0.6), vx = x0 + w - rh * 0.3 - vw, good = r[1];
+      panel(ctx, vx, y + rh * 0.16, vw, rh * 0.68, rh * 0.34, good ? '#4cd844' : '#6a7690', good ? '#26a02a' : '#434e68', good ? '#0e4a14' : '#1c2438', { shadow: false }); txt(ctx, r[2], vx + vw / 2, y + rh / 2, fit(ctx, r[2], vw * 0.9, rh * 0.4), '#ffffff', { stroke: good ? '#0e4a14' : '#1c2438', sw: 0.16 });
+      hit(ui, x0, y, w, rh, r[3]);
+    });
+    if (Home.drawToast) Home.drawToast(ui, ctx, L);
+    const bw = W * 0.5, bh = u * 0.15, bx = cx - bw / 2, by = Y(0.92); panel(ctx, bx, by, bw, bh, bh * 0.3, '#4cd844', '#26a02a', '#0e4a14'); txt(ctx, 'RETOUR', cx, by + bh / 2, bh * 0.46, '#ffffff', { stroke: '#0e4a14' });
+    hit(ui, bx, by, bw, bh, () => { ui.overlay = (CC.EVO && CC.EVO.on && game.state === 'MENU') ? 'evo' : null; });
   };
 })();
