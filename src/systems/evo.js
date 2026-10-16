@@ -175,7 +175,13 @@
     if (A.t > A.dur) g.evoAnim = null;
   };
   EVO.camHook = (g, rig, o) => {
-    const A = g.evoAnim; if (!A) return;
+    const A = g.evoAnim;
+    // v152 : menu : la fusee est vue de trois quarts avant, en haut de l'ecran (les cartes sont dessous) ; la vue de dessus du tir revient pendant la visee
+    { const now = performance.now(), dtm = Math.min(0.1, (now - (g._mk0 || now)) / 1000); g._mk0 = now; const want = (g.ui && g.ui.overlay === 'evo' && !g.evoAim && !A) ? 1 : 0; g._mk = (g._mk || 0) + (want - (g._mk || 0)) * Math.min(1, dtm * 2.6);
+      if (g._mk > 0.003 && g.pad) { const e = g._mk * g._mk * (3 - 2 * g._mk), dir = g.pad.dir, up = new V(0, 1, 0), right = new V().crossVectors(dir, up).normalize(), sw = Math.sin(now / 2600) * 0.45;
+        const p = new V().copy(o).addScaledVector(dir, 2.3 + sw * 0.4).addScaledVector(right, 2.25 + sw).addScaledVector(up, 1.0), look = new V().copy(o).addScaledVector(dir, -0.15).addScaledVector(up, -0.5);
+        rig.padPos.lerp(p, e); rig.padLook.lerp(look, e); rig.padFov += (58 - rig.padFov) * e; } }
+    if (!A) return;
     const k = U.smooth(0, 0.5, A.t) * (1 - U.smooth(A.dur - 0.7, A.dur, A.t)), ang = 0.6 + A.t * 0.55;
     const p = new V(o.x + Math.sin(ang) * 2.1, o.y + 0.55, o.z + Math.cos(ang) * 2.1), look = new V(o.x, o.y + 0.02, o.z - 0.05);
     rig.padPos.lerp(p, k); rig.padLook.lerp(look, k); rig.padFov += (32 - rig.padFov) * k;
@@ -437,6 +443,14 @@
       for (let k = 0; k < 4; k++) for (let j = 0; j < 2; j++) { ctx.fillStyle = (k + j) % 2 ? '#111' : '#fff'; ctx.fillRect(bx + j * bw / 2, by0 - px * 3.4 + k * px * 0.85, bw / 2, px * 0.85); }
       ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(bx + bw + 4, yy); ctx.lineTo(bx + bw + 4 + px * 2, yy - px * 1.1); ctx.lineTo(bx + bw + 4 + px * 2, yy + px * 1.1); ctx.closePath(); ctx.fill(); ctx.restore();
       F.draw(ctx, Math.round(pct * 100) + '%', bx, by0 + bh + px * 2.2, px * 0.85, '#ffffff', {}); }
+    // v152 : premiers vols : un reticule anime sur l'ennemi le plus proche devant la fusee (on comprend tout de suite quoi viser)
+    if (EVO.save(g).runs < 3 && rk.active) {
+      let best = null, bd = 1e9; for (const t of g.targets) { if (!t.alive || t.boss || t.mini || !t.obb || t.unarmedHidden) continue; const c = t.obb.c, d = c.distanceTo(rk.pos); if (d < 12 || d > 230) continue; _v.copy(c).sub(rk.pos); if (_v.dot(rk.fwd) < 0) continue; if (d < bd) { bd = d; best = t; } }
+      if (best) { const c = best.obb.c; _v.set(c.x, c.y + (best.size ? best.size[1] * 0.2 : 1), c.z); CC.Curve.apply(_v, g.camera).project(g.camera);
+        if (_v.z < 1 && _v.z > -1) { const sx = (_v.x * 0.5 + 0.5) * W, sy = (-_v.y * 0.5 + 0.5) * H, pk = 0.5 + 0.5 * Math.sin(performance.now() / 160), r = px * (7 + 2.4 * pk) * U.clamp(1.7 - bd / 260, 0.7, 1.4);
+          ctx.save(); ctx.lineWidth = Math.max(2, px * 0.55); ctx.strokeStyle = 'rgba(255,214,70,' + (0.55 + 0.4 * pk) + ')'; ctx.beginPath(); ctx.arc(sx, sy, r, 0, 6.2832); ctx.stroke();
+          for (let k = 0; k < 4; k++) { const a = k * 1.5708 + performance.now() / 900; ctx.beginPath(); ctx.moveTo(sx + Math.cos(a) * r * 1.15, sy + Math.sin(a) * r * 1.15); ctx.lineTo(sx + Math.cos(a) * r * 1.6, sy + Math.sin(a) * r * 1.6); ctx.stroke(); } ctx.restore(); } }
+    }
     const dmg = EVO.dmgNow(g);
     for (const t of g.targets) {
       if (!t.alive || t.boss || t.mini || !t.evoHp || !t.obb) continue;

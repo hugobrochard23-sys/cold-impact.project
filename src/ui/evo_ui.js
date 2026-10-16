@@ -168,7 +168,7 @@
       cards.push({ id, rx, cy0, cw, chh, bx, by, bw, bh, can, done, cost });
     });
     // gemme : proposee seulement quand les pieces manquent (puce ronde sur le coin du bouton)
-    for (const c of cards) if (!c.done && !c.can) { const gc = E.gemCost(game, c.id), have = (S.gems || 0) >= gc, r = c.bh * 0.34, gx = c.bx + c.bw - r * 0.55, gy = c.by - r * 0.1;
+    for (const c of cards) if (!c.done && !c.can) { const gc = E.gemCost(game, c.id), have = (S.gems || 0) >= gc, r = c.bh * 0.34, gx = c.bx + c.bw - r * 0.35, gy = c.by - r * 0.95;
       ctx.beginPath(); ctx.arc(gx, gy, r, 0, 6.2832); const g = ctx.createLinearGradient(0, gy - r, 0, gy + r); g.addColorStop(0, have ? '#4cb4ff' : '#b070f8'); g.addColorStop(1, have ? '#1f6ed8' : '#6a2ec0'); ctx.fillStyle = g; ctx.fill(); ctx.lineWidth = Math.max(2, r * 0.12); ctx.strokeStyle = '#ffffff'; ctx.stroke(); gem(ctx, gx, gy - r * 0.12, r * 0.5); txt(ctx, have ? String(gc) : 'PUB', gx, gy + r * 0.52, r * (have ? 0.55 : 0.4), '#ffffff', { sw: 0.2 });
       hit(ui, gx - r, gy - r, r * 2, r * 2, () => E.buyGem(game, c.id)); }
     for (const c of cards) hit(ui, c.rx, c.cy0, c.cw, c.chh, () => E.buy(game, c.id));
