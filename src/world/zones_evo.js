@@ -37,6 +37,7 @@
   function foe(S, type, dc, lx, y, o) {
     o = o || {};
     if (location.search.indexOf('notgt') >= 0) return;
+    { const prog = U.clamp(dc / Math.max(1000, S.T.levelLen || 5000), 0, 1); if (o.hp) o = Object.assign({}, o, { hp: o.hp + Math.floor(prog * 2.4) }); if (!o.keep && prog > 0.4 && hsh(dc, 7.7) < (prog - 0.4) * 0.8) return; }   // v140 : plus loin, les ennemis blindés ont plus de PV et sont plus espacés
     S.item(dc, () => {
       const RO = CC.Roster, R = Math.max(5, (RO.RAD && RO.RAD[type]) || 6) + 1.2, Lc = S.lane(dc).lx, toward = lx > Lc ? -1 : 1, vmax = S.vol(dc) - 8;
       let ok = o.fixed || freeAt(S, type, dc, lx, y || 0, R, o);
@@ -46,7 +47,7 @@
       }
       if (!ok) { (window.__evoSkipped = window.__evoSkipped || []).push([type, Math.round(dc)]); return; }   // aucun emplacement libre : pas d'ennemi invisible
       const L = S.lane(dc), p = S.at(dc, lx, y || 0);
-      const ex = { unarmed: !o.armed, evoHp: o.hp, evoName: o.name || type, evoVal: o.val };
+      const ex = { unarmed: !o.armed, evoHp: o.hp, evoName: o.name || type, evoVal: o.val }; if (o.drift !== undefined) ex.drift = o.drift;
       if (o.patrol) ex.patrol = o.patrol(S, dc, lx, y || 0), ex.patrolSpeed = o.speed || 9, ex.patrolPhase = o.phase || 0;
       if (o.path) { const L2 = o.path; ex.path = [S.at(dc, lx, y || 0), S.at(dc + L2, lx, y || 0)]; ex.fleeSpeed = o.speed || 16; }
       S.b.target(type, p, S.yaw(dc) + (type === 'truck' ? 90 : 0) + RO.face(type) + (o.yaw || 0), RO.opts(type, ex));
@@ -86,9 +87,9 @@
   Z.evoGroundMesh = function (ctx, d, e) {
     const T = ctx.T, b = ctx.b, m = (d + e) / 2, sloped = T.rel(d) !== 0 || T.rel(e) !== 0 || T.rel(m) !== 0, rows = sloped ? Math.max(1, Math.round((e - d) / 5)) : 1;
     // colonnes : la zone de jeu suit le virage (T.at) ; au-delà, le sol part en LIGNE DROITE le long de la normale (jamais de pli dans un virage serré)
-    const pl0 = Z.plan(T, T.zoneIndex(m)), sc0 = pl0.scenes.find((q) => m >= q.d0 && m < q.d1), gw0 = sc0 && campagne.scenes[sc0.name] && campagne.scenes[sc0.name].gw;
+    const pl0 = Z.plan(T, T.zoneIndex(m)), sc0 = pl0.scenes.find((q) => m >= q.d0 && m < q.d1), sd0 = sc0 && (campagne.scenes[sc0.name] || (Z.defs.ocean && Z.defs.ocean.scenes[sc0.name])), gw0 = sd0 && sd0.gw;
     const V0 = gw0 ? gw0 + 10 : T.vol(m) + 60, cols = gw0 ? [] : [{ x: -330, o: -1 }, { x: -130, o: -1 }]; for (let x = -V0; x <= V0 + 0.1; x += 15) cols.push({ x, o: 0 }); if (!gw0) cols.push({ x: 130, o: 1 }, { x: 330, o: 1 });
-    const pl = Z.plan(T, T.zoneIndex(m)), sc = pl.scenes.find((q) => m >= q.d0 && m < q.d1), sd = sc && campagne.scenes[sc.name], gf = sd && sd.ground, wet = sd && sd.wet;
+    const pl = Z.plan(T, T.zoneIndex(m)), sc = pl.scenes.find((q) => m >= q.d0 && m < q.d1), sd = sc && (campagne.scenes[sc.name] || (Z.defs.ocean && Z.defs.ocean.scenes[sc.name])), gf = sd && sd.ground, wet = sd && sd.wet;
     const nC = cols.length, pos = [], nor = [], col = [], uv = [], idx = [], c = GC.c, grey = GC.g;
     for (let r = 0; r <= rows; r++) {
       const dd = d + (e - d) * r / rows, pa = T.at(dd - 1.5, 0, 0), pb = T.at(dd + 1.5, 0, 0), qa = T.at(dd, -1.5, 0), qb = T.at(dd, 1.5, 0), eL = T.at(dd, -V0, 0), eR = T.at(dd, V0, 0);
@@ -105,11 +106,11 @@
     for (let r = 0; r < rows; r++) for (let k = 0; k < nC - 1; k++) { const a = r * nC + k, bq = a + 1, cq = a + nC, dq = cq + 1; idx.push(a, cq, bq, bq, cq, dq); }
     { const kc = Math.floor(nC / 2), A_ = new THREE.Vector3(pos[3 * kc], pos[3 * kc + 1], pos[3 * kc + 2]), B = new THREE.Vector3(pos[3 * (kc + nC)], pos[3 * (kc + nC) + 1], pos[3 * (kc + nC) + 2]), Cc = new THREE.Vector3(pos[3 * (kc + 1)], pos[3 * (kc + 1) + 1], pos[3 * (kc + 1) + 2]); if (B.sub(A_).cross(Cc.sub(A_)).y < 0) for (let i = 0; i < idx.length; i += 3) { const t = idx[i + 1]; idx[i + 1] = idx[i + 2]; idx[i + 2] = t; } }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
-    b.batch('evoGrass').shadow = false; b.addGeometry(g, _O, _Q, null, 'evoGrass', undefined, [1 / 7, 1 / 7]); g.dispose();
-    if (!gf) grassTufts(ctx, d, e, wet, sd, sc);
+    { const tx = sd && sd.seabed ? 'sand' : 'evoGrass'; b.batch(tx).shadow = false; b.addGeometry(g, _O, _Q, null, tx, undefined, tx === 'sand' ? [1 / 12, 1 / 12] : [1 / 7, 1 / 7]); g.dispose(); }
+    if (!gf && !(sd && sd.seabed)) grassTufts(ctx, d, e, wet, sd, sc);
   };
   // touffes d'herbe : petites, plates, d'UNE seule couleur proche du sol (un peu plus sombre) ; chaque brin est dessiné des deux côtés (même éclairage dessus et dessous) ; jamais dans l'eau
-  const hsh = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
+  function hsh(a, b) { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); }
   const GTC = new THREE.Color('#4c8a30');
   function grassTufts(ctx, d, e, wet, sd, sc) {
     const T = ctx.T, b = ctx.b, n = Math.max(1, Math.round((e - d) * 0.55)), pos = [], nor = [], col = [];

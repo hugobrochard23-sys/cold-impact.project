@@ -350,6 +350,7 @@
       const la = this.level.launcher;
       this.launcherEye = new V().fromArray(la.pos);
       this.shoulder.visible = false;
+      if (this.evo && CC.EVO.stage && CC.EVO.stage(this) === 2 && this.level.launcher) this.level.launcher.pos[1] = -34;   // v146 : niveau 2 : le missile part sous l'eau
       this.pad.enter(this.level);
       this.input.setAim(0, this.pad.pitch); this.rig.setAim(0, this.pad.pitch);
       this.rocket.pos.copy(this.pad.origin);
@@ -679,6 +680,7 @@
 
     isUnderwater() {
       const run = this.endlessRun, rk = this.rocket; if (!run || !rk.active || !run.T) return false;
+      if (CC.EVO && CC.EVO.seaLevel !== undefined && this.evo) return rk.pos.y < CC.EVO.seaLevel;   // v144 : niveau 2 : la mer est à y = 0
       const T = run.T, d = run.dist, z = T.zoneOrder[T.zoneIndex(d) % T.zoneOrder.length];
       return z === 'eau' ? rk.pos.y < -4 : !!({ eolien: 1, carrier: 1, epaves: 1, port: 1 }[z]) && rk.pos.y - T.base(d) < -3.2;
     }
@@ -1120,10 +1122,10 @@
         this.postParams.flash = Math.min(this.flash, 0.4) * 0.5;   // v116 : éclat blanc des explosions divisé par deux this.postParams.flashColor = this.flashColor || '#ffffff';
         if (this.postChroma === undefined || this.postParamsRef !== this.postParams) { this.postParamsRef = this.postParams; this.postChroma = this.postParams.chromatic; }
         this.postParams.chromatic = (Number.isFinite(this.postChroma) ? this.postChroma : 0) + this.boostK * CC.CONFIG.boost.chromatic + (this.chromaBurst || 0);   // v034 : le boost écarte les couleurs sur les bords
-        this.postfx.render(this.scene, this.camera, this.postParams, time);
+        this.postfx.render(this.cine3d ? this.cine3d.scene : this.scene, this.cine3d ? this.cine3d.camera : this.camera, this.postParams, time);   // v142 : cinématique 3D
       } else {
         this.renderer.setRenderTarget(null);
-        this.renderer.render(this.scene, this.camera);
+        this.renderer.render(this.cine3d ? this.cine3d.scene : this.scene, this.cine3d ? this.cine3d.camera : this.camera);
       }
       } finally { if (padLook) { this.hemi.intensity = L0[0]; this.sun.intensity = L0[1]; this.ambient.intensity = L0[2]; if (PP && B0) { PP.bloomStrength = B0[0]; PP.bloomThreshold = B0[1]; } } }
     }
@@ -1135,8 +1137,9 @@
       if (run && this.state === 'FLIGHT' && rk.active) {
         const tr = CC.Zones.trans(run.T, Math.max(0, run.dist));
         under = (tr.z0 === 'eau' || tr.z1 === 'eau') && rk.pos.y < -3.6;
+        if (CC.EVO && CC.EVO.seaLevel !== undefined && this.evo) under = rk.pos.y < CC.EVO.seaLevel;
         if (under !== !!this.wasUnder && this.wasUnder !== undefined) {
-          const p = new V(rk.pos.x, -3.6, rk.pos.z);
+          const p = new V(rk.pos.x, CC.EVO && CC.EVO.seaLevel !== undefined && this.evo ? CC.EVO.seaLevel : -3.6, rk.pos.z);
           this.effects.ring(p, new V(0, 1, 0), 1.5, 30, 1.0, '#d8f6ff', 0.9); this.effects.dustKick(p, new V(0, 1, 0), 2.2);
           this.audio.play('splash'); this.flash = Math.max(this.flash, 0.28); this.flashColor = '#bff4ff';
           if (CC.Touch && CC.Touch.active && CC.Haptics) CC.Haptics.tick('warn');

@@ -19,7 +19,7 @@
 
   const RK_TIERS = ['TUBE DE CARTON', 'AVION A AILES', 'REACTEUR', 'TURBO'], LA_TIERS = ['RAMPE EN BOIS', 'RAIL', 'CATAPULTE'];
   const RK_NEXT = ['AILES', 'REACTEUR', 'TURBO', 'MAX'], LA_NEXT = ['RAIL', 'CATAPULTE', 'MAX'];
-  const COIN_COST = [100, 165, 272, 449, 741];
+  const COIN_COST = [150, 250, 420, 700, 1100];
   const MAXN = { rk: 20, la: 15, cm: 5 };
   const BOSS_HP = 16;
   const CH_NAME = { rampe: 'LE DEPART', camp: 'LE CAMP', riviere: 'LA RIVIERE', foret: 'LA FORET', vallee: 'LA VALLEE', grotte: 'LA GROTTE', falaise: 'LA FALAISE', entrepots: 'LES ENTREPOTS', base: 'LA BASE', descente: 'LA DESCENTE', ville: 'LA VILLE', approche: 'LE SIEGE', porte: 'LE GARDIEN', noyau: 'LE NOYAU', fuite: 'LA FUITE' };
@@ -50,13 +50,13 @@
   // FUSEE : palier (0 tube, 1 ailes, 2 réacteur, 3 turbo) et barre dans le palier. Les ailes (portance) montent de 0,55 à 1 pendant le palier 1.
   EVO.rocket = (n) => {
     const tier = Math.min(3, Math.floor(n / 5)), s = n - 5 * tier, wing = tier >= 1 ? Math.min(1, 0.55 + 0.1 * Math.min(n - 5, 4.5)) : 0;
-    const vmax = tier >= 2 ? [0, 0, 46, 56][tier] + 1.8 * s : 0, drag = tier >= 1 ? 0.0078 - 0.0042 * wing : 0.0100 - 0.0006 * s;
+    const vmax = tier >= 2 ? [0, 0, 34, 38][tier] + 0.8 * s : 0, drag = tier >= 1 ? 0.0078 - 0.0042 * wing : 0.0100 - 0.0006 * s;
     return { n, tier, s, name: RK_TIERS[tier], wing, vmax, drag, thrust: vmax * vmax * drag, gripOff: tier >= 1 ? 1.2 + 4.5 * wing : 0.7,
-      dmg: 1.2 + 0.12 * n + 0.3 * tier, fuel: tier >= 2 ? [0, 0, 8, 16][tier] + [0, 0, 1.6, 2.2][tier] * s : 0, refuel: 3 + 0.15 * n, kick: tier === 0 ? 4 : tier === 1 ? 8 : 5 };
+      dmg: 1.2 + 0.12 * n + 0.3 * tier, fuel: tier >= 2 ? [0, 0, 12, 20][tier] + [0, 0, 2, 2.6][tier] * s : 0, refuel: 3 + 0.15 * n, kick: tier === 0 ? 4 : tier === 1 ? 8 : 5 };
   };
-  EVO.launcher = (n) => { const tier = Math.min(2, Math.floor(n / 5)); return { n, tier, s: n - 5 * tier, name: LA_TIERS[tier], speed: (40 + 2.4 * n + 2 * tier) * (1 + 0.2 * tier) }; };
+  EVO.launcher = (n) => { const tier = Math.min(2, Math.floor(n / 5)); return { n, tier, s: n - 5 * tier, name: LA_TIERS[tier], speed: 30 + 1.2 * n + 1.5 * tier }; };
   EVO.mult = (n) => 1 + 0.25 * n;   // v130 : chaque niveau de PIECES rapporte +25 % : il se rembourse en 2 vols
-  EVO.cost = (id, n) => (id === 'rk' ? Math.round(55 * Math.pow(1.27, n)) : id === 'la' ? Math.round(45 * Math.pow(1.27, n)) : COIN_COST[n]);   // v129 : les premieres ameliorations (ailes) arrivent en 2-3 vols
+  EVO.cost = (id, n) => (id === 'rk' ? Math.round(90 * Math.pow(1.27, n)) : id === 'la' ? Math.round(70 * Math.pow(1.27, n)) : COIN_COST[n]);   // v129 : les premieres ameliorations (ailes) arrivent en 2-3 vols
   EVO.nextCost = (g, id) => { const S = EVO.save(g), n = S[id]; return n >= MAXN[id] ? null : EVO.cost(id, n); };
   EVO.dmgNow = (g) => { const r = EVO.rocket(EVO.save(g).rk), sp = g.rocket && g.rocket.active ? g.rocket.vel.length() : 38; return r.dmg * U.clamp(sp / 38, 0.85, 1.5); };
   EVO.canKill = (g, t) => !!(g.evo && g.evo.preview) || !t.evoHp || EVO.dmgNow(g) + 0.001 >= t.evoHp;
@@ -64,7 +64,9 @@
   // ---------- fiches de niveau ----------
   const base = (o) => Object.assign({ n: 101, seed: 5151, chest: 0, winKills: 1e9, tutD: [], tutRel: null, mids: [], event: null, env: 'campagneDay', nightOk: false, look: 0, kit: 0, dens: 1, difK: 0.5, ease: 0.3, tgtGap: 50,
     hp: BOSS_HP, boss: 'gunship', bossEnt: 'sky', bossWall: false, bossTint: 0, bossVar: 0, chapter: 1, evo: true }, o);
+  EVO.baseDef = base;
   EVO.levelDef = (g) => {
+    if (EVO.stage && EVO.stage(g) === 2 && EVO.levelDef2) return EVO.levelDef2(g);
     const th = CC.LM.THEMES[0];
     if (g.evoPreview) return base({ n: 102, zone: 'jungle', seed: 777, len: 1100, scenes: null, order: new Array(90).fill('jungle'), theme: th, env: null, hp: 1, bossEnt: null, preview: true });
     const q = /[?&]evoscenes=([\w,]+)/.exec(location.search), sc = q ? q[1].split(',') : SCENES, Zs = CC.Zones.defs.campagne.scenes;
@@ -81,7 +83,7 @@
   ];
   for (let i = 0; i < SKIN_C.length; i++) {
     const d = SKIN_C[i], s = { id: 'evoT' + i, name: 'evoT' + i, short: 'evoT' + i, tier: 'base', price: 0, tierLabel: '', c: Object.assign({}, d.c), flame: d.flame || '#ff8a2a',
-      dims: { r: 0.1, len: 0.8, noseLen: 0.26, noseR: i < 2 ? 0.07 : 0.015, fins: 0, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 },
+      dims: { r: i < 2 ? 0.1 : 0.085, len: i < 2 ? 0.8 : 1.0, noseLen: i < 2 ? 0.26 : 0.38, noseR: i < 2 ? 0.07 : 0.012, fins: 0, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 },
       parts: d.cap ? [{ k: 'cyl', r: 0.108, h: 0.14, p: [0, 0, -0.42], rot: [90, 0, 0], c: '#a8844f' }, { k: 'box', w: 0.215, h: 0.05, d: 0.2, p: [0, 0, 0.1], c: '#e8d8a8' }] : [] };
     CC.Skins.byId[s.id] = s;
   }
@@ -91,12 +93,28 @@
   function box(w, h, d, mat, x, y, z) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); return m; }
   function cyl(rt, rb, h, mat, x, y, z) { const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 10), mat); m.rotation.x = Math.PI / 2; m.position.set(x, y, z); return m; }
   // chaque pièce est un groupe dont l'échelle (0 → 1) est animée ; la clé donne le palier où elle apparaît
+  // v140 : c'est un MISSILE : quatre ailerons en croix (grands ailerons en delta au milieu, petits ailerons arrière décalés de 45°), plaques rouges aux bouts
+  function finGeo(rootC, tipC, span, sweep, th) {
+    const sh = new THREE.Shape(); sh.moveTo(-rootC / 2, 0); sh.lineTo(rootC / 2, 0); sh.lineTo(rootC / 2 - sweep, span); sh.lineTo(rootC / 2 - sweep - tipC, span); sh.closePath();
+    const g = new THREE.ExtrudeGeometry(sh, { depth: th, bevelEnabled: false }); g.translate(0, 0, -th / 2);   // plan (z du corps, envergure y), épaisseur x
+    g.rotateY(Math.PI / 2); return g;
+  }
+  function fins(mat, matTip, rootC, tipC, span, sweep, z, ang0, withTip) {
+    const grp = new THREE.Group();
+    for (let k = 0; k < 4; k++) {
+      const f = new THREE.Group(); f.rotation.z = ang0 + k * Math.PI / 2; grp.add(f);
+      const m = new THREE.Mesh(finGeo(rootC, tipC, span, sweep, 0.022), mat); m.position.set(0, 0.085, z); f.add(m);
+      if (withTip) { const t = new THREE.Mesh(finGeo(tipC * 0.9, tipC * 0.6, 0.06, 0.02, 0.026), matTip); t.position.set(0, 0.085 + span - 0.06, z - sweep - tipC * 0.05); f.add(t); }
+    }
+    return grp;
+  }
+  EVO.finGeo = finGeo;
   function buildParts(tier) {
     const M = PM(), root = new THREE.Group(), P = {};
     const wm = tier >= 2 ? M.white : M.card;
-    const wings = new THREE.Group(); for (const s of [-1, 1]) { const w = box(0.66, 0.026, 0.30, wm, s * 0.42, 0, -0.02); w.rotation.z = s * 0.06; wings.add(w); wings.add(box(0.02, 0.15, 0.02, M.cardD, s * 0.18, -0.07, 0)); if (tier >= 2) wings.add(box(0.1, 0.03, 0.31, M.red, s * 0.72, 0.01, -0.02)); }
-    const tail = new THREE.Group(); for (const s of [-1, 1]) tail.add(box(0.26, 0.022, 0.16, wm, s * 0.16, 0, -0.36)); tail.add(box(0.022, 0.2, 0.18, tier >= 2 ? M.red : M.card, 0, 0.11, -0.36));
-    const flaps = new THREE.Group(); for (const s of [-1, 1]) { flaps.add(box(0.3, 0.03, 0.09, M.red, s * 0.44, 0.012, -0.2)); flaps.add(box(0.2, 0.03, 0.07, M.red, s * 0.18, 0.012, -0.44)); }
+    const wings = fins(wm, M.red, 0.36, 0.14, 0.34, 0.12, -0.02, 0, false);
+    const tail = fins(wm, M.red, 0.22, 0.09, 0.2, 0.08, -0.36, Math.PI / 4, false);
+    const flaps = new THREE.Group(); { const f = fins(M.red, M.red, 0.3, 0.1, 0.075, 0.02, -0.02, 0, false); f.children.forEach((c) => { c.children[0].position.y = 0.085 + 0.27; }); flaps.add(f); }
     const boost = new THREE.Group(); for (const s of [-1, 1]) { boost.add(cyl(0.05, 0.05, 0.62, M.red, s * 0.2, -0.05, -0.12)); boost.add(cyl(0.0, 0.05, 0.14, M.white, s * 0.2, -0.05, 0.28)); boost.add(cyl(0.04, 0.055, 0.1, M.dark, s * 0.2, -0.05, -0.47)); }
     P.wings = wings; P.tail = tail; P.flaps = flaps; P.boost = boost;
     for (const k of Object.keys(P)) { P[k].userData.k = 0; root.add(P[k]); }
@@ -108,7 +126,7 @@
     if (rk.mesh.userData.evoParts) rk.mesh.remove(rk.mesh.userData.evoParts);
     const root = buildParts(r.tier); rk.mesh.add(root); rk.mesh.userData.evoParts = root; g.evoParts = root.userData.P;
     for (const k of Object.keys(g.evoParts)) { const on = r.tier >= PART_TIER[k]; g.evoParts[k].userData.k = on ? 1 : 0; g.evoParts[k].scale.setScalar(on ? 1 : 0.0001); g.evoParts[k].visible = on; }
-    rk.mesh.userData.finTips = r.tier >= 1 ? [new V(0.76, 0, -0.14), new V(-0.76, 0, -0.14)] : [];   // bouts d'ailes : traînées de condensation
+    rk.mesh.userData.finTips = r.tier >= 1 ? [new V(0.44, 0, -0.18), new V(-0.44, 0, -0.18), new V(0, 0.44, -0.18), new V(0, -0.44, -0.18)] : [];   // bouts d'ailes : traînées de condensation
     rk.mesh.scale.setScalar(1 + 0.012 * r.n);
   };
   EVO.applySkin = (g) => { const r = EVO.rocket(EVO.save(g).rk); g.rocket.setSkin(CC.Skins.get('evoT' + r.tier)); EVO.attachParts(g); };
@@ -208,9 +226,10 @@
     const ev = g.evo, rk = g.rocket, run = g.endlessRun; if (!ev || !run || g.state !== 'FLIGHT' || !rk.active) { if (g.rig) g.rig.fallK = (g.rig.fallK || 0) * Math.max(0, 1 - dt * 4); return; }
     const S = EVO.save(g), r = EVO.rocket(S.rk), sp = rk.vel.length();
     ev.maxD = Math.max(ev.maxD, run.dist);
+    C.endless.fuelTarget = r.refuel * (1 - 0.5 * U.clamp(run.dist / Math.max(1000, run.T.levelLen || 5000), 0, 1));   // v140 : plus on avance, moins un ennemi rend de carburant
     { const W = CC.Zones.evoWater; if (W) { const dy = rk.pos.y - W.y; if (W.prev !== undefined && W.prev * dy < 0 && run.dist > W.d0 - 30 && run.dist < W.d1 + 30) { const fx = g.effects, pp = rk.pos.clone(); pp.y = W.y; fx.ring(pp, new V(0, 1, 0), 0.4, 7, 0.6, '#d6eefc', 0.8); fx.ring(pp, new V(0, 1, 0), 0.2, 4, 0.45, '#ffffff', 0.7); g.rig.shake = Math.max(g.rig.shake, 0.25); g.audio.play('uiTick'); } W.prev = dy; } }
     const CH = EVO.chapters;   // v123 : bandeau et prime à chaque nouveau chapitre franchi
-    if (CH && !ev.preview) while (ev.chap < CH.length && run.dist >= CH[ev.chap].d) { const c = CH[ev.chap++], b = Math.round(40 * c.i * EVO.mult(S.cm)); ev.chapCoins += b; CC.L1.msg(g, 'CHAPITRE ' + (c.i + 1) + '  ' + c.name, 2.0, '#ffe9a0'); g.audio.play('levelUp'); if (EVO.onChapter) EVO.onChapter(g, c, S); }
+    if (CH && !ev.preview) while (ev.chap < CH.length && run.dist >= CH[ev.chap].d) { const c = CH[ev.chap++], b = Math.round(40 * c.i * EVO.mult(S.cm)); ev.chapCoins += b; CC.L1.msg(g, c.name, 1.6, '#ffe9a0'); g.audio.play('levelUp'); if (EVO.onChapter) EVO.onChapter(g, c, S); }
     // planeur : les ailes portent (elles annulent une partie de la gravité tant que la vitesse est suffisante)
     if (r.wing > 0 && !ev.preview) rk.vel.y += C.physics.gravity * r.wing * (r.tier >= 2 && rk.fuel <= 0.01 ? 0.25 : 0.62) * U.clamp((sp - 12) / 14, 0, 1.1) * dt;   // v125 : plus de carburant ou plus de vitesse = on pique   // v123 : lent = les ailes ne portent plus : elle pique, on peut redresser avec la vitesse reprise
     if (ev.preview) rk.vel.y += C.physics.gravity * 0.95 * U.clamp(sp / 17, 0, 1.1) * dt;
@@ -241,7 +260,7 @@
   // chaque ennemi détruit : pièces, souffle qui pousse la fusée, carburant (réacteur)
   EVO.onKill = (g, t) => {
     const ev = g.evo; if (!ev || ev.preview) return;
-    const S = EVO.save(g), r = EVO.rocket(S.rk), rk = g.rocket, m = EVO.mult(S.cm), c = Math.round((t.evoVal || (t.evoHp ? 320 : 130)) * m);
+    const S = EVO.save(g), r = EVO.rocket(S.rk), rk = g.rocket, m = EVO.mult(S.cm), c = Math.round((t.evoVal || (t.evoHp ? 200 : 80)) * m);
     ev.kills++; ev.coins += c;
     rk.vel.addScaledVector(rk.fwd, r.kick); rk.vel.y += 1.5;
     g.rig.punch = 1;
@@ -329,7 +348,7 @@
     EVO.endTumble(g);
     if (g.evo && g.evo.preview) { g.evoPreview = false; g.evoLast = { zone2: true, t0: 0 }; g.goHome({}); return; }
     const S = EVO.save(g), ev = g.evo || { kills: 0, coins: 0, maxD: 0 }, run = g.endlessRun, dist = Math.round(Math.max(ev.maxD, run ? run.dist : 0)), m = EVO.mult(S.cm);
-    const distCoins = Math.floor(dist * 2 * m), lines = [['DISTANCE ' + dist + ' M', distCoins]];
+    const distCoins = Math.floor(dist * 1.1 * m), lines = [['DISTANCE ' + dist + ' M', distCoins]];
     if (ev.kills) lines.push(['ENNEMIS ' + ev.kills, ev.coins - (ev.bossHits ? Math.round(150 * m) * ev.bossHits : 0)]);
     if (ev.bossHits) lines.push(['COUPS AU BOSS ' + ev.bossHits, Math.round(150 * m) * ev.bossHits]);
     if (ev.chapCoins) lines.push(['CHAPITRE ' + ev.chap + ' SUR ' + (EVO.chapters ? EVO.chapters.length : 1), ev.chapCoins]);

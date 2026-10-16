@@ -81,7 +81,7 @@
     vol(d) { return CC.Zones.prof(this, d, 'vol') + 2.5 * Math.sin(d / 131 + this.lp[0] * 1.7); }          // demi-largeur du volume de jeu
     elev(zi) { return CC.Zones.PROFILE[this.zoneOrder[Math.min(Math.max(0, zi), this.zoneOrder.length - 1)]].elev; }
     base(d) {
-      if (d <= 0) return 0;
+      if (d <= 0) return CC.Zones.PROFILE[this.zoneOrder[0]].elev || 0;   // v146 : l'océan commence à -90 m
       const tr = CC.Zones.trans(this, d);
       if (!tr.k) return CC.Zones.PROFILE[tr.z1].elev + this.rel(d);
       return CC.Zones.PROFILE[tr.z0].elev + (CC.Zones.PROFILE[tr.z1].elev - CC.Zones.PROFILE[tr.z0].elev) * tr.t + this.rel(d);
