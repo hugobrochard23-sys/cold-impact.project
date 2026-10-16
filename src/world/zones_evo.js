@@ -91,7 +91,7 @@
   function haystack(S, dc, lx, r) { S.place(dc, lx, 8, 8, 0, 4, () => { S.cyl(dc, lx, 0, 2.4, 3.4, 'col:' + pick(r, ['#d8b860', '#c8a850']), undefined, 10, 2.4, false); }); }
 
   // ---------- sol lisse : une vraie surface continue (normales calculees sur le terrain, pas de tranches) avec un degrade de verts et de champs ----------
-  const GC = { a: new THREE.Color('#6a9a38'), b: new THREE.Color('#9cc24c'), f: new THREE.Color('#bcb062'), c: new THREE.Color(), g: new THREE.Color('#77797a') };
+  const GC = { a: new THREE.Color('#3a7e2a'), b: new THREE.Color('#4f9632'), f: new THREE.Color('#6f9a44'), c: new THREE.Color(), g: new THREE.Color('#77797a') };
   const gcol = (x, z, out) => {
     const n = 0.5 + 0.5 * (Math.sin(x * 0.011 + z * 0.017) * 0.5 + Math.sin(x * 0.027 - z * 0.013 + 1.3) * 0.3 + Math.sin(x * 0.05 + z * 0.043) * 0.2);
     out.copy(GC.a).lerp(GC.b, n);
@@ -126,7 +126,7 @@
   };
   // touffes d'herbe : petites, plates, d'UNE seule couleur proche du sol (un peu plus sombre) ; chaque brin est dessiné des deux côtés (même éclairage dessus et dessous) ; jamais dans l'eau
   function hsh(a, b) { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); }
-  const GTC = new THREE.Color('#58902c');
+  const GTC = new THREE.Color('#3f8228');
   function grassTufts(ctx, d, e, wet, sd, sc) {
     const T = ctx.T, b = ctx.b, n = Math.max(1, Math.round((e - d) * 0.55)), pos = [], nor = [], col = [];
     const tri = (a1, a2, a3) => { for (const q of [a1, a2, a3]) { pos.push(q[0], q[1], q[2]); nor.push(0, 1, 0); col.push(GTC.r, GTC.g, GTC.b); } };
