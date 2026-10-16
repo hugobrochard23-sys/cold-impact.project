@@ -195,7 +195,9 @@
       this.renderer.setPixelRatio(pr);
       this.renderer.setSize(cw, ch, false);
       this.canvas.style.width = cw + 'px'; this.canvas.style.height = ch + 'px';
-      this.hudCanvas.width = Math.round(cw * pr); this.hudCanvas.height = Math.round(ch * pr);
+      // v162 : l'interface est dessinee a la vraie densite de l'ecran (jusqu'a 2,5), independamment du rendu 3D (limite a 1,5) : textes et icones nets
+      const hpr = this.testMode ? 1 : Math.min(window.devicePixelRatio || 1, 2.5); this.hudPr = hpr;
+      this.hudCanvas.width = Math.round(cw * hpr); this.hudCanvas.height = Math.round(ch * hpr);
       this.hudCanvas.style.width = cw + 'px'; this.hudCanvas.style.height = ch + 'px';
       this.camera.aspect = cw / ch;
       // debout, l'écran est étroit : on élargit la vue verticale pour garder un angle horizontal suffisant (v022)

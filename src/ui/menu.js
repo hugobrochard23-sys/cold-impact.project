@@ -38,7 +38,7 @@
     isTouch() { return document.body.classList.contains('cc-touch'); }
     // v030 : plus grande taille de police (≤ maxPx) pour que tous les libellés tiennent dans maxW (police monospace)
     fitPx(labels, maxW, maxPx) { let m = 0; for (const l of labels) m = Math.max(m, CC.Font.measure(l, 1)); return Math.min(maxPx, maxW / Math.max(1, m)); }
-    pixelRatio() { return this.game.renderer ? this.game.renderer.getPixelRatio() : 1; }
+    pixelRatio() { return this.game.hudPr || (this.game.renderer ? this.game.renderer.getPixelRatio() : 1); }
     // libellé sans raccourci clavier sur écran tactile (« RETRY (CLICK) » → « RETRY »)
     key(label, hint) { return this.isTouch() ? label : label + ' (' + hint + ')'; }
 
