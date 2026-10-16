@@ -361,6 +361,7 @@
     curLevelDef() { const L = this.save.lvl; return CC.LM.def((L && L.cur) || 1); }
     setLevel(n) { const L = (this.save.lvl = this.save.lvl || { cur: 1, max: 1, done: {}, tries: {}, mode: 'level' }); L.cur = n; L.mode = 'level'; this.writeSave(); }
     goHome(opts) {
+      this.evoReport = false;   // v157 : le rapport de vol est ferme des qu'on repart
       this.pendingHome = { frames: 0, opts: opts || {} };
       this.paused = false; this.ui.overlay = null; this.input.exitLock();
     }
@@ -1035,6 +1036,7 @@
           break;
         case 'CRASHED':
           this.impactT += dt;
+          if (this.evo && this.evoReport && this.ui.overlay !== 'evoReport' && this.ui.overlay !== 'ad') this.ui.overlay = 'evoReport';   // v157 : filet : jamais d'ecran vide apres une pub
           if (this.endlessRun) {   // v033 : une seule vie ; v034 : une chance de continuer (publicité récompensée) avant l'écran de fin
             if (this.impactT > (this.evoTumble ? this.evoTumble.dur : 0.9)) {
               // v093 : niveaux 1-3 : pas d'écran, la partie se relance aussitôt (essayer = instantané)

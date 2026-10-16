@@ -51,12 +51,12 @@
 
     // récompensée : `grant` appelé seulement si la publicité a été regardée jusqu'au bout ; `seconds` : durée (v031 : une
     // minute pour débloquer un cosmétique, faite d'annonces de `adSegment` s qui s'enchaînent)
-    rewarded(grant, seconds, purpose) { this.open('rewarded', null, grant, seconds, purpose); }
+    rewarded(grant, seconds, purpose, label) { this.open('rewarded', null, grant, seconds, purpose, label); }
 
-    open(kind, then, grant, seconds, purpose) {
+    open(kind, then, grant, seconds, purpose, label) {
       const g = this.game;
       const c0 = Math.floor(Math.random() * CREATIVES.length);
-      this.cur = { kind, t: 0, then, grant, done: false, seconds, c0, c: CREATIVES[c0], back: g.ui.overlay, purpose };   // v031 : on revient où l'on était (boutique)
+      this.cur = { kind, t: 0, then, grant, done: false, seconds, c0, c: CREATIVES[c0], back: g.ui.overlay, purpose, label };   // v031 : on revient où l'on était (boutique)
       this.lastAd = this.now();
       g.ui.overlay = 'ad';
       this.duck(true);
@@ -65,7 +65,7 @@
     close(watched) {
       const A = this.cur, g = this.game;
       if (!A) return;
-      this.cur = null; g.ui.overlay = (A.back === 'shop' || A.back === 'daily' || A.back === 'pass' || A.back === 'l1death' || A.back === 'evo') ? A.back : null;
+      this.cur = null; g.ui.overlay = (A.back === 'shop' || A.back === 'daily' || A.back === 'pass' || A.back === 'l1death' || A.back === 'evo' || A.back === 'evoReport') ? A.back : null;
       this.duck(false);
       if (A.kind === 'interstitial') this.sinceAd = 0;
       if (A.kind === 'rewarded') this.sinceAd = 0;   // v034 : une publicité regardée repart à zéro le compteur
@@ -138,6 +138,12 @@
       ctx.fillStyle = '#333'; ctx.fillRect(cx, cy + ch + HH * 0.02, cw, HH * 0.01);
       ctx.fillStyle = col.yellow; ctx.fillRect(cx, cy + ch + HH * 0.02, cw * k, HH * 0.01);
       const by = cy + ch + HH * 0.09, bpx = Math.max(H * 0.0042, HH * 0.0038);
+      if (A.kind === 'rewarded' && A.label) {   // v157 : la recompense est annoncee et bien visible
+        const rw = W * 0.86, rh = HH * 0.085, rx = (W - rw) / 2, ry = cy - HH * 0.115;
+        ctx.fillStyle = 'rgba(194,58,210,0.92)'; ctx.fillRect(rx, ry, rw, rh); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(2, HH * 0.003); ctx.strokeRect(rx, ry, rw, rh);
+        ui.text(ctx, 'RECOMPENSE', W / 2, ry + rh * 0.12, ui.fitPx(['RECOMPENSE'], rw * 0.5, rh * 0.016), '#ffe9ff', { align: 'center' });
+        ui.text(ctx, A.label, W / 2, ry + rh * 0.48, ui.fitPx([A.label], rw * 0.9, rh * 0.03), '#ffffff', { align: 'center' });
+      }
       if (A.kind === 'rewarded') {
         if (A.t >= total) ui.button(ctx, 'RECUPERER LA RECOMPENSE', W / 2, by, ui.fitPx(['RECUPERER LA RECOMPENSE'], W * 0.8, bpx), () => this.close(true), { color: col.yellow, box: true, hitW: W * 0.9 });
         else {

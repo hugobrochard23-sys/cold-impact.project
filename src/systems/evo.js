@@ -218,6 +218,7 @@
 
   // ---------- vol ----------
   EVO.beginRun = (g) => {
+    g.evoReport = false;
     g.l1run = { slow: 0, slowK: 0.4, slowDur: 0, slowT: 0, cool: 0, bossHits: 0, wall: 0, ph: 1, tAcc: 0, evo: true };
     g.evo = { kills: 0, coins: 0, preview: !!g.evoPreview, previewT: 14, fuelOut: false, chap: 1, chapCoins: 0, maxD: 0, bossHits: 0, scan: 0, perfect: false };
     g.progress.P.bestDist = EVO.save(g).best;
@@ -391,14 +392,14 @@
     go();
   };
   // v150 : la pub de fin de vol multiplie les pieces du vol par le multiplicateur lu sur le curseur (x1,5 a x4)
-  EVO.multiply = (g, m) => { const L = g.evoLast; if (!L || L.doubled || !L.total) return; const extra = Math.round(L.total * (m - 1)); L.doubled = m; L.lines.push(['PUB X' + m, extra]); EVO.save(g).coins += extra; L.total += extra; g.evoAdDone = true; g.writeSave(); g.audio.play('target'); (g.killPops = g.killPops || []).length; };
+  EVO.multiply = (g, m) => { const L = g.evoLast; if (!L || L.doubled || !L.total) return; const extra = Math.round(L.total * (m - 1)); L.doubled = m; L.lines.push(['PUB X' + m, extra, performance.now()]); EVO.save(g).coins += extra; L.total += extra; L.popT = performance.now(); L.fx = { t0: performance.now(), n: extra }; g.evoAdDone = true; g.writeSave(); g.audio.play('target'); (g.killPops = g.killPops || []).length; };
   // gemmes : 1 gemme = 1 amelioration offerte quand les pieces manquent ; la 2e fois sur la meme amelioration (meme session) coute 2, la 3e 3...
   EVO.gemCost = (g, id) => ((g.evoGemUse && g.evoGemUse[id]) || 0) + 1;
-  EVO.gemAd = (g) => { if (!g.ads) return; g.ads.rewarded(() => { const S = EVO.save(g); S.gems = (S.gems || 0) + 1; g.writeSave(); g.audio.play('levelUp'); }, null, 'gem'); };
+  EVO.gemAd = (g) => { if (!g.ads) return; g.ads.rewarded(() => { const S = EVO.save(g); S.gems = (S.gems || 0) + 1; g.writeSave(); g.audio.play('levelUp'); g.evoGemFx = { t0: performance.now(), n: 1 }; }, null, 'gem', '1 GEMME'); };
   EVO.buyGem = (g, id) => {
     const S = EVO.save(g), c = EVO.nextCost(g, id), gc = EVO.gemCost(g, id); if (c === null || g.evoAnim) return;
     const pay = () => { if ((S.gems || 0) < gc) return; S.gems -= gc; g.evoGemUse = g.evoGemUse || {}; g.evoGemUse[id] = (g.evoGemUse[id] || 0) + 1; EVO.buy(g, id, true); };
-    if ((S.gems || 0) >= gc) pay(); else if (g.ads) g.ads.rewarded(() => { S.gems = (S.gems || 0) + 1; g.writeSave(); pay(); }, null, 'gem');
+    if ((S.gems || 0) >= gc) pay(); else if (g.ads) g.ads.rewarded(() => { S.gems = (S.gems || 0) + 1; g.writeSave(); g.evoGemFx = { t0: performance.now(), n: 1 }; pay(); }, null, 'gem', '1 GEMME = 1 AMELIORATION');
   };
   // coffre : disponible des le 3e vol, puis toutes les 2 heures
   EVO.chestReady = (g) => { const S = EVO.save(g); return S.runs >= 3 && Date.now() >= (S.chestAt || 0); };
