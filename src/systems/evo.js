@@ -143,9 +143,10 @@
   for (const L of EVO.LIVERIES) for (const t of [2, 3]) { const b = CC.Skins.byId['evoT' + t]; CC.Skins.byId['evoT' + t + L.id] = Object.assign({}, b, { id: 'evoT' + t + L.id, name: 'evoT' + t + L.id, short: 'evoT' + t + L.id, c: Object.assign({}, b.c, { body: L.body, nose: L.nose, tip: L.tip, band: L.band, fin: L.fin }), flame: t === 3 ? L.flame : b.flame }); }
   EVO.livery = (g) => { const S = EVO.save(g), L = EVO.LIVERIES.find((q) => q.id === S.livery) || EVO.LIVERIES[0]; return S.rk >= L.at ? L : EVO.LIVERIES[0]; };
   EVO.setLivery = (g, id) => { const S = EVO.save(g), L = EVO.LIVERIES.find((q) => q.id === id); if (!L || S.rk < L.at) return false; S.livery = id; g.writeSave(); EVO.applySkin(g); g.audio.play('levelUp'); return true; };
+  const dimRocket = (g) => { g.rocket.mesh.traverse((o) => { const ms = Array.isArray(o.material) ? o.material : (o.material ? [o.material] : []); for (const m of ms) { if (m.userData.dimmed || m.isMeshBasicMaterial) continue; m.userData.dimmed = 1; if (m.emissive) m.emissiveIntensity = (m.emissiveIntensity === undefined ? 1 : m.emissiveIntensity) * 0.3; if (m.specular) m.specular.multiplyScalar(0.4); if (m.shininess !== undefined) m.shininess *= 0.6; if (m.color && m.color.r > 0.85 && m.color.g > 0.85 && m.color.b > 0.85) m.color.multiplyScalar(0.84); } }); };
   EVO.applySkin = (g) => {
     const r = EVO.rocket(EVO.save(g).rk), L = EVO.livery(g), M = PM(); M.red.color.set(r.tier >= 2 ? L.acc : '#d8402c'); M.white.color.set(r.tier >= 2 ? L.wh : '#eceef2');
-    g.rocket.setSkin(CC.Skins.get('evoT' + r.tier + (r.tier >= 2 && L.id !== 'classic' ? L.id : ''))); EVO.attachParts(g);
+    g.rocket.setSkin(CC.Skins.get('evoT' + r.tier + (r.tier >= 2 && L.id !== 'classic' ? L.id : ''))); EVO.attachParts(g); dimRocket(g);
   };
   // lanceur : anneaux d'accélération le long du rail, de plus en plus nombreux et lumineux
   EVO.dressPad = (pad) => {

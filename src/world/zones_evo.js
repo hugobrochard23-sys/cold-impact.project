@@ -91,7 +91,7 @@
   function haystack(S, dc, lx, r) { S.place(dc, lx, 8, 8, 0, 4, () => { S.cyl(dc, lx, 0, 2.4, 3.4, 'col:' + pick(r, ['#d8b860', '#c8a850']), undefined, 10, 2.4, false); }); }
 
   // ---------- sol lisse : une vraie surface continue (normales calculees sur le terrain, pas de tranches) avec un degrade de verts et de champs ----------
-  const GC = { a: new THREE.Color('#3a7e2a'), b: new THREE.Color('#4f9632'), f: new THREE.Color('#6f9a44'), c: new THREE.Color(), g: new THREE.Color('#77797a') };
+  const GC = { a: new THREE.Color('#4a8c30'), b: new THREE.Color('#68aa3a'), f: new THREE.Color('#86aa48'), c: new THREE.Color(), g: new THREE.Color('#77797a') };
   const gcol = (x, z, out) => {
     const n = 0.5 + 0.5 * (Math.sin(x * 0.011 + z * 0.017) * 0.5 + Math.sin(x * 0.027 - z * 0.013 + 1.3) * 0.3 + Math.sin(x * 0.05 + z * 0.043) * 0.2);
     out.copy(GC.a).lerp(GC.b, n);
@@ -127,35 +127,49 @@
   // touffes d'herbe : petites, plates, d'UNE seule couleur proche du sol (un peu plus sombre) ; chaque brin est dessiné des deux côtés (même éclairage dessus et dessous) ; jamais dans l'eau
   function hsh(a, b) { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); }
   const GTC = new THREE.Color('#3f8228');
+  // v175 : HERBE QUI BOUGE : beaucoup de brins hauts, seulement pres de la trajectoire ; un vertex shader les fait onduler (vent) et les fait retrecir au loin
+  const GU = { value: 0 };
+  let GM = null;
+  const grassMat = () => GM || (GM = (() => {
+    const m = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+    m.onBeforeCompile = (sh) => {
+      sh.uniforms.uTime = GU;
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float uTime;\nattribute float aSway;').replace('#include <begin_vertex>', `vec3 transformed = vec3( position );
+        vec3 gw = ( modelMatrix * vec4( position, 1.0 ) ).xyz;
+        float gf = 1.0 - smoothstep( 50.0, 95.0, distance( gw, cameraPosition ) );
+        float gs = aSway * ( 0.55 + 0.45 * sin( gw.x * 0.11 + gw.z * 0.13 ) );
+        transformed.x += ( sin( uTime * 2.1 + gw.x * 0.33 + gw.z * 0.21 ) * 0.2 + sin( uTime * 3.7 + gw.z * 0.9 ) * 0.07 ) * gs;
+        transformed.z += cos( uTime * 1.7 + gw.z * 0.29 + gw.x * 0.17 ) * 0.14 * gs;
+        transformed.y -= aSway * ( 1.0 - gf );`);
+    };
+    return m;
+  })());
+  const GB = [new THREE.Color('#2f6a22'), new THREE.Color('#3b7a26'), new THREE.Color('#2a6a2c')], GT = [new THREE.Color('#8ed04a'), new THREE.Color('#a4dc52'), new THREE.Color('#78c24a'), new THREE.Color('#b8e060')];
   function grassTufts(ctx, d, e, wet, sd, sc) {
-    const T = ctx.T, b = ctx.b, n = Math.max(1, Math.round((e - d) * 0.55)), pos = [], nor = [], col = [];
-    const tri = (a1, a2, a3) => { for (const q of [a1, a2, a3]) { pos.push(q[0], q[1], q[2]); nor.push(0, 1, 0); col.push(GTC.r, GTC.g, GTC.b); } };
+    const T = ctx.T, b = ctx.b, n = Math.max(2, Math.round((e - d) * 3.4)), pos = [], nor = [], col = [], sway = [];
+    const v = (x, y, z, c, w) => { pos.push(x, y, z); nor.push(0, 1, 0); col.push(c.r, c.g, c.b); sway.push(w); };
     for (let i = 0; i < n; i++) {
-      const dd = d + (e - d) * hsh(d + i * 0.37, i), lx = (hsh(i * 1.7, d * 0.13) * 2 - 1) * 46; if (wet && wet(dd, lx, sc, T)) continue;
-      for (let t = 0; t < 2; t++) {   // deux petites touffes côte à côte
-        const p = T.at(dd + (t ? 0.7 : 0), lx + (t ? 0.55 : 0), 0), a0 = hsh(d + t, i * 3.3) * 6.28, py = p[1] - 0.03, sz = 0.7 + 0.5 * hsh(i + t, d * 0.7);
-        for (let j = 0; j < 7; j++) {
-          const a = a0 + j * 0.8976 + hsh(j, i + t) * 0.3, ca = Math.cos(a), sa = Math.sin(a), r0 = 0.05 + 0.09 * hsh(j * 3.1, i + d) * sz, bx = p[0] + ca * r0, bz = p[2] + sa * r0, lean = (0.3 + 0.3 * hsh(j + i, d)) * sz, hh = (0.32 + 0.28 * hsh(j * 5.1, i + d)) * sz, tx = bx + ca * lean, tz = bz + sa * lean, w = 0.07 * sz;
-          const A1 = [bx - sa * w, py, bz + ca * w], B1 = [bx + sa * w, py, bz - ca * w], C1 = [tx, py + hh, tz];
-          tri(A1, B1, C1); tri(B1, A1, C1);
-        }
+      const dd = d + (e - d) * hsh(d + i * 0.37, i), lx = (hsh(i * 1.7, d * 0.13) * 2 - 1) * (10 + 22 * hsh(i * 2.9, d * 0.7)); if (wet && wet(dd, lx, sc, T)) continue;
+      const p = T.at(dd, lx, 0), a0 = hsh(d + i, i * 3.3) * 6.28, py = p[1] - 0.04, sz = 0.8 + 0.6 * hsh(i, d * 0.7), cb = GB[Math.floor(hsh(i, d) * GB.length)], ct = GT[Math.floor(hsh(d, i * 1.3) * GT.length)];
+      for (let j = 0; j < 6; j++) {
+        const a = a0 + j * 1.05 + hsh(j, i + d) * 0.4, ca = Math.cos(a), sa = Math.sin(a), r0 = 0.04 + 0.2 * hsh(j * 3.1, i + d), bx = p[0] + ca * r0, bz = p[2] + sa * r0, hh = (0.8 + 0.9 * hsh(j * 5.1, i + d)) * sz, w = 0.11 * sz, lean = 0.25 * hh * (hsh(j + 1, i) - 0.5) * 2;
+        v(bx - sa * w, py, bz + ca * w, cb, 0); v(bx + sa * w, py, bz - ca * w, cb, 0); v(bx + ca * lean, py + hh, bz + sa * lean, ct, hh);
       }
     }
-    // v152 : fleurs sauvages (blanches, jaunes, mauves, rosees) par taches : de la vie dans l'herbe
-    { const FL = ['#e6e2d2', '#dcc858', '#b08cc4', '#d88e8e', '#e6e2d2'].map((h) => new THREE.Color(h)), nf = Math.max(1, Math.round((e - d) * 0.16));
+    // fleurs sauvages par taches (immobiles)
+    { const FL = ['#e6e2d2', '#e8d25a', '#b08cc4', '#e09a9a'].map((h) => new THREE.Color(h)), nf = Math.max(1, Math.round((e - d) * 0.14));
       for (let i = 0; i < nf; i++) {
-        const dd0 = d + (e - d) * hsh(d + i * 1.13, i * 2.9), lx0 = (hsh(i * 3.1, d * 0.31) * 2 - 1) * 44; if (wet && wet(dd0, lx0, sc, T)) continue;
-        const fc = FL[Math.floor(hsh(i, d * 0.77) * FL.length)], cnt = 5 + Math.floor(hsh(d, i) * 5);
+        const dd0 = d + (e - d) * hsh(d + i * 1.13, i * 2.9), lx0 = (hsh(i * 3.1, d * 0.31) * 2 - 1) * 24; if (wet && wet(dd0, lx0, sc, T)) continue;
+        const fc = FL[Math.floor(hsh(i, d * 0.77) * FL.length)], cnt = 4 + Math.floor(hsh(d, i) * 4);
         for (let j = 0; j < cnt; j++) {
-          const p = T.at(dd0 + (hsh(j, i) - 0.5) * 3, lx0 + (hsh(i, j * 1.7) - 0.5) * 3, 0), bx = p[0], bz = p[2], py = p[1] - 0.02, hgt = 0.35 + 0.22 * hsh(j * 2.3, i), r0 = 0.15 + 0.07 * hsh(j, i * 1.9);
-          const S0 = [bx, py, bz], S1 = [bx + 0.05, py, bz], S2 = [bx, py + hgt, bz]; for (const q of [S0, S1, S2]) { pos.push(q[0], q[1], q[2]); nor.push(0, 1, 0); col.push(GTC.r, GTC.g, GTC.b); }
-          for (let k = 0; k < 5; k++) { const a = k / 5 * 6.2832 + hsh(j, k), a2 = (k + 1) / 5 * 6.2832 + hsh(j, k), A1 = [bx + Math.cos(a) * r0, py + hgt - 0.02, bz + Math.sin(a) * r0], B1 = [bx + Math.cos(a2) * r0, py + hgt - 0.02, bz + Math.sin(a2) * r0], C1 = [bx, py + hgt + 0.07, bz]; for (const q of [A1, B1, C1]) { pos.push(q[0], q[1], q[2]); nor.push(0, 1, 0); col.push(fc.r, fc.g, fc.b); } for (const q of [B1, A1, C1]) { pos.push(q[0], q[1], q[2]); nor.push(0, 1, 0); col.push(fc.r, fc.g, fc.b); } }
-          const hc = FL[1]; for (const q of [[bx - 0.04, py + hgt + 0.06, bz], [bx + 0.04, py + hgt + 0.06, bz], [bx, py + hgt + 0.06, bz + 0.05]]) { pos.push(q[0], q[1], q[2]); nor.push(0, 1, 0); col.push(hc.r * 0.9, hc.g * 0.8, hc.b * 0.4); }
+          const p = T.at(dd0 + (hsh(j, i) - 0.5) * 3, lx0 + (hsh(i, j * 1.7) - 0.5) * 3, 0), bx = p[0], bz = p[2], py = p[1] - 0.02, hgt = 0.4 + 0.25 * hsh(j * 2.3, i), r0 = 0.15 + 0.07 * hsh(j, i * 1.9);
+          v(bx, py, bz, GB[0], 0); v(bx + 0.05, py, bz, GB[0], 0); v(bx, py + hgt, bz, GB[1], 0);
+          for (let k = 0; k < 5; k++) { const a = k / 5 * 6.2832 + hsh(j, k), a2 = (k + 1) / 5 * 6.2832 + hsh(j, k); v(bx + Math.cos(a) * r0, py + hgt - 0.02, bz + Math.sin(a) * r0, fc, 0); v(bx + Math.cos(a2) * r0, py + hgt - 0.02, bz + Math.sin(a2) * r0, fc, 0); v(bx, py + hgt + 0.07, bz, fc, 0); }
         }
       } }
     if (!pos.length) return;
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-    b.batch('col:#fefefe').shadow = false; b.addGeometry(g, _O, _Q, null, 'col:#fefefe'); g.dispose();
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('aSway', new THREE.Float32BufferAttribute(sway, 1));
+    const mesh = new THREE.Mesh(g, grassMat()); mesh.frustumCulled = true; mesh.receiveShadow = false; mesh.onBeforeRender = () => { GU.value = performance.now() / 1000; }; b.add(mesh);
   }
 
   const campagne = { signature: 'rampe', scenes: {}, dress(S) {
