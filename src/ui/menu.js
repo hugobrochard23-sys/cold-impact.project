@@ -71,6 +71,8 @@
       else if (this.overlay === 'unlock') { this.buttons = []; CC.Home.drawUnlock(this, ctx, game, W, H); }          // v086
       else if (this.overlay === 'daily') { this.buttons = []; CC.Home.drawDaily(this, ctx, game, W, H); }
       else if (this.overlay === 'msettings') { this.buttons = []; CC.Home.drawSettings(this, ctx, game, W, H); }
+      else if (this.overlay === 'evoShop') { this.buttons = []; CC.Home.drawEvoShop(this, ctx, game, W, H); }   // v159
+      else if (this.overlay === 'evoSkins') { this.buttons = []; CC.Home.drawEvoSkins(this, ctx, game, W, H); }   // v159
       else if (this.overlay === 'evoReport') { this.buttons = []; CC.Home.drawEvoReport(this, ctx, game, W, H); }   // v152
       else if (this.overlay === 'evoWin') { this.buttons = []; CC.Home.drawEvoWin(this, ctx, game, W, H); }   // v143
       else if (this.overlay === 'evoCine') { this.buttons = []; CC.EVO.drawCine(this, ctx, game, W, H); }   // v142
@@ -471,6 +473,7 @@
     }
 
     // v034 : un bouton est-il sous ce point ? (le toucher sur le lanceur ne doit pas passer à travers les icônes)
+    hitTestUI(x, y) { return this.buttons.some((b) => !b.scene && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h); }   // v159 : boutons hors zone « scene »
     hitTest(x, y) { return this.buttons.some((b) => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h); }
 
     click(x, y) {

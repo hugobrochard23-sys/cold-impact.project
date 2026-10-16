@@ -130,7 +130,23 @@
     rk.mesh.userData.finTips = r.tier >= 1 ? [new V(0.44, 0, -0.18), new V(-0.44, 0, -0.18), new V(0, 0.44, -0.18), new V(0, -0.44, -0.18)] : [];   // bouts d'ailes : traînées de condensation
     rk.mesh.scale.setScalar(1 + 0.012 * r.n);
   };
-  EVO.applySkin = (g) => { const r = EVO.rocket(EVO.save(g).rk); g.rocket.setSkin(CC.Skins.get('evoT' + r.tier)); EVO.attachParts(g); };
+  // v159 : LIVREES : une fois la fusee au bout de ses ameliorations (niveau 20), on peut en changer l'apparence ; une nouvelle s'ouvre tous les 5 niveaux
+  EVO.LIVERIES = [
+    { id: 'classic', name: 'CLASSIQUE', at: 20, body: '#f2f3f5', nose: '#f2f3f5', tip: '#ffd23a', band: '#e0402c', fin: '#e0402c', acc: '#d8402c', wh: '#eceef2', flame: '#7be8ff' },
+    { id: 'gold', name: 'OR', at: 25, body: '#f0c43c', nose: '#fff0a8', tip: '#ffffff', band: '#a8741a', fin: '#c8901c', acc: '#b8821a', wh: '#f5d36a', flame: '#ffe27a' },
+    { id: 'stealth', name: 'FURTIVE', at: 30, body: '#2b3038', nose: '#3a414c', tip: '#ff3a3a', band: '#ff3a3a', fin: '#1c2026', acc: '#1c2026', wh: '#3a414c', flame: '#ff6a5a' },
+    { id: 'neon', name: 'NEON', at: 35, body: '#141c2a', nose: '#1c2a40', tip: '#31e6ff', band: '#31e6ff', fin: '#0e8fb0', acc: '#31e6ff', wh: '#1c2a40', flame: '#31e6ff' },
+    { id: 'toxic', name: 'TOXIQUE', at: 40, body: '#dff5c8', nose: '#9adf5a', tip: '#3acc3a', band: '#2a9a2a', fin: '#3acc3a', acc: '#3acc3a', wh: '#e8f8d8', flame: '#9aff6a' },
+    { id: 'galaxy', name: 'GALAXIE', at: 45, body: '#2a1a58', nose: '#4a2a8a', tip: '#ff7af0', band: '#c050ff', fin: '#c050ff', acc: '#c050ff', wh: '#4a2a8a', flame: '#d08aff' },
+    { id: 'coral', name: 'CORAIL', at: 50, body: '#ffe4d6', nose: '#ffb59a', tip: '#ff7a5a', band: '#ff7a5a', fin: '#ff7a5a', acc: '#ff7a5a', wh: '#fff0e8', flame: '#ffb08a' },
+  ];
+  for (const L of EVO.LIVERIES) for (const t of [2, 3]) { const b = CC.Skins.byId['evoT' + t]; CC.Skins.byId['evoT' + t + L.id] = Object.assign({}, b, { id: 'evoT' + t + L.id, name: 'evoT' + t + L.id, short: 'evoT' + t + L.id, c: Object.assign({}, b.c, { body: L.body, nose: L.nose, tip: L.tip, band: L.band, fin: L.fin }), flame: t === 3 ? L.flame : b.flame }); }
+  EVO.livery = (g) => { const S = EVO.save(g), L = EVO.LIVERIES.find((q) => q.id === S.livery) || EVO.LIVERIES[0]; return S.rk >= L.at ? L : EVO.LIVERIES[0]; };
+  EVO.setLivery = (g, id) => { const S = EVO.save(g), L = EVO.LIVERIES.find((q) => q.id === id); if (!L || S.rk < L.at) return false; S.livery = id; g.writeSave(); EVO.applySkin(g); g.audio.play('levelUp'); return true; };
+  EVO.applySkin = (g) => {
+    const r = EVO.rocket(EVO.save(g).rk), L = EVO.livery(g), M = PM(); M.red.color.set(r.tier >= 2 ? L.acc : '#d8402c'); M.white.color.set(r.tier >= 2 ? L.wh : '#eceef2');
+    g.rocket.setSkin(CC.Skins.get('evoT' + r.tier + (r.tier >= 2 && L.id !== 'classic' ? L.id : ''))); EVO.attachParts(g);
+  };
   // lanceur : anneaux d'accélération le long du rail, de plus en plus nombreux et lumineux
   EVO.dressPad = (pad) => {
     if (pad.evoG) { pad.cradle.remove(pad.evoG); pad.evoG.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
@@ -144,7 +160,20 @@
       for (const sx of [-1, 1]) { const r = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.5 + n * 0.55), steel); r.position.set(sx * (hw + 0.02), -0.2, 0.2 - (n - 1) * 0.275); G.add(r); const s2 = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.02, 0.3 + n * 0.55), lite); s2.position.set(sx * (hw + 0.02), -0.15, 0.2 - (n - 1) * 0.275); G.add(s2); }
       for (let i = 0; i < n; i++) { const z = 0.2 - i * 0.55, k = 1 - i / (n + 2) * 0.3; const t1 = new THREE.Mesh(new THREE.TorusGeometry(hw * k, 0.028, 8, 28), steel); t1.position.set(0, 0.0, z); G.add(t1); const t2 = new THREE.Mesh(new THREE.TorusGeometry(hw * k, 0.012, 6, 28), lite); t2.position.set(0, 0, z + 0.03); G.add(t2); const t3 = new THREE.Mesh(new THREE.TorusGeometry(hw * k, 0.07, 6, 28), halo); t3.position.set(0, 0, z); G.add(t3); }
     }
-    if (la.tier === 2) mk(0.5, 0.5, 0.5, '#58616d', 0, -0.05, 1.4);
+    // v159 : le PISTON de lancement : un verin derriere la fusee ; on le recule en maintenant le doigt, on le lache pour la propulser
+    { const steel = new THREE.MeshLambertMaterial({ color: '#4a5260' }), dark = new THREE.MeshLambertMaterial({ color: '#272b33' }), chrome = new THREE.MeshLambertMaterial({ color: '#b8c0cc' }), ring = new THREE.MeshBasicMaterial({ color: '#46c8ff' }), P = pad.piston = new THREE.Group(); G.add(P);
+      const cyl = (rt, rb, h, m, z) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 16), m); o.rotation.x = Math.PI / 2; o.position.z = z; P.add(o); return o; };
+      cyl(0.27, 0.27, 1.1, dark, 3.1); cyl(0.3, 0.3, 0.12, steel, 2.58); cyl(0.3, 0.3, 0.12, steel, 3.62);
+      P.userData.rod = cyl(0.055, 0.055, 1, chrome, 2); P.userData.head = cyl(0.2, 0.2, 0.14, steel, 1.0); P.userData.glow = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.02, 8, 24), ring); P.add(P.userData.glow);
+      P.userData.coils = []; for (let i = 0; i < 6; i++) { const t = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.025, 6, 18), chrome); P.add(t); P.userData.coils.push(t); }
+      P.userData.ring = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.03, 8, 28), ring); P.userData.ring.position.z = 2.58; P.add(P.userData.ring); }
+  };
+  EVO.pistonFrame = (g, dt) => {
+    const pad = g.pad, P = pad && pad.piston; if (!P) return; const a = g.evoAim, ch = a ? (a.lock ? (a.ch || 0) * Math.max(0, 1 - a.lockT / 0.1) : a.ch || 0) : 0, slam = a && a.lock ? U.clamp(a.lockT / 0.1, 0, 1) : 0;
+    const zh = 1.0 + 0.85 * ch - slam * 0.55, d = P.userData; d.head.position.z = zh; d.glow.position.z = zh + 0.1; d.rod.scale.y = Math.max(0.1, 2.58 - zh); d.rod.position.z = (zh + 2.58) / 2;
+    for (let i = 0; i < d.coils.length; i++) d.coils[i].position.z = zh + 0.12 + (2.5 - zh) * (i + 0.5) / d.coils.length;
+    const hot = Math.min(1, ch * 1.15), col = _pc.setRGB(0.2 + 0.8 * hot, 0.8 - 0.55 * hot * hot, 1 - 0.85 * hot); d.glow.material.color.copy(col); d.ring.material.color.copy(col);
+    if (a && a.hold && !a.lock && ch > 0.55 && g.effects && Math.random() < dt * (6 + 30 * ch)) { const o = pad.origin; g.effects.smoke.emit({ pos: new V(o.x + (Math.random() - 0.5) * 0.4, o.y + 0.2, o.z + 0.2), vel: new V((Math.random() - 0.5) * 1.5, 1.5 + Math.random() * 2, (Math.random() - 0.5) * 1.5), life: 0.7 + Math.random() * 0.5, s0: 0.1, s1: 0.4, s2: 0.8, peak: 0.3, cols: g.effects.pal.smoke, drag: 1.6, a: 0.5, fin: 0.05, fout: 0.4, wind: 0, turb: 1, spin: 1 }); }
   };
 
   // ---------- animation d'évolution : zoom sur la fusée, la pièce apparaît avec des étincelles ----------
@@ -155,10 +184,10 @@
     g.evoAnim = { t: 0, dur: 3.0, tier, label, popped: false };
     g.audio.play('padArm'); g.rig.shake = Math.max(g.rig.shake, 0.3);
   };
-  EVO.applySkinOnly = (g) => { const r = EVO.rocket(EVO.save(g).rk); g.rocket.setSkin(CC.Skins.get('evoT' + r.tier)); EVO.attachParts(g); };
+  EVO.applySkinOnly = (g) => { EVO.applySkin(g); };
   EVO.frame = (g, dt) => {
     if (g.evoTumble) EVO.tumbleFrame(g, dt);
-    EVO.kbFrame(g);
+    EVO.kbFrame(g); EVO.pistonFrame(g, dt);
     const wt = CC.Textures && CC.Textures.get && CC.Textures.get('water'); if (wt && wt.offset) wt.offset.y += dt * 0.12;   // v123 : l'eau coule (rivière, cascades)
     const A = g.evoAnim; if (!A) return;
     A.t += dt;
@@ -179,8 +208,8 @@
     const A = g.evoAnim;
     // v152 : menu : la fusee est vue de trois quarts avant, en haut de l'ecran (les cartes sont dessous) ; la vue de dessus du tir revient pendant la visee
     { const now = performance.now(), dtm = Math.min(0.1, (now - (g._mk0 || now)) / 1000); g._mk0 = now; const want = (g.ui && g.ui.overlay === 'evo' && !g.evoAim && !A) ? 1 : 0; g._mk = (g._mk || 0) + (want - (g._mk || 0)) * Math.min(1, dtm * 2.6);
-      if (g._mk > 0.003 && g.pad) { const e = g._mk * g._mk * (3 - 2 * g._mk), dir = g.pad.dir, up = new V(0, 1, 0), right = new V().crossVectors(dir, up).normalize(), sw = Math.sin(now / 2600) * 0.45;
-        const p = new V().copy(o).addScaledVector(dir, 2.3 + sw * 0.4).addScaledVector(right, 2.25 + sw).addScaledVector(up, 1.0), look = new V().copy(o).addScaledVector(dir, -0.15).addScaledVector(up, -0.5);
+      if (g._mk > 0.003 && g.pad) { const e = g._mk * g._mk * (3 - 2 * g._mk), kf = 1 + 0.02 * Math.min(40, EVO.save(g).rk), dir = g.pad.dir, up = new V(0, 1, 0), right = new V().crossVectors(dir, up).normalize(), sw = Math.sin(now / 2600) * 0.45;
+        const p = new V().copy(o).addScaledVector(dir, (-3.4 + sw * 0.4) * kf).addScaledVector(right, (1.9 + sw * 0.4) * kf).addScaledVector(up, 1.5 * kf), look = new V().copy(o).addScaledVector(dir, 0.2).addScaledVector(up, -1.25 * kf);
         rig.padPos.lerp(p, e); rig.padLook.lerp(look, e); rig.padFov += (58 - rig.padFov) * e; } }
     if (!A) return;
     const k = U.smooth(0, 0.5, A.t) * (1 - U.smooth(A.dur - 0.7, A.dur, A.t)), ang = 0.6 + A.t * 0.55;
@@ -190,30 +219,46 @@
 
   // ---------- lancer : la barre de timing ----------
   EVO.startAim = (g) => {
+    if (g.evoAim) return;
     g.ui.overlay = null; g.evoLast = null;
     g.evoAim = { c: -1, dir: 1, lock: false, lockT: 0, t: 0, mult: 1, word: '', zone: 'red' };
     g.evoLaunchMult = 1; g.pad.manual = true;
     if (g.state === 'MENU' && g.padMode) g.beginLaunch();
   };
   EVO.zones = (g) => { const la = EVO.launcher(EVO.save(g).la), run = EVO.save(g).runs, k = run < 2 ? 1.5 : 1; return { gold: 0.07 * (1 + 0.1 * la.n) * k, green: 0.24 * (1 + 0.08 * la.n) * k, yellow: 0.55 }; };
-  EVO.lock = (g) => {
+  // v159 : LANCEMENT AU PISTON : on maintient le doigt (la pression monte, le piston recule, la vapeur siffle), on relache pour propulser. Zone doree = poussee maximale ; trop attendre = surchauffe.
+  const CHARGE_T = 1.7;
+  EVO.pressZones = (g) => { const la = EVO.launcher(EVO.save(g).la), runs = EVO.save(g).runs, k = runs < 2 ? 1.5 : 1, w = 0.12 * (1 + 0.05 * Math.min(la.n, 15)) * k; return { gold0: 0.8 - w * 0.4, gold1: Math.min(0.97, 0.8 + w * 0.9), green0: 0.55, yel0: 0.25 }; };
+  EVO.holdStart = (g) => {
+    const a = g.evoAim; if (!a || a.lock || a.hold || a.auto || g.state !== 'LAUNCH') return;
+    a.hold = true; a.ch = 0; a.tk = 0; g.audio.play('padArm'); if (CC.Haptics) CC.Haptics.tick('touch');
+  };
+  EVO.holdEnd = (g) => { const a = g.evoAim; if (a && a.hold && !a.lock) EVO.release(g, false); };
+  EVO.release = (g, over) => {
+    const a = g.evoAim; if (!a || a.lock) return; const Z = EVO.pressZones(g), c = a.ch || 0;
+    a.lock = true; a.lockT = 0; a.hold = false;
+    if (over) { a.zone = 'red'; a.mult = 0.8; a.word = 'SURCHAUFFE'; } else if (c >= Z.gold0 && c <= Z.gold1) { a.zone = 'gold'; a.mult = 1.3; a.word = 'PARFAIT !'; } else if (c >= Z.green0 && c < Z.gold0) { a.zone = 'green'; a.mult = 1.12; a.word = 'BIEN'; } else if (c > Z.gold1) { a.zone = 'yellow'; a.mult = 1.0; a.word = 'TROP LONG'; } else if (c >= Z.yel0) { a.zone = 'yellow'; a.mult = 0.9; a.word = 'MOYEN'; } else { a.zone = 'red'; a.mult = 0.7; a.word = 'FAIBLE'; }
+    g.evoLaunchMult = a.mult; g.audio.play(a.zone === 'gold' ? 'levelUp' : 'target'); g.audio.play('boomSmall', g.pad.origin);
+    g.rig.shake = Math.max(g.rig.shake, 0.5 + 0.4 * c); if (a.zone === 'gold') { g.flash = 0.35; g.flashColor = '#ffe9a0'; } if (CC.Haptics) CC.Haptics.pattern(a.zone === 'gold' ? 'levelUp' : 'fire');
+    g.effects.ring(g.pad.origin.clone(), new V(0, 0, 1), 0.3, 5, 0.3, '#ffffff', 0.7);
+  };
+  EVO.lock = (g) => {   // ancien appel (niveau 2, tests) : relache immediat
     const a = g.evoAim; if (!a || a.lock || g.state !== 'LAUNCH') return;
-    const Zn = EVO.zones(g), d = Math.abs(a.c);
-    a.lock = true; a.lockT = 0;
-    if (d <= Zn.gold) { a.zone = 'gold'; a.mult = 1.3; a.word = 'PARFAIT !'; } else if (d <= Zn.green) { a.zone = 'green'; a.mult = 1.12; a.word = 'BIEN'; } else if (d <= Zn.yellow) { a.zone = 'yellow'; a.mult = 0.9; a.word = 'MOYEN'; } else { a.zone = 'red'; a.mult = 0.7; a.word = 'FAIBLE'; }
-    g.evoLaunchMult = a.mult;
-    if (a.zone === 'gold') { g.audio.play('levelUp'); g.flash = 0.4; g.flashColor = '#ffe9a0'; g.rig.shake = Math.max(g.rig.shake, 0.7); if (CC.Haptics) CC.Haptics.pattern('levelUp'); } else { g.audio.play(a.zone === 'green' ? 'target' : 'uiTick'); if (CC.Haptics) CC.Haptics.tick('warn'); }
+    if (a.auto) { a.ch = 0.86; a.hold = true; }
+    if (!a.hold) { a.hold = true; a.ch = 0.6; }
+    EVO.release(g, false);
   };
   EVO.aimTick = (g, dt) => {
     const a = g.evoAim; if (!a) return;
     a.t += dt;
-    if (!a.lock) {
-      const period = EVO.save(g).runs < 2 ? 2.0 : 1.2;
-      a.c += a.dir * dt * (2 / period);
-      if (a.c > 1) { a.c = 2 - a.c; a.dir = -1; } else if (a.c < -1) { a.c = -2 - a.c; a.dir = 1; }
-    }
-    g.pad.charge = U.clamp(0.1 + 0.9 * (1 - Math.abs(a.c)), 0, 1);
-    if (a.lock) { a.lockT += dt; if (a.lockT > 0.55) { g.evoAimLast = a; g.pad.manual = false; g.fire(); g.evoAim = null; } }
+    if (a.hold && !a.lock) {
+      const k = a.ch || 0; a.ch = Math.min(1.02, k + dt / CHARGE_T * (0.8 + 0.5 * k)); a.tk = (a.tk || 0) - dt;
+      if (a.tk <= 0) { a.tk = 0.2 - 0.14 * a.ch; if (CC.Haptics) CC.Haptics.tick(a.ch > 0.8 ? 'warn' : 'touch'); try { if (g.audio.tone) g.audio.tone('triangle', 130 + 520 * a.ch, 140 + 540 * a.ch, 0.09, 0.05); } catch (e) { /* son facultatif */ } }
+      g.rig.shake = Math.max(g.rig.shake, 0.08 * a.ch * a.ch);
+      if (a.ch >= 1) EVO.release(g, true);
+    } else if (!a.lock) a.ch = Math.max(0, (a.ch || 0) - dt * 2.5);
+    g.pad.charge = U.clamp(0.1 + 0.9 * (a.ch || 0), 0, 1);
+    if (a.lock) { a.lockT += dt; if (a.lockT > 0.14) { g.evoAimLast = a; g.pad.manual = false; g.fire(); g.evoAim = null; } }
   };
   EVO.launchSpeed = (g) => EVO.launcher(EVO.save(g).la).speed * (g.evoLaunchMult || 1);
 
@@ -315,6 +360,7 @@
   EVO.softCrash = (kind) => kind === 'stalled' || kind === 'weak' || kind === 'wall';
   const _tq = new THREE.Quaternion(), _ta = new V();
   const rr = (a, b) => a + Math.random() * (b - a);
+  const _pc = new THREE.Color();
   const sparks = (g, p, n, sp) => { const fx = g.effects; for (let i = 0; i < n; i++) fx.sparks.emit({ pos: p, vel: new V(rr(-1, 1), rr(0.3, 1), rr(-1, 1)).multiplyScalar(rr(sp * 0.5, sp)), life: rr(0.3, 0.8), s0: 0.05, s1: 0.04, s2: 0.01, cols: fx.pal.ember, drag: 1.2, grav: 6, a: 1, fout: 0.4 }); };
   EVO.startTumble = (g, kind, pos) => {
     const rk = g.rocket, sc = g.scene, v0 = rk.vel.clone(), P = [];
@@ -409,7 +455,8 @@
   EVO.multiply = (g, m) => { const L = g.evoLast; if (!L || L.doubled || !L.total) return; const extra = Math.round(L.total * (m - 1)); L.doubled = m; L.lines.push(['PUB X' + m, extra, performance.now()]); EVO.save(g).coins += extra; L.total += extra; L.popT = performance.now(); L.fx = { t0: performance.now(), n: extra }; g.evoAdDone = true; g.writeSave(); g.audio.play('target'); (g.killPops = g.killPops || []).length; };
   // gemmes : 1 gemme = 1 amelioration offerte quand les pieces manquent ; la 2e fois sur la meme amelioration (meme session) coute 2, la 3e 3...
   EVO.gemCost = (g, id) => ((g.evoGemUse && g.evoGemUse[id]) || 0) + 1;
-  EVO.gemAd = (g) => { if (!g.ads) return; g.ads.rewarded(() => { const S = EVO.save(g); S.gems = (S.gems || 0) + 1; g.writeSave(); g.audio.play('levelUp'); g.evoGemFx = { t0: performance.now(), n: 1 }; }, null, 'gem', '1 GEMME'); };
+  EVO.freeGemsUsed = (g) => { const S = EVO.save(g), d = new Date().toISOString().slice(0, 10); if (!S.gemFree || S.gemFree.day !== d) S.gemFree = { day: d, n: 0 }; return S.gemFree.n; };
+  EVO.gemAd = (g, free) => { if (!g.ads) return; if (free && EVO.freeGemsUsed(g) >= 3) return; g.ads.rewarded(() => { const S = EVO.save(g); S.gems = (S.gems || 0) + 1; if (free) { EVO.freeGemsUsed(g); S.gemFree.n++; } g.writeSave(); g.audio.play('levelUp'); g.evoGemFx = { t0: performance.now(), n: 1 }; }, null, 'gem', '1 GEMME'); };
   EVO.buyGem = (g, id) => {
     const S = EVO.save(g), c = EVO.nextCost(g, id), gc = EVO.gemCost(g, id); if (c === null || g.evoAnim) return;
     const pay = () => { if ((S.gems || 0) < gc) return; S.gems -= gc; g.evoGemUse = g.evoGemUse || {}; g.evoGemUse[id] = (g.evoGemUse[id] || 0) + 1; EVO.buy(g, id, true); };
@@ -422,7 +469,7 @@
     const coins = Math.max(150, Math.round(EVO.cost('rk', S.rk) * 0.7)); S.coins += coins; S.gems = (S.gems || 0) + 1; S.chestAt = Date.now() + 2 * 3600 * 1000; g.writeSave();
     g.evoChest = { t0: performance.now(), coins, gems: 1 }; g.audio.play('levelUp'); g.audio.play('target'); if (CC.Haptics) CC.Haptics.tick('warn'); g.telemetry.event('evoChest', { coins });
   };
-  EVO.start = (g) => { if (g.evoAnim) return; EVO.startAim(g); };
+  EVO.start = (g) => { if (g.evoAnim || g.evoAim) return; EVO.startAim(g); };
   EVO.buy = (g, id, free) => {
     const S = EVO.save(g), c = EVO.nextCost(g, id);
     if (g.evoAnim) return false;
@@ -445,19 +492,8 @@
     const top = Math.max(10, H * 0.02);
     if (ev.preview) { F.draw(ctx, 'APERCU : ZONE 2', W / 2, top + px * 3, px * 1.1, '#9fe8b0', { align: 'center' }); return; }
     // distance : juste au-dessus de la fusée ; compteur de vitesse (cadran) en haut à gauche
-    if (rk.active) { _v.set(rk.pos.x, rk.pos.y + 1.7 + 0.6 * (rk.mesh.scale.x || 1), rk.pos.z); CC.Curve.apply(_v, g.camera).project(g.camera); if (_v.z < 1 && _v.z > -1) F.draw(ctx, Math.round(run.dist) + ' M', (_v.x * 0.5 + 0.5) * W, (-_v.y * 0.5 + 0.5) * H - px * 1.2, px * 0.75, '#ffffff', { align: 'center', alpha: 0.95 }); }
-    { const kmh = rk.active ? rk.vel.length() * 3.6 : 0, R = Math.max(26, W * 0.085), cx = W * 0.2 + R, cy = top + R + px * 1.5, a0 = Math.PI * 0.8, a1 = Math.PI * 2.2, k = U.clamp(kmh / 260, 0, 1);
-      ctx.save(); ctx.fillStyle = 'rgba(10,16,26,0.62)'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.2832); ctx.fill(); ctx.lineWidth = R * 0.12; ctx.lineCap = 'butt';
-      ctx.strokeStyle = 'rgba(160,190,230,0.35)'; ctx.beginPath(); ctx.arc(cx, cy, R * 0.82, a0, a1); ctx.stroke();
-      ctx.strokeStyle = k < 0.55 ? '#46b8ff' : k < 0.8 ? '#5ae07a' : '#ffd23a'; ctx.beginPath(); ctx.arc(cx, cy, R * 0.82, a0, a0 + (a1 - a0) * k); ctx.stroke();
-      const ang = a0 + (a1 - a0) * k; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(2, R * 0.07); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(ang) * R * 0.7, cy + Math.sin(ang) * R * 0.7); ctx.stroke();
-      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(cx, cy, R * 0.09, 0, 6.2832); ctx.fill(); ctx.restore();
-      F.draw(ctx, String(Math.round(kmh)), cx, cy + R * 0.18, R * 0.06, '#6aff9a', { align: 'center' }); F.draw(ctx, 'KM/H', cx, cy + R * 0.52, R * 0.032, '#cfe4ff', { align: 'center' }); }
-    { const T = run.T, pct = U.clamp(run.dist / (T.levelLen || 5000), 0, 1), bw = Math.max(8, px * 3.2), bx = Math.max(10, W * 0.03), by0 = H * 0.2, bh = H * 0.34, yy = by0 + bh * (1 - pct);
-      ctx.save(); ctx.globalAlpha = 0.85; ctx.fillStyle = 'rgba(10,14,22,0.55)'; ctx.fillRect(bx - 3, by0 - 3, bw + 6, bh + 6); ctx.fillStyle = '#ffd23a'; ctx.fillRect(bx, yy, bw, by0 + bh - yy);
-      for (let k = 0; k < 4; k++) for (let j = 0; j < 2; j++) { ctx.fillStyle = (k + j) % 2 ? '#111' : '#fff'; ctx.fillRect(bx + j * bw / 2, by0 - px * 3.4 + k * px * 0.85, bw / 2, px * 0.85); }
-      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(bx + bw + 4, yy); ctx.lineTo(bx + bw + 4 + px * 2, yy - px * 1.1); ctx.lineTo(bx + bw + 4 + px * 2, yy + px * 1.1); ctx.closePath(); ctx.fill(); ctx.restore();
-      F.draw(ctx, Math.round(pct * 100) + '%', bx, by0 + bh + px * 2.2, px * 0.85, '#ffffff', {}); }
+    if (rk.active) { _v.set(rk.pos.x, rk.pos.y + 1.7 + 0.6 * (rk.mesh.scale.x || 1), rk.pos.z); CC.Curve.apply(_v, g.camera).project(g.camera); if (_v.z < 1 && _v.z > -1 && CC.Home.evoUI) CC.Home.evoUI.txt(ctx, Math.round(run.dist) + ' M', (_v.x * 0.5 + 0.5) * W, (-_v.y * 0.5 + 0.5) * H - px * 3, Math.max(15, H * 0.026), '#ffffff', { sw: 0.2 }); }
+    if (CC.Home && CC.Home.evoUI && CC.Home.evoUI.hud) CC.Home.evoUI.hud(ctx, g, W, H, px);   // v159 : compteur, jauge de carburant et progression au style de la reference
     // v152 : premiers vols : un reticule anime sur l'ennemi le plus proche devant la fusee (on comprend tout de suite quoi viser)
     if (EVO.save(g).runs < 3 && rk.active) {
       let best = null, bd = 1e9; for (const t of g.targets) { if (!t.alive || t.boss || t.mini || !t.obb || t.unarmedHidden) continue; const c = t.obb.c, d = c.distanceTo(rk.pos); if (d < 12 || d > 230) continue; _v.copy(c).sub(rk.pos); if (_v.dot(rk.fwd) < 0) continue; if (d < bd) { bd = d; best = t; } }
@@ -473,7 +509,7 @@
       _v.set(c.x, c.y + (t.size ? t.size[1] * 0.5 : 2) + 2.4, c.z); CC.Curve.apply(_v, g.camera).project(g.camera); if (_v.z > 1 || _v.z < -1) continue;
       const sx = (_v.x * 0.5 + 0.5) * W, sy = (-_v.y * 0.5 + 0.5) * H, ok = dmg + 0.001 >= t.evoHp, s = px * U.clamp(2.0 - d / 120, 0.8, 1.7);
       const hv = t.evoHp, lab = Number.isInteger(hv) ? String(hv) : (Math.round(hv * 10) / 10).toFixed(1);
-      F.draw(ctx, lab, sx, sy - s * 3.5, s, ok ? '#6aff9a' : '#ff5a4a', { align: 'center' });
+      CC.Home.evoUI.txt(ctx, lab, sx, sy - s * 3.5, s * 6.2, ok ? '#7dff7a' : '#ff6a5a', { sw: 0.24 });
       if (t.evoHpMax && t.evoHp < t.evoHpMax) { const bw = s * 14, bh = Math.max(4, s * 1.5), bx = sx - bw / 2, by = sy - s * 6.4, f = U.clamp(t.evoHp / t.evoHpMax, 0, 1), fl = t.evoHitT && performance.now() - t.evoHitT < 300; ctx.fillStyle = 'rgba(8,10,14,0.75)'; ctx.fillRect(bx - 2, by - 2, bw + 4, bh + 4); ctx.fillStyle = fl ? '#ffffff' : f > 0.5 ? '#46d86a' : f > 0.25 ? '#ffc531' : '#ff5a4a'; ctx.fillRect(bx, by, bw * f, bh); }
     }
   };
