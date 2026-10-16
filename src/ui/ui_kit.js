@@ -34,9 +34,10 @@
   UI.fit = (ctx, s, maxW, px) => { const w = UI.tw(ctx, s, px); return w > maxW ? px * maxW / w : px; };
   // texte : contour sombre epais seulement sur les gros textes (o.outline = true) ; petits textes sans contour
   UI.text = (ctx, s, x, y, px, color, o) => {
-    o = o || {}; ctx.save(); UI.setFont(ctx, px); ctx.textAlign = o.align || 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.miterLimit = 2;
-    if (o.outline) { ctx.lineWidth = px * (o.ow || 0.3); ctx.strokeStyle = THEME.ink; ctx.strokeText(s, x, y); }
-    else if (o.shadow !== false) { ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = px * 0.1; ctx.shadowOffsetY = px * 0.05; }
+    // v173 : aucun contour : le texte clair est double d'une copie sombre decalee de quelques pixels vers le bas (petit relief)
+    o = o || {}; ctx.save(); UI.setFont(ctx, px); ctx.textAlign = o.align || 'center'; ctx.textBaseline = 'middle';
+    const off = Math.max(1.5 * (UI.hudPr || 1), px * (o.outline ? 0.07 : 0.05));
+    ctx.fillStyle = 'rgba(8,9,12,0.95)'; ctx.fillText(s, x, y + off);
     ctx.fillStyle = color || THEME.white; ctx.fillText(s, x, y); ctx.restore();
   };
   // ---------- composants ----------

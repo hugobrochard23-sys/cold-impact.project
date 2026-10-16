@@ -103,20 +103,23 @@
     { const ch = game.evoChest; if (ch) { const k = (now - ch.t0) / 1000; if (k > 3.2) game.evoChest = null; else {
       const a = U.clamp(k / 0.25, 0, 1) * U.clamp((3.2 - k) / 0.4, 0, 1); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = 'rgba(8,9,12,0.85)'; ctx.fillRect(0, T0, W, HH); UI.icon(ctx, 'chest_open', cx, Y(0.3), S(440) * (0.9 + 0.1 * ease(k * 3)));
       const t1 = '+' + U.formatInt(ch.coins), t2 = '+' + ch.gems, p1 = S(110); UI.icon(ctx, 'coin', cx - UI.tw(ctx, t1, p1) / 2 - p1 * 0.7, Y(0.5), p1); UI.text(ctx, t1, cx + p1 * 0.2, Y(0.5), p1, T.yellow, { outline: true }); UI.icon(ctx, 'gem', cx - UI.tw(ctx, t2, p1) / 2 - p1 * 0.7, Y(0.58), p1); UI.text(ctx, t2, cx + p1 * 0.2, Y(0.58), p1, T.yellow, { outline: true }); ctx.restore(); hit(ui, 0, T0, W, HH, () => { game.evoChest = null; }); } } }
-    hit(ui, 0, T0 + S(160), W, Y(0.68) - T0 - S(160), () => { game.evoLvPop = false; E.start(game); E.holdStart(game); }, true);
+    hit(ui, 0, T0 + S(160), W, Y(0.68) - T0 - S(160), () => { game.evoLvPop = false; E.start(game); }, true);
   };
 
   // ---------- JAUGE DE PRESSION (lancement au piston) ----------
+  const lerpC = (a, b, t) => { const p = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)], A = p(a), B = p(b); return 'rgb(' + A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(',') + ')'; };
+  const powerCol = (k) => k < 0.5 ? lerpC('#FF2B2B', '#FFB400', k / 0.5) : lerpC('#FFB400', '#3FD84A', (k - 0.5) / 0.5);   // du rouge vers le vert
   Home.drawEvoAim = function (ui, ctx, game, W, H) {
     const F = frame(ui, ctx, W, H), { HH, Y, cw, cx } = F, E = CC.EVO, a = game.evoAim, now = performance.now();
-    if (!a || a.auto) return; const Z = E.pressZones(game), ch = a.ch || 0;
-    const R = cw * 0.3, ccy = Y(0.94), a0 = Math.PI, a1 = 2 * Math.PI, ang = (v) => a0 + (a1 - a0) * v;
+    if (!a || a.auto) return; const ch = U.clamp(a.ch || 0, 0, 1);
+    // jauge de puissance : demi-cercle qui se remplit du rouge au vert (aucun echec : plus on maintient, plus c'est fort)
+    const R = cw * 0.3, ccy = Y(0.94), a0 = Math.PI, a1 = 2 * Math.PI, N = 36;
     ctx.save(); ctx.beginPath(); ctx.arc(cx, ccy, R * 1.12, Math.PI, 2 * Math.PI); ctx.closePath(); ctx.fillStyle = 'rgba(30,32,36,0.92)'; ctx.fill(); ctx.lineWidth = S(5); ctx.strokeStyle = T.border2; ctx.stroke();
-    const arc = (v0, v1, col) => { ctx.beginPath(); ctx.arc(cx, ccy, R * 0.86, ang(v0), ang(v1)); ctx.lineWidth = R * 0.2; ctx.lineCap = 'butt'; ctx.strokeStyle = col; ctx.stroke(); };
-    arc(0, Z.yel0, '#3a3e45'); arc(Z.yel0, Z.green0, '#8a7d00'); arc(Z.green0, Z.gold0, T.yellow); const gp = a.hold || a.lock ? 1 : 0.8 + 0.2 * Math.sin(now / 160); arc(Z.gold0, Z.gold1, gp > 0.9 ? T.white : T.yellowL); arc(Z.gold1, 1, T.red);
-    const na = ang(Math.min(1, ch)); ctx.beginPath(); ctx.moveTo(cx - Math.cos(na) * R * 0.1, ccy - Math.sin(na) * R * 0.1); ctx.lineTo(cx + Math.cos(na) * R * 0.8, ccy + Math.sin(na) * R * 0.8); ctx.lineWidth = S(9); ctx.lineCap = 'round'; ctx.strokeStyle = T.white; ctx.stroke(); ctx.beginPath(); ctx.arc(cx, ccy, R * 0.1, 0, 6.2832); ctx.fillStyle = T.white; ctx.fill(); ctx.restore();
-    if (!a.lock) { const s = a.hold ? 'RELÂCHE !' : 'MAINTIENS POUR CHARGER', pk = a.hold ? 1 + 0.06 * Math.sin(now / 70) : 1; ctx.save(); ctx.translate(cx, Y(0.68)); ctx.scale(pk, pk); UI.text(ctx, s, 0, 0, UI.fit(ctx, s, cw * 0.9, S(84)), a.hold && ch >= Z.gold0 && ch <= Z.gold1 ? T.yellow : T.white, { outline: true }); ctx.restore(); }
-    else { const col = { gold: T.yellow, green: T.yellow, yellow: T.white, red: T.red }[a.zone], k = U.clamp(a.lockT / 0.12, 0, 1); UI.text(ctx, a.word, cx, Y(0.45) - (1 - k) * S(30), UI.fit(ctx, a.word, cw * 0.9, S(150)) * (0.8 + 0.2 * k), col, { outline: true }); }
+    for (let k = 0; k < N; k++) { const v0 = k / N, v1 = (k + 1) / N, on = v0 < ch; ctx.beginPath(); ctx.arc(cx, ccy, R * 0.86, a0 + (a1 - a0) * v0 + 0.012, a0 + (a1 - a0) * v1 - 0.012); ctx.lineWidth = R * 0.2; ctx.lineCap = 'butt'; ctx.strokeStyle = on ? powerCol((v0 + v1) / 2) : 'rgba(80,84,92,0.55)'; ctx.stroke(); }
+    ctx.restore();
+    const pct = Math.round(ch * 100); UI.text(ctx, pct + '%', cx, ccy - R * 0.28, S(78), ch > 0 ? powerCol(ch) : T.dim, {});
+    if (!a.lock) { const s = a.hold ? 'RELÂCHE POUR LANCER' : 'MAINTIENS POUR CHARGER'; UI.text(ctx, s, cx, Y(0.68), UI.fit(ctx, s, cw * 0.9, S(76)), T.white, { outline: true }); }
+    else { const k = U.clamp(a.lockT / 0.12, 0, 1); UI.text(ctx, a.word, cx, Y(0.45) - (1 - k) * S(30), UI.fit(ctx, a.word, cw * 0.92, S(110)) * (0.8 + 0.2 * k), powerCol(ch), { outline: true }); }
     hit(ui, 0, 0, W, H, () => {}, true);
   };
 

@@ -97,4 +97,6 @@
   const _rl = EVO.release; EVO.release = (g, over) => { const A = g.audio; _rl(g, over); if (A) { if (A.stopIgnition) A.stopIgnition(); if (A.play) A.play('clampOpen'); } };
   // evite le son de charge a ressort au premier toucher
   
+  // v173 : plus de voyant rouge de detection au-dessus des ennemis
+  if (CC.Models && CC.Models.alertSprite) { const _as = CC.Models.alertSprite; CC.Models.alertSprite = function () { const o = _as.apply(this, arguments); Object.defineProperty(o, 'visible', { get: () => false, set: () => {} }); return o; }; }
 })();

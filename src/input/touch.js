@@ -55,7 +55,7 @@
       }
       // v087 : dans les menus, on traite le toucher NOUS-MEMES (au relâchement, avec une tolérance de 28 px) au lieu d'attendre le clic synthétique du navigateur
       // qui disparaissait si le doigt bougeait un peu ou restait posé trop longtemps (boutons pub, fermer...)
-      if (CC.EVO && CC.EVO.on && game.state === 'MENU' && game.ui.overlay === 'evo' && !game.pendingHome && e.target !== pause) { const t1 = e.changedTouches[0], q = input.uiCoords(t1.clientX, t1.clientY); if (!game.ui.hitTestUI(q.x, q.y)) { e.preventDefault(); CC.EVO.start(game); CC.EVO.holdStart(game); return; } }
+      if (CC.EVO && CC.EVO.on && game.state === 'MENU' && game.ui.overlay === 'evo' && !game.pendingHome && e.target !== pause) { const t1 = e.changedTouches[0], q = input.uiCoords(t1.clientX, t1.clientY); if (!game.ui.hitTestUI(q.x, q.y)) { e.preventDefault(); CC.EVO.start(game); return; } }
       if (!playing() && e.target !== pause) { const t0 = e.changedTouches[0]; uiTouch = { id: t0.identifier, x0: t0.clientX, y0: t0.clientY, x: t0.clientX, y: t0.clientY }; return; }
       if (!playing() || e.target === pause) return;   // menus, pause : le toucher devient un clic sur le jeu
       e.preventDefault();
