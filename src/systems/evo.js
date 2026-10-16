@@ -155,13 +155,13 @@
     if (la.tier === 0) { mk(0.5, 0.06, 4.4, '#9a7448', 0, -0.285, -0.75); for (let i = 0; i < 9; i++) mk(0.52, 0.02, 0.03, '#6e5230', 0, -0.25, 1.2 - i * 0.5); }
     // v152 : acceleration = vrais anneaux lisses (acier + liseret lumineux + halo) sur deux rails de guidage, plus de cadres carres
     if (la.tier >= 1) {
-      const col = ['#ffb040', '#39d4ff', '#c07bff'][la.tier], n = [0, 3 + la.s, 4 + la.s][la.tier], hw = 0.34 + (la.tier > 1 ? 0.04 : 0);
+      const col = ['#FFE600', '#FFE600', '#ffffff'][la.tier], n = [0, 3 + la.s, 4 + la.s][la.tier], hw = 0.34 + (la.tier > 1 ? 0.04 : 0);
       const steel = new THREE.MeshLambertMaterial({ color: la.tier > 1 ? '#3a4250' : '#566070' }), lite = new THREE.MeshBasicMaterial({ color: col }), halo = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false });
       for (const sx of [-1, 1]) { const r = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.5 + n * 0.55), steel); r.position.set(sx * (hw + 0.02), -0.2, 0.2 - (n - 1) * 0.275); G.add(r); const s2 = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.02, 0.3 + n * 0.55), lite); s2.position.set(sx * (hw + 0.02), -0.15, 0.2 - (n - 1) * 0.275); G.add(s2); }
       for (let i = 0; i < n; i++) { const z = 0.2 - i * 0.55, k = 1 - i / (n + 2) * 0.3; const t1 = new THREE.Mesh(new THREE.TorusGeometry(hw * k, 0.028, 8, 28), steel); t1.position.set(0, 0.0, z); G.add(t1); const t2 = new THREE.Mesh(new THREE.TorusGeometry(hw * k, 0.012, 6, 28), lite); t2.position.set(0, 0, z + 0.03); G.add(t2); const t3 = new THREE.Mesh(new THREE.TorusGeometry(hw * k, 0.07, 6, 28), halo); t3.position.set(0, 0, z); G.add(t3); }
     }
     // v159 : le PISTON de lancement : un verin derriere la fusee ; on le recule en maintenant le doigt, on le lache pour la propulser
-    { const steel = new THREE.MeshLambertMaterial({ color: '#4a5260' }), dark = new THREE.MeshLambertMaterial({ color: '#272b33' }), chrome = new THREE.MeshLambertMaterial({ color: '#b8c0cc' }), ring = new THREE.MeshBasicMaterial({ color: '#46c8ff' }), P = pad.piston = new THREE.Group(); G.add(P);
+    { const steel = new THREE.MeshLambertMaterial({ color: '#4a5260' }), dark = new THREE.MeshLambertMaterial({ color: '#272b33' }), chrome = new THREE.MeshLambertMaterial({ color: '#b8c0cc' }), ring = new THREE.MeshBasicMaterial({ color: '#FFE600' }), P = pad.piston = new THREE.Group(); G.add(P);
       const cyl = (rt, rb, h, m, z) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 16), m); o.rotation.x = Math.PI / 2; o.position.z = z; P.add(o); return o; };
       cyl(0.27, 0.27, 1.1, dark, 3.1); cyl(0.3, 0.3, 0.12, steel, 2.58); cyl(0.3, 0.3, 0.12, steel, 3.62);
       P.userData.rod = cyl(0.055, 0.055, 1, chrome, 2); P.userData.head = cyl(0.2, 0.2, 0.14, steel, 1.0); P.userData.glow = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.02, 8, 24), ring); P.add(P.userData.glow);
@@ -172,7 +172,7 @@
     const pad = g.pad, P = pad && pad.piston; if (!P) return; const a = g.evoAim, ch = a ? (a.lock ? (a.ch || 0) * Math.max(0, 1 - a.lockT / 0.1) : a.ch || 0) : 0, slam = a && a.lock ? U.clamp(a.lockT / 0.1, 0, 1) : 0;
     const zh = 1.0 + 0.85 * ch - slam * 0.55, d = P.userData; d.head.position.z = zh; d.glow.position.z = zh + 0.1; d.rod.scale.y = Math.max(0.1, 2.58 - zh); d.rod.position.z = (zh + 2.58) / 2;
     for (let i = 0; i < d.coils.length; i++) d.coils[i].position.z = zh + 0.12 + (2.5 - zh) * (i + 0.5) / d.coils.length;
-    const hot = Math.min(1, ch * 1.15), col = _pc.setRGB(0.2 + 0.8 * hot, 0.8 - 0.55 * hot * hot, 1 - 0.85 * hot); d.glow.material.color.copy(col); d.ring.material.color.copy(col);
+    const hot = Math.min(1, ch * 1.15), col = _pc.setRGB(1, 0.9 - 0.73 * hot * hot, 0.17 * hot * hot); d.glow.material.color.copy(col); d.ring.material.color.copy(col);
     if (a && a.hold && !a.lock && ch > 0.55 && g.effects && Math.random() < dt * (6 + 30 * ch)) { const o = pad.origin; g.effects.smoke.emit({ pos: new V(o.x + (Math.random() - 0.5) * 0.4, o.y + 0.2, o.z + 0.2), vel: new V((Math.random() - 0.5) * 1.5, 1.5 + Math.random() * 2, (Math.random() - 0.5) * 1.5), life: 0.7 + Math.random() * 0.5, s0: 0.1, s1: 0.4, s2: 0.8, peak: 0.3, cols: g.effects.pal.smoke, drag: 1.6, a: 0.5, fin: 0.05, fout: 0.4, wind: 0, turb: 1, spin: 1 }); }
   };
 
@@ -494,14 +494,11 @@
     // distance : juste au-dessus de la fusée ; compteur de vitesse (cadran) en haut à gauche
     if (rk.active) { _v.set(rk.pos.x, rk.pos.y + 1.7 + 0.6 * (rk.mesh.scale.x || 1), rk.pos.z); CC.Curve.apply(_v, g.camera).project(g.camera); if (_v.z < 1 && _v.z > -1 && CC.Home.evoUI) CC.Home.evoUI.txt(ctx, Math.round(run.dist) + ' M', (_v.x * 0.5 + 0.5) * W, (-_v.y * 0.5 + 0.5) * H - px * 3, Math.max(15, H * 0.026), '#ffffff', { sw: 0.2 }); }
     if (CC.Home && CC.Home.evoUI && CC.Home.evoUI.hud) CC.Home.evoUI.hud(ctx, g, W, H, px);   // v159 : compteur, jauge de carburant et progression au style de la reference
-    // v152 : premiers vols : un reticule anime sur l'ennemi le plus proche devant la fusee (on comprend tout de suite quoi viser)
-    if (EVO.save(g).runs < 3 && rk.active) {
-      let best = null, bd = 1e9; for (const t of g.targets) { if (!t.alive || t.boss || t.mini || !t.obb || t.unarmedHidden) continue; const c = t.obb.c, d = c.distanceTo(rk.pos); if (d < 12 || d > 230) continue; _v.copy(c).sub(rk.pos); if (_v.dot(rk.fwd) < 0) continue; if (d < bd) { bd = d; best = t; } }
-      if (best) { const c = best.obb.c; _v.set(c.x, c.y + (best.size ? best.size[1] * 0.2 : 1), c.z); CC.Curve.apply(_v, g.camera).project(g.camera);
-        if (_v.z < 1 && _v.z > -1) { const sx = (_v.x * 0.5 + 0.5) * W, sy = (-_v.y * 0.5 + 0.5) * H, pk = 0.5 + 0.5 * Math.sin(performance.now() / 160), r = px * (7 + 2.4 * pk) * U.clamp(1.7 - bd / 260, 0.7, 1.4);
-          ctx.save(); ctx.lineWidth = Math.max(2, px * 0.55); ctx.strokeStyle = 'rgba(255,214,70,' + (0.55 + 0.4 * pk) + ')'; ctx.beginPath(); ctx.arc(sx, sy, r, 0, 6.2832); ctx.stroke();
-          for (let k = 0; k < 4; k++) { const a = k * 1.5708 + performance.now() / 900; ctx.beginPath(); ctx.moveTo(sx + Math.cos(a) * r * 1.15, sy + Math.sin(a) * r * 1.15); ctx.lineTo(sx + Math.cos(a) * r * 1.6, sy + Math.sin(a) * r * 1.6); ctx.stroke(); } ctx.restore(); } }
-    }
+    // v170 : reticules rouges sur les cibles devant la fusee (la plus proche est « verrouillee »)
+    if (rk.active && g.state === 'FLIGHT' && CC.UI2) { const UI2 = CC.UI2, tg = [];
+      for (const t of g.targets) { if (!t.alive || t.boss || t.mini || !t.obb || t.hazard) continue; const c = t.obb.c, d = c.distanceTo(rk.pos); if (d < 10 || d > 240) continue; _v.copy(c).sub(rk.pos); if (_v.dot(rk.fwd) < 0) continue; tg.push([d, t]); }
+      tg.sort((a, b) => a[0] - b[0]); const u2 = H > W ? W : Math.min(W, H * 0.62); UI2.begin(u2, g.hudPr || 1);
+      for (let i = 0; i < Math.min(4, tg.length); i++) { const t = tg[i][1], d = tg[i][0], c = t.obb.c; _v.set(c.x, c.y + (t.size ? t.size[1] * 0.3 : 1), c.z); CC.Curve.apply(_v, g.camera).project(g.camera); if (_v.z > 1 || _v.z < -1) continue; UI2.reticle(ctx, (_v.x * 0.5 + 0.5) * W, (-_v.y * 0.5 + 0.5) * H, UI2.S(170) * U.clamp(1.5 - d / 200, 0.55, 1.3), i === 0 && d < 150); } }
     const dmg = EVO.dmgNow(g);
     for (const t of g.targets) {
       if (!t.alive || t.boss || t.mini || !t.evoHp || !t.obb) continue;
@@ -509,7 +506,7 @@
       _v.set(c.x, c.y + (t.size ? t.size[1] * 0.5 : 2) + 2.4, c.z); CC.Curve.apply(_v, g.camera).project(g.camera); if (_v.z > 1 || _v.z < -1) continue;
       const sx = (_v.x * 0.5 + 0.5) * W, sy = (-_v.y * 0.5 + 0.5) * H, ok = dmg + 0.001 >= t.evoHp, s = px * U.clamp(2.0 - d / 120, 0.8, 1.7);
       const hv = t.evoHp, lab = Number.isInteger(hv) ? String(hv) : (Math.round(hv * 10) / 10).toFixed(1);
-      CC.Home.evoUI.txt(ctx, lab, sx, sy - s * 3.5, s * 6.2, ok ? '#7dff7a' : '#ff6a5a', { sw: 0.24 });
+      CC.Home.evoUI.txt(ctx, lab, sx, sy - s * 3.5, s * 6.2, ok ? '#FFE600' : '#FF2B2B', { sw: 0.24 });
       if (t.evoHpMax && t.evoHp < t.evoHpMax) { const bw = s * 14, bh = Math.max(4, s * 1.5), bx = sx - bw / 2, by = sy - s * 6.4, f = U.clamp(t.evoHp / t.evoHpMax, 0, 1), fl = t.evoHitT && performance.now() - t.evoHitT < 300; ctx.fillStyle = 'rgba(8,10,14,0.75)'; ctx.fillRect(bx - 2, by - 2, bw + 4, bh + 4); ctx.fillStyle = fl ? '#ffffff' : f > 0.5 ? '#46d86a' : f > 0.25 ? '#ffc531' : '#ff5a4a'; ctx.fillRect(bx, by, bw * f, bh); }
     }
   };
