@@ -7,9 +7,9 @@
 
   // ---------- ambiances du niveau : une par scène, fondues sur les 150 derniers mètres de chaque scène ----------
   const MOOD = {
-    dawn:    { top: '#6f95c4', hor: '#f0c8a0', fog: '#e6cdb4', near: 110, far: 300, hemiS: '#ffe4c8', hemiG: '#6a7a58', hemiI: 0.78, amb: 0.16, sunC: '#ffc58a', sunI: 0.95, night: 0 },
-    morning: { top: '#7aa0cc', hor: '#eadfcb', fog: '#dcd6c8', near: 130, far: 310, hemiS: '#f0e6d4', hemiG: '#6a7a58', hemiI: 0.76, amb: 0.16, sunC: '#fff0d0', sunI: 0.9, night: 0 },
-    day:     { top: '#7898bc', hor: '#dfe5e8', fog: '#c8d3d8', near: 140, far: 310, hemiS: '#d8e4f0', hemiG: '#6a7a58', hemiI: 0.74, amb: 0.16, sunC: '#fff0d6', sunI: 0.8, night: 0 },
+    dawn:    { top: '#5e9bd8', hor: '#ffc37a', fog: '#f6d2a0', near: 120, far: 320, hemiS: '#fff0d4', hemiG: '#8a9a58', hemiI: 0.98, amb: 0.22, sunC: '#ffb45a', sunI: 1.2, night: 0 },
+    morning: { top: '#68a8e0', hor: '#ffe0a8', fog: '#f2dcb4', near: 130, far: 330, hemiS: '#fff4dc', hemiG: '#8a9a58', hemiI: 0.95, amb: 0.2, sunC: '#ffd890', sunI: 1.12, night: 0 },
+    day:     { top: '#6aaee8', hor: '#eaf0ee', fog: '#d8e6e8', near: 140, far: 330, hemiS: '#f4f0e0', hemiG: '#7a9a58', hemiI: 0.9, amb: 0.2, sunC: '#fff0d0', sunI: 1.02, night: 0 },
     gold:    { top: '#6b7fa6', hor: '#f2b27c', fog: '#cfa47c', near: 100, far: 290, hemiS: '#ffd8b0', hemiG: '#6a5a48', hemiI: 0.7, amb: 0.16, sunC: '#ff9a50', sunI: 0.95, night: 0.1 },
     deep:    { top: '#1c2234', hor: '#3a3a48', fog: '#2a2c38', near: 30, far: 190, hemiS: '#8a90b0', hemiG: '#30303a', hemiI: 0.55, amb: 0.22, sunC: '#9aa4c8', sunI: 0.3, night: 0.4 },
     shaft:   { top: '#506080', hor: '#8a8a98', fog: '#4a4c58', near: 40, far: 240, hemiS: '#c0c8e0', hemiG: '#585860', hemiI: 0.9, amb: 0.35, sunC: '#ffd8a8', sunI: 0.6, night: 0.3 },
@@ -21,7 +21,7 @@
     inferno: { top: '#200808', hor: '#e0501c', fog: '#5a2010', near: 40, far: 260, hemiS: '#ff9050', hemiG: '#401408', hemiI: 0.8, amb: 0.3, sunC: '#ff6a20', sunI: 0.8, night: 0.6 },
   };
   // v152 : etalonnage par ambiance (saturation, contraste, ombres froides / hautes lumieres chaudes) : chaque lieu est un tableau
-  const GRADE = { dawn: [0.84, 1.08, '#e8eeff', '#fff0e0'], morning: [0.86, 1.06, '#eaf0ff', '#fff4e6'], day: [0.86, 1.06, '#e6eeff', '#fff6ea'], gold: [0.84, 1.1, '#e4e8ff', '#ffe6c8'], deep: [0.78, 1.1, '#dce6ff', '#e8f0ff'], shaft: [0.8, 1.08, '#e0e8ff', '#fff0d8'], tunnel: [0.78, 1.1, '#dce4ff', '#ffecd0'], night: [0.82, 1.1, '#dce2ff', '#ffe0c0'], siege: [0.8, 1.12, '#e0e0ff', '#ffdcc0'], fire: [0.82, 1.12, '#e0e4ff', '#ffd8b0'], core: [0.8, 1.1, '#d8e8ff', '#e8f4ff'], inferno: [0.86, 1.12, '#ffe8e0', '#ffd8b0'] };
+  const GRADE = { dawn: [1.1, 1.04, '#f4f0ff', '#ffe8c8'], morning: [1.08, 1.04, '#f4f2ff', '#ffecd0'], day: [1.05, 1.03, '#f2f4ff', '#fff2dc'], gold: [0.84, 1.1, '#e4e8ff', '#ffe6c8'], deep: [0.78, 1.1, '#dce6ff', '#e8f0ff'], shaft: [0.8, 1.08, '#e0e8ff', '#fff0d8'], tunnel: [0.78, 1.1, '#dce4ff', '#ffecd0'], night: [0.82, 1.1, '#dce2ff', '#ffe0c0'], siege: [0.8, 1.12, '#e0e0ff', '#ffdcc0'], fire: [0.82, 1.12, '#e0e4ff', '#ffd8b0'], core: [0.8, 1.1, '#d8e8ff', '#e8f4ff'], inferno: [0.86, 1.12, '#ffe8e0', '#ffd8b0'] };
   for (const k of Object.keys(MOOD)) { const m = MOOD[k]; for (const f of ['top', 'hor', 'fog', 'hemiS', 'hemiG', 'sunC']) m[f] = C3(m[f]); const q = GRADE[k] || GRADE.day; m.sat = q[0]; m.con = q[1]; m.shT = C3(q[2]); m.hiT = C3(q[3]); }
   const SCENE_MOOD = { descente: 'gold', rampe: 'dawn', camp: 'morning', riviere: 'day', foret: 'day', vallee: 'day', grotte: 'deep', falaise: 'gold', entrepots: 'gold', carriere: 'gold', puits: 'shaft', tunnel: 'tunnel', ville: 'night', approche: 'siege', porte: 'fire', noyau: 'core', fuite: 'inferno', arene: 'core', base: 'siege' };
   const SCENE_AUDIO = { descente: 'evoDusk', rampe: 'evoDawn', camp: 'evoDawn', riviere: 'evoDay', foret: 'evoDay', vallee: 'evoDay', grotte: 'evoMine', falaise: 'evoDusk', entrepots: 'evoDusk', carriere: 'evoDusk', puits: 'evoMine', tunnel: 'evoMine', ville: 'evoNight', approche: 'evoSiege', porte: 'evoBoss', noyau: 'evoBoss', fuite: 'evoEscape', arene: 'evoBoss', base: 'evoSiege' };

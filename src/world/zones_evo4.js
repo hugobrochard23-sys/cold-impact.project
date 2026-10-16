@@ -45,7 +45,7 @@
       for (const e of [-1, 1]) { S.cyl(dc + e * 10, hw + 6, 0, 0.18, 8, 'col:#5a626c', undefined, 6, 0.18, true); S.bx(dc + e * 10, hw + 5.2, 8.1, 1.8, 0.5, 1, 'emis:#fff4d0', undefined, false); S.glow(dc + e * 10, hw + 4.6, 7.6, '#fff0c0', 20); S.cyl(dc + e * 10, -hw - 6, 0, 0.18, 8, 'col:#5a626c', undefined, 6, 0.18, true); S.bx(dc + e * 10, -hw - 5.2, 8.1, 1.8, 0.5, 1, 'emis:#fff4d0', undefined, false); S.glow(dc + e * 10, -hw - 4.6, 7.6, '#fff0c0', 20); }
       for (let k = -2; k <= 2; k++) S.glow(dc + k * 7, 0, hh - 3.2, '#ffe2a8', 16);
     });
-    foe(S, 'jeep', dc + 2, -4, hh + 1.0, { name: 'JEEP', keep: true });
+    foe(S, 'jeep', dc + 2, -4, 0, { name: 'JEEP' });
   }
   D.scenes.rampe = { len: [170, 170], noDoor: true, noChaos: true,
     pin: (T, sc) => ({ lx: 0, y: 8, from: 20, to: sc.d1 - sc.d0 - 20 }),
@@ -58,9 +58,8 @@
       }
       S.item(d0 + 20, () => { for (const s of [-1, 1]) S.bx(d0 + 20, s * 9, 0.06, 0.9, 0.1, 40, 'col:#e8e8dc', undefined, false, { shadow: false }); });
       garage(S, d0 + 112);
-      // v150 : le lanceur envoie la fusee haut : les premiers ennemis sont sur une butte et en l'air, dans l'axe du tir
-      S.item(d0 + 58, (r) => { S.bx(d0 + 58, 5, 8, 16, 16, 16, 'col:#6e5f45', undefined, true); S.bx(d0 + 58, 5, 16.4, 17, 0.8, 17, 'col:#6a8a42', undefined, true); for (let k = 0; k < 4; k++) boulder(S, d0 + 58 + r.between([-8, 8]), 5 + r.between([-9, 9]), 0, r.between([2, 3.5]), r); });
-      foe(S, 'tank', d0 + 58, 5, 17.2, { name: 'CHAR', val: 240, keep: true });
+      // v171 : le char est simplement pose sur le sol, dans l'axe du tir (plus de butte)
+      foe(S, 'tank', d0 + 62, 3, 0, { name: 'CHAR', val: 240, keep: true });
       foe(S, 'heli', d0 + 84, 0, 25, { name: 'HELICO', keep: true, armed: false, patrol: (SS, dd, lx, y) => [SS.at(dd, -14, y), SS.at(dd + 10, 0, y + 3), SS.at(dd, 14, y), SS.at(dd - 10, 0, y + 3)], speed: 8 });
       foe(S, 'truck', d0 + 150, -8, 0, { name: 'CAMION', path: 60, speed: 14 });
     } };

@@ -209,7 +209,7 @@
     // v152 : menu : la fusee est vue de trois quarts avant, en haut de l'ecran (les cartes sont dessous) ; la vue de dessus du tir revient pendant la visee
     { const now = performance.now(), dtm = Math.min(0.1, (now - (g._mk0 || now)) / 1000); g._mk0 = now; const want = (g.ui && g.ui.overlay === 'evo' && !g.evoAim && !A) ? 1 : 0; g._mk = (g._mk || 0) + (want - (g._mk || 0)) * Math.min(1, dtm * 2.6);
       if (g._mk > 0.003 && g.pad) { const e = g._mk * g._mk * (3 - 2 * g._mk), kf = 1 + 0.02 * Math.min(40, EVO.save(g).rk), dir = g.pad.dir, up = new V(0, 1, 0), right = new V().crossVectors(dir, up).normalize(), sw = Math.sin(now / 2600) * 0.45;
-        const p = new V().copy(o).addScaledVector(dir, (-3.4 + sw * 0.4) * kf).addScaledVector(right, (1.9 + sw * 0.4) * kf).addScaledVector(up, 1.5 * kf), look = new V().copy(o).addScaledVector(dir, 0.2).addScaledVector(up, -1.25 * kf);
+        const p = new V().copy(o).addScaledVector(dir, (-3.9 + sw * 0.4) * kf).addScaledVector(right, (1.9 + sw * 0.4) * kf).addScaledVector(up, 0.3 * kf), look = new V().copy(o).addScaledVector(dir, 0.9).addScaledVector(up, -0.5 * kf);
         rig.padPos.lerp(p, e); rig.padLook.lerp(look, e); rig.padFov += (58 - rig.padFov) * e; } }
     if (!A) return;
     const k = U.smooth(0, 0.5, A.t) * (1 - U.smooth(A.dur - 0.7, A.dur, A.t)), ang = 0.6 + A.t * 0.55;
@@ -494,11 +494,12 @@
     // distance : juste au-dessus de la fusée ; compteur de vitesse (cadran) en haut à gauche
     if (rk.active) { _v.set(rk.pos.x, rk.pos.y + 1.7 + 0.6 * (rk.mesh.scale.x || 1), rk.pos.z); CC.Curve.apply(_v, g.camera).project(g.camera); if (_v.z < 1 && _v.z > -1 && CC.Home.evoUI) CC.Home.evoUI.txt(ctx, Math.round(run.dist) + ' M', (_v.x * 0.5 + 0.5) * W, (-_v.y * 0.5 + 0.5) * H - px * 3, Math.max(15, H * 0.026), '#ffffff', { sw: 0.2 }); }
     if (CC.Home && CC.Home.evoUI && CC.Home.evoUI.hud) CC.Home.evoUI.hud(ctx, g, W, H, px);   // v159 : compteur, jauge de carburant et progression au style de la reference
-    // v170 : reticules rouges sur les cibles devant la fusee (la plus proche est « verrouillee »)
-    if (rk.active && g.state === 'FLIGHT' && CC.UI2) { const UI2 = CC.UI2, tg = [];
-      for (const t of g.targets) { if (!t.alive || t.boss || t.mini || !t.obb || t.hazard) continue; const c = t.obb.c, d = c.distanceTo(rk.pos); if (d < 10 || d > 240) continue; _v.copy(c).sub(rk.pos); if (_v.dot(rk.fwd) < 0) continue; tg.push([d, t]); }
-      tg.sort((a, b) => a[0] - b[0]); const u2 = H > W ? W : Math.min(W, H * 0.62); UI2.begin(u2, g.hudPr || 1);
-      for (let i = 0; i < Math.min(4, tg.length); i++) { const t = tg[i][1], d = tg[i][0], c = t.obb.c; _v.set(c.x, c.y + (t.size ? t.size[1] * 0.3 : 1), c.z); CC.Curve.apply(_v, g.camera).project(g.camera); if (_v.z > 1 || _v.z < -1) continue; UI2.reticle(ctx, (_v.x * 0.5 + 0.5) * W, (-_v.y * 0.5 + 0.5) * H, UI2.S(170) * U.clamp(1.5 - d / 200, 0.55, 1.3), i === 0 && d < 150); } }
+    // v171 : un seul petit repere sur l'ennemi le plus proche + petit voyant rouge sur les autres (plus discret avec l'experience)
+    if (rk.active && g.state === 'FLIGHT' && CC.UI2) { const UI2 = CC.UI2, tg = []; const rr = EVO.save(g).runs;
+      for (const t of g.targets) { if (!t.alive || t.boss || t.mini || !t.obb || t.hazard) continue; const c = t.obb.c, d = c.distanceTo(rk.pos); if (d < 8 || d > 230) continue; _v.copy(c).sub(rk.pos); if (_v.dot(rk.fwd) < 0) continue; tg.push([d, t]); }
+      tg.sort((a, b) => a[0] - b[0]); const u2 = H > W ? W : Math.min(W, H * 0.62); UI2.begin(u2, g.hudPr || 1); const blink = Math.floor(performance.now() / 380) % 2;
+      for (let i = 0; i < Math.min(5, tg.length); i++) { const t = tg[i][1], d = tg[i][0], c = t.obb.c; _v.set(c.x, c.y + (t.size ? t.size[1] * 0.3 : 1), c.z); CC.Curve.apply(_v, g.camera).project(g.camera); if (_v.z > 1 || _v.z < -1) continue; const sx = (_v.x * 0.5 + 0.5) * W, sy = (-_v.y * 0.5 + 0.5) * H;
+        if (i === 0) UI2.reticle(ctx, sx, sy, UI2.S(rr < 3 ? 62 : 44) * U.clamp(1.5 - d / 220, 0.7, 1.2), d < 120); else if (blink) { ctx.fillStyle = UI2.THEME.red; ctx.beginPath(); ctx.arc(sx, sy, Math.max(2.5, UI2.S(7)), 0, 6.2832); ctx.fill(); } } }
     const dmg = EVO.dmgNow(g);
     for (const t of g.targets) {
       if (!t.alive || t.boss || t.mini || !t.evoHp || !t.obb) continue;

@@ -1123,7 +1123,7 @@
         if (this.postParams) this.postParams.tint = k > 0.02 ? '#' + new THREE.Color('#ffffff').lerp(new THREE.Color('#a4e6f2'), k).getHexString() : this.postTintBase;
       }
       const padLook = this.padMode && (this.state === 'MENU' || this.state === 'LAUNCH'), L0 = padLook ? [this.hemi.intensity, this.sun.intensity, this.ambient.intensity] : null, PP = this.postParams, B0 = padLook && PP ? [PP.bloomStrength, PP.bloomThreshold] : null;
-      if (padLook) { this.hemi.intensity *= 0.72; this.sun.intensity *= 0.72; this.ambient.intensity *= 0.8; if (PP) { PP.bloomStrength = Math.min(PP.bloomStrength, 0.1); PP.bloomThreshold = Math.max(PP.bloomThreshold, 0.97); } }   // v115 : lanceur sans éblouissement
+      if (padLook) { this.hemi.intensity *= 0.88; this.sun.intensity *= 0.9; this.ambient.intensity *= 0.9; if (PP) { PP.bloomStrength = Math.min(PP.bloomStrength, 0.1); PP.bloomThreshold = Math.max(PP.bloomThreshold, 0.97); } }   // v115 : lanceur sans éblouissement
       try {
       if (this.settings.postfx && this.postParams) {
         this.postParams.flash = Math.min(this.flash, 0.4) * 0.5;   // v116 : éclat blanc des explosions divisé par deux this.postParams.flashColor = this.flashColor || '#ffffff';
