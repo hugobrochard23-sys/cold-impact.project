@@ -204,7 +204,7 @@
       rk.fwd.copy(this.dir);
       rk.mesh.visible = true;
       // flamme de veille : petite au repos, grandit avec la charge (cônes de la tuyère) — mise à jour du maillage (assiette fixe)
-      rk.thrustK = this.mode === 'charge' ? (this.manual ? 0.06 + 0.04 * Math.sin(t * 9) : 0.12 + 0.75 * ch) : this.mode === 'idle' ? 0.05 + 0.03 * Math.sin(t * 9) : 0;
+      rk.thrustK = this.mode === 'charge' ? (this.manual ? (this.manualK || 0.06) + 0.04 * Math.sin(t * 9) : 0.12 + 0.75 * ch) : this.mode === 'idle' ? 0.05 + 0.03 * Math.sin(t * 9) : 0;
       rk.flick = 0.3 + 0.7 * U.fx();
       const keep = rk.roll; rk.updateMesh(0); rk.roll = keep;   // dt = 0 : le roulis ne tourne pas
       rk.light.position.copy(rk.pos).addScaledVector(this.dir, -1.6);

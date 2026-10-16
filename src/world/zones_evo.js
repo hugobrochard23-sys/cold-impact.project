@@ -37,6 +37,7 @@
   function foe(S, type, dc, lx, y, o) {
     o = o || {};
     if (location.search.indexOf('notgt') >= 0) return;
+    if (!o.keep && dc < 620 && hsh(dc, 3.3) < 0.5) return;   // v171 : deux fois moins d'ennemis au debut
     { const prog = U.clamp(dc / Math.max(1000, S.T.levelLen || 5000), 0, 1); if (o.hp) o = Object.assign({}, o, { hp: o.hp + Math.floor(prog * 2.4) }); if (!o.keep && prog > 0.4 && hsh(dc, 7.7) < (prog - 0.4) * 0.8) return; }   // v140 : plus loin, les ennemis blindés ont plus de PV et sont plus espacés
     S.item(dc, () => {
       const RO = CC.Roster, R = Math.max(5, (RO.RAD && RO.RAD[type]) || 6) + 1.2, Lc = S.lane(dc).lx, toward = lx > Lc ? -1 : 1, vmax = S.vol(dc) - 8;
@@ -90,7 +91,7 @@
   function haystack(S, dc, lx, r) { S.place(dc, lx, 8, 8, 0, 4, () => { S.cyl(dc, lx, 0, 2.4, 3.4, 'col:' + pick(r, ['#d8b860', '#c8a850']), undefined, 10, 2.4, false); }); }
 
   // ---------- sol lisse : une vraie surface continue (normales calculees sur le terrain, pas de tranches) avec un degrade de verts et de champs ----------
-  const GC = { a: new THREE.Color('#587838'), b: new THREE.Color('#7e9a4c'), f: new THREE.Color('#9f9a60'), c: new THREE.Color(), g: new THREE.Color('#77797a') };
+  const GC = { a: new THREE.Color('#6a9a38'), b: new THREE.Color('#9cc24c'), f: new THREE.Color('#bcb062'), c: new THREE.Color(), g: new THREE.Color('#77797a') };
   const gcol = (x, z, out) => {
     const n = 0.5 + 0.5 * (Math.sin(x * 0.011 + z * 0.017) * 0.5 + Math.sin(x * 0.027 - z * 0.013 + 1.3) * 0.3 + Math.sin(x * 0.05 + z * 0.043) * 0.2);
     out.copy(GC.a).lerp(GC.b, n);
@@ -125,7 +126,7 @@
   };
   // touffes d'herbe : petites, plates, d'UNE seule couleur proche du sol (un peu plus sombre) ; chaque brin est dessiné des deux côtés (même éclairage dessus et dessous) ; jamais dans l'eau
   function hsh(a, b) { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); }
-  const GTC = new THREE.Color('#486e2c');
+  const GTC = new THREE.Color('#58902c');
   function grassTufts(ctx, d, e, wet, sd, sc) {
     const T = ctx.T, b = ctx.b, n = Math.max(1, Math.round((e - d) * 0.55)), pos = [], nor = [], col = [];
     const tri = (a1, a2, a3) => { for (const q of [a1, a2, a3]) { pos.push(q[0], q[1], q[2]); nor.push(0, 1, 0); col.push(GTC.r, GTC.g, GTC.b); } };

@@ -312,6 +312,29 @@
       this.sweep(260, 2800, 'bandpass', 1.1, 0.3, dur);
     }
 
+    // v171 : allumage du propulseur a la main : turbine qui monte (grave + souffle + sifflement) ; setIgnition(k) k = 0..1 ; stopIgnition() coupe en fondu
+    startIgnition() {
+      if (!this.ctx || this._ign) return; const ctx = this.ctx, t = ctx.currentTime, out = this.sfx, I = this._ign = {};
+      I.g = ctx.createGain(); I.g.gain.value = 0.0001; I.g.connect(out);
+      I.o1 = ctx.createOscillator(); I.o1.type = 'sawtooth'; I.o1.frequency.value = 60; I.f1 = ctx.createBiquadFilter(); I.f1.type = 'lowpass'; I.f1.frequency.value = 240; I.f1.Q.value = 2; I.o1.connect(I.f1); I.f1.connect(I.g);
+      I.o2 = ctx.createOscillator(); I.o2.type = 'sine'; I.o2.frequency.value = 34; I.g2 = ctx.createGain(); I.g2.gain.value = 0.0001; I.o2.connect(I.g2); I.g2.connect(out);
+      I.n = ctx.createBufferSource(); I.n.buffer = this.noise; I.n.loop = true; I.f2 = ctx.createBiquadFilter(); I.f2.type = 'bandpass'; I.f2.frequency.value = 500; I.f2.Q.value = 0.8; I.g3 = ctx.createGain(); I.g3.gain.value = 0.0001; I.n.connect(I.f2); I.f2.connect(I.g3); I.g3.connect(out);
+      I.o3 = ctx.createOscillator(); I.o3.type = 'triangle'; I.o3.frequency.value = 300; I.g4 = ctx.createGain(); I.g4.gain.value = 0.0001; I.o3.connect(I.g4); I.g4.connect(out);
+      I.o1.start(t); I.o2.start(t); I.n.start(t, Math.random()); I.o3.start(t);
+      this.tone('square', 220, 90, 0.25, 0.08); this.noiseHit(1400, 'bandpass', 1.5, 0.35, 0.12);   // clac du circuit puis allumage
+    }
+    setIgnition(k) {
+      const I = this._ign; if (!I || !this.ctx) return; const t = this.ctx.currentTime; k = Math.max(0, Math.min(1, k));
+      I.g.gain.setTargetAtTime(0.05 + 0.2 * k, t, 0.05); I.o1.frequency.setTargetAtTime(58 + 190 * k, t, 0.08); I.f1.frequency.setTargetAtTime(220 + 1600 * k, t, 0.08);
+      I.g2.gain.setTargetAtTime(0.1 + 0.5 * k, t, 0.08); I.o2.frequency.setTargetAtTime(32 + 40 * k, t, 0.1);
+      I.g3.gain.setTargetAtTime(0.02 + 0.32 * k * k, t, 0.06); I.f2.frequency.setTargetAtTime(400 + 2800 * k, t, 0.08);
+      I.g4.gain.setTargetAtTime(0.01 + 0.07 * k * k, t, 0.06); I.o3.frequency.setTargetAtTime(280 + 1500 * k, t, 0.06);
+    }
+    stopIgnition() {
+      const I = this._ign; if (!I || !this.ctx) return; this._ign = null; const t = this.ctx.currentTime;
+      for (const g of [I.g, I.g2, I.g3, I.g4]) g.gain.setTargetAtTime(0.0001, t, 0.06);
+      for (const n of [I.o1, I.o2, I.o3, I.n]) { try { n.stop(t + 0.35); } catch (e) { /* deja arrete */ } }
+    }
     play(name, pos, param) {
       if (!this.ctx || this.muted) return;
       const dg = this.distGain(pos);
@@ -384,6 +407,7 @@
         case 'whoosh': this.sweep(300, 1800, 'bandpass', 1, 0.3, 0.5); break;
         case 'ring': [784, 1175, 1568].forEach((f, i) => this.tone('sine', f, f, 0.09, 0.22, i * 0.07)); break;
         case 'ringSeries': [659, 784, 988, 1318, 1568].forEach((f, i) => { this.tone('square', f, f, 0.08, 0.3, i * 0.08); this.tone('triangle', f / 2, f / 2, 0.1, 0.35, i * 0.08); }); this.sweep(800, 5200, 'highpass', 0.8, 0.14, 0.6, 0.15); break;
+        case 'clampOpen': this.tone('square', 150, 60, 0.4, 0.07); this.noiseHit(2600, 'highpass', 0.7, 0.4, 0.1); this.tone('sine', 90, 40, 0.6, 0.18, 0.03); this.sweep(500, 3500, 'bandpass', 0.8, 0.35, 0.3, 0.05); break;
         case 'padArm': this.tone('square', 190, 80, 0.32, 0.09); this.noiseHit(1100, 'bandpass', 2, 0.4, 0.06); this.tone('square', 260, 120, 0.2, 0.07, 0.11); this.chargeWhine(CC.CONFIG.pad.chargeTime); break;
         case 'padIgnite': this.explosion(0.55); this.sweep(180, 2600, 'bandpass', 0.9, 0.75, 0.55); this.tone('sine', 62, 28, 0.95, 0.7); this.noiseHit(3500, 'highpass', 0.7, 0.4, 0.09); break;
         // v034 : éclat ramassé — gamme pentatonique montante (param = rang dans la série : plus on enchaîne, plus c'est aigu)
