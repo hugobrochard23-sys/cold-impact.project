@@ -14,8 +14,8 @@
     deep:    { top: '#1c2234', hor: '#3a3a48', fog: '#2a2c38', near: 30, far: 190, hemiS: '#8a90b0', hemiG: '#30303a', hemiI: 0.55, amb: 0.22, sunC: '#9aa4c8', sunI: 0.3, night: 0.4 },
     shaft:   { top: '#506080', hor: '#8a8a98', fog: '#4a4c58', near: 40, far: 240, hemiS: '#c0c8e0', hemiG: '#585860', hemiI: 0.9, amb: 0.35, sunC: '#ffd8a8', sunI: 0.6, night: 0.3 },
     tunnel:  { top: '#202638', hor: '#4a4a58', fog: '#3a3c48', near: 40, far: 230, hemiS: '#b8c0d8', hemiG: '#484850', hemiI: 0.95, amb: 0.45, sunC: '#a8b0d0', sunI: 0.45, night: 0.35 },
-    night:   { top: '#050a1e', hor: '#2a3a68', fog: '#18203a', near: 60, far: 290, hemiS: '#5a70b0', hemiG: '#20243a', hemiI: 0.42, amb: 0.17, sunC: '#8aa4ff', sunI: 0.3, night: 1 },
-    siege:   { top: '#0a0818', hor: '#5a2a3a', fog: '#2c1822', near: 60, far: 290, hemiS: '#a06078', hemiG: '#2a1a22', hemiI: 0.55, amb: 0.22, sunC: '#ff7a50', sunI: 0.5, night: 0.9 },
+    night:   { top: '#1c2b5e', hor: '#e0804e', fog: '#5a4a68', near: 70, far: 300, hemiS: '#a8a0d0', hemiG: '#443c4c', hemiI: 0.72, amb: 0.3, sunC: '#ff9a62', sunI: 0.6, night: 0.42 },
+    siege:   { top: '#1a1430', hor: '#9a4a40', fog: '#4a2c34', near: 60, far: 300, hemiS: '#c08098', hemiG: '#3a2a30', hemiI: 0.7, amb: 0.28, sunC: '#ff8a5a', sunI: 0.6, night: 0.55 },
     fire:    { top: '#12080e', hor: '#8a3a28', fog: '#3a1c14', near: 60, far: 300, hemiS: '#c07048', hemiG: '#301810', hemiI: 0.6, amb: 0.22, sunC: '#ff7a3a', sunI: 0.6, night: 0.8 },
     core:    { top: '#0a1424', hor: '#1a3a5a', fog: '#102030', near: 40, far: 240, hemiS: '#6a9ac0', hemiG: '#1a2a3a', hemiI: 0.65, amb: 0.26, sunC: '#6aa8ff', sunI: 0.35, night: 0.7 },
     inferno: { top: '#200808', hor: '#e0501c', fog: '#5a2010', near: 40, far: 260, hemiS: '#ff9050', hemiG: '#401408', hemiI: 0.8, amb: 0.3, sunC: '#ff6a20', sunI: 0.8, night: 0.6 },
@@ -23,6 +23,7 @@
   for (const k of Object.keys(MOOD)) { const m = MOOD[k]; for (const f of ['top', 'hor', 'fog', 'hemiS', 'hemiG', 'sunC']) m[f] = C3(m[f]); }
   const SCENE_MOOD = { descente: 'gold', rampe: 'dawn', camp: 'morning', riviere: 'day', foret: 'day', vallee: 'day', grotte: 'deep', falaise: 'gold', entrepots: 'gold', carriere: 'gold', puits: 'shaft', tunnel: 'tunnel', ville: 'night', approche: 'siege', porte: 'fire', noyau: 'core', fuite: 'inferno', arene: 'core', base: 'siege' };
   const SCENE_AUDIO = { descente: 'evoDusk', rampe: 'evoDawn', camp: 'evoDawn', riviere: 'evoDay', foret: 'evoDay', vallee: 'evoDay', grotte: 'evoMine', falaise: 'evoDusk', entrepots: 'evoDusk', carriere: 'evoDusk', puits: 'evoMine', tunnel: 'evoMine', ville: 'evoNight', approche: 'evoSiege', porte: 'evoBoss', noyau: 'evoBoss', fuite: 'evoEscape', arene: 'evoBoss', base: 'evoSiege' };
+  EVO.MOOD = MOOD; EVO.SCENE_MOOD = SCENE_MOOD; EVO.SCENE_AUDIO = SCENE_AUDIO;
   const _m = { top: new THREE.Color(), hor: new THREE.Color(), fog: new THREE.Color(), hemiS: new THREE.Color(), hemiG: new THREE.Color(), sunC: new THREE.Color() };
   const mix = (a, b, t, out) => { for (const f of ['top', 'hor', 'fog', 'hemiS', 'hemiG', 'sunC']) out[f].copy(a[f]).lerp(b[f], t); for (const f of ['near', 'far', 'hemiI', 'amb', 'sunI', 'night']) out[f] = a[f] + (b[f] - a[f]) * t; return out; };
   const sm = (t) => { t = U.clamp(t, 0, 1); return t * t * (3 - 2 * t); };
@@ -49,7 +50,7 @@
   };
 
   // ---------- radio : une ligne de sous-titre en bas de l'écran, avec le crachotement d'un vrai poste ----------
-  EVO.radio = (g, txt, dur) => { g.evoRadio = { txt, t0: performance.now(), dur: (dur || 3.4) * 1000 }; g.audio.play('radio'); };
+  EVO.radio = (g, txt, dur) => { g.audio.play('radio'); };   // v141 : plus de texte à lire en plein vol : un crachotement radio, c'est tout
   const LINES = {
     rampe: ['CENTRE : TOUCHE LES ENNEMIS. CHAQUE CIBLE RAPPORTE DES PIECES.', 3.6], camp: ['CENTRE : SITE MILITAIRE. DETRUIS TOUT CE QUE TU PEUX.', 3.4], riviere: ['CENTRE : RIVIERE. PLONGE DEDANS POUR SURPRENDRE LA VEDETTE.', 3.6],
     foret: ['CENTRE : FORET DENSE. RESTE BAS, ILS TE GUETTENT.', 3.2], carriere: ['CENTRE : LA CARRIERE. DESCENDS EN SPIRALE.', 3.2], descente: ['CENTRE : LA CARRIERE. DESCENDS EN SPIRALE.', 3.2], puits: ['CENTRE : PUITS DE MINE. PLONGE ! PLONGE !', 3.0],
@@ -96,8 +97,9 @@
   const _fr = EVO.frame;
   EVO.frame = (g, dt) => {
     _fr(g, dt);
+    if (g.cine3d && EVO.cineFrame) EVO.cineFrame(g, dt);
     const run = g.endlessRun, dist = run ? Math.max(0, run.dist) : 0;
-    EVO.applyMood(g, EVO.moodAt(g, dist));
+    if (!g.cine3d) EVO.applyMood(g, EVO.moodAt(g, dist));
     EVO.coinFrame(g, dt);
     if (g.audio && g.audio.ctx && g.audio.setWater) {
       const W = CC.Zones.evoWater; let k = 0;

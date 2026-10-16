@@ -206,7 +206,7 @@
       const a = by[k], pos = new Float32Array(a.length * 3);
       a.forEach((g, i) => { pos[i * 3] = g.x; pos[i * 3 + 1] = g.y; pos[i * 3 + 2] = g.z; });
       const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-      const m = glowMats[k] || (glowMats[k] = new THREE.PointsMaterial({ map: dotTex(), color: a[0].c, size: a[0].s, sizeAttenuation: true, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
+      const m = glowMats[k] || (glowMats[k] = new THREE.PointsMaterial({ map: dotTex(), color: a[0].c, size: a[0].s * (CC.EVO && CC.EVO.on ? 0.38 : 1), sizeAttenuation: true, transparent: true, opacity: CC.EVO && CC.EVO.on ? 0.3 : 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
       const pts = new THREE.Points(geo, m); pts.frustumCulled = false; pts.renderOrder = 4; ctx.b.root.add(pts);
     }
   };

@@ -29,7 +29,7 @@
       for (const c of d.cols) {
         c.updateWorldMatrix(true, false); _inv.copy(c.matrixWorld).invert(); _p.copy(rk.pos).applyMatrix4(_inv);
         const s = c.userData.size, sc = c.matrixWorld.getMaxScaleOnAxis(), r = 1.2 / sc;
-        if (Math.abs(_p.x) < s[0] / 2 + r && Math.abs(_p.y) < s[1] / 2 + r && Math.abs(_p.z) < s[2] / 2 + r) { g.onRocketCrash('wall', rk.pos.clone(), new V(0, 1, 0)); return; }
+        if (Math.abs(_p.x) < s[0] / 2 + r && Math.abs(_p.y) < s[1] / 2 + r && Math.abs(_p.z) < s[2] / 2 + r) { if (d.hit && d.hit(g, d)) return; g.onRocketCrash('wall', rk.pos.clone(), new V(0, 1, 0)); return; }
       }
     }
   };

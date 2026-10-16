@@ -26,7 +26,7 @@
   }
   // projecteur : un cône de lumière qui balaie le ciel
   function searchlight(S, dc, lx, y, ph, sp) {
-    const g = new T3.Group(), cone = new T3.Mesh(new T3.ConeGeometry(11, 190, 14, 1, true), new T3.MeshBasicMaterial({ color: '#dfe8ff', transparent: true, opacity: 0.1, depthWrite: false, blending: T3.AdditiveBlending, side: T3.DoubleSide, fog: false }));
+    const g = new T3.Group(), cone = new T3.Mesh(new T3.ConeGeometry(11, 190, 14, 1, true), new T3.MeshBasicMaterial({ color: '#dfe8ff', transparent: true, opacity: 0.05, depthWrite: false, blending: T3.AdditiveBlending, side: T3.DoubleSide, fog: false }));
     cone.geometry.translate(0, -95, 0); cone.rotation.x = Math.PI; cone.position.y = 0; g.add(cone); bx(g, 3, 3, 3, mat('#444'), 0, -1, 0);
     EVO.placeGroup(S, g, dc, lx, y, 0);
     EVO.addDyn(g, (t) => { g.rotation.z = Math.sin(t * sp + ph) * 0.5; g.rotation.x = Math.cos(t * sp * 0.7 + ph) * 0.35; }, [], { near: 700 });
@@ -37,7 +37,7 @@
     // locomotive (avant = +z), puis wagons derrière (−z)
     bx(g, 6.4, 5.4, 18, hull, 0, 3.6, -9); bx(g, 6.8, 0.8, 18.4, dark, 0, 0.9, -9); bx(g, 6.6, 1.2, 10, red, 0, 5.8, -6); bx(g, 4.6, 2.2, 5, dark, 0, 7.2, -4); bx(g, 5.2, 1.3, 0.2, basic('#ffd890'), 0, 4.6, 0.05);
     for (const sx of [-1.8, 1.8]) bx(g, 1.3, 1.3, 0.3, glow, sx, 2.4, 0.1);
-    const spot = new T3.Mesh(new T3.ConeGeometry(9, 80, 12, 1, true), new T3.MeshBasicMaterial({ color: '#fff2c8', transparent: true, opacity: 0.12, depthWrite: false, blending: T3.AdditiveBlending, side: T3.DoubleSide, fog: false })); spot.geometry.translate(0, 40, 0); spot.rotation.x = Math.PI / 2; spot.position.set(0, 2.4, 0); g.add(spot);
+    const spot = new T3.Mesh(new T3.ConeGeometry(9, 80, 12, 1, true), new T3.MeshBasicMaterial({ color: '#fff2c8', transparent: true, opacity: 0.05, depthWrite: false, blending: T3.AdditiveBlending, side: T3.DoubleSide, fog: false })); spot.geometry.translate(0, 40, 0); spot.rotation.x = Math.PI / 2; spot.position.set(0, 2.4, 0); g.add(spot);
     for (let i = 0; i < 7; i++) { const z = -22 - i * 15.5; bx(g, 6.2, 5.0, 14.5, i % 2 ? mat('#4a5048') : mat('#3e4640'), 0, 3.5, z); bx(g, 6.5, 0.6, 14.8, dark, 0, 0.9, z); for (let k = -1; k <= 1; k++) bx(g, 6.4, 0.3, 0.3, red, 0, 4.2, z + k * 4.5); }
     const len = 22 + 7 * 15.5; EVO.colBox(g, 7.2, 8.4, len, 0, 4.2, -len / 2 + 2);
     S.b.root.add(g);
@@ -58,7 +58,7 @@
   D.scenes.descente = { len: [L0, L0], noDoor: true, noChaos: true, gw: 72, turns: [[0.03, 0.3, 100]],
     sub: [{ u: 0, key: 'carriere', name: 'LA CARRIERE' }, { u: 0.3, key: 'puits', name: 'LE PUITS' }, { u: 0.4, key: 'tunnel', name: 'LE TUNNEL' }],
     pin: (T, sc) => ({ lx: 0, y: 18, from: 24, to: sc.d1 - sc.d0 - 24 }),
-    relief(T, sc) { return rel(sc, (d) => { const u = (d - sc.d0) / (sc.d1 - sc.d0); return -(96 * ss(0.03, 0.28, u) + 70 * ss(0.3, 0.36, u) - 166 * ss(0.74, 0.9, u)); }); },
+    relief(T, sc) { return rel(sc, (d) => { const u = (d - sc.d0) / (sc.d1 - sc.d0); return -(80 * ss(0.03, 0.28, u) + 50 * ss(0.3, 0.36, u) - 130 * ss(0.6, 0.91, u)); }); },
     ground: (d, lx, c, sc) => { const u = (d - sc.d0) / (sc.d1 - sc.d0), kq = ss(0, 0.05, u) * (1 - ss(0.28, 0.31, u)), kd = ss(0.29, 0.33, u) * (1 - ss(0.91, 0.94, u)); if (kq > 0) c.lerp(new T3.Color('#8b7b63'), kq * 0.94); if (kd > 0) c.lerp(new T3.Color('#4b4c4c'), kd); },
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L, T = S.T;
@@ -88,23 +88,23 @@
       cage(S, d(0.325), -19, 4, 18, 0); cage(S, d(0.345), 19, 30, 22, 2.2); cage(S, d(0.37), -19, 18, 20, 4); cage(S, d(0.39), 19, 8, 18, 1);
       for (let k = 0; k < 4; k++) S.item(d(0.318 + k * 0.021), (r) => { const m = d(0.318 + k * 0.021), Lc = S.lane(m).lx, s = k % 2 ? 1 : -1, y = k % 2 ? 10 : 28; S.bx(m, Lc + s * 14.5, y, 24, 2, 3, 'metal', '#8a8e94', true); S.bx(m, Lc + s * 14.5, y + 1.1, 24, 0.3, 3.2, 'hazard', undefined, false); S.bx(m, Lc + s * 14.5, y + 5, 0.3, 8, 0.3, 'col:#222', undefined, false); });
       // ---- tunnel ferroviaire : parois, voûte, nervures, lampes, rails, signaux ; entrée dans le puits et sortie à l'air libre
-      const t0 = d(0.4), t1 = d(0.905), hw = 30, H = 40;
+      const t0 = d(0.4), t1 = d(0.915), tRoof = d(0.6), hw = 30, H = 40;
       for (const [dc, k] of [[t0, 0], [t1, 1]]) S.item(dc, () => { const Lc = S.lane(dc).lx; S.wall(dc, Lc - 120, Lc + 120, -40, 110, 6, 'concreteDark', CONC[k], { lx: Lc, yc: 22, w: 2 * hw + 2, h: 44 }); S.bx(dc, Lc, 44.5, 2 * hw + 4, 1.4, 7, 'col:#5a4a38', undefined, false); if (k) for (const s of [-1, 1]) lamp(S, dc, Lc + s * (hw - 1), 36, '#ff9a4a', 22); });
       for (let dc = t0; dc < t1; dc += 12) S.item(dc + 6, (r) => {
         const m = dc + 6, Lc = S.lane(m).lx;
         for (const s of [-1, 1]) S.bx(m, Lc + s * (hw + 7), 30, 14, 100, 12.8, 'concreteDark', pk(r, CONC), true);
-        S.bx(m, Lc, H + 6, 2 * hw + 28, 12, 12.8, 'concreteDark', pk(r, CONC), true);
+        if (m < tRoof) S.bx(m, Lc, H + 6, 2 * hw + 28, 12, 12.8, 'concreteDark', pk(r, CONC), true);
         for (const s of [-1, 1]) { S.bx(m, Lc + s * (hw - 0.3), 0.8, 0.3, 1.6, 12.8, 'hazard', undefined, false); S.bx(m, Lc + s * (hw - 0.4), H - 3, 0.9, 0.9, 12.6, 'metal', '#6a6e74', false); if (Math.round(m / 12) % 2 === 0) { S.bx(m, Lc + s * (hw - 0.3), 15, 0.2, 0.6, 8, 'emis:#ffb04a', undefined, false); S.glow(m, Lc + s * (hw - 1.5), 15, '#ffb04a', 16); } }
         for (const x of [-9, 9]) { for (const o of [-0.75, 0.75]) S.bx(m, Lc + x + o, 0.3, 0.2, 0.25, 12.4, 'metal', '#7a7e84', false); S.bx(m, Lc + x, 0.08, 6, 0.16, 12.4, 'col:#4a4844', undefined, false); S.bx(m, Lc + x, 0.22, 4.4, 0.2, 0.8, 'planks', '#6a5238', false); }
       });
       for (let dc = t0 + 10; dc < t1 - 10; dc += 24) S.item(dc, (r) => {
         const Lc = S.lane(dc).lx;
-        for (const s of [-1, 1]) S.bx(dc, Lc + s * (hw - 0.5), 20, 1.2, 40, 1.6, 'concrete', '#6c6e6c', true); S.bx(dc, Lc, H - 0.6, 2 * hw, 1.2, 1.6, 'concrete', '#6c6e6c', true);
-        S.bx(dc + 12, Lc, H - 1.6, 16, 0.3, 2, 'emis:#ffe9b0', undefined, false); S.glow(dc + 12, Lc, H - 2, '#ffe9b0', 46); S.glow(dc + 12, Lc - 12, H - 4, '#ffe9b0', 26); S.glow(dc + 12, Lc + 12, H - 4, '#ffe9b0', 26);
+        for (const s of [-1, 1]) S.bx(dc, Lc + s * (hw - 0.5), 20, 1.2, 40, 1.6, 'concrete', '#6c6e6c', true); if (dc < tRoof) S.bx(dc, Lc, H - 0.6, 2 * hw, 1.2, 1.6, 'concrete', '#6c6e6c', true);
+        if (dc < tRoof) S.bx(dc + 12, Lc, H - 1.6, 16, 0.3, 2, 'emis:#ffe9b0', undefined, false); S.glow(dc + 12, Lc, H - 2, '#ffe9b0', 46); S.glow(dc + 12, Lc - 12, H - 4, '#ffe9b0', 26); S.glow(dc + 12, Lc + 12, H - 4, '#ffe9b0', 26);
         if (r() < 0.6) { const s = r() < 0.5 ? -1 : 1; S.bx(dc + 6, Lc + s * (hw - 2), 6, 0.3, 0.5, 0.3, 'col:#333', undefined, false); S.bx(dc + 6, Lc + s * (hw - 2.2), 6.6, 0.4, 0.8, 0.6, 'emis:' + (r() < 0.5 ? '#ff4a3a' : '#4aff7a'), undefined, false); }
         if (r() < 0.45) { const s = r() < 0.5 ? -1 : 1; S.bx(dc + 2, Lc + s * (hw - 5), 2, 5, 4, 6, 'metal', '#4a5058', true); lamp(S, dc + 2, Lc + s * (hw - 5), 4.4, '#8aff9a', 9); }
       });
-      train(S, d(0.43), d(0.7));
+      train(S, d(0.43), d(0.6));
       // ---- ennemis
       foe(S, 'haul', d(0.1), 6, 0, { name: 'BENNE', path: 130, speed: 12 });
       foe(S, 'dozer', d(0.2), -32, 0, { name: 'BULLDOZER', hp: 2, armed: false });

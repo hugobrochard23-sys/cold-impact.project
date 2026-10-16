@@ -430,7 +430,7 @@
       const q = 32; slab(-1, 2 * q, 2, 'concreteDark', '#7c828a');
       for (const s of [-1, 1]) bx2({ p: GP(s * (q + 120), ym - T.rel(m) - 3.6), s: [900, 2, len], r: [0, 0, 0], mat: 'water', ground: true });
     } else {
-      if (zone === 'campagne' && Z.evoGroundMesh) { const pS = Z.plan(T, T.zoneIndex(m)), cS = pS.scenes.find((q) => m >= q.d0 && m < q.d1), gwS = cS && Z.defs.campagne.scenes[cS.name] && Z.defs.campagne.scenes[cS.name].gw; slab(-1, gwS ? 2 * gwS : 260, 2, 'col:#7d975f', undefined, { render: false }); Z.evoGroundMesh(ctx, d, e); }   // v124 : sol lisse (surface continue, collision invisible dessous)
+      if ((zone === 'campagne' || zone === 'ocean') && Z.evoGroundMesh) { const pS = Z.plan(T, T.zoneIndex(m)), cS = pS.scenes.find((q) => m >= q.d0 && m < q.d1), dS = cS && (Z.defs.campagne.scenes[cS.name] || (Z.defs.ocean && Z.defs.ocean.scenes[cS.name])), gwS = dS && dS.gw; slab(-1, gwS ? 2 * gwS : 260, 2, 'col:#7d975f', undefined, { render: false }); Z.evoGroundMesh(ctx, d, e); }   // v124 : sol lisse (surface continue, collision invisible dessous)
       else slab(-1, 900, 2, Z.meta[zone] ? Z.meta[zone].ground : 'asphalt', Z.meta[zone] ? Z.meta[zone].groundTint : '#ffffff');   // v123 : campagne : le sol ne projette pas d'ombre sur ses voisins (plus de raies tous les 20 m)
     }
   }

@@ -834,6 +834,11 @@
     // pièces (toujours) et record
     { const s = U.formatInt(S.coins), px = P([s], W * 0.3, u * 0.011), x = W * 0.95; T(s, x, Y(0.022), px, GOLD, { align: 'right' }); ICON.nut(ctx, x - tw(s, px) - px * 6, Y(0.022) + px * 3.5, px * 4.2, GOLD); }
     if (S.best > 0) T(S.best + ' M', W * 0.05, Y(0.028), P([S.best + ' M'], W * 0.3, u * 0.0075), '#c8d0dc');
+    // choix du niveau : deux pastilles numérotées (le 2 s'ouvre quand le 1 est terminé)
+    if (E.stage) { const stg = E.stage(game), bw = u * 0.085, bx0 = W * 0.05, by0 = Y(0.07), bp = P(['2'], bw * 0.5, u * 0.0075);
+      for (let n = 1; n <= 2; n++) { const x = bx0 + (n - 1) * bw * 1.3, on = stg === n, open = n === 1 || !!S.clr1; pxRect(ctx, x, by0, bw, bw, on ? 'rgba(217,164,65,0.55)' : 'rgba(14,18,28,0.85)', on ? GOLD : 'rgba(159,176,200,0.4)'); T(String(n), x + bw / 2, by0 + bw / 2 - bp * 3.5, bp, open ? '#ffffff' : '#5a6678', { align: 'center' });
+        if (!open) { ctx.fillStyle = '#9aa6b8'; ctx.fillRect(Math.round(x + bw * 0.62), Math.round(by0 + bw * 0.62), Math.round(bw * 0.3), Math.round(bw * 0.24)); }
+        if (open && !on) hit(ui, x, by0, bw, bw, () => E.switchStage(game, n)); } }
     // animation d'évolution : seul le nom de la pièce s'affiche, la fusée est au centre
     if (anim) {
       const a = U.clamp(anim.t / 0.4, 0, 1) * (1 - U.smooth(anim.dur - 0.6, anim.dur, anim.t)), name = anim.label + ' !';
@@ -884,9 +889,11 @@
       const ps = Math.max(4, rh * 0.12); for (let k = 0; k < 5; k++) { ctx.fillStyle = k < tdone ? c : 'rgba(159,176,200,0.28)'; ctx.fillRect(Math.round(tx + k * ps * 1.55), Math.round(y + rh * 0.47), Math.round(ps), Math.round(ps)); }
       T(hint, tx, y + rh * 0.72, P([hint], rw * 0.5, rh * 0.026), done ? '#9fb0c8' : '#d8dee8');
       const bx = rx + rw * 0.69, bw = rw * 0.29, by = y + rh * 0.16, bh = rh * 0.68;
-      pxRect(ctx, bx, by, bw, bh, done ? 'rgba(60,70,90,0.7)' : can ? 'rgba(217,164,65,0.55)' : 'rgba(40,46,60,0.8)', done ? '#9fb0c8' : can ? GOLD : 'rgba(159,176,200,0.35)');
+      const frac = done || cost === null ? 1 : U.clamp(S.coins / cost, 0, 1);   // v141 : le bouton se remplit à mesure que les pièces arrivent ; plein et vert = on peut acheter
+      pxRect(ctx, bx, by, bw, bh, done ? 'rgba(60,70,90,0.7)' : 'rgba(30,36,50,0.9)', done ? '#9fb0c8' : can ? '#6aff9a' : 'rgba(159,176,200,0.35)');
+      if (!done && frac > 0) { ctx.save(); ctx.beginPath(); ctx.rect(Math.round(bx), Math.round(by), Math.round(bw * frac), Math.round(bh)); ctx.clip(); pxRect(ctx, bx, by, bw, bh, can ? 'rgba(70,200,100,' + (0.62 + 0.16 * Math.sin(now / 240)) + ')' : 'rgba(80,150,120,0.55)', can ? '#6aff9a' : 'rgba(120,200,160,0.4)'); ctx.restore(); }
       if (done) T('MAX', bx + bw / 2, by + bh / 2 - np * 3.5, np, '#c8d0dc', { align: 'center' });
-      else { const s = U.formatInt(cost), cp = P([s], bw * 0.62, bh * 0.034), w2 = tw(s, cp) + cp * 9; T(s, bx + bw / 2 + cp * 4.5, by + bh / 2 - cp * 3.5, cp, can ? '#ffffff' : RED, { align: 'center' }); ICON.nut(ctx, bx + bw / 2 - w2 / 2 + cp * 3, by + bh / 2, cp * 3.4, can ? GOLD : '#8a96a8'); }
+      else { const s = U.formatInt(cost), cp = P([s], bw * 0.62, bh * 0.034), w2 = tw(s, cp) + cp * 9; T(s, bx + bw / 2 + cp * 4.5, by + bh / 2 - cp * 3.5, cp, '#ffffff', { align: 'center' }); ICON.nut(ctx, bx + bw / 2 - w2 / 2 + cp * 3, by + bh / 2, cp * 3.4, GOLD); }
       const bt = game.evoBought; if (bt && bt.id === id) { const a = 1 - (now - bt.t0) / 600; if (a > 0) { ctx.fillStyle = 'rgba(255,255,255,' + (a * 0.45) + ')'; ctx.fillRect(Math.round(rx), Math.round(y), Math.round(rw), Math.round(rh)); } }
       hit(ui, rx, y, rw, rh, () => E.buy(game, id));
     });

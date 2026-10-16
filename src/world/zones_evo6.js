@@ -15,7 +15,7 @@
   const boulder = (S, dc, lx, y, s, r, gray) => { const p = S.at(dc, lx, y); TR.rock(S.b, p[0], p[1], p[2], s, r, { gray: gray || pk(r, GREY), noMoss: true }); S.b.box({ p: [p[0], p[1] + s * 0.5, p[2]], s: [s * 1.6, s * 1.1, s * 1.6], render: false }); };
   const heading = (S, dc) => { const a = S.T.at(dc, 0, 0), b = S.T.at(dc - 6, 0, 0); return Math.atan2(b[0] - a[0], b[2] - a[2]); };   // cap vers les distances décroissantes (le robot FAIT FACE à la fusée)
   const pos = (S, grp, dc, lx, y, yaw) => { const p = S.at(dc, lx, y); grp.position.set(p[0], p[1], p[2]); grp.rotation.y = yaw; S.b.root.add(grp); return grp; };
-  EVO.scenePos = (key) => { const c = (EVO.chapters || []).find((q) => q.key === key); return c ? { d0: c.d + 80, len: D.scenes[key].len[0] } : null; };
+  EVO.scenePos = (key) => { const c = (EVO.chapters || []).find((q) => q.key === key); const sd = D.scenes[key] || (Z.defs.ocean && Z.defs.ocean.scenes[key]); return c && sd ? { d0: c.d + 80, len: sd.len[0] } : null; };
 
   // ============================== LE GARDIEN ==============================
   function buildRobot() {
@@ -68,6 +68,7 @@
     return { G, cols, S };
   }
 
+  EVO.buildRobot = buildRobot;
   function robot(S, dc) {
     const { G, cols, S: sc } = buildRobot(), ud = G.userData, yaw = heading(S, dc);
     pos(S, G, dc, 0, 0, yaw);
