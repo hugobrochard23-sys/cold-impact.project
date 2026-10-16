@@ -119,7 +119,7 @@
     const F = CC.Font, ev = g.evo; if (!ev || ev.preview) return;
     const now = performance.now(), top = Math.max(10, H * 0.02);
     // pièces gagnées pendant ce vol
-    { const run = g.endlessRun, m = EVO.mult(EVO.save(g).cm), tot = Math.round(ev.coins + (ev.chapCoins || 0) + Math.floor(Math.max(0, run ? run.dist : 0) * 1.1 * m)), UI = CC.Home && CC.Home.evoUI;
+    { const run = g.endlessRun, m = EVO.mult(EVO.save(g).cm), tot = Math.round(ev.coins + (ev.chapCoins || 0) + Math.floor(Math.max(0, run ? run.dist : 0) * 1.1 * m * EVO.COIN_K)), UI = CC.Home && CC.Home.evoUI;
       if (tot !== ev._coinShown) { ev._coinShown = tot; if (ev.coins !== ev._coinKills) { ev._coinKills = ev.coins; ev._coinBump = now; } }
       if (UI && UI.coinCounter) UI.coinCounter(ctx, g, W, H, tot, 1 + 0.25 * Math.max(0, 1 - (now - (ev._coinBump || 0)) / 260)); }    // radio
     const R = g.evoRadio;

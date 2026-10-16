@@ -235,11 +235,12 @@
   };
   EVO.holdEnd = (g) => { const a = g.evoAim; if (a && a.hold && !a.lock) EVO.release(g, false); };
   EVO.release = (g, over) => {
-    const a = g.evoAim; if (!a || a.lock) return; const Z = EVO.pressZones(g), c = a.ch || 0;
-    a.lock = true; a.lockT = 0; a.hold = false;
-    if (over) { a.zone = 'red'; a.mult = 0.8; a.word = 'SURCHAUFFE'; } else if (c >= Z.gold0 && c <= Z.gold1) { a.zone = 'gold'; a.mult = 1.3; a.word = 'PARFAIT !'; } else if (c >= Z.green0 && c < Z.gold0) { a.zone = 'green'; a.mult = 1.12; a.word = 'BIEN'; } else if (c > Z.gold1) { a.zone = 'yellow'; a.mult = 1.0; a.word = 'TROP LONG'; } else if (c >= Z.yel0) { a.zone = 'yellow'; a.mult = 0.9; a.word = 'MOYEN'; } else { a.zone = 'red'; a.mult = 0.7; a.word = 'FAIBLE'; }
+    // v173 : plus aucun echec possible : plus on maintient longtemps, plus la poussee est forte (0,6 a 1,4)
+    const a = g.evoAim; if (!a || a.lock) return; const c = U.clamp(a.ch || 0, 0, 1);
+    a.lock = true; a.lockT = 0; a.hold = false; a.mult = 0.6 + 0.8 * c;
+    if (c >= 0.93) { a.zone = 'gold'; a.word = 'POUSSÉE MAXIMALE'; } else if (c >= 0.6) { a.zone = 'green'; a.word = 'FORTE POUSSÉE'; } else if (c >= 0.3) { a.zone = 'yellow'; a.word = 'POUSSÉE MOYENNE'; } else { a.zone = 'red'; a.word = 'FAIBLE POUSSÉE'; }
     g.evoLaunchMult = a.mult; g.audio.play(a.zone === 'gold' ? 'levelUp' : 'target'); g.audio.play('boomSmall', g.pad.origin);
-    g.rig.shake = Math.max(g.rig.shake, 0.5 + 0.4 * c); if (a.zone === 'gold') { g.flash = 0.35; g.flashColor = '#ffe9a0'; } if (CC.Haptics) CC.Haptics.pattern(a.zone === 'gold' ? 'levelUp' : 'fire');
+    g.rig.shake = Math.max(g.rig.shake, 0.5 + 0.4 * c); if (a.zone === 'gold') { g.flash = 0.3; g.flashColor = '#ffffff'; } if (CC.Haptics) CC.Haptics.pattern(a.zone === 'gold' ? 'levelUp' : 'fire');
     g.effects.ring(g.pad.origin.clone(), new V(0, 0, 1), 0.3, 5, 0.3, '#ffffff', 0.7);
   };
   EVO.lock = (g) => {   // ancien appel (niveau 2, tests) : relache immediat
@@ -255,7 +256,7 @@
       const k = a.ch || 0; a.ch = Math.min(1.02, k + dt / CHARGE_T * (0.8 + 0.5 * k)); a.tk = (a.tk || 0) - dt;
       if (a.tk <= 0) { a.tk = 0.2 - 0.14 * a.ch; if (CC.Haptics) CC.Haptics.tick(a.ch > 0.8 ? 'warn' : 'touch'); try { if (g.audio.tone) g.audio.tone('triangle', 130 + 520 * a.ch, 140 + 540 * a.ch, 0.09, 0.05); } catch (e) { /* son facultatif */ } }
       g.rig.shake = Math.max(g.rig.shake, 0.08 * a.ch * a.ch);
-      if (a.ch >= 1) EVO.release(g, true);
+      if (a.ch > 1) a.ch = 1;
     } else if (!a.lock) a.ch = Math.max(0, (a.ch || 0) - dt * 2.5);
     g.pad.charge = U.clamp(0.1 + 0.9 * (a.ch || 0), 0, 1);
     if (a.lock) { a.lockT += dt; if (a.lockT > 0.14) { g.evoAimLast = a; g.pad.manual = false; g.fire(); g.evoAim = null; } }
@@ -319,7 +320,7 @@
   // chaque ennemi détruit : pièces, souffle qui pousse la fusée, carburant (réacteur)
   EVO.onKill = (g, t) => {
     const ev = g.evo; if (!ev || ev.preview) return;
-    const S = EVO.save(g), r = EVO.rocket(S.rk), rk = g.rocket, m = EVO.mult(S.cm), c = Math.round((t.evoVal || (t.evoHp ? 200 : 80)) * m);
+    const S = EVO.save(g), r = EVO.rocket(S.rk), rk = g.rocket, m = EVO.mult(S.cm), c = Math.round((t.evoVal || (t.evoHp ? 200 : 80)) * m * EVO.COIN_K);
     ev.kills++; ev.coins += c;
     rk.vel.addScaledVector(rk.fwd, r.kick); rk.vel.y += 1.5;
     g.rig.punch = 1;
@@ -429,7 +430,7 @@
     EVO.endTumble(g);
     if (g.evo && g.evo.preview) { g.evoPreview = false; g.evoLast = { zone2: true, t0: 0 }; g.goHome({}); return; }
     const S = EVO.save(g), ev = g.evo || { kills: 0, coins: 0, maxD: 0 }, run = g.endlessRun, dist = Math.round(Math.max(ev.maxD, run ? run.dist : 0)), m = EVO.mult(S.cm);
-    const distCoins = Math.floor(dist * 1.1 * m), lines = [['DISTANCE ' + dist + ' M', distCoins]];
+    const distCoins = Math.floor(dist * 1.1 * m * EVO.COIN_K), lines = [['DISTANCE ' + dist + ' M', distCoins]];
     if (ev.kills) lines.push(['ENNEMIS ' + ev.kills, ev.coins - (ev.bossHits ? Math.round(150 * m) * ev.bossHits : 0)]);
     if (ev.bossHits) lines.push(['COUPS AU BOSS ' + ev.bossHits, Math.round(150 * m) * ev.bossHits]);
     if (ev.chapCoins) lines.push(['CHAPITRE ' + ev.chap + ' SUR ' + (EVO.chapters ? EVO.chapters.length : 1), ev.chapCoins]);
@@ -445,10 +446,12 @@
     g.evoReport = true; g.evoAdDone = false; g.ui.overlay = 'evoReport';   // v152 : le rapport de vol s'affiche sur le lieu du crash ; SUIVANT ramene au menu
   };
   // SUIVANT : mini pub de 5 s des le 5e vol (sauf pub de fin deja regardee), puis retour au menu
+  EVO.COIN_K = 2.4;   // v173 : on gagne 2,4 fois plus de pieces (progression plus facile au debut)
+  EVO.INTERSTITIAL = false;   // v173 : pas de pub imposee entre les vols pour l'instant
   EVO.afterReport = (g) => {
     if (!g.evoReport) return; const S = EVO.save(g);
     const go = () => { g.evoReport = false; g.evoLast = null; g.goHome({}); };
-    if (S.runs >= 5 && !g.evoAdDone && g.ads && g.ads.forced()) { g.ui.overlay = null; g.ads.open('interstitial', go, null, 5); return; }
+    if (EVO.INTERSTITIAL && S.runs >= 5 && !g.evoAdDone && g.ads && g.ads.forced()) { g.ui.overlay = null; g.ads.open('interstitial', go, null, 5); return; }
     go();
   };
   // v150 : la pub de fin de vol multiplie les pieces du vol par le multiplicateur lu sur le curseur (x1,5 a x4)
@@ -498,8 +501,7 @@
     if (rk.active && g.state === 'FLIGHT' && CC.UI2) { const UI2 = CC.UI2, tg = []; const rr = EVO.save(g).runs;
       for (const t of g.targets) { if (!t.alive || t.boss || t.mini || !t.obb || t.hazard) continue; const c = t.obb.c, d = c.distanceTo(rk.pos); if (d < 8 || d > 230) continue; _v.copy(c).sub(rk.pos); if (_v.dot(rk.fwd) < 0) continue; tg.push([d, t]); }
       tg.sort((a, b) => a[0] - b[0]); const u2 = H > W ? W : Math.min(W, H * 0.62); UI2.begin(u2, g.hudPr || 1); const blink = Math.floor(performance.now() / 380) % 2;
-      for (let i = 0; i < Math.min(5, tg.length); i++) { const t = tg[i][1], d = tg[i][0], c = t.obb.c; _v.set(c.x, c.y + (t.size ? t.size[1] * 0.3 : 1), c.z); CC.Curve.apply(_v, g.camera).project(g.camera); if (_v.z > 1 || _v.z < -1) continue; const sx = (_v.x * 0.5 + 0.5) * W, sy = (-_v.y * 0.5 + 0.5) * H;
-        ctx.fillStyle = UI2.THEME.red; ctx.globalAlpha = i === 0 || blink ? 0.95 : 0.55; ctx.beginPath(); ctx.arc(sx, sy, Math.max(2.5, UI2.S(i === 0 ? 9 : 6)), 0, 6.2832); ctx.fill(); ctx.globalAlpha = 1; } }
+      { const hit0 = tg[0]; if (hit0 && hit0[0] < 120) { const t = hit0[1], d = hit0[0], c = t.obb.c; _v.set(c.x, c.y + (t.size ? t.size[1] * 0.3 : 1), c.z); CC.Curve.apply(_v, g.camera).project(g.camera); if (_v.z < 1 && _v.z > -1) UI2.reticle(ctx, (_v.x * 0.5 + 0.5) * W, (-_v.y * 0.5 + 0.5) * H, UI2.S(54) * U.clamp(1.4 - d / 150, 0.7, 1.15), d < 70); } } }
     const dmg = EVO.dmgNow(g);
     for (const t of g.targets) {
       if (!t.alive || t.boss || t.mini || !t.evoHp || !t.obb) continue;
