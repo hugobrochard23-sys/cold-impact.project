@@ -499,15 +499,13 @@
       for (const t of g.targets) { if (!t.alive || t.boss || t.mini || !t.obb || t.hazard) continue; const c = t.obb.c, d = c.distanceTo(rk.pos); if (d < 8 || d > 230) continue; _v.copy(c).sub(rk.pos); if (_v.dot(rk.fwd) < 0) continue; tg.push([d, t]); }
       tg.sort((a, b) => a[0] - b[0]); const u2 = H > W ? W : Math.min(W, H * 0.62); UI2.begin(u2, g.hudPr || 1); const blink = Math.floor(performance.now() / 380) % 2;
       for (let i = 0; i < Math.min(5, tg.length); i++) { const t = tg[i][1], d = tg[i][0], c = t.obb.c; _v.set(c.x, c.y + (t.size ? t.size[1] * 0.3 : 1), c.z); CC.Curve.apply(_v, g.camera).project(g.camera); if (_v.z > 1 || _v.z < -1) continue; const sx = (_v.x * 0.5 + 0.5) * W, sy = (-_v.y * 0.5 + 0.5) * H;
-        if (i === 0) UI2.reticle(ctx, sx, sy, UI2.S(rr < 3 ? 62 : 44) * U.clamp(1.5 - d / 220, 0.7, 1.2), d < 120); else if (blink) { ctx.fillStyle = UI2.THEME.red; ctx.beginPath(); ctx.arc(sx, sy, Math.max(2.5, UI2.S(7)), 0, 6.2832); ctx.fill(); } } }
+        ctx.fillStyle = UI2.THEME.red; ctx.globalAlpha = i === 0 || blink ? 0.95 : 0.55; ctx.beginPath(); ctx.arc(sx, sy, Math.max(2.5, UI2.S(i === 0 ? 9 : 6)), 0, 6.2832); ctx.fill(); ctx.globalAlpha = 1; } }
     const dmg = EVO.dmgNow(g);
     for (const t of g.targets) {
       if (!t.alive || t.boss || t.mini || !t.evoHp || !t.obb) continue;
       const c = t.obb.c, d = c.distanceTo(rk.pos); if (d > 190 || d < 4) continue;
       _v.set(c.x, c.y + (t.size ? t.size[1] * 0.5 : 2) + 2.4, c.z); CC.Curve.apply(_v, g.camera).project(g.camera); if (_v.z > 1 || _v.z < -1) continue;
       const sx = (_v.x * 0.5 + 0.5) * W, sy = (-_v.y * 0.5 + 0.5) * H, ok = dmg + 0.001 >= t.evoHp, s = px * U.clamp(2.0 - d / 120, 0.8, 1.7);
-      const hv = t.evoHp, lab = Number.isInteger(hv) ? String(hv) : (Math.round(hv * 10) / 10).toFixed(1);
-      CC.Home.evoUI.txt(ctx, lab, sx, sy - s * 3.5, s * 6.2, ok ? '#FFE600' : '#FF2B2B', { sw: 0.24 });
       if (t.evoHpMax && t.evoHp < t.evoHpMax) { const bw = s * 14, bh = Math.max(4, s * 1.5), bx = sx - bw / 2, by = sy - s * 6.4, f = U.clamp(t.evoHp / t.evoHpMax, 0, 1), fl = t.evoHitT && performance.now() - t.evoHitT < 300; ctx.fillStyle = 'rgba(8,10,14,0.75)'; ctx.fillRect(bx - 2, by - 2, bw + 4, bh + 4); ctx.fillStyle = fl ? '#ffffff' : f > 0.5 ? '#46d86a' : f > 0.25 ? '#ffc531' : '#ff5a4a'; ctx.fillRect(bx, by, bw * f, bh); }
     }
   };
