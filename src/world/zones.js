@@ -386,7 +386,7 @@
     const bx2 = (o) => { if (!o.r) o.r = [0, YW, 0]; else if (o.r[1] === 0) o.r = [o.r[0], YW, o.r[2]]; if (o.s) o.s = [o.s[0], o.s[1], o.s[2] + (o.s[2] === len ? 60 * dth : 0)]; return rawBox(o); };
     const slab = (yoff, w, th, mat, tint, extra) => {   // sol physique limité à 260 m de large (grille de collision) ; au-delà : plan visuel sans collision
       const cw = Math.min(w, 260), ex = extra || {};
-      if (w > cw) bx2({ p: GP(0, ym + yoff - 0.02), s: [w, th, len], r: [pitch, 0, 0], mat, tint, collide: false, shadow: false });
+      if (w > cw) bx2({ p: GP(0, ym + yoff - 0.3), s: [w, th, len], r: [pitch, 0, 0], mat, tint, collide: false, shadow: false });
       return bx2(Object.assign({ p: GP(0, ym + yoff), s: [cw, th, len], r: [pitch, 0, 0], mat, tint, ground: true }, ex));
     };
     if (inRamp) {

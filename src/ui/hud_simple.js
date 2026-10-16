@@ -3,7 +3,7 @@
   const U = CC.U;
   CC.HUD.prototype.drawClassic = function (game, W, H, C, col, rk) {
     const ctx = this.ctx, run = game.endlessRun, F = CC.Font, s = game.state;
-    if (CC.EVO && CC.EVO.on && game.ui && (game.ui.overlay === 'evo' || game.ui.overlay === 'evoIntro' || game.ui.overlay === 'evoCine' || game.ui.overlay === 'evoWin')) return;   // v119 : l'écran d'évolution masque le HUD de vol
+    if (CC.EVO && CC.EVO.on && game.ui && (game.ui.overlay === 'evo' || game.ui.overlay === 'evoIntro' || game.ui.overlay === 'evoCine' || game.ui.overlay === 'evoWin' || game.ui.overlay === 'evoReport')) return;   // v119 : l'écran d'évolution masque le HUD de vol
     const flying = s === 'FLIGHT' || s === 'IMPACT' || s === 'CRASHED' || s === 'RESPAWN' || s === 'REVIVE' || s === 'AIM';
     if (!flying) return;
     const alive = s === 'FLIGHT' || s === 'AIM', top = Math.max(10, H * 0.02), px = Math.max(3, Math.min(W * 0.012, H * 0.0075));

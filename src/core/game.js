@@ -1039,7 +1039,7 @@
             if (this.impactT > (this.evoTumble ? this.evoTumble.dur : 0.9)) {
               // v093 : niveaux 1-3 : pas d'écran, la partie se relance aussitôt (essayer = instantané)
               const cl = this.endlessRun.T.levelLen && this.levelRun && this.levelRun.n;
-              if (this.evo) { if (!this.pendingHome && this.state === 'CRASHED') CC.EVO.beginEnd(this); break; }
+              if (this.evo) { if (!this.pendingHome && !this.evoReport && this.state === 'CRASHED') CC.EVO.beginEnd(this); break; }
               if (this.evo && !this.pendingHome) CC.EVO.beginEnd(this);   // v119 : mode évolution
               else if (cl === 1 && this.l1run && !this.pendingHome) CC.L1.beginDeath(this);   // v118 : niveau 1 : écran de mort avec trois améliorations
               else if (cl && cl <= 3 && !this.testMode && this.crashKind !== 'win') { if (!this.pendingHome) this.goHome({ autoLaunch: true }); }

@@ -79,7 +79,7 @@ CC.CONFIG = {
     boostPull: 0.55,             // v034 : m dont la caméra recule pendant le boost
     handoff: 1.05,               // v034 : s pour passer de la vue du lanceur à la caméra de poursuite (travelling)
     launchBlend: 0.45,           // MESURÉ : la caméra rattrape la roquette en ≈ 0,5 s
-    near: 0.05, far: 1400,
+    near: 0.35, far: 1400,
     eyeHeight: 1.6,
   },
 
