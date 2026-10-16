@@ -81,4 +81,15 @@
   
   // v173 : plus de voyant rouge de detection au-dessus des ennemis
   if (CC.Models && CC.Models.alertSprite) { const _as = CC.Models.alertSprite; CC.Models.alertSprite = function () { const o = _as.apply(this, arguments); Object.defineProperty(o, 'visible', { get: () => false, set: () => {} }); return o; }; }
+  // v179 : ombre ronde sous la fusee (sur le sol du couloir) : plus petite et plus pale quand la fusee est haute ; pas sous l'eau
+  let shadow = null;
+  const _fs = EVO.frame; EVO.frame = (g, dt) => {
+    _fs(g, dt);
+    const rk = g.rocket, run = g.endlessRun; if (!shadow) { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), gr = x.createRadialGradient(32, 32, 2, 32, 32, 32); gr.addColorStop(0, 'rgba(0,0,0,0.75)'); gr.addColorStop(0.6, 'rgba(0,0,0,0.35)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = gr; x.fillRect(0, 0, 64, 64);
+      shadow = new T3.Mesh(new T3.PlaneGeometry(1, 1), new T3.MeshBasicMaterial({ map: new T3.CanvasTexture(c), transparent: true, depthWrite: false, fog: false, polygonOffset: true, polygonOffsetFactor: -2 })); shadow.rotation.x = -Math.PI / 2; shadow.renderOrder = 3; shadow.frustumCulled = false; }
+    const on = rk && rk.active && run && g.state === 'FLIGHT' && EVO.seaLevel === undefined && !g.cine3d;
+    if (shadow.parent !== g.scene) g.scene.add(shadow); shadow.visible = !!on; if (!on) return;
+    const gy = run.T.base(Math.max(0, run.dist)) + 0.08, h = Math.max(0, rk.pos.y - gy), k = U.clamp(1 - h / 70, 0.15, 1);
+    shadow.position.set(rk.pos.x, gy, rk.pos.z); shadow.scale.set(3.6 * k + 1.2, 3.6 * k + 1.2, 1); shadow.material.opacity = 0.2 + 0.7 * k;
+  };
 })();

@@ -391,6 +391,7 @@
   // v066 : REPERES DE CIBLES — grands crochets rouges en pixels (taille croissante à l'approche), distance, flèche de bord pour les cibles hors champ
   const _bk = new THREE.Vector3();
   HUD.prototype.drawMarks = function (game) {
+    if (game.evo) return;   // v179 : en mode evolution, un seul petit repere (dessine par evo.js)
     if (game.state !== 'FLIGHT' && game.state !== 'AIM') return;
     const W = this.canvas.width, H = this.canvas.height, ctx = this.ctx, cam = game.camera, rk = game.rocket;
     const px = Math.max(5, Math.round(H * 0.012)), base = H * 0.03;
