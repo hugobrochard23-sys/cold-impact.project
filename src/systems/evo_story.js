@@ -121,9 +121,7 @@
     // pièces gagnées pendant ce vol
     { const run = g.endlessRun, m = EVO.mult(EVO.save(g).cm), tot = Math.round(ev.coins + (ev.chapCoins || 0) + Math.floor(Math.max(0, run ? run.dist : 0) * 1.1 * m)), UI = CC.Home && CC.Home.evoUI;
       if (tot !== ev._coinShown) { ev._coinShown = tot; if (ev.coins !== ev._coinKills) { ev._coinKills = ev.coins; ev._coinBump = now; } }
-      if (UI) { const bump = 1 + 0.3 * Math.max(0, 1 - (now - (ev._coinBump || 0)) / 260), h = px * 4.4, fs = h * 0.56 * bump, s = U.formatInt(tot), w = UI.tw(ctx, s, fs) + h * 1.25, x = W * 0.96 - w, y = top + px * 0.4;
-        UI.panel(ctx, x, y, w, h, 8, 'rgba(10,11,14,0.72)', null, 'rgba(255,255,255,0.18)'); UI.coin(ctx, x + h * 0.56, y + h / 2, h * 0.3); UI.txt(ctx, s, x + h * 1.02, y + h / 2, fs, '#f2b84a', { align: 'left' }); } }
-    // radio
+      if (UI && UI.coinCounter) UI.coinCounter(ctx, g, W, H, tot, 1 + 0.25 * Math.max(0, 1 - (now - (ev._coinBump || 0)) / 260)); }    // radio
     const R = g.evoRadio;
     if (R) {
       const a = (now - R.t0) / R.dur; if (a >= 1) { g.evoRadio = null; g.audio.play('radioEnd'); }
