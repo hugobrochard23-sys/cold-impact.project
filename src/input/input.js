@@ -44,7 +44,7 @@
         if (e.button === 0) this.fireEdge = true;
         if (e.button === 2) { this.grappleHeld = true; this.grappleEdge = true; }
       });
-      window.addEventListener('mouseup', (e) => { if (e.button === 2) this.grappleHeld = false; });
+      window.addEventListener('mouseup', (e) => { if (e.button === 2) this.grappleHeld = false; if (e.button === 0 && game.evoAim && game.evoAim.hold && CC.EVO) CC.EVO.holdEnd(game); });
       el.addEventListener('mousemove', (e) => {
         const r = el.getBoundingClientRect();
         if (game.ui) { game.ui.mouse.x = (e.clientX - r.left) * (el.width / r.width); game.ui.mouse.y = (e.clientY - r.top) * (el.height / r.height) - (game.ui.offsetY || 0); }
@@ -64,7 +64,7 @@
     // v087 : un appui sur les menus (souris OU toucher direct) ; renvoie vrai si on est dans un menu
     uiPress(x, y, button) {
       const game = this.game;
-      if (game.evoAim && game.state === 'LAUNCH') { CC.EVO.lock(game); return true; }   // v122
+      if (game.evoAim && game.state === 'LAUNCH') { if (game.evoAim.auto) CC.EVO.lock(game); else CC.EVO.holdStart(game); return true; }   // v159 : on maintient pour charger le piston
       if (!(game.ui && (game.state === 'MENU' || game.state === 'RESULTS' || game.state === 'REVIVE' || game.paused || game.ui.overlay))) return false;
       if (game.ui.click(x, y)) return true;
       if (game.state === 'MENU' && game.padMode && !game.ui.overlay && button === 0) { game.beginLaunch(); return true; }   // v034 : un clic sur le lanceur = lancer

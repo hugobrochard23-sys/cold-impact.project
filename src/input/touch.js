@@ -47,7 +47,7 @@
     const boostOn = () => { T.thrust = true; if (Hap) Hap.boostStart(); };   // v034 : le son du boost est joué par Game.onBoostStart
     document.addEventListener('touchstart', (e) => {
       wake();
-      if (game.evoAim && game.state === 'LAUNCH' && e.target !== pause) { e.preventDefault(); CC.EVO.lock(game); return; }   // v122 : la barre de visee se verrouille au toucher, n'importe ou
+      if (game.evoAim && game.state === 'LAUNCH' && e.target !== pause) { e.preventDefault(); if (game.evoAim.auto) CC.EVO.lock(game); else CC.EVO.holdStart(game); return; }   // v122 : la barre de visee se verrouille au toucher, n'importe ou
       // v034 : au lanceur, le lancement part dès que le doigt TOUCHE (pas au relâchement) — sauf sur une icône de l'interface
       if (game.state === 'MENU' && game.padMode && !game.ui.overlay && !game.pendingHome && e.target !== pause) {
         const t0 = e.changedTouches[0], p = input.uiCoords(t0.clientX, t0.clientY);
@@ -55,6 +55,7 @@
       }
       // v087 : dans les menus, on traite le toucher NOUS-MEMES (au relâchement, avec une tolérance de 28 px) au lieu d'attendre le clic synthétique du navigateur
       // qui disparaissait si le doigt bougeait un peu ou restait posé trop longtemps (boutons pub, fermer...)
+      if (CC.EVO && CC.EVO.on && game.state === 'MENU' && game.ui.overlay === 'evo' && !game.pendingHome && e.target !== pause) { const t1 = e.changedTouches[0], q = input.uiCoords(t1.clientX, t1.clientY); if (!game.ui.hitTestUI(q.x, q.y)) { e.preventDefault(); CC.EVO.start(game); CC.EVO.holdStart(game); return; } }
       if (!playing() && e.target !== pause) { const t0 = e.changedTouches[0]; uiTouch = { id: t0.identifier, x0: t0.clientX, y0: t0.clientY, x: t0.clientX, y: t0.clientY }; return; }
       if (!playing() || e.target === pause) return;   // menus, pause : le toucher devient un clic sur le jeu
       e.preventDefault();
@@ -80,6 +81,7 @@
       }
     }, { passive: false });
     const end = (e) => {
+      if (CC.EVO && game.evoAim && game.evoAim.hold) { if (e.cancelable) e.preventDefault(); CC.EVO.holdEnd(game); return; }
       if (uiTouch) {
         for (const t of e.changedTouches) {
           if (t.identifier !== uiTouch.id) continue;

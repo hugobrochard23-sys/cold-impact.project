@@ -3,7 +3,7 @@
   const U = CC.U;
   CC.HUD.prototype.drawClassic = function (game, W, H, C, col, rk) {
     const ctx = this.ctx, run = game.endlessRun, F = CC.Font, s = game.state;
-    if (CC.EVO && CC.EVO.on && game.ui && (game.ui.overlay === 'evo' || game.ui.overlay === 'evoIntro' || game.ui.overlay === 'evoCine' || game.ui.overlay === 'evoWin' || game.ui.overlay === 'evoReport')) return;   // v119 : l'écran d'évolution masque le HUD de vol
+    if (CC.EVO && CC.EVO.on && game.ui && (game.ui.overlay === 'evo' || game.ui.overlay === 'evoIntro' || game.ui.overlay === 'evoCine' || game.ui.overlay === 'evoWin' || game.ui.overlay === 'evoReport' || game.ui.overlay === 'evoShop' || game.ui.overlay === 'evoSkins')) return;   // v119 : l'écran d'évolution masque le HUD de vol
     const flying = s === 'FLIGHT' || s === 'IMPACT' || s === 'CRASHED' || s === 'RESPAWN' || s === 'REVIVE' || s === 'AIM';
     if (!flying) return;
     const alive = s === 'FLIGHT' || s === 'AIM', top = Math.max(10, H * 0.02), px = Math.max(3, Math.min(W * 0.012, H * 0.0075));
@@ -14,10 +14,10 @@
     if (!game.evo) F.draw(ctx, sc, W / 2, top, px * 1.35, '#ffffff', { align: 'center' });
     ctx.restore();
     const gh = Math.min(H * 0.34, 300), gw = Math.max(10, Math.round(px * 2.4)), gx = W - gw - Math.max(14, W * 0.05), gy = top + H * 0.02;
-    if (!game.evo || (!game.evo.preview && CC.EVO.rocket(CC.EVO.save(game).rk).tier >= 2)) this.drawFuelBar(game, rk, gx, gy, gw, gh);
+    if (!game.evo) this.drawFuelBar(game, rk, gx, gy, gw, gh);   // v159 : en mode evolution, la jauge est en haut (HUD de vol)
     game.flyers.length = 0;
     // v075 : niveau — fine ligne de progression tout en haut ; vie du boss quand il est proche
-    if (game.levelRun) {
+    if (game.levelRun && !game.evo) {
       const pct = U.clamp(run.dist / game.levelRun.len, 0, 1), th = Math.max(3, Math.round(px * 0.9));
       ctx.fillStyle = 'rgba(8,12,18,0.4)'; ctx.fillRect(0, 0, W, th); ctx.fillStyle = '#d9a441'; ctx.fillRect(0, 0, Math.round(W * pct), th);
       let boss = null, bd = 1e9; for (const q of game.targets) if ((q.boss || q.mini) && q.alive && q.obb && rk.active) { const dq = rk.pos.distanceTo(q.obb.c); if (dq < (q.boss ? 700 : 260) && dq < bd) { bd = dq; boss = q; } }
