@@ -34,42 +34,22 @@
     for (const c of pad.group.children) c.visible = false;
     const L = pad.evoL = new T3.Group(); pad.group.add(L);
     const concrete = lam('#8a8c90'), concD = lam('#6e7074'), steel = lam('#4c5460'), dark = lam('#262a31'), light = lam('#c8ccd2'), red = lam('#c8352a'), white = lam('#eceef2');
-    // dalle et bandes de danger
-    box(L, 4.6, 0.34, 9.4, concrete, 0, -0.78, -0.4);
-    for (const s of [-1, 1]) { const b = new T3.Mesh(new T3.PlaneGeometry(0.22, 9.4), hazMat(30)); b.rotation.x = -Math.PI / 2; b.position.set(s * 2.2, -0.605, -0.4); L.add(b); }
-    for (const e of [-1, 1]) { const b = new T3.Mesh(new T3.PlaneGeometry(4.6, 0.22), hazMat(14)); b.rotation.x = -Math.PI / 2; b.position.set(0, -0.605, -0.4 + e * 4.6); L.add(b); }
-    box(L, 1.5, 0.05, 6.2, concD, 0, -0.6, -0.6);   // chemin du rail
-    // fosse a flammes derriere : grille qui rougeoie
-    pad.deflMat = lam('#2a2d33', '#000000'); const defl = new T3.Mesh(new T3.BoxGeometry(1.2, 0.06, 1.7), pad.deflMat); defl.position.set(0, -0.58, 1.9); L.add(defl); pad.defl = defl; defl.userData.noBake = true;
-    for (let k = -2; k <= 2; k++) box(L, 0.04, 0.08, 1.7, dark, k * 0.22, -0.55, 1.9);
-    // rail de lancement incline (suit la visee)
+    // v174 : un petit lanceur de roquette tout simple : dalle, rail incline, deux bras de maintien, bouclier de flamme, quelques cones
+    box(L, 2.6, 0.3, 6.0, concrete, 0, -0.78, -0.2);
+    for (const s of [-1, 1]) { const b = new T3.Mesh(new T3.PlaneGeometry(0.2, 6.0), hazMat(20)); b.rotation.x = -Math.PI / 2; b.position.set(s * 1.2, -0.625, -0.2); L.add(b); }
+    pad.deflMat = lam('#2a2d33', '#000000'); const defl = new T3.Mesh(new T3.BoxGeometry(0.9, 0.05, 1.3), pad.deflMat); defl.position.set(0, -0.6, 1.7); L.add(defl); pad.defl = defl; defl.userData.noBake = true;
     const cradle = new T3.Group(); L.add(cradle); cradle.rotation.x = pad.pitch || 0; pad.cradle = cradle;
-    box(cradle, 0.46, 0.1, 5.2, dark, 0, -0.34, -0.5); for (const s of [-1, 1]) { box(cradle, 0.07, 0.1, 5.2, steel, s * 0.24, -0.26, -0.5); box(cradle, 0.02, 0.02, 5.2, lam('#FFE600', '#6a5f00'), s * 0.24, -0.2, -0.5); }
-    for (const z of [-2.7, -1.5, -0.3, 0.9, 2.0]) box(cradle, 0.64, 0.05, 0.1, steel, 0, -0.3, z);
-    for (const z of [-1.9, 0.3, 1.6]) for (const s of [-1, 1]) box(L, 0.08, 0.5, 0.08, steel, s * 0.24, -0.5, z);
-    box(cradle, 0.5, 0.34, 0.5, dark, 0, -0.2, 2.45); box(cradle, 0.36, 0.1, 0.36, lam('#FFE600'), 0, 0.0, 2.45);   // butee arriere
-    // bras de maintien (s'ouvrent a l'allumage) : pivots articules sur le rail
-    pad.clamps = []; for (const z of [-0.28, 0.26]) for (const s of [-1, 1]) { const arm = new T3.Group(); arm.position.set(s * 0.2, -0.22, z); cradle.add(arm); box(arm, 0.045, 0.34, 0.09, steel, 0, 0.15, 0); box(arm, 0.1, 0.05, 0.1, lam('#FFE600'), -s * 0.04, 0.33, 0); box(arm, 0.06, 0.06, 0.09, dark, 0, 0.0, 0); pad.clamps.push({ arm, s }); }
-    // boosters du propulseur (paliers) : a droite et a gauche du rail, ils rougeoient quand on charge
-    pad.boosters = []; const nb = [0, 2, 4][la.tier] || 0;
-    for (let i = 0; i < nb; i++) { const s = i % 2 ? 1 : -1, row = Math.floor(i / 2), x = s * (0.56 + row * 0.2), z = 1.0 - row * 0.5; const b = new T3.Group(); b.position.set(x, -0.34 + row * 0.04, z); L.add(b);
+    for (const s of [-1, 1]) box(cradle, 0.08, 0.1, 4.6, steel, s * 0.22, -0.3, -0.4);
+    for (const z of [-2.1, -0.6, 0.9, 1.9]) box(cradle, 0.56, 0.06, 0.1, dark, 0, -0.34, z);
+    for (const z of [-1.4, 0.6]) for (const s of [-1, 1]) box(L, 0.07, 0.42, 0.07, steel, s * 0.22, -0.52, z);
+    box(cradle, 0.46, 0.3, 0.14, dark, 0, -0.2, 2.2);   // butee arriere
+    pad.clamps = []; for (const z of [-0.2]) for (const s of [-1, 1]) { const arm = new T3.Group(); arm.position.set(s * 0.2, -0.22, z); cradle.add(arm); box(arm, 0.045, 0.34, 0.1, steel, 0, 0.15, 0); box(arm, 0.1, 0.05, 0.1, lam('#e8eaee'), -s * 0.04, 0.33, 0); pad.clamps.push({ arm, s }); }
+    pad.boosters = []; const nb = 0;
+    for (let i = 0; i < nb; i++) { const s = i % 2 ? 1 : -1, row = Math.floor(i / 2), x = s * (0.52 + row * 0.2), z = 1.0 - row * 0.5; const b = new T3.Group(); b.position.set(x, -0.34 + row * 0.04, z); L.add(b);
       cyl(b, 0.1, 0.1, 1.05, lam(row ? '#6a7480' : '#aeb6c0'), 0, 0, 0, 14, true); cyl(b, 0.103, 0.103, 0.14, red, 0, 0, -0.18, 14, true); cyl(b, 0.0, 0.1, 0.18, lam('#3a424c'), 0, 0, -0.6, 14, true); const noz = cyl(b, 0.075, 0.095, 0.1, dark, 0, 0, 0.58, 14, true); const fl = new T3.Mesh(new T3.ConeGeometry(0.075, 0.5, 10, 1, true), bas('#ffcf40', { transparent: true, opacity: 0.0, blending: T3.AdditiveBlending, depthWrite: false, side: T3.DoubleSide, fog: false })); fl.rotation.x = -Math.PI / 2; fl.position.z = 0.88; b.add(fl); box(L, 0.2, 0.05, 0.3, steel, s * (0.4 + row * 0.1), -0.45, z); pad.boosters.push({ fl, noz }); }
-    // tour ombilicale (a gauche) : pylones, croisillons, plateforme, bras et cable
-    { const tw = new T3.Group(); tw.position.set(-1.7, -0.6, -0.4); L.add(tw); const H = 4.4; for (const [x, z] of [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3]]) box(tw, 0.07, H, 0.07, steel, x, H / 2, z);
-      for (let k = 0; k < 9; k++) { const y = 0.25 + k * 0.5; box(tw, 0.66, 0.04, 0.04, steel, 0, y, -0.3); box(tw, 0.66, 0.04, 0.04, steel, 0, y, 0.3); box(tw, 0.04, 0.04, 0.66, steel, -0.3, y, 0); box(tw, 0.04, 0.04, 0.66, steel, 0.3, y, 0); const d = box(tw, 0.04, 0.6, 0.04, steel, 0, y + 0.25, -0.3); d.rotation.z = k % 2 ? 0.8 : -0.8; }
-      box(tw, 0.9, 0.08, 0.9, dark, 0, H, 0); box(tw, 0.9, 0.3, 0.04, lam('#FFE600'), 0, H + 0.15, 0.43);
-      pad.beacon = bas('#ff2b2b'); const bc = new T3.Mesh(new T3.SphereGeometry(0.07, 8, 6), pad.beacon); bc.position.set(0, H + 0.5, 0); tw.add(bc); box(tw, 0.02, 0.4, 0.02, steel, 0, H + 0.25, 0);
-      pad.towerArm = new T3.Group(); pad.towerArm.position.set(0.3, 1.9, 0); tw.add(pad.towerArm); box(pad.towerArm, 1.1, 0.07, 0.1, steel, 0.55, 0, 0); cyl(pad.towerArm, 0.04, 0.04, 0.22, dark, 1.08, -0.02, 0, 8); const cable = box(pad.towerArm, 1.0, 0.025, 0.025, dark, 0.55, -0.12, 0.06); cable.rotation.z = -0.1; }
-    // reservoir blanc a bande rouge + tuyaux
-    { const tk = cyl(L, 0.42, 0.42, 2.0, white, -2.9, -0.2, 2.6, 18, true); tk.rotation.z = Math.PI / 2 * 0; tk.rotation.x = Math.PI / 2; tk.rotation.y = Math.PI / 2; for (const z of [-0.5, 0.5]) { const b = cyl(L, 0.425, 0.425, 0.16, red, -2.9, -0.2, 2.6 + z, 18, true); b.rotation.y = Math.PI / 2; }
-      for (const x of [-3.3, -2.5]) box(L, 0.1, 0.4, 0.5, steel, x, -0.55, 2.6); const pipe = cyl(L, 0.045, 0.045, 1.9, steel, -1.7, -0.5, 2.6, 8, true); pipe.rotation.y = Math.PI / 2; pipe.rotation.z = Math.PI / 2; }
-    // projecteurs, cones et bidons
-    for (const [x, z] of [[1.9, -2.6], [-2.0, -3.0]]) { cyl(L, 0.04, 0.05, 2.6, steel, x, 0.7, z, 8); box(L, 0.5, 0.14, 0.3, dark, x, 2.0, z); box(L, 0.42, 0.08, 0.04, bas('#fff1c8'), x, 2.0, z - 0.17); L.add(sprite('#ffe0a0', 1.1, x, 2.0, z - 0.4, 0.55)); }
-    for (const [x, z] of [[2.0, 1.0], [-1.0, 3.9], [1.9, -1.2], [-0.8, -4.6]]) { const c = new T3.Mesh(new T3.ConeGeometry(0.1, 0.34, 10), lam('#ff7a1c')); c.position.set(x, -0.42, z); L.add(c); box(L, 0.26, 0.03, 0.26, lam('#ff7a1c'), x, -0.58, z); }
-    for (const [x, z, c] of [[-1.3, 2.9, '#3a4a5a'], [-1.5, 3.3, '#7a3030'], [1.0, 3.8, '#c8a028']]) cyl(L, 0.16, 0.16, 0.42, lam(c), x, -0.4, z, 12);
-    box(L, 1.3, 0.8, 0.8, lam('#5a6a54'), 2.9, -0.2, -2.2); box(L, 1.34, 0.06, 0.84, dark, 2.9, 0.22, -2.2);   // petit conteneur
+    for (const [x, z] of [[1.0, 1.6], [-1.0, -1.8]]) { const c = new T3.Mesh(new T3.ConeGeometry(0.1, 0.34, 10), lam('#ff7a1c')); c.position.set(x, -0.42, z); L.add(c); box(L, 0.26, 0.03, 0.26, lam('#ff7a1c'), x, -0.58, z); }
     // decor lointain
-    L.add(backdrop());
+    pad.backdrop = backdrop(); L.add(pad.backdrop);
     pad.vents = [new V(-0.5, -0.5, 1.0), new V(0.5, -0.5, 1.0), new V(-0.7, -0.5, -0.8), new V(0.7, -0.5, -0.8)];
     pad.evoCh = 0; pad.evoJ = 0;
   };
@@ -78,9 +58,11 @@
   EVO.pistonFrame = (g, dt) => {
     const pad = g.pad; if (!pad || !pad.evoL) return; const a = g.evoAim, now = performance.now(), A = g.audio;
     const hold = !!(a && a.hold && !a.lock), ch = a ? (a.lock ? 1 : a.ch || 0) : 0, rk = g.rocket;
+    if (pad.backdrop) pad.backdrop.visible = g.state === 'MENU' || g.state === 'LAUNCH';   // le decor lointain n'existe que dans le menu (on ne peut pas voler a travers)
     if (pad.beacon) pad.beacon.color.setRGB(0.4 + 0.6 * (Math.sin(now / 280) > 0 ? 1 : 0), 0.05, 0.05);
     if (pad.towerArm) { const open = a && (a.lock || (a.hold && ch > 0.35)) ? 1 : 0; pad.towerArm.rotation.y += (open * -1.25 - pad.towerArm.rotation.y) * Math.min(1, dt * 3); }
     if (pad.boosters) for (const b of pad.boosters) { const k = hold || (a && a.lock) ? Math.min(1, ch * 1.3) : 0; b.fl.material.opacity = k * (0.55 + 0.35 * Math.random()); b.fl.scale.set(1, 0.6 + 1.2 * k * (0.8 + 0.4 * Math.random()), 1); }
+    { const k = a ? (a.lock ? Math.max(0, 1 - a.lockT / 0.12) * Math.min(1, ch) : Math.min(1, ch)) : 0; pad.pullBack = 1.1 * k * k * (3 - 2 * k) * ((a && a.hold) || (a && a.lock) ? 1 : 0); }   // la fusee recule dans le rail pendant la charge, puis jaillit
     if (a) pad.manualK = 0.05 + 0.95 * Math.pow(Math.max(0, ch), 1.3);
     if (A && A.setIgnition) { if (hold) A.setIgnition(ch); else if (A._ign) A.stopIgnition(); }
     if (hold && g.effects) {

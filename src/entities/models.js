@@ -362,7 +362,7 @@
     const ball = new THREE.Mesh(new THREE.SphereGeometry(0.24, 10, 8), dark); ball.position.set(0, -0.62, -3.25); g.add(ball);
     box(0.16, 0.1, 0.05, basic('#2a4a6a'), 0, -0.62, -3.48, g);
     // feux : rouge à gauche, vert à droite, blanc à la queue, gyrophare rouge sur le capot (clignotant : Target.update)
-    const light = (c, x, y, z) => { const m = box(0.12, 0.12, 0.12, new THREE.MeshBasicMaterial({ color: c }), x, y, z, g); m.castShadow = false; return m; };
+    const light = (c, x, y, z) => { const m = box(0.12, 0.12, 0.12, new THREE.MeshBasicMaterial({ color: c }), x, y, z, g); m.castShadow = false; if (CC.EVO && CC.EVO.on) m.scale.setScalar(0.001); return m; };
     const lights = [light('#ff2a1a', -0.92, 0.25, -1.9), light('#2aff5a', 0.92, 0.25, -1.9), light('#ffffff', 0, 0.3, 7.35)];
     const beacon = light('#ff1a10', 0, 1.4, 0.9);
     const firePoints = [];

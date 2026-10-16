@@ -17,7 +17,15 @@
   // ---------- images ----------
   const ICONS = ['missile_ogive', 'missile_flame', 'gem', 'gems_rope', 'gems_belt', 'bag_wings', 'chest_open', 'coin', 'coins_stack', 'crate_steel', 'video'];
   const IMG = {};
-  UI.preload = () => { for (const n of ICONS) if (!IMG[n]) { const i = new Image(); i.src = 'assets/ui/icons/' + n + '.png'; IMG[n] = i; } };
+  // les gemmes passent du jaune a un bleu-cyan de diamant : decalage de teinte des pixels jaunes satures (sans filtre canvas, compatible iOS)
+  const HUE = { gem: 1, gems_rope: 1, gems_belt: 1, bag_wings: 1, chest_open: 1, crate_steel: 1 };
+  const recolor = (img, name) => {
+    try { const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight; const x = c.getContext('2d'); x.drawImage(img, 0, 0); const id = x.getImageData(0, 0, c.width, c.height), d = id.data;
+      for (let k = 0; k < d.length; k += 4) { if (d[k + 3] < 8) continue; const r = d[k] / 255, g = d[k + 1] / 255, b = d[k + 2] / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), dl = mx - mn; if (dl < 0.22 || mx < 0.45) continue; const h = mx === r ? ((g - b) / dl + (g < b ? 6 : 0)) * 60 : mx === g ? ((b - r) / dl + 2) * 60 : ((r - g) / dl + 4) * 60; if (h < 44 || h > 72) continue;
+        const s2 = dl / mx, hh = (h + 150) % 360 / 60, i2 = Math.floor(hh), f = hh - i2, p = mx * (1 - s2), q = mx * (1 - s2 * f), t = mx * (1 - s2 * (1 - f)); let R, G, B; switch (i2 % 6) { case 0: R = mx; G = t; B = p; break; case 1: R = q; G = mx; B = p; break; case 2: R = p; G = mx; B = t; break; case 3: R = p; G = q; B = mx; break; case 4: R = t; G = p; B = mx; break; default: R = mx; G = p; B = q; } d[k] = R * 255; d[k + 1] = G * 255; d[k + 2] = B * 255; }
+      x.putImageData(id, 0, 0); const o = new Image(); o.onload = () => { IMG[name] = o; }; o.src = c.toDataURL(); } catch (e) { IMG[name] = img; }
+  };
+  UI.preload = () => { for (const n of ICONS) if (!IMG['_' + n]) { const i = new Image(); IMG['_' + n] = i; i.onload = () => { if (HUE[n]) recolor(i, n); else IMG[n] = i; }; i.src = 'assets/ui/icons/' + n + '.png'; } };
   UI.preload();
   UI.img = (n) => { const i = IMG[n]; return i && i.complete && i.naturalWidth ? i : null; };
   // dessine une icone image dans une boite carree centree (taille = plus grand cote)
@@ -71,14 +79,14 @@
   // UIIconButton : carre sombre chanfreine avec icone vectorielle
   UI.iconButton = (ctx, x, y, s, kind, o) => {
     o = o || {}; const c = s * 0.2; UI.panel(ctx, x, y, s, s, { c, fill: o.danger ? '#2a1214' : THEME.bg, border: o.danger ? THEME.red : (o.active ? THEME.yellow : THEME.border), bw: Math.max(2.5, S(4)) });
-    UI.glyph(ctx, kind, x + s / 2, y + s / 2, s * 0.42, o.danger ? THEME.red : (o.color || THEME.yellow));
+    UI.glyph(ctx, kind, x + s / 2, y + s / 2, s * 0.42, o.danger ? THEME.red : (o.color || '#aeb3bc'));
   };
   // glyphes simples (SVG -> traces canvas) : pause, reglages, croix, boutique, son, vibration, cadenas, etoile, coeur, trophee, bouclier, cible
   UI.glyph = (ctx, kind, cx, cy, r, col) => {
     ctx.save(); ctx.translate(cx, cy); ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineWidth = Math.max(2, r * 0.22); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     switch (kind) {
       case 'pause': ctx.fillRect(-r * 0.7, -r * 0.8, r * 0.5, r * 1.6); ctx.fillRect(r * 0.2, -r * 0.8, r * 0.5, r * 1.6); break;
-      case 'gear': { ctx.beginPath(); for (let k = 0; k < 8; k++) { const a = k / 8 * 6.2832; for (const [da, rad] of [[-0.2, r * 0.74], [-0.13, r], [0.13, r], [0.2, r * 0.74]]) ctx.lineTo(Math.cos(a + da) * rad, Math.sin(a + da) * rad); } ctx.closePath(); ctx.fill(); ctx.globalCompositeOperation = 'destination-out'; ctx.beginPath(); ctx.arc(0, 0, r * 0.34, 0, 6.2832); ctx.fill(); break; }
+      case 'gear': { ctx.beginPath(); for (let k = 0; k < 8; k++) { const a = k / 8 * 6.2832; for (const [da, rad] of [[-0.2, r * 0.74], [-0.13, r], [0.13, r], [0.2, r * 0.74]]) ctx.lineTo(Math.cos(a + da) * rad, Math.sin(a + da) * rad); } ctx.closePath(); ctx.fill(); ctx.fillStyle = THEME.bg; ctx.beginPath(); ctx.arc(0, 0, r * 0.34, 0, 6.2832); ctx.fill(); break; }
       case 'close': ctx.lineWidth = r * 0.36; ctx.beginPath(); ctx.moveTo(-r * 0.7, -r * 0.7); ctx.lineTo(r * 0.7, r * 0.7); ctx.moveTo(r * 0.7, -r * 0.7); ctx.lineTo(-r * 0.7, r * 0.7); ctx.stroke(); break;
       case 'shop': ctx.lineWidth = r * 0.16; ctx.beginPath(); ctx.moveTo(-r, -r * 0.25); ctx.lineTo(-r * 0.75, -r * 0.9); ctx.lineTo(r * 0.75, -r * 0.9); ctx.lineTo(r, -r * 0.25); ctx.closePath(); ctx.stroke(); ctx.beginPath(); ctx.rect(-r * 0.85, -r * 0.25, r * 1.7, r * 1.15); ctx.stroke(); ctx.fillRect(-r * 0.25, r * 0.15, r * 0.5, r * 0.75); break;
       case 'sound': ctx.beginPath(); ctx.moveTo(-r, -r * 0.35); ctx.lineTo(-r * 0.4, -r * 0.35); ctx.lineTo(r * 0.2, -r * 0.85); ctx.lineTo(r * 0.2, r * 0.85); ctx.lineTo(-r * 0.4, r * 0.35); ctx.lineTo(-r, r * 0.35); ctx.closePath(); ctx.fill(); ctx.lineWidth = r * 0.16; ctx.beginPath(); ctx.arc(r * 0.2, 0, r * 0.55, -0.9, 0.9); ctx.stroke(); ctx.beginPath(); ctx.arc(r * 0.2, 0, r * 0.95, -0.9, 0.9); ctx.stroke(); break;

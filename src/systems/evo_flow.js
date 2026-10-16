@@ -29,7 +29,7 @@
   EVO.switchStage = (g, n) => { if (EVO.stage(g) === n) return; EVO.setStage(g, n); g.ui.overlay = null; g.goHome({}); };
   // --- le niveau 2 : lancement automatique, sans la barre (le missile sort du tube)
   const _sa = EVO.startAim;
-  EVO.startAim = (g) => { _sa(g); if (EVO.stage(g) === 2 && g.evoAim) g.evoAim.auto = true; };
+  EVO.startAim = (g) => { _sa(g); };   // v174 : le niveau 2 utilise le meme lancement a maintenir
   const _at = EVO.aimTick;
   EVO.aimTick = (g, dt) => { const a = g.evoAim; if (a && a.auto && !a.lock && g.state === 'LAUNCH' && a.t > 0.5) { a.c = 0.2; EVO.lock(g); } _at(g, dt); };
   // --- écran de bilan : étoiles qui s'allument, pièces, une grande flèche pour continuer
