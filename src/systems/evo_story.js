@@ -27,7 +27,8 @@
   const SCENE_AUDIO = { descente: 'evoDusk', rampe: 'evoDawn', camp: 'evoDawn', riviere: 'evoDay', foret: 'evoDay', vallee: 'evoDay', grotte: 'evoMine', falaise: 'evoDusk', entrepots: 'evoDusk', carriere: 'evoDusk', puits: 'evoMine', tunnel: 'evoMine', ville: 'evoNight', approche: 'evoSiege', porte: 'evoBoss', noyau: 'evoBoss', fuite: 'evoEscape', arene: 'evoBoss', base: 'evoSiege' };
   EVO.MOOD = MOOD; EVO.SCENE_MOOD = SCENE_MOOD; EVO.SCENE_AUDIO = SCENE_AUDIO;
   const _m = { top: new THREE.Color(), hor: new THREE.Color(), fog: new THREE.Color(), hemiS: new THREE.Color(), hemiG: new THREE.Color(), sunC: new THREE.Color(), shT: new THREE.Color(), hiT: new THREE.Color() };
-  const mix = (a, b, t, out) => { for (const f of ['top', 'hor', 'fog', 'hemiS', 'hemiG', 'sunC', 'shT', 'hiT']) out[f].copy(a[f]).lerp(b[f], t); for (const f of ['near', 'far', 'hemiI', 'amb', 'sunI', 'night', 'sat', 'con']) out[f] = a[f] + (b[f] - a[f]) * t; return out; };
+  const GDEF = { shT: C3('#e6eeff'), hiT: C3('#fff4e6'), sat: 0.86, con: 1.06 };   // ambiances ajoutees ailleurs (niveau 2) sans etalonnage propre
+  const mix = (a, b, t, out) => { for (const f of ['top', 'hor', 'fog', 'hemiS', 'hemiG', 'sunC', 'shT', 'hiT']) out[f].copy(a[f] || GDEF[f]).lerp(b[f] || GDEF[f], t); for (const f of ['near', 'far', 'hemiI', 'amb', 'sunI', 'night', 'sat', 'con']) { const x = a[f] === undefined ? GDEF[f] : a[f], y = b[f] === undefined ? GDEF[f] : b[f]; out[f] = x + (y - x) * t; } return out; };
   const sm = (t) => { t = U.clamp(t, 0, 1); return t * t * (3 - 2 * t); };
   const _mood = _m;
   EVO.moodAt = (g, dist) => {
