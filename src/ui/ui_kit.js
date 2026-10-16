@@ -44,8 +44,8 @@
   UI.text = (ctx, s, x, y, px, color, o) => {
     // v173 : aucun contour : le texte clair est double d'une copie sombre decalee de quelques pixels vers le bas (petit relief)
     o = o || {}; ctx.save(); UI.setFont(ctx, px); ctx.textAlign = o.align || 'center'; ctx.textBaseline = 'middle';
-    const off = Math.max(1.5 * (UI.hudPr || 1), px * (o.outline ? 0.07 : 0.05));
-    ctx.fillStyle = 'rgba(8,9,12,0.95)'; ctx.fillText(s, x, y + off);
+    const off = px * (o.outline ? 0.075 : 0.055);   // l'ecart du relief suit la taille du texte
+    if (!o.flat) { ctx.fillStyle = 'rgba(8,9,12,0.95)'; ctx.fillText(s, x, y + off); }
     ctx.fillStyle = color || THEME.white; ctx.fillText(s, x, y); ctx.restore();
   };
   // ---------- composants ----------
@@ -66,19 +66,27 @@
   UI.btnPrimary = (ctx, x, y, w, h, label, o) => {
     o = o || {}; const c = Math.min(h * 0.28, S(22)), dis = o.disabled; const press = o.pressed ? h * 0.03 : 0;
     if (dis) { face(ctx, x, y, w, h, c, '#454a52', '#3a3e45', 0.08, '#2a2d33', THEME.border); }
-    else face(ctx, x, y + press, w, h - press, c, THEME.yellowL, THEME.yellow, 0.1, THEME.yellowD, '#8a7d00');
-    const col = dis ? THEME.dim : THEME.ink;
-    if (o.sub) { UI.text(ctx, label, x + w / 2 + (o.icon ? h * 0.2 : 0), y + h * 0.33, UI.fit(ctx, label, w * 0.86, h * 0.34), col, { shadow: false }); o.subDraw ? o.subDraw(x + w / 2, y + h * 0.7, h) : UI.text(ctx, o.sub, x + w / 2, y + h * 0.7, h * 0.32, col, { shadow: false }); }
+    else face(ctx, x, y + press, w, h - press, c, '#F4C400', '#CC9A00', 0.1, '#7a5c00', '#6a4f00');
+    const col = dis ? THEME.dim : THEME.white;
+    if (o.sub) { UI.text(ctx, label, x + w / 2 + (o.icon ? h * 0.2 : 0), y + h * 0.33, UI.fit(ctx, label, w * 0.86, h * 0.34), col, { flat: !!o.flatLabel }); o.subDraw ? o.subDraw(x + w / 2, y + h * 0.7, h) : UI.text(ctx, o.sub, x + w / 2, y + h * 0.7, h * 0.32, col, { shadow: false }); }
     else UI.text(ctx, label, x + w / 2, y + h * 0.46, UI.fit(ctx, label, w * (o.maxW || 0.84), o.px || h * 0.42), col, { shadow: false });
   };
+  // bouton vert (recompense) avec un reflet qui balaie en animation
+  UI.btnGreen = (ctx, x, y, w, h, label, o) => {
+    o = o || {}; const c = Math.min(h * 0.28, S(22)); face(ctx, x, y, w, h, c, '#6af07a', '#2fb457', 0.1, '#1c7a3a', '#145a2a');
+    ctx.save(); UI.cham(ctx, x, y, w, h * 0.9, c); ctx.clip(); const t = (performance.now() % 2200) / 2200, sx = x - w * 0.3 + t * w * 1.6, g = ctx.createLinearGradient(sx - w * 0.12, 0, sx + w * 0.12, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.55)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.transform(1, 0, -0.35, 1, 0, 0); ctx.fillStyle = g; ctx.fillRect(sx - w * 0.12, y, w * 0.24, h); ctx.restore();
+    if (o.sub) { UI.text(ctx, label, x + w / 2, y + h * 0.33, UI.fit(ctx, label, w * 0.86, h * 0.34), THEME.white, {}); UI.text(ctx, o.sub, x + w / 2, y + h * 0.7, UI.fit(ctx, o.sub, w * 0.86, h * 0.32), THEME.white, {}); }
+    else UI.text(ctx, label, x + w / 2, y + h * 0.46, UI.fit(ctx, label, w * 0.84, o.px || h * 0.42), THEME.white, {});
+  };
   UI.btnSecondary = (ctx, x, y, w, h, label, o) => {
-    o = o || {}; const c = Math.min(h * 0.28, S(22)); UI.panel(ctx, x, y, w, h, { c, fill: THEME.bg2, border: THEME.yellow, bw: Math.max(2, S(3)) });
+    o = o || {}; const c = Math.min(h * 0.28, S(22)); UI.panel(ctx, x, y, w, h, { c, fill: THEME.bg2, border: THEME.white, bw: Math.max(2, S(3)) });
     UI.text(ctx, label, x + w / 2, y + h * 0.48, UI.fit(ctx, label, w * 0.84, o.px || h * 0.4), o.color || THEME.white, { shadow: false });
   };
   UI.btnDanger = (ctx, x, y, w, h, label, o) => { o = o || {}; const c = Math.min(h * 0.28, S(22)); face(ctx, x, y, w, h, c, '#ff5a4a', THEME.red, 0.1, THEME.redD, '#6a0a0a'); UI.text(ctx, label, x + w / 2, y + h * 0.46, UI.fit(ctx, label, w * 0.84, o.px || h * 0.4), THEME.white, { shadow: false }); };
   // UIIconButton : carre sombre chanfreine avec icone vectorielle
   UI.iconButton = (ctx, x, y, s, kind, o) => {
-    o = o || {}; const c = s * 0.2; UI.panel(ctx, x, y, s, s, { c, fill: o.danger ? '#2a1214' : THEME.bg, border: o.danger ? THEME.red : (o.active ? THEME.yellow : THEME.border), bw: Math.max(2.5, S(4)) });
+    o = o || {}; const c = s * 0.2; UI.panel(ctx, x, y, s, s, { c, fill: o.fill || (o.danger ? '#2a1214' : THEME.bg), border: o.border || (o.danger ? THEME.red : (o.active ? THEME.white : THEME.border)), bw: Math.max(2.5, S(4)) });
     UI.glyph(ctx, kind, x + s / 2, y + s / 2, s * 0.42, o.danger ? THEME.red : (o.color || '#aeb3bc'));
   };
   // glyphes simples (SVG -> traces canvas) : pause, reglages, croix, boutique, son, vibration, cadenas, etoile, coeur, trophee, bouclier, cible
@@ -109,7 +117,7 @@
     o = o || {}; const c = h * 0.28; UI.panel(ctx, x + h * 0.3, y, w - h * 0.3, h, { c, fill: THEME.bg, border: THEME.border, bw: Math.max(2, S(3)) });
     UI.icon(ctx, kind === 'gem' ? 'gem' : 'coin', x + h * 0.55, y + h / 2, h * 1.25);
     UI.text(ctx, value, x + h * 1.2, y + h * 0.52, UI.fit(ctx, value, w - h * (o.plus ? 2.9 : 1.6), h * 0.58), THEME.white, { align: 'left', shadow: false });
-    if (o.plus) { const s = h * 0.86, px = x + w - s - h * 0.06, py = y + (h - s) / 2; UI.panel(ctx, px, py, s, s, { c: s * 0.22, fill: kind === 'gem' ? '#3a1416' : THEME.bg2, border: kind === 'gem' ? THEME.red : THEME.yellow, bw: Math.max(2, S(3)) }); UI.glyph(ctx, 'plus', px + s / 2, py + s / 2, s * 0.4, kind === 'gem' ? THEME.red : THEME.yellow); }
+    if (o.plus) { const s = h * 0.86, px = x + w - s - h * 0.06, py = y + (h - s) / 2; UI.panel(ctx, px, py, s, s, { c: s * 0.22, fill: kind === 'gem' ? '#12301a' : THEME.bg2, border: kind === 'gem' ? '#3FD84A' : THEME.white, bw: Math.max(2, S(3)) }); UI.glyph(ctx, 'plus', px + s / 2, py + s / 2, s * 0.4, kind === 'gem' ? '#3FD84A' : THEME.white); }
   };
   // UILevelBadge : pastille de niveau (octogone sombre)
   UI.levelBadge = (ctx, cx, cy, r, n) => { UI.cham(ctx, cx - r, cy - r, r * 2, r * 2, r * 0.55); ctx.fillStyle = THEME.bg2; ctx.fill(); ctx.lineWidth = Math.max(2, S(3)); ctx.strokeStyle = THEME.border2; ctx.stroke(); const s = String(n); UI.text(ctx, s, cx, cy + r * 0.04, UI.fit(ctx, s, r * 1.5, r * 1.1), THEME.white, { shadow: false }); };
