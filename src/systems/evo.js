@@ -15,7 +15,7 @@
   C.pad.cam = [0, 1.0, 5.2]; C.pad.look = [0, 0.5, -8]; C.pad.fov = 60; C.pad.pushIn = 0.04;   // lanceur vu de derrière : on voit tout le monde devant
   C.endless.fuelDrain = 1;
   C.endless.zoneLen = 14000;                                                                       // tout le niveau 1 tient dans la zone campagne
-  C.camera.distance = 3.8; C.camera.height = 1.05; C.camera.boostPull = 0.8;                       // la fusée est petite, le monde est grand
+  C.camera.distance = 3.3; C.camera.height = 1.05; C.camera.boostPull = 0.8;                       // la fusée est petite, le monde est grand
 
   const RK_TIERS = ['TUBE DE CARTON', 'AVION A AILES', 'REACTEUR', 'TURBO'], LA_TIERS = ['RAMPE EN BOIS', 'RAIL', 'CATAPULTE'];
   const RK_NEXT = ['AILES', 'REACTEUR', 'TURBO', 'MAX'], LA_NEXT = ['RAIL', 'CATAPULTE', 'MAX'];
@@ -128,7 +128,7 @@
     const root = buildParts(r.tier); rk.mesh.add(root); rk.mesh.userData.evoParts = root; g.evoParts = root.userData.P;
     for (const k of Object.keys(g.evoParts)) { const on = r.tier >= PART_TIER[k]; g.evoParts[k].userData.k = on ? 1 : 0; g.evoParts[k].scale.setScalar(on ? 1 : 0.0001); g.evoParts[k].visible = on; }
     rk.mesh.userData.finTips = r.tier >= 1 ? [new V(0.44, 0, -0.18), new V(-0.44, 0, -0.18), new V(0, 0.44, -0.18), new V(0, -0.44, -0.18)] : [];   // bouts d'ailes : traînées de condensation
-    rk.mesh.scale.setScalar(1 + 0.012 * r.n);
+    rk.mesh.scale.setScalar((1 + 0.012 * r.n) * 1.28);
   };
   // v159 : LIVREES : une fois la fusee au bout de ses ameliorations (niveau 20), on peut en changer l'apparence ; une nouvelle s'ouvre tous les 5 niveaux
   EVO.LIVERIES = [
