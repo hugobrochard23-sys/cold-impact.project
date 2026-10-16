@@ -121,8 +121,8 @@
     cy(5.2, 5.2, 66, body, 33); cy(0.4, 5.2, 24, body, 78); cy(0.4, 2.2, 6, red, 93); cy(5.3, 5.3, 6, red, 52); cy(5.3, 5.3, 2.4, dk, 3);
     for (let k = 0; k < 4; k++) { const f = mb(m, 1.2, 14, 9, body, Math.cos(k * 1.571) * 6.6, 8, Math.sin(k * 1.571) * 6.6); f.rotation.y = -k * 1.571; }
     const fl = new T3.Mesh(new T3.ConeGeometry(4.6, 40, 12, 1, true), new T3.MeshBasicMaterial({ color: '#ffb040', transparent: true, opacity: 0.9, blending: T3.AdditiveBlending, depthWrite: false, side: T3.DoubleSide, fog: false })); fl.rotation.x = Math.PI; fl.position.y = -18; fl.visible = false; m.add(fl);
-    m.position.y = -48;   // l'axe du groupe est au centre du missile (collision et orientation)
-    const col = EVO.colBox(G, 24, 110, 24, 0, 0, 0);
+    m.scale.setScalar(0.62); m.position.y = -48 * 0.62;   // l'axe du groupe est au centre du missile (collision et orientation)
+    const col = EVO.colBox(G, 20, 76, 20, 0, 0, 0);
     const p = S.at(dP, PX, sy + 34 + 48); G.position.set(p[0], p[1], p[2]); S.b.root.add(G);
     const st = { on: false, t: 0, h: 0, v: 0, done: false }, T = S.T, prev = new V().copy(G.position), _d = new V(), UP = new V(0, 1, 0);
     EVO.addDyn(G, (t, dt, g) => {
@@ -158,9 +158,9 @@
     } };
   function cloudRing(S, dc, yw, i) {
     const g = new T3.Group(); const lx = S.T.laneX(dc);
-    for (let k = 0; k < 14; k++) { const a = k / 14 * 6.283, o = new T3.Mesh(new T3.SphereGeometry(rr(9, 15), 8, 6), new T3.MeshBasicMaterial({ color: i % 2 ? '#4a5260' : '#6a7480', transparent: true, opacity: 0.8, fog: true })); o.position.set(Math.cos(a) * 34, Math.sin(a) * 34, rr(-6, 6)); g.add(o); }
+    for (let k = 0; k < 14; k++) { const a = k / 14 * 6.283, o = new T3.Mesh(new T3.SphereGeometry(rr(9, 15), 8, 6), new T3.MeshBasicMaterial({ color: i % 2 ? '#4a5260' : '#6a7480', transparent: true, opacity: 0.8, fog: true })); o.position.set(Math.cos(a) * 44, Math.sin(a) * 44, rr(-6, 6)); g.add(o); }
     const p = S.at(dc, lx, yrel(S, dc, yw)); g.position.set(p[0], p[1], p[2]); g.rotation.y = CC.U.deg ? 0 : 0; const q = S.T.at(dc - 6, lx, yrel(S, dc - 6, yw)); g.rotation.y = Math.atan2(q[0] - p[0], q[2] - p[2]); S.b.root.add(g);
-    const cols = []; for (let k = 0; k < 8; k++) { const a = k / 8 * 6.283; cols.push(EVO.colBox(g, 22, 22, 18, Math.cos(a) * 34, Math.sin(a) * 34, 0)); }
+    const cols = []; for (let k = 0; k < 8; k++) { const a = k / 8 * 6.283; cols.push(EVO.colBox(g, 16, 16, 14, Math.cos(a) * 46, Math.sin(a) * 46, 0)); }
     EVO.addDyn(g, (t) => { g.rotation.z = t * 0.12 * (i % 2 ? 1 : -1); }, cols, { near: 500 });
   }
 })();
