@@ -64,8 +64,20 @@
     if (G.on) { G.t += dt; if (G.t > 0.9 && G.t < 2.7) { const right = _r.set(1, 0, 0).applyQuaternion(g.camera.quaternion); right.y = 0; right.normalize(); rk.vel.addScaledVector(right, G.dir * 16 * dt); g.rig.shake = Math.max(g.rig.shake, 0.25); } if (G.t > 2.9) { G.on = false; G.next = rr(7, 12); } }
   };
   const _r = new V();
+  // niveau 2 : à la place de la rampe, un tube de lancement (anneaux d'acier) autour du missile, qui laisse échapper des bulles
+  let tube = null;
+  const padTick = (g, dt) => {
+    if (!g.pad || !g.pad.group) return;
+    const st2 = EVO.seaLevel !== undefined && g.evo, show = st2 && (g.state === 'MENU' || g.state === 'LAUNCH' || g.state === 'RESPAWN' || (g.state === 'FLIGHT' && g.flightTime < 1.2));
+    if (st2) g.pad.group.visible = false;
+    if (!tube) { tube = new T3.Group(); const m = new T3.MeshLambertMaterial({ color: '#4a5866' }), m2 = new T3.MeshLambertMaterial({ color: '#c8a028' }); for (let k = 0; k < 6; k++) { const r = new T3.Mesh(new T3.TorusGeometry(1.9, 0.09, 6, 20), k % 3 === 0 ? m2 : m); r.position.z = -1.8 - k * 1.5; tube.add(r); } for (let k = 0; k < 8; k++) { const a = k * 0.785, b = new T3.Mesh(new T3.BoxGeometry(0.07, 0.07, 8), m); b.position.set(Math.cos(a) * 1.9, Math.sin(a) * 1.9, -5.4); tube.add(b); } }
+    if (tube.parent !== g.scene) g.scene.add(tube);
+    tube.visible = !!show; if (!show) return;
+    tube.position.copy(g.pad.origin).add(new V(0, 0.3, 1.2)); tube.rotation.set(-g.pad.pitch || 0, 0, 0);
+    if (Math.random() < dt * 10 && g.effects) { const p = g.pad.origin.clone().add(new V(rr(-1, 1), rr(-0.8, 0.8), rr(-2, 2))); g.effects.sparks.emit({ pos: p, vel: new V(rr(-0.3, 0.3), rr(0.8, 2), rr(-0.3, 0.3)), life: rr(1.5, 3), s0: 0.08, s1: 0.05, s2: 0.02, cols: [new T3.Color('#e8fbff')], drag: 0.4, grav: -1.2, a: 0.8, fout: 0.5 }); }
+  };
   const _fr = EVO.frame;
-  EVO.frame = (g, dt) => { _fr(g, dt); snowTick(g, dt); stormTick(g, dt); };
+  EVO.frame = (g, dt) => { _fr(g, dt); snowTick(g, dt); stormTick(g, dt); padTick(g, dt); if (g.audio && g.audio.setUnder) g.audio.setUnder(EVO.seaLevel !== undefined && !g.cine3d ? U.clamp(g.uwK || 0, 0, 1) : 0); };
   // pictogramme de rafale (flèches de chaque côté de l'écran) dans le HUD
   const _hd = EVO.drawHud;
   EVO.drawHud = (hud, ctx, g, W, H, px) => {
