@@ -199,7 +199,10 @@
 
   // ===== LE CAMP DEVIENT LE SITE MILITAIRE (640 m) ; prairie ouverte entre les ouvrages, un virage doux à la fin
   const L0 = 640, at = { hangar: 70, checkpoint: 232, fuel: 340, runway: 470, industrial: 570 };
-  D.scenes.camp = { len: [L0, L0], noDoor: true, noChaos: true, turns: [[0.82, 0.99, 34]],
+  // v151 : le site militaire n'est plus plat : une colline entre le hangar et le poste, un creux apres le depot, un virage doux au milieu (les ouvrages restent sur des zones planes)
+  const bump = (d, a, b, h) => (d > a && d < b ? h * Math.pow(Math.sin(Math.PI * (d - a) / (b - a)), 2) : 0);
+  D.scenes.camp = { len: [L0, L0], noDoor: true, noChaos: true, turns: [[0.38, 0.5, -24], [0.82, 0.99, 34]],
+    relief(T, sc) { const fn = (d) => { const x = d - sc.d0; return bump(x, 112, 192, 16) + bump(x, 382, 428, -10) + bump(x, 270, 302, 8); }; let lo = 0, hi = 0; for (let d = sc.d0; d <= sc.d1; d += 4) { const v = fn(d); lo = Math.min(lo, v); hi = Math.max(hi, v); } sc.rlo = lo; sc.rhi = hi; return { fn, max: Math.max(-lo, hi) }; },
     pin: (T, sc) => ({ lx: 0, y: 15, from: 24, to: sc.d1 - sc.d0 - 24 }),
     build(S) {
       const d0 = S.d0, kit = [Z.kit.tent, Z.kit.truckBlock, Z.kit.container, Z.kit.crates, Z.kit.drums, Z.kit.mast, Z.kit.sandbags];
