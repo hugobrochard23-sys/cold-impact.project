@@ -83,7 +83,7 @@
       let m;
       if (key.startsWith('basic:')) m = new THREE.MeshBasicMaterial({ color: key.slice(6), fog: true, vertexColors: true });
       else if (key.startsWith('tree:')) m = new THREE.MeshLambertMaterial({ color: '#ffffff', vertexColors: true, side: THREE.DoubleSide });   // v123 : arbres : jamais d'intérieur visible
-      else if (key.startsWith('col:')) m = new THREE.MeshLambertMaterial({ color: key.slice(4), vertexColors: true });
+      else if (key.startsWith('col:')) { m = new THREE.MeshLambertMaterial({ color: key.slice(4), vertexColors: true }); if (key === 'col:#fdfdfd') { m.polygonOffset = true; m.polygonOffsetFactor = 3; m.polygonOffsetUnits = 24; } }   // v180 : le sol herbeux est repousse en profondeur : routes et dalles gagnent toujours (plus de vert qui perce au loin)
       else if (key === 'glass') m = new THREE.MeshLambertMaterial({ color: '#8fd0ff', transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide });
       else if (key === 'glassWarm') m = new THREE.MeshLambertMaterial({ color: '#d8d28a', transparent: true, opacity: 0.45, depthWrite: false, side: THREE.DoubleSide });
       else if (key.startsWith('emis:')) m = new THREE.MeshLambertMaterial({ color: key.slice(5), emissive: key.slice(5), emissiveIntensity: 0.8 });
