@@ -14,7 +14,7 @@
   const lam = (c, e) => new T3.MeshLambertMaterial(e ? { color: c, emissive: e } : { color: c });
   const basic = (c, o) => new T3.MeshBasicMaterial(Object.assign({ color: c }, o || {}));
   const mb = (grp, w, h, d, m, x, y, z) => { const o = new T3.Mesh(new T3.BoxGeometry(w, h, d), m); o.position.set(x, y, z); grp.add(o); return o; };
-  const SANDS = ['#a89c7e', '#9c9074', '#b0a485', '#948a6e'], DEEP = ['#3a6a92', '#2f5c86', '#4a7ea8', '#285078'], CORAL = ['#e0705a', '#d8568a', '#e8a04a', '#b070d8', '#e85a5a', '#f0c050'];
+  const SANDS = ['#a89c7e', '#9c9074', '#b0a485', '#948a6e'], DEEP = ['#2d516d', '#3d6a85', '#3d6a85', '#558199', '#1f3a51'], CORAL = ['#d0719e', '#dc8963', '#9680c9'];
   const yrel = (S, dc, yw) => yw - S.T.base(dc);                 // hauteur mondiale → hauteur relative au fond
   const sea = (S, dc) => -S.T.base(dc);                           // la surface, relative au fond
   const wpin = (fn) => (T, sc) => ({ lx: 0, fy: (d) => fn(d, sc) - T.base(d), from: 24, to: sc.d1 - sc.d0 - 24 });
@@ -22,10 +22,10 @@
 
   Z.oceanSurface = (S, d0, d1, hw, amp) => Z.evoWaves(S, d0, d1, hw, -Z.PROFILE.ocean.elev, 'waterSurf', '#7fd0ee', amp === undefined ? 0.5 : amp);
   // ---------- éléments de décor ----------
-  const rock = (S, dc, lx, y, s, r, gray) => { const p = S.at(dc, lx, y); TR.rock(S.b, p[0], p[1], p[2], s, r, { gray: gray || pk(r, DEEP), noMoss: true, shade: '#1f5a70' }); S.b.box({ p: [p[0], p[1] + s * 0.5, p[2]], s: [s * 1.6, s * 1.1, s * 1.6], render: false }); };
-  const KELPC = [['#17704a', '#4fdc88'], ['#1f8a4a', '#7aea78'], ['#2a7a5a', '#3fe0b0'], ['#1a6a3c', '#62e07a']];
-  const kelp = (S, dc, lx, r) => { const p = S.at(dc, lx, 0), n = 4 + Math.floor(r() * 3), cc = pk(r, KELPC); for (let k = 0; k < n; k++) Z.addSway(S, p[0] + r.between([-1.6, 1.6]), p[1] - 0.1, p[2] + r.between([-1.6, 1.6]), r.between([7, 24]), r.between([0.8, 1.5]), cc[0], cc[1]); };   // v190 : varech : rubans qui ondulent (un seul mesh par troncon)
-  const coral = (S, dc, lx, r) => { const c = pk(r, CORAL), n = 3 + Math.floor(r() * 4); for (let k = 0; k < n; k++) S.cyl(dc + r.between([-1.5, 1.5]), lx + r.between([-1.5, 1.5]), 0, r.between([0.5, 1.2]), r.between([2, 6]), 'col:' + c, undefined, 6, r.between([0.05, 0.3]), false); if (r() < 0.5) S.ball(dc, lx, 1.2, r.between([1.6, 3]), 'col:' + pk(r, CORAL), undefined, false, 0.7); };
+  const rock = (S, dc, lx, y, s, r, gray) => { const p = S.at(dc, lx, y); TR.rock(S.b, p[0], p[1], p[2], s, r, { gray: gray || pk(r, DEEP), noMoss: true, shade: '#3f5a5a' }); S.b.box({ p: [p[0], p[1] + s * 0.5, p[2]], s: [s * 1.6, s * 1.1, s * 1.6], render: false }); };
+  const KELPC = [['#0f5c40', '#23845c'], ['#136a4a', '#2f9068'], ['#187a55', '#3da474']];   // v191 : verts naturels, sans fluo
+  const kelp = (S, dc, lx, r) => { const p = S.at(dc, lx, 0), n = 3 + Math.floor(r() * 2), cc = pk(r, KELPC); for (let k = 0; k < n; k++) Z.addSway(S, p[0] + r.between([-1.4, 1.4]), p[1] - 0.1, p[2] + r.between([-1.4, 1.4]), r.between([3.5, 10]), r.between([1.5, 2.8]), cc[0], cc[1]); };   // v191 : pousses plus courtes et plus larges (feuilles)
+  const coral = (S, dc, lx, r) => { const c = pk(r, CORAL), n = 2 + Math.floor(r() * 2); for (let k = 0; k < n; k++) S.cyl(dc + r.between([-1.2, 1.2]), lx + r.between([-1.2, 1.2]), 0, r.between([0.9, 1.5]), r.between([1.8, 3.6]), 'col:' + c, undefined, 7, r.between([0.25, 0.5]), false); if (r() < 0.35) S.ball(dc, lx, 1.0, r.between([1.4, 2.2]), 'col:' + c, undefined, false, 0.7); };   // v191 : massifs de coraux (cones evases), plus de batonnets
   const wreck = (S, dc, lx, r, len) => {
     const L = len || 60, roll = r.between([-25, 25]), yaw = r.between([-30, 30]);
     S.bxr(dc, lx, 6, 12, 5, L, 'col:#3a3a38', undefined, roll, yaw, true); S.bxr(dc, lx - 3, 9.5, 6, 5, L * 0.8, 'col:#4a4640', undefined, roll, yaw, true);
@@ -81,18 +81,18 @@
     sub: [{ u: 0, key: 'recif', name: 'LE RECIF' }, { u: 0.33, key: 'epaves', name: 'LES EPAVES' }, { u: 0.64, key: 'canyon', name: 'LE CANYON' }, { u: 0.92, key: 'cheminee', name: 'LA REMONTEE' }],
     pin: wpin((d, sc) => { const u = (d - sc.d0) / (sc.d1 - sc.d0); return mix3(u); }),
     relief(T, sc) { let lo = 0, hi = 0; const fn = (d) => { const u = (d - sc.d0) / (sc.d1 - sc.d0); return 40 * ss(0, 0.06, u) - 12 * ss(0.36, 0.6, u) - 80 * ss(0.64, 0.8, u) + 125 * ss(0.9, 0.99, u) + 4 * Math.sin(d / 37) * ss(0.06, 0.2, u) * (1 - ss(0.8, 0.9, u)); }; for (let d = sc.d0; d <= sc.d1; d += 4) { const v = fn(d); lo = Math.min(lo, v); hi = Math.max(hi, v); } sc.rlo = lo; sc.rhi = hi; return { fn, max: Math.max(-lo, hi) }; },
-    ground: (d, lx, c, sc) => { const u = (d - sc.d0) / (sc.d1 - sc.d0), dep = U.clamp(-(d * 0 + 0) , 0, 1); const sand = new T3.Color('#d0cfbd'), turq = new T3.Color('#98d6dc'), deep = new T3.Color('#3f7488'); c.copy(sand).lerp(turq, 0.5 + 0.5 * Math.sin(lx * 0.045 + d * 0.021) * Math.sin(d * 0.034 - lx * 0.017 + 1.3)).lerp(deep, ss(0.3, 0.78, u) * (1 - ss(0.92, 1, u))); c.multiplyScalar(0.9 + 0.12 * Math.sin(lx * 0.31 + d * 0.12) * Math.sin(d * 0.27 - lx * 0.11) + 0.06 * Math.sin(d * 0.9 + lx * 0.25)); },   // v190 : sable clair a plaques turquoise + rides
+    ground: (d, lx, c, sc) => { const u = (d - sc.d0) / (sc.d1 - sc.d0), dep = U.clamp(-(d * 0 + 0) , 0, 1); const base = new T3.Color('#93a982'), lit = new T3.Color('#b2c796'), shade = new T3.Color('#566f64'), vari = new T3.Color('#788f6a'); c.copy(base).lerp(lit, 0.5 + 0.5 * Math.sin(lx * 0.045 + d * 0.021) * Math.sin(d * 0.034 - lx * 0.017 + 1.3)).lerp(vari, 0.35 + 0.35 * Math.sin(d * 0.013 + lx * 0.02)).lerp(shade, ss(0.3, 0.78, u) * (1 - ss(0.92, 1, u))); c.multiplyScalar(0.96 + 0.05 * Math.sin(lx * 0.31 + d * 0.12) * Math.sin(d * 0.27 - lx * 0.11)); },   // v190 : sable clair a plaques turquoise + rides
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L, T = S.T;
       Z.oceanSurface(S, S.d0 + 10, S.d1, 140);
       // lumière du jour qui descend : des faisceaux, nombreux au récif, de plus en plus rares
       for (let i = 0; i < 40; i++) { const u = i / 40, dc = d(u * 0.9 + 0.02), lx = (i % 2 ? 1 : -1) * rr(8, 90); S.item(dc, () => shaft(S, dc, lx, sea(S, dc) * 0.98)); }
       // --- récif : coraux, varech, rochers, bancs de poissons, deux arches
-      for (const sg of [-1, 1]) S.rows(d(0.02), d(0.34), 7, 0.9, (dc) => S.item(dc, (r) => { const lx = S.lane(dc).lx + sg * r.between([14, 100]); const k = r(); if (k < 0.4) coral(S, dc, lx, r); else if (k < 0.7) kelp(S, dc, lx, r); else rock(S, dc, lx, 0, r.between([3, 9]), r, pk(r, DEEP)); }));
+      for (const sg of [-1, 1]) S.rows(d(0.02), d(0.34), 7, 0.9, (dc) => S.item(dc, (r) => { const lx = S.lane(dc).lx + sg * r.between([14, 100]); const k = r(); if (k < 0.14) coral(S, dc, lx, r); else if (k < 0.45) kelp(S, dc, lx, r); else rock(S, dc, lx, 0, r.between([3, 9]), r, pk(r, DEEP)); }));
       for (const sg of [-1, 1]) S.rows(d(0.34), d(0.62), 14, 0.8, (dc) => S.item(dc, (r) => { const lx = S.lane(dc).lx + sg * r.between([20, 110]); if (r() < 0.6) rock(S, dc, lx, 0, r.between([4, 12]), r); else kelp(S, dc, lx, r); }));
       S.item(d(0.1), (r) => arch(S, d(0.1), 0, yrel(S, d(0.1), -34) - 6, 44, 30, r)); S.item(d(0.24), (r) => arch(S, d(0.24), 8, yrel(S, d(0.24), -36) - 6, 48, 30, r));
       for (let i = 0; i < 6; i++) S.item(d(0.06 + i * 0.05), () => school(S, d(0.06 + i * 0.05), (i % 2 ? 1 : -1) * 22, -26 - (i % 3) * 8, 26));
-      for (let i = 0; i < 5; i++) S.item(d(0.04 + i * 0.06), (r) => { const dc = d(0.04 + i * 0.06), lx = (i % 2 ? 1 : -1) * r.between([24, 60]); for (let k = 0; k < 3; k++) S.bx(dc + k * 3, lx + k * 2, 3 + k * 2, 4 - k, 5 + k * 3, 3, 'col:' + pk(r, CORAL), undefined, true); });
+      for (let i = 0; i < 5; i++) S.item(d(0.04 + i * 0.06), (r) => { const dc = d(0.04 + i * 0.06), lx = (i % 2 ? 1 : -1) * r.between([24, 60]); for (let k = 0; k < 3; k++) S.bx(dc + k * 3, lx + k * 2, 3 + k * 2, 4 - k, 5 + k * 3, 3, 'col:' + pk(r, ['#2f5470', '#3a6585', '#264760']), undefined, true); });
       // --- épaves : trois coques couchées, chaînes de mines, un sous-marin ennemi
       S.item(d(0.38), (r) => wreck(S, d(0.38), -30, r, 70)); S.item(d(0.48), (r) => wreck(S, d(0.48), 26, r, 90)); S.item(d(0.57), (r) => wreck(S, d(0.57), -22, r, 60));
       for (let i = 0; i < 9; i++) { const dc = d(0.36 + i * 0.03); S.item(dc, (r) => { const lx = (i % 2 ? 1 : -1) * r.between([8, 36]), yw = -30 - (i % 3) * 6; S.cyl(dc, lx, 0, 0.14, Math.max(2, yrel(S, dc, yw)), 'col:#34342e', undefined, 5, 0.14, false); }); }
