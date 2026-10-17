@@ -97,17 +97,27 @@
   };
   // ---------- v190 : rayons de lumiere, caustiques, halo de tuyere ----------
   CC.UWT = { value: 0 };   // temps partage des caustiques
-  CC.Caustics = (m) => {   // motif lumineux anime (somme de sinus, sans texture) ajoute au sable : plus fort pres de la surface, faible en profondeur
+  // v192 : CAUSTIQUES : reseau de lignes lumineuses fines = bords d'un diagramme de Voronoi (F2 - F1) dont les points glissent et dont le domaine est deforme par deux ondulations
+  // de vitesses differentes ; deux echelles (la fine seulement de pres) ; couleur #D9F8E9 / #B5F0E9, faible, additive, estompee avec la distance et la profondeur. Integre au materiau du sable.
+  CC.Caustics = (m) => {
     m.onBeforeCompile = (sh) => {
       sh.uniforms.uT = CC.UWT;
       sh.vertexShader = sh.vertexShader.replace('#include <common>', 'varying vec3 vWP;\n#include <common>').replace('#include <begin_vertex>', '#include <begin_vertex>\nvWP = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;');
-      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', 'varying vec3 vWP; uniform float uT;\n#include <common>').replace('#include <fog_fragment>', CAUS + '\n#include <fog_fragment>');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', 'varying vec3 vWP; uniform float uT;\n' + VOR + '\n#include <common>').replace('#include <fog_fragment>', CAUS + '\n#include <fog_fragment>');
     };
   };
+  const VOR = [
+    'vec2 cH( vec2 p ) { p = vec2( dot( p, vec2( 127.1, 311.7 ) ), dot( p, vec2( 269.5, 183.3 ) ) ); return fract( sin( p ) * 43758.5453 ); }',
+    'float cV( vec2 p, float t ) { vec2 i = floor( p ), f = fract( p ); float d1 = 8.0, d2 = 8.0;',
+    '  for ( int y = -1; y <= 1; y++ ) for ( int x = -1; x <= 1; x++ ) { vec2 g = vec2( float( x ), float( y ) ), o = cH( i + g ); o = 0.5 + 0.38 * sin( t + 6.2831 * o ); float d = length( g + o - f ); if ( d < d1 ) { d2 = d1; d1 = d; } else if ( d < d2 ) d2 = d; }',
+    '  return d2 - d1; }'].join(String.fromCharCode(10));
   const CAUS = [
-    '{ vec2 q = vWP.xz * 0.12; float a = sin( q.x * 2.6 + uT * 0.7 + sin( q.y * 1.9 + uT * 0.5 ) ) + sin( q.y * 3.1 - uT * 0.6 + sin( q.x * 1.7 - uT * 0.4 ) );',
-    '  float v = pow( 1.0 - abs( sin( a * 1.35 ) ), 6.0 ), f = smoothstep( -105.0, -22.0, vWP.y );',
-    '  gl_FragColor.rgb *= 1.0 + 0.1 * v * ( 0.15 + 0.85 * f ); }'].join(String.fromCharCode(10));
+    '{ float dc = length( vViewPosition ), fd = 1.0 - smoothstep( 22.0, 95.0, dc ), fy = 0.55 + 0.45 * smoothstep( -125.0, -60.0, vWP.y );',
+    '  if ( fd > 0.01 ) { vec2 q = vWP.xz * 0.19; q += 0.45 * vec2( sin( q.y * 1.3 + uT * 0.55 ), sin( q.x * 1.1 - uT * 0.43 ) ) + 0.22 * vec2( sin( q.y * 2.9 - uT * 0.9 ), sin( q.x * 2.6 + uT * 0.8 ) );',
+    '    float e1 = cV( q, uT * 0.32 ), l = 1.0 - smoothstep( 0.0, 0.11, e1 ), l2 = 0.0;',
+    '    if ( dc < 55.0 ) { l2 = 1.0 - smoothstep( 0.0, 0.14, cV( q * 1.9 + 3.7, uT * 0.4 + 1.0 ) ); }',
+    '    float k = ( l * 0.8 + l2 * 0.3 * ( 1.0 - smoothstep( 25.0, 55.0, dc ) ) ) * 0.2 * fd * fy;',
+    '    gl_FragColor.rgb += mix( vec3( 0.851, 0.973, 0.914 ), vec3( 0.710, 0.941, 0.914 ), l2 ) * k; } }'].join(String.fromCharCode(10));
   let rayTex = null, radTex = null;
   const mkTex = (w, h, fn) => { const c = document.createElement('canvas'); c.width = w; c.height = h; fn(c.getContext('2d'), w, h); return new T3.CanvasTexture(c); };
   // v190 : les 10 rayons forment UN SEUL mesh (1 appel de dessin) dont les sommets sont replaces chaque image (quads face a la camera, legerement inclines, couleur = intensite)

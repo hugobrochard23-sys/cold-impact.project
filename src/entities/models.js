@@ -107,12 +107,16 @@
     const jet = new THREE.Group(); jet.position.z = -len / 2 - 0.1; jet.visible = false; g.add(jet);   // allumé par Rocket.updateMesh
     const disc = new THREE.Mesh(new THREE.CircleGeometry(r * 0.6, 12), new THREE.MeshBasicMaterial({ color: '#fff2c0', transparent: true, opacity: 1 }));
     disc.rotation.y = Math.PI; disc.position.z = 0.005; jet.add(disc);
-    const cone = (rad, h, color, op) => {
-      const m = new THREE.Mesh(new THREE.ConeGeometry(rad, h, 12, 1, true), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
-      m.geometry.translate(0, -h / 2, 0); m.rotation.x = Math.PI / 2;   // base à la tuyère, pointe vers l'arrière (−Z)
+    const cone = (rad, h, color, op) => {   // v192 : couleur de sommet = degrade (base lumineuse -> pointe noire = transparente en additif) : plus de cone opaque rigide
+      const geo = new THREE.ConeGeometry(rad, h, 12, 4, true); geo.translate(0, -h / 2, 0);
+      const P = geo.attributes.position, col = new Float32Array(P.count * 3), c0 = new THREE.Color(color);
+      for (let k = 0; k < P.count; k++) { const t = Math.min(1, Math.max(0, -P.getY(k) / h)), f = Math.pow(t, 1.1); col[k * 3] = c0.r * f; col[k * 3 + 1] = c0.g * f; col[k * 3 + 2] = c0.b * f; }
+      geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: '#ffffff', vertexColors: true, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+      m.rotation.x = Math.PI / 2;   // base à la tuyère, pointe vers l'arrière (−Z)
       m.userData.op = op; jet.add(m); return m;
     };
-    const core = cone(r * 0.5, 0.42, '#fff0b0', 0.9), outer = cone(r * 0.72, 0.8, '#ff9a30', 0.45);
+    const core = cone(r * 0.5, 0.5, '#fff9d9', 0.95), outer = cone(r * 0.72, 0.9, '#ffae32', 0.55);
     g.userData.jet = { group: jet, disc, core, outer };
     for (let i = 0; i < d.fins; i++) {
       const f = new THREE.Group(); f.rotation.z = i * Math.PI * 2 / d.fins + Math.PI / 4; g.add(f);
