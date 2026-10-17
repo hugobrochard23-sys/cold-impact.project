@@ -6,9 +6,14 @@
   const U = CC.U;
 
   const skyVert = `varying vec3 vDir; void main(){ vDir = normalize(position); vec4 p = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * p; gl_Position.z = gl_Position.w; }`;
-  const skyFrag = `uniform vec3 top, horizon, bottom, sunCol; uniform vec3 sunDir; uniform float sunSize; varying vec3 vDir;
+  const skyFrag = `uniform vec3 top, horizon, bottom, sunCol; uniform vec3 sunDir; uniform float sunSize; uniform float cloud, uT; varying vec3 vDir;
+    float h2(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float n2(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h2(i), h2(i + vec2(1.0, 0.0)), f.x), mix(h2(i + vec2(0.0, 1.0)), h2(i + vec2(1.0, 1.0)), f.x), f.y); }
     void main(){ float y = vDir.y; vec3 c = y > 0.0 ? mix(horizon, top, pow(clamp(y, 0.0, 1.0), 0.55)) : mix(horizon, bottom, pow(clamp(-y * 4.0, 0.0, 1.0), 0.6));
       float s = max(dot(normalize(vDir), normalize(sunDir)), 0.0); c += sunCol * (pow(s, 64.0) * 0.6 + pow(s, sunSize) * 0.9);
+      if (cloud > 0.01 && y > 0.02) { vec2 p = vDir.xz / (y + 0.22) * 1.25 + vec2(uT * 0.012, 0.0); float d = n2(p * 0.8) * 0.58 + n2(p * 1.9 + 7.0) * 0.30 + n2(p * 4.1) * 0.12;
+        float m = smoothstep(0.585, 0.612, d); float lit = smoothstep(0.6, 0.8, d); vec3 cc = mix(vec3(0.80, 0.89, 0.97), vec3(1.0), lit); cc = mix(cc, cc * vec3(1.0, 0.97, 0.9), s * 0.6);
+        c = mix(c, cc, m * cloud * smoothstep(0.02, 0.2, y) * (1.0 - smoothstep(0.7, 1.0, y) * 0.5)); }
       gl_FragColor = vec4(c, 1.0); }`;
 
   CC.INGAME = ['AIM', 'LAUNCH', 'FLIGHT', 'IMPACT', 'CRASHED', 'RESPAWN', 'REVIVE'];   // v034 : états où l'on « joue »
@@ -85,7 +90,7 @@
     initEnvironment() {
       this.skyMat = new THREE.ShaderMaterial({
         vertexShader: skyVert, fragmentShader: skyFrag, side: THREE.BackSide, depthWrite: false, fog: false,
-        uniforms: { top: { value: new THREE.Color() }, horizon: { value: new THREE.Color() }, bottom: { value: new THREE.Color() }, sunCol: { value: new THREE.Color() }, sunDir: { value: new V(0, 1, 0) }, sunSize: { value: 900 } },
+        uniforms: { top: { value: new THREE.Color() }, horizon: { value: new THREE.Color() }, bottom: { value: new THREE.Color() }, sunCol: { value: new THREE.Color() }, sunDir: { value: new V(0, 1, 0) }, sunSize: { value: 900 }, cloud: { value: 0 }, uT: { value: 0 } },
       });
       this.sky = new THREE.Mesh(new THREE.SphereGeometry(1000, 24, 16), this.skyMat);
       this.sky.renderOrder = -10; this.sky.frustumCulled = false; this.sky.scale.setScalar(0.36);   // v038g : dôme de 360 m (la caméra en CLASSIQUE ne voit plus qu'à ~400 m)

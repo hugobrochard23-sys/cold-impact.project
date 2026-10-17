@@ -33,7 +33,7 @@
     const k = g.uwK, rk = g.rocket, depth = U.clamp(-(rk && rk.active ? rk.pos.y : -20) / 110, 0, 1), f = g.scene.fog, u = g.skyMat.uniforms;
     _c.copy(UW_TOP).lerp(UW_DEEP, depth * 0.85);
     f.color.lerp(_c, k); f.near = U.lerp(f.near, 8, k); f.far = U.lerp(f.far, 380 - 190 * depth, k); g.renderer.setClearColor(f.color); g.fogBase = null;
-    u.top.value.lerp(_c, k); u.horizon.value.lerp(_c, k); u.bottom.value.lerp(UW_DEEP, k * 0.7);
+    u.cloud.value *= (1 - k); u.top.value.lerp(_c, k); u.horizon.value.lerp(_c, k); u.bottom.value.lerp(UW_DEEP, k * 0.7);
     g.hemi.color.lerp(C3('#b8f0ff'), k); g.hemi.groundColor.lerp(C3('#14566e'), k); g.hemi.intensity = U.lerp(g.hemi.intensity, 1.0 - 0.38 * depth, k); g.ambient.intensity = U.lerp(g.ambient.intensity, 0.34, k);
     g.sun.intensity = U.lerp(g.sun.intensity, 0.95 * (1 - 0.7 * depth), k); g.sun.color.lerp(C3('#e8fbff'), k);
     if (g.postParams) { g.postParams.tint = '#' + C3('#ffffff').lerp(C3('#cdf4ff'), k).getHexString(); g.postParams.bloomStrength = Math.max(g.postParams.bloomStrength, 0.12 * k); }

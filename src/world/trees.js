@@ -34,10 +34,10 @@
   };
   function this_quad(m, a, b, c, d, ca, cb, cc, cd) { m.quad(a, b, c, d, ca, cb, cc, cd); }
 
-  const CONIFER = [['#2a5232', '#3e6e46'], ['#305a38', '#477a4c'], ['#274a30', '#386443'], ['#35623e', '#4f8556'], ['#2f5638', '#437048']];   // v152 : verts plus sourds, plus naturels
-  const BROAD = [['#46662e', '#6e9a3e'], ['#40602c', '#64923a'], ['#506e2c', '#80a840'], ['#476a2e', '#72a03c'], ['#5a7a2c', '#8cb440']], BIRCH = [['#5a7034', '#8aa04a'], ['#62773a', '#96a850']];
+  const CONIFER = [['#17583e', '#3fad60'], ['#104532', '#2e9a56'], ['#1b6a48', '#4cbb68'], ['#14503a', '#37a45c'], ['#1d6e4c', '#56c46c']];   // v182 : sapins etages vert profond -> vert vif
+  const BROAD = [['#28663a', '#8fd14a'], ['#2f7a3a', '#a6e04a'], ['#36863a', '#c4e84a'], ['#2c7038', '#7fc844'], ['#3a8a3c', '#b8e84c']], BIRCH = [['#3a8a3c', '#b8e84c'], ['#2f7a3a', '#a6e04a']];
   const AUTUMN = [['#8a5a22', '#c0873a'], ['#7a4a1e', '#b8742c']];
-  const BARK = ['#6b5237', '#5e4630', '#76593b', '#54402c'];
+  const BARK = ['#79502f', '#a87543', '#4b352a', '#6b4528'];
 
   T.conifer = function (b, x, y, z, h, rnd, o) {
     o = o || {}; const m = new Mesh(), pal = CONIFER[Math.floor(rnd() * CONIFER.length)], dark = hex(pal[0]), light = hex(pal[1]), bark = hex(BARK[Math.floor(rnd() * BARK.length)]);
@@ -107,10 +107,10 @@
 
   T.rock = function (b, x, y, z, s, rnd, o) {
     o = o || {}; const m = new Mesh(), ico = new THREE.IcosahedronGeometry(1, 1), P = ico.attributes.position, seed = rnd() * 50, ay = rnd() * 6.28, sx = rr(rnd, 0.9, 1.5), sz = rr(rnd, 0.8, 1.3);
-    const gray = o.gray || ['#8a8984', '#7a7974', '#97958e', '#6f6e69'][Math.floor(rnd() * 4)], moss = hex('#5d7a3c'), base = hex(gray);
+    const gray = o.gray || ['#d0d5d8', '#b4bcc2', '#9aa6ae', '#7d8b98', '#d0d5d8'][Math.floor(rnd() * 5)], moss = hex('#74b840'), base = hex(gray);
     const vert = (i) => { const px = P.getX(i), py = P.getY(i), pz = P.getZ(i), k = 0.78 + 0.4 * (Math.abs(Math.sin(px * 9.1 + py * 41.7 + pz * 23.3 + seed) * 43758.5453) % 1), cx = Math.cos(ay), sn = Math.sin(ay), X = px * sx * k, Z = pz * sz * k; return [x + (X * cx - Z * sn) * s, y + Math.max(py, -0.35) * 0.62 * k * s, z + (X * sn + Z * cx) * s, py]; };
     for (let i = 0; i < P.count; i += 3) {
-      const a = vert(i), c = vert(i + 1), d = vert(i + 2), top = (a[3] + c[3] + d[3]) / 3, tw = 0.86 + 0.28 * ((Math.abs(Math.sin(i * 2.9 + seed)) * 10) % 1);
+      const a = vert(i), c = vert(i + 1), d = vert(i + 2), top = (a[3] + c[3] + d[3]) / 3, tw = 0.74 + 0.46 * ((Math.abs(Math.sin(i * 2.9 + seed)) * 10) % 1);
       const col = top > 0.35 && !o.noMoss ? lerp3(mul(base, tw), moss, Math.min(0.85, (top - 0.3) * 1.6)) : mul(base, tw * (0.78 + 0.3 * Math.max(0, top + 0.3)));
       m.tri([a[0], a[1], a[2]], [c[0], c[1], c[2]], [d[0], d[1], d[2]], col, col, col);
     }

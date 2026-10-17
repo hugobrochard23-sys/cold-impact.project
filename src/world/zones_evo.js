@@ -83,9 +83,12 @@
       for (let k = 0; k < 8; k++) { S.bx(dc - 9 + k * 2.4, lx + 13, 0.6, 0.18, 1.2, 0.18, 'col:#8a6a48', undefined, false); } S.bx(dc - 1, lx + 13, 0.9, 0.12, 0.12, 17, 'col:#8a6a48', undefined, false);
     });
   }
-  function windmill(S, dc, lx, r) {
-    S.place(dc, lx, 10, 10, 0, 40, () => { const hub = 26; S.cyl(dc, lx, 0, 2.2, hub, 'col:#e8e4dc', undefined, 8, 1.2, false);
-      const a0 = r() * 6.28; for (let k = 0; k < 4; k++) { const a = a0 + k * Math.PI / 2; S.bxr(dc, lx + Math.sin(a) * 8, hub + Math.cos(a) * 8, 1.2, 15, 0.4, 'col:#f4f0e8', undefined, -a * DEG, 0, false); } });
+  function windmill(S, dc, lx, r) {   // v182 : mat conique, nacelle, moyeu et trois pales effilees (blanc, gris clair en bout)
+    S.place(dc, lx, 10, 10, 0, 40, () => { const hub = 27;
+      S.cyl(dc, lx, 0, 2.5, 1.6, 'col:#8d99a5', undefined, 10, 2.4, false); S.cyl(dc, lx, 1.6, 2.2, hub * 0.55, 'col:#f4f6f8', undefined, 10, 1.6, false); S.cyl(dc, lx, 1.6 + hub * 0.55, 1.6, hub * 0.45 - 0.6, 'col:#e6ebef', undefined, 10, 1.1, false);
+      S.bx(dc + 1.6, lx, hub + 0.2, 2.4, 2.6, 6.4, 'col:#dfe5ea', undefined, false); S.bx(dc - 1.4, lx, hub + 0.2, 1.9, 1.9, 1.8, 'col:#c3ccd4', undefined, false);
+      const a0 = r() * 6.28; for (let k = 0; k < 3; k++) { const a = a0 + k * 2.0944, sn = Math.sin(a), cs = Math.cos(a);
+        S.bxr(dc - 2.0, lx + sn * 5.2, hub + cs * 5.2, 1.7, 9.6, 0.34, 'col:#f9fbfc', undefined, -a * DEG, 0, false); S.bxr(dc - 2.0, lx + sn * 14, hub + cs * 14, 0.95, 9, 0.28, 'col:#dde5ec', undefined, -a * DEG, 0, false); } });
   }
   function pylonLine(S, dc, lx) { S.place(dc, lx, 8, 4, 0, 32, () => { S.bx(dc, lx, 14, 1.2, 28, 1.2, 'metal', '#8a8e96', false); S.bx(dc, lx, 24, 14, 0.6, 0.6, 'metal', '#8a8e96', false); S.bx(dc, lx, 20, 10, 0.6, 0.6, 'metal', '#8a8e96', false); }); }
   function haystack(S, dc, lx, r) { S.place(dc, lx, 8, 8, 0, 4, () => { S.cyl(dc, lx, 0, 2.4, 3.4, 'col:' + pick(r, ['#d8b860', '#c8a850']), undefined, 10, 2.4, false); }); }
@@ -198,11 +201,11 @@
         }
       }
       // petites fleurs par-ci par-la
-      const FL = ['#f4efdc', '#f4efdc', '#f0cf55', '#f6f0d0'].map((h) => new THREE.Color(h)), nf = Math.max(1, Math.round(len * 0.9));
+      const FL = ['#ffffff', '#ffffff', '#ffd83d', '#ffd83d', '#4f8ef7', '#8a5be8', '#ff6fae', '#ff9a3d'].map((h) => new THREE.Color(h)), nf = Math.max(2, Math.round(len * 1.5));
       for (let i = 0; i < nf; i++) {
         const dd = d + len * hsh(d + i * 0.91, i * 1.3), lx = (hsh(i * 2.3, d * 0.31) * 2 - 1) * 34; if (wet && wet(dd, lx, sc, T)) continue;
         const p = T.at(dd, lx, 0); gcol(p[0], p[2], _gc); if (gf) gf(dd, lx, _gc, sc); if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82) || solidAt(b, p[0], p[1], p[2])) continue;
-        const fv0 = pos.length / 3, fc = FL[Math.floor(hsh(i, d * 0.77) * FL.length)], hgt = 0.35 + 0.4 * hsh(i, d), bx = p[0], bz = p[2], py = p[1] - 0.03, r0 = 0.07 + 0.03 * hsh(i * 2, d); _b.copy(_gc).multiplyScalar(0.8);
+        const fv0 = pos.length / 3, fc = FL[Math.floor(hsh(Math.floor(dd / 11) * 1.7, Math.floor(lx / 11) + 3.1) * FL.length)], hgt = 0.35 + 0.4 * hsh(i, d), bx = p[0], bz = p[2], py = p[1] - 0.03, r0 = 0.1 + 0.04 * hsh(i * 2, d); _b.copy(_gc).multiplyScalar(0.8);
         v(bx, py, bz, _b, 0, 90); v(bx + 0.02, py, bz, _b, 0, 90); v(bx, py + hgt, bz, _gc, hgt * 0.5, 90);
         for (let q = 0; q < 5; q++) { const a = q / 5 * 6.2832, a2 = (q + 1) / 5 * 6.2832; v(bx + Math.cos(a) * r0, py + hgt, bz + Math.sin(a) * r0, fc, hgt * 0.5, 90); v(bx + Math.cos(a2) * r0, py + hgt, bz + Math.sin(a2) * r0, fc, hgt * 0.5, 90); v(bx, py + hgt + 0.04, bz, fc, hgt * 0.5, 90); }
         tufts.push([p[0], p[1], p[2], fv0, pos.length / 3]);
