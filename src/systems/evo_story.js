@@ -103,6 +103,7 @@
     _fr(g, dt);
     if (g.cine3d && EVO.cineFrame) EVO.cineFrame(g, dt);
     const run = g.endlessRun, dist = run ? Math.max(0, run.dist) : 0;
+    if (CC.Zones && CC.Zones.grassCull && g.camera) CC.Zones.grassCull(g.camera.position);   // v185
     if (!g.cine3d) EVO.applyMood(g, EVO.moodAt(g, dist));
     EVO.coinFrame(g, dt);
     if (g.audio && g.audio.ctx && g.audio.setWater) {
