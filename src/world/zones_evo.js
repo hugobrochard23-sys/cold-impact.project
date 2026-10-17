@@ -85,10 +85,10 @@
   }
   function windmill(S, dc, lx, r) {   // v182 : mat conique, nacelle, moyeu et trois pales effilees (blanc, gris clair en bout)
     S.place(dc, lx, 10, 10, 0, 40, () => { const hub = 27;
-      S.cyl(dc, lx, 0, 2.5, 1.6, 'col:#8d99a5', undefined, 10, 2.4, false); S.cyl(dc, lx, 1.6, 2.2, hub * 0.55, 'col:#f4f6f8', undefined, 10, 1.6, false); S.cyl(dc, lx, 1.6 + hub * 0.55, 1.6, hub * 0.45 - 0.6, 'col:#e6ebef', undefined, 10, 1.1, false);
-      S.bx(dc + 1.6, lx, hub + 0.2, 2.4, 2.6, 6.4, 'col:#dfe5ea', undefined, false); S.bx(dc - 1.4, lx, hub + 0.2, 1.9, 1.9, 1.8, 'col:#c3ccd4', undefined, false);
+      S.cyl(dc, lx, 0, 2.5, 1.6, 'col:#a7b5c3', undefined, 10, 2.4, false); S.cyl(dc, lx, 1.6, 2.2, hub * 0.55, 'col:#dce4eb', undefined, 10, 1.6, false); S.cyl(dc, lx, 1.6 + hub * 0.55, 1.6, hub * 0.45 - 0.6, 'col:#f8fafc', undefined, 10, 1.1, false);
+      S.bx(dc + 1.6, lx, hub + 0.2, 2.4, 2.6, 6.4, 'col:#dce4eb', undefined, false); S.bx(dc - 1.4, lx, hub + 0.2, 1.9, 1.9, 1.8, 'col:#a7b5c3', undefined, false);
       const a0 = r() * 6.28; for (let k = 0; k < 3; k++) { const a = a0 + k * 2.0944, sn = Math.sin(a), cs = Math.cos(a);
-        S.bxr(dc - 2.0, lx + sn * 5.2, hub + cs * 5.2, 1.7, 9.6, 0.34, 'col:#f9fbfc', undefined, -a * DEG, 0, false); S.bxr(dc - 2.0, lx + sn * 14, hub + cs * 14, 0.95, 9, 0.28, 'col:#dde5ec', undefined, -a * DEG, 0, false); } });
+        S.bxr(dc - 2.0, lx + sn * 5.2, hub + cs * 5.2, 1.7, 9.6, 0.34, 'col:#f8fafc', undefined, -a * DEG, 0, false); S.bxr(dc - 2.0, lx + sn * 14, hub + cs * 14, 0.95, 9, 0.28, 'col:#dce4eb', undefined, -a * DEG, 0, false); } });
   }
   function pylonLine(S, dc, lx) { S.place(dc, lx, 8, 4, 0, 32, () => { S.bx(dc, lx, 14, 1.2, 28, 1.2, 'metal', '#8a8e96', false); S.bx(dc, lx, 24, 14, 0.6, 0.6, 'metal', '#8a8e96', false); S.bx(dc, lx, 20, 10, 0.6, 0.6, 'metal', '#8a8e96', false); }); }
   function haystack(S, dc, lx, r) { S.place(dc, lx, 8, 8, 0, 4, () => { S.cyl(dc, lx, 0, 2.4, 3.4, 'col:' + pick(r, ['#d8b860', '#c8a850']), undefined, 10, 2.4, false); }); }
