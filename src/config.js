@@ -165,7 +165,7 @@ CC.CONFIG = {
   postfx: {
     enabled: true,
     vignette: 0.55, vignetteRadius: 0.78, vignetteSoftness: 0.55,
-    chromatic: 0.0045,
+    chromatic: 0.0018,
     halftone: 0.35, halftoneCell: 3.0,
     bloomThreshold: 0.8, bloomStrength: 0.4,           // v038i : halo plus discret (la scène du monde miniature était éblouissante)
     grain: 0.025,
@@ -344,7 +344,7 @@ CC.CONFIG = {
   shadow: { maxDist: 70, minSize: 0.85, growth: 0.085, maxSize: 4.2, opacity: 0.78, fadeDist: 55, stretch: 1.9 },
 
   // v034 : coup de pouce du bouton de boost (sensation d'accélération)
-  boost: { kickShake: 0.5, ringSize: 3.0, chromatic: 0.004, speedLines: 22 },
+  boost: { kickShake: 0.5, ringSize: 3.0, chromatic: 0.0016, speedLines: 22 },
 
   // v034 : revive (publicité récompensée) — la roquette repart au milieu du couloir, invulnérable un instant
   revive: { window: 5.5, minDist: 180, shield: 2.4, fuelFrac: 0.55, back: 24 },
