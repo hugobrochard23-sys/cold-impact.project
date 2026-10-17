@@ -321,7 +321,7 @@
       const rk = game.rocket, w = game.warn;
       if (game.state !== 'FLIGHT' || !rk.active || !w || game.paused) return;
       const W = this.canvas.width, H = this.canvas.height, col = CC.CONFIG.hud.colors;
-      if (w.missile && !(Math.floor(performance.now() / 180) % 2)) this.text('MISSILE!', 0.5 * W, 0.2 * H, 0.0058, col.red, { align: 'center', outline: col.outline });
+      if (w.missile && !game.evo && !(Math.floor(performance.now() / 180) % 2)) this.text('MISSILE!', 0.5 * W, 0.2 * H, 0.0058, col.red, { align: 'center', outline: col.outline });
       // design : repère de chaque missile ennemi proche — crochets rouges autour de lui s'il est à l'écran, flèche au bord
       // de l'écran sinon (on voit d'où vient la menace pour l'esquiver)
       const ctx = this.ctx, cam = game.camera, lw = Math.max(2, H / 360);
