@@ -107,7 +107,8 @@
     const n = 0.5 + 0.5 * (Math.sin(x * 0.011 + z * 0.017) * 0.5 + Math.sin(x * 0.027 - z * 0.013 + 1.3) * 0.3 + Math.sin(x * 0.05 + z * 0.043) * 0.2);
     out.copy(GC.a).lerp(GC.b, n);
     const q = 0.5 + 0.5 * Math.sin(x * 0.043 + Math.sin(z * 0.029) * 2.0) * Math.sin(z * 0.047 + Math.sin(x * 0.021) * 1.7 + 1.1);   // v184 : plaques ensoleillees / ombrees
-    if (q > 0.62) out.lerp(GBR, Math.min(0.6, (q - 0.62) * 2)); else if (q < 0.32) out.lerp(GDK, Math.min(0.55, (0.32 - q) * 2));
+    const sb = Math.max(0, Math.min(1, (q - 0.5) / 0.4)), sd = Math.max(0, Math.min(1, (0.42 - q) / 0.35));   // v187 : transitions de teinte progressives
+    if (sb > 0) out.lerp(GBR, 0.55 * sb * sb * (3 - 2 * sb)); else if (sd > 0) out.lerp(GDK, 0.5 * sd * sd * (3 - 2 * sd));
     const f = Math.sin(x * 0.021 + 0.7) * Math.sin(z * 0.019 + 2.1); if (f > 0.35) out.lerp(GC.f, Math.min(0.75, (f - 0.35) * 2));
     return out;
   };
@@ -204,18 +205,20 @@
       const bands = [[0, 14, 31, 10, 13, 1.85, 1], [14, 34, 15, 6, 8, 2.1, 1], [34, 62, 7.5, 4, 5, 2.7, 1]];   // v184 : 2x plus de touffes, moins de brins mais plus larges
       let bi = 0;
       for (const [lo, hi, dens, nbLo, nbHi, wk, tri] of bands) {
-        const area = 2 * (hi - lo), n = Math.max(2, Math.round(len * area * dens / 28)); bi++;
+        const area = 2 * (hi - lo), n = Math.max(2, Math.round(len * area * dens * 1.12 / 28)); bi++;
         for (let i = 0; i < n; i++) {
           const dd = d + len * hsh(d + i * 0.37 + lo, i * 1.9 + bi), lx = (hsh(i * 1.7 + hi, d * 0.13 + bi) < 0.5 ? -1 : 1) * (lo + (hi - lo) * hsh(i * 2.9 + bi, d * 0.7 + hi));
           if (wet && wet(dd, lx, sc, T)) continue;
           const p = T.at(dd, lx, 0); gcol(p[0], p[2], _gc); if (gf) gf(dd, lx, _gc, sc);
           if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82)) continue;
           if (solidAt(b, p[0], p[1], p[2])) continue;
+          if (hsh(i * 9.7, d + bi) > 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(dd * 0.07 + lx * 0.09 + Math.sin(lx * 0.05) * 2))) continue;   // v187 : plaques un peu moins denses
           const sz = 0.9 + 0.7 * hsh(i, d * 0.7 + bi), L = (0.9 + 1.5 * hsh(i * 3.3, d + bi)) * sz, th = hsh(d + i, i * 3.3 + bi) * 3.1416, ca = Math.cos(th), sa = Math.sin(th), py = p[1] - 0.04, nb = nbLo + Math.floor(hsh(i, d * 2.1 + bi) * (nbHi - nbLo + 1));
-          const lay = (bi === 1 && hsh(i * 7.3, d + 5.1) >= 0.34) ? 1 : 0, af = bi === 1 ? (lay ? 150 : 260) : bi === 2 ? 210 : 260; cur = grp(Math.floor(dd / 100), lay); relN(p[0], p[2], cn, 0, 1, 0); const tv0 = cur.pos.length / 3; _tc.copy(_gc).multiplyScalar(0.94 + 0.16 * hsh(i * 1.3, d + bi)); _b.copy(_tc).multiplyScalar(0.78);   // base : la couleur du sol un peu plus sombre ; pointe : la couleur du sol
+          const kd = hsh(i * 4.1, d * 0.9 + bi * 2.3), tall = kd < 0.22 ? 1 : 0, low = kd > 0.82 ? 1 : 0, kh = tall ? 1.3 : low ? 0.7 : 1, kw = tall ? 0.65 : low ? 1.2 : 1;   // v187 : touffes hautes et fines / basses et larges / moyennes
+          const lay = (bi === 1 && hsh(i * 7.3, d + 5.1) >= 0.34) ? 1 : 0, af = bi === 1 ? (lay ? 150 : 260) : bi === 2 ? 210 : 260; cur = grp(Math.floor(dd / 100), lay); relN(p[0], p[2], cn, 0, 1, 0); const tv0 = cur.pos.length / 3; _tc.copy(_gc).multiplyScalar(0.96 + 0.1 * hsh(i * 1.3, d + bi)); _b.copy(_tc).multiplyScalar(0.78);   // base : la couleur du sol un peu plus sombre ; pointe : la couleur du sol
           for (let j = 0; j < nb; j++) {
             const s = (hsh(j * 3.7, i + d) * 2 - 1) * 0.5, side = (hsh(j * 5.3, i * 1.1 + d) - 0.5) * 0.4 * sz, bx = p[0] + ca * s * L - sa * side, bz = p[2] + sa * s * L + ca * side;
-            const hp = 0.45 + 0.55 * Math.cos(s * 3.1416), hh = (0.45 + 0.75 * hsh(j * 5.1, i + d)) * hp * sz * (0.85 + 0.3 * hsh(i * 2.3, d + bi)) * 1.02, w = 0.075 * sz * wk * 1.3, lean = hh * 0.3 * (hsh(j * 7.1, i) - 0.4), dx = -sa * lean * 0.6 + ca * lean * 0.5, dz = ca * lean * 0.6 + sa * lean * 0.5;
+            const hp = 0.45 + 0.55 * Math.cos(s * 3.1416), hh = (0.45 + 0.75 * hsh(j * 5.1, i + d)) * hp * sz * (0.85 + 0.3 * hsh(i * 2.3, d + bi)) * 1.02 * kh, w = 0.075 * sz * wk * 1.3 * kw, lean = hh * 0.3 * (hsh(j * 7.1, i) - 0.4), dx = -sa * lean * 0.6 + ca * lean * 0.5, dz = ca * lean * 0.6 + sa * lean * 0.5;
             if (tri === 3) {
               v(bx - ca * w * 0.4 - sa * w, py, bz - sa * w * 0.4 + ca * w, _b, 0, af); v(bx + ca * w * 0.4 + sa * w, py, bz + sa * w * 0.4 - ca * w, _b, 0, af); v(bx + dx * 0.4 - ca * w * 0.3, py + hh * 0.55, bz + dz * 0.4 - sa * w * 0.3, _tc, hh * 0.5, af);
               v(bx + ca * w * 0.4 + sa * w, py, bz + sa * w * 0.4 - ca * w, _b, 0, af); v(bx + dx * 0.4 + ca * w * 0.3, py + hh * 0.55, bz + dz * 0.4 + sa * w * 0.3, _tc, hh * 0.5, af); v(bx + dx * 0.4 - ca * w * 0.3, py + hh * 0.55, bz + dz * 0.4 - sa * w * 0.3, _tc, hh * 0.5, af);
@@ -236,7 +239,7 @@
         for (let k = 0; k < nfl; k++) {
           const ang = hsh(ci + k * 1.7, d * 0.3) * 6.2832, rr0 = rc * Math.sqrt(hsh(k * 2.9, ci + d * 0.11)), dd = cd + Math.cos(ang) * rr0, lx = cl + Math.sin(ang) * rr0; if (dd < d || dd >= e || wet && wet(dd, lx, sc, T)) continue;
           const p = T.at(dd, lx, 0); gcol(p[0], p[2], _gc); if (gf) gf(dd, lx, _gc, sc); if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82) || solidAt(b, p[0], p[1], p[2])) continue;
-          const flay = hsh(k * 2.1, ci + d * 0.7) < 0.4 ? 0 : 1, fa = flay ? 120 : 190; cur = grp(Math.floor(dd / 100), flay); relN(p[0], p[2], cn, 0, 1, 0); const fv0 = cur.pos.length / 3, kind = hsh(k * 6.1, ci + d) < 0.8 ? main : pickF(hsh(k * 8.3, ci * 1.9 + d)), daisy = kind[2] === 1, hgt = 0.6 + 0.5 * hsh(k * 1.3, ci + d), R = (daisy ? 0.42 : 0.32) * (0.8 + 0.5 * hsh(k * 9.1, ci)), bx = p[0], bz = p[2], py = p[1] - 0.03, cx = bx + fx * hgt * 0.12, cz = bz + fz * hgt * 0.12, cy = py + hgt;
+          const flay = hsh(k * 2.1, ci + d * 0.7) < 0.4 ? 0 : 1, fa = flay ? 120 : 190; cur = grp(Math.floor(dd / 100), flay); relN(p[0], p[2], cn, 0, 1, 0); const fv0 = cur.pos.length / 3, kind = hsh(k * 6.1, ci + d) < 0.8 ? main : pickF(hsh(k * 8.3, ci * 1.9 + d)), daisy = kind[2] === 1, hgt = 0.6 + 0.5 * hsh(k * 1.3, ci + d), R = (daisy ? 0.38 : 0.29) * (0.8 + 0.5 * hsh(k * 9.1, ci)), bx = p[0], bz = p[2], py = p[1] - 0.03, cx = bx + fx * hgt * 0.12, cz = bz + fz * hgt * 0.12, cy = py + hgt;
           _fc.set(kind[1]).multiplyScalar(SK); _b.copy(STM);
           v(bx, py, bz, _b, 0, fa); v(bx + 0.03, py, bz, _b, 0, fa); v(cx, cy - R * 0.55, cz, STM, hgt * 0.6, fa);
           const th = hsh(k * 3.3, ci) * 6.2832, e1x = Math.cos(th) * 0.0 + fz, e1z = -fx, e2x = fx * 0.62, e2y = 0.78, e2z = fz * 0.62;   // plan de la corolle : lateral x (haut + vers l'avant)

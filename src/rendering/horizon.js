@@ -20,7 +20,7 @@
     const sh0 = (al) => { const v = Math.round(255 * (1 - 0.42 * Math.min(1, al))).toString(16).padStart(2, '0'); return '#' + v + v + v; };
     const camp = style === 'campagne', hx = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
     // v184 : en campagne, collines et pins sont peints en vraies couleurs (bleu pale tres loin -> vert profond tout pres) ; la bande n'est plus teintee
-    const sh = (al) => { if (!camp) return sh0(al); const a = hx('#b4d4e8'), b = hx('#4a8a5e'), t = Math.min(1, al * 1.1); return '#' + [0, 1, 2].map((k) => Math.round(a[k] + (b[k] - a[k]) * t).toString(16).padStart(2, '0')).join(''); };
+    const sh = (al) => { if (!camp) return sh0(al); const a = hx('#b4d4e8'), b = hx('#56907a'), t = Math.min(1, al * 1.1); return '#' + [0, 1, 2].map((k) => Math.round(a[k] + (b[k] - a[k]) * t).toString(16).padStart(2, '0')).join(''); };
     const rects = [];
     const NEON = ['#ff3ad8', '#2be8ff', '#ffb02b', '#8a6aff', '#ff5a5a'];
     const tower = (x, w, h, a, lit) => {

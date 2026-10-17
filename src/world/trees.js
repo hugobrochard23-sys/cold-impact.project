@@ -41,7 +41,7 @@
   const hexk = (h, k) => mul(hex(h), k);
 
   // v183 : ombre de contact (disque sombre pose juste au-dessus du sol, tres leger : 8 triangles)
-  const shade = (m, x, y, z, r, col) => { const c = hex(col); for (let k = 0; k < 8; k++) { const a0 = k / 8 * 6.2832, a1 = (k + 1) / 8 * 6.2832; m.tri([x, y + 0.07, z], [x + Math.cos(a0) * r, y + 0.07, z + Math.sin(a0) * r * 0.85], [x + Math.cos(a1) * r, y + 0.07, z + Math.sin(a1) * r * 0.85], c, c, c); } };
+  const shade = (m, x, y, z, r, col) => { const c = hex(col), o = mul(c, 1.2); for (const [k, y0, cc] of [[1, 0.06, o], [0.6, 0.075, c]]) for (let q = 0; q < 8; q++) { const a0 = q / 8 * 6.2832, a1 = (q + 1) / 8 * 6.2832, R = r * k; m.tri([x, y + y0, z], [x + Math.cos(a0) * R, y + y0, z + Math.sin(a0) * R * 0.85], [x + Math.cos(a1) * R, y + y0, z + Math.sin(a1) * R * 0.85], cc, cc, cc); } };   // v187 : ombre de contact en deux anneaux (penombre + coeur)
 
   T.conifer = function (b, x, y, z, h, rnd, o) {
     o = o || {}; const m = new Mesh(), pal = CONIFER[Math.floor(rnd() * CONIFER.length)], dark = hexk(pal[0], 0.95 + 0.1 * rnd()), light = hexk(pal[1], 0.84 + 0.1 * rnd()), bark = hex(BARK[Math.floor(rnd() * BARK.length)]);
