@@ -39,6 +39,14 @@
       for (let x = 0; x <= W; x += 6) { const n = Math.sin(x / (170 * f) + seed) * 0.5 + Math.sin(x / (61 * f) + seed * 2) * 0.3 + Math.sin(x / (23 * f) + seed * 3) * 0.2; let y = GROUND - (hmin + (hmax - hmin) * (0.5 + 0.5 * n)); if (tooth) y -= (Math.floor(x / 5) % 2 ? 0 : tooth) * (0.6 + 0.4 * rng()); g.lineTo(x, y); }
       g.lineTo(W, H); g.closePath(); g.fill(); };
     const peaks = (hmin, hmax, a, step) => { g.globalAlpha = a; g.fillStyle = sh(a); g.beginPath(); g.moveTo(0, H); let x = 0; while (x < W + 40) { const h = rr(hmin, hmax), w = rr(step * 0.6, step * 1.4); g.lineTo(x, GROUND - rr(hmin * 0.15, hmin * 0.4)); g.lineTo(x + w * 0.45, GROUND - h); g.lineTo(x + w * 0.55, GROUND - h * rr(0.82, 0.95)); x += w; } g.lineTo(W, H); g.closePath(); g.fill(); };
+    const alp = (hmin, hmax, a, step) => {   // v182 : sommets bleus a calotte de neige claire, couches successives
+      const pk = []; let x = -step * 0.5; while (x < W + step) { const w = rr(step * 0.7, step * 1.4), h = rr(hmin, hmax); pk.push([x + w * 0.5, h, w]); x += w * 0.78; }
+      g.globalAlpha = a; g.fillStyle = sh(a); g.beginPath(); g.moveTo(0, H); g.lineTo(-40, GROUND);
+      for (const [px, h, w] of pk) { g.lineTo(px - w * 0.5, GROUND - h * 0.22); g.lineTo(px - w * 0.06, GROUND - h * 0.92); g.lineTo(px, GROUND - h); g.lineTo(px + w * 0.08, GROUND - h * 0.9); g.lineTo(px + w * 0.5, GROUND - h * 0.24); }
+      g.lineTo(W + 40, GROUND); g.lineTo(W, H); g.closePath(); g.fill();
+      g.fillStyle = sh(0); g.globalAlpha = Math.min(1, a * 1.7 + 0.25);
+      for (const [px, h, w] of pk) { const k = 0.34; g.beginPath(); g.moveTo(px - w * 0.06 - w * 0.21 * k * 2, GROUND - h * (1 - k * 1.1)); g.lineTo(px - w * 0.06, GROUND - h * 0.92); g.lineTo(px, GROUND - h); g.lineTo(px + w * 0.08, GROUND - h * 0.9); g.lineTo(px + w * 0.21 * k * 2.2, GROUND - h * (1 - k * 1.2)); g.lineTo(px + w * 0.07, GROUND - h * (1 - k * 0.7)); g.lineTo(px + w * 0.02, GROUND - h * (1 - k * 1.2)); g.lineTo(px - w * 0.05, GROUND - h * (1 - k * 0.8)); g.closePath(); g.fill(); }
+    };
     const pines = (hmin, hmax, a, w) => { g.fillStyle = sh(a); g.globalAlpha = a; for (let x = 0; x < W; x += rr(w * 0.5, w * 1.1)) { const h = rr(hmin, hmax); g.beginPath(); g.moveTo(x - w / 2, GROUND); g.lineTo(x, GROUND - h); g.lineTo(x + w / 2, GROUND); g.closePath(); g.fill(); } };
     const ship = (x, a) => { g.globalAlpha = a; g.fillStyle = sh(a); const L = rr(70, 120); g.fillRect(x, GROUND - 14, L, 14); g.fillRect(x + L * 0.7, GROUND - 34, L * 0.22, 20); g.fillRect(x + L * 0.78, GROUND - 42, 6, 8); for (let i = 0; i < 6; i++) g.fillRect(x + 6 + i * 11, GROUND - 22, 9, 8); };
     const stack = (x, h, a) => { g.globalAlpha = a; g.fillStyle = sh(a); g.fillRect(x, GROUND - h, 7, h); g.fillRect(x - 1, GROUND - h, 9, 3); };
@@ -58,7 +66,7 @@
     } else if (style === 'peaks') {
       peaks(60, 190, 0.22, 240); peaks(50, 150, 0.36, 180); peaks(30, 100, 0.55, 140);
     } else if (style === 'campagne') {
-      peaks(70, 200, 0.18, 260); hills(50, 140, 0.26, 0, 1.7); hills(34, 100, 0.38, 0, 1.1); pines(16, 44, 0.48, 12); hills(14, 52, 0.58, 5, 0.6); pines(9, 30, 0.7, 9);
+      alp(120, 270, 0.2, 340); alp(70, 190, 0.34, 250); hills(34, 100, 0.44, 0, 1.1); pines(16, 44, 0.48, 12); hills(14, 52, 0.58, 5, 0.6); pines(9, 30, 0.7, 9);
     } else if (style === 'forest') {
       hills(40, 130, 0.22, 0, 1.6); hills(30, 90, 0.36, 0, 1.0); pines(18, 50, 0.46, 12); hills(14, 46, 0.55, 5, 0.6); pines(10, 32, 0.68, 9);
     } else if (style === 'seabed') {
@@ -103,9 +111,9 @@
     }
     setEnv(env) {
       if (!env || !env.fog) return;
-      this.fog.set(env.fog.color); if ((env.dark || 0) < 0.3) this.fog.multiplyScalar(0.86);
+      this.fog.set(env.fog.color); if ((env.dark || 0) < 0.3) this.fog.multiplyScalar(this.style === 'campagne' ? 0.97 : 0.86);
       const d = env.dark !== undefined ? env.dark : 0;
-      this.tint.copy(this.fog).multiplyScalar(d > 0.4 ? 0.62 : 0.84);   // v038e : silhouettes plus claires (brume), plus de masses noires
+      this.tint.copy(this.fog).multiplyScalar(d > 0.4 ? 0.62 : this.style === 'campagne' ? 0.98 : 0.84);   // v038e : silhouettes plus claires (brume), plus de masses noires
       this.matS.color.copy(this.tint);
       this.matG.opacity = this.darkOn ? 0.95 : 0;
     }

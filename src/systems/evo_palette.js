@@ -3,7 +3,7 @@
 (function () {
   const EVO = CC.EVO; if (!EVO || !EVO.on) return;
   const P = {
-    A: { name: 'FRAICHE', sky: ['#7fc0ee', '#eaf6ff', '#d2e8f6'], grass: ['#44731f', '#4a8024', '#568c2a'], brick: '#ffd2bc', conc: '#f0e8d8' },
+    A: { name: 'PRAIRIE', sky: ['#1676e8', '#9fd8fa', '#bfe0f2'], grass: ['#4b9f2c', '#58ad30', '#69bd36'], brick: '#ffd2bc', conc: '#f0e8d8' },
     B: { name: 'BRUMEUSE', sky: ['#a4cbe8', '#f7d9b8', '#e8e0d2'], grass: ['#4e6c30', '#567838', '#648440'], brick: '#f0c4cc', conc: '#f6ead6' },
     C: { name: 'SOBRE', sky: ['#98b2c4', '#c6d4da', '#b6c4cc'], grass: ['#41561f', '#476228', '#536e2d'], brick: '#9a9aa4', conc: '#c4cbd0' },
   };
