@@ -40,7 +40,7 @@
     const k = mat.startsWith('col:') ? 'col:' : mat.startsWith('basic:') ? 'basic:' : null;
     if (!k) return [mat, tint];
     const hex = mat.slice(k.length);
-    if (hex === '#ffffff' || hex === '#fefefe') return [mat, tint];
+    if (hex === '#ffffff' || hex === '#fefefe' || hex === '#fdfdfd') return [mat, tint];   // v188 : '#fdfdfd' = le sol : lot et matiere a part (decalage de profondeur) ; avant, il etait fondu dans le lot commun et le decalage n'etait jamais applique
     let t = hex; if (tint) { _n1.set(hex).multiply(_n2.set(tint)); t = '#' + _n1.getHexString(); }
     return [k + (shadow === false ? '#fefefe' : '#ffffff'), t];   // les boîtes sans ombre ont leur propre lot (un seul lot sans ombre désactiverait l'ombre de tout le lot)
   }
@@ -83,7 +83,7 @@
       let m;
       if (key.startsWith('basic:')) m = new THREE.MeshBasicMaterial({ color: key.slice(6), fog: true, vertexColors: true });
       else if (key.startsWith('tree:')) m = new THREE.MeshLambertMaterial({ color: '#ffffff', vertexColors: true, side: THREE.DoubleSide });   // v123 : arbres : jamais d'intérieur visible
-      else if (key.startsWith('col:')) { m = new THREE.MeshLambertMaterial({ color: key.slice(4), vertexColors: true }); if (key === 'col:#fdfdfd') { m.polygonOffset = true; m.polygonOffsetFactor = 3; m.polygonOffsetUnits = 24; } }   // v180 : le sol herbeux est repousse en profondeur : routes et dalles gagnent toujours (plus de vert qui perce au loin)
+      else if (key.startsWith('col:')) { m = new THREE.MeshLambertMaterial({ color: key.slice(4), vertexColors: true }); if (key === 'col:#fdfdfd') { m.polygonOffset = true; m.polygonOffsetFactor = 3; m.polygonOffsetUnits = 24; m.onBeforeCompile = (sh) => { sh.vertexShader = sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>' + String.fromCharCode(10) + 'gl_Position.z = min( gl_Position.z + 5.0e-5 * gl_Position.w, 0.99999 * gl_Position.w );'); }; } }   // v180 : le sol herbeux est repousse en profondeur : routes et dalles gagnent toujours (plus de vert qui perce au loin)
       else if (key === 'glass') m = new THREE.MeshLambertMaterial({ color: '#8fd0ff', transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide });
       else if (key === 'glassWarm') m = new THREE.MeshLambertMaterial({ color: '#d8d28a', transparent: true, opacity: 0.45, depthWrite: false, side: THREE.DoubleSide });
       else if (key.startsWith('emis:')) m = new THREE.MeshLambertMaterial({ color: key.slice(5), emissive: key.slice(5), emissiveIntensity: 0.8 });
