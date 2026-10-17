@@ -14,7 +14,7 @@
   // ---------- le départ (170 m) : bosquets de chaque côté, un petit garage de briques à traverser, le premier ennemi plus loin, un camion qui file ----------
   const GR = ['#8d8a80', '#85837a', '#948f84', '#7e7b72'];
   const boulder = (S, dc, lx, y, s, r) => { const p = S.at(dc, lx, y); TR.rock(S.b, p[0], p[1], p[2], s, r, { gray: pk(r, GR), noMoss: true }); S.b.box({ p: [p[0], p[1] + s * 0.5, p[2]], s: [s * 1.6, s * 1.1, s * 1.6], render: false }); };
-  const tree = (S, dc, lx, r, h) => { const p = S.at(dc, lx, 0); if (r() < 0.55) TR.conifer(S.b, p[0], p[1], p[2], h, r, {}); else TR.broadleaf(S.b, p[0], p[1], p[2], h * 0.85, r, {}); S.b.box({ p: [p[0], p[1] + h * 0.4, p[2]], s: [h * 0.06 + 0.7, h * 0.8, h * 0.06 + 0.7], render: false }); };
+  const tree = (S, dc, lx, r, h) => { const p = S.at(dc, lx, 0); if (r() < 0.42) TR.conifer(S.b, p[0], p[1], p[2], h, r, {}); else TR.broadleaf(S.b, p[0], p[1], p[2], h * 0.85, r, {}); S.b.box({ p: [p[0], p[1] + h * 0.4, p[2]], s: [h * 0.06 + 0.7, h * 0.8, h * 0.06 + 0.7], render: false }); };
   function garage(S, dc) {
     const len = 38, hw = 15, hh = 13;
     S.reserve(dc, 0, 2 * hw + 10, len + 10);

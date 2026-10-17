@@ -11,8 +11,8 @@
 
   // arbre réaliste posé au sol à (dc, lx) ; le tronc est solide près de la trajectoire
   function plant(S, dc, lx, r, o) {
-    o = o || {}; const p = S.at(dc, lx, 0), h = o.h || r.between([15, 29]), conif = o.conif !== undefined ? o.conif : r() < 0.55;
-    if (conif) TR.conifer(S.b, p[0], p[1], p[2], h, r, { far: o.far }); else TR.broadleaf(S.b, p[0], p[1], p[2], h * 0.85, r, { autumn: r() < 0.04, far: o.far });
+    o = o || {}; const p = S.at(dc, lx, 0), h = o.h || r.between([15, 29]), conif = o.conif !== undefined ? o.conif : r() < 0.42;
+    if (conif) TR.conifer(S.b, p[0], p[1], p[2], h, r, { far: o.far }); else TR.broadleaf(S.b, p[0], p[1], p[2], h * 0.85, r, { autumn: r() < 0, far: o.far });
     if (!o.far) S.b.box({ p: [p[0], p[1] + h * 0.4, p[2]], s: [h * 0.06 + 0.7, h * 0.8, h * 0.06 + 0.7], render: false });
   }
   function ground(S, dc, lx, r, k) {   // sous-bois : buissons, rochers moussus, souches, troncs couchés

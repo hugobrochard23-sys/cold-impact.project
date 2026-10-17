@@ -96,7 +96,7 @@
   // ---------- sol lisse : une vraie surface continue (normales calculees sur le terrain, pas de tranches) avec un degrade de verts et de champs ----------
   const GC = { a: new THREE.Color('#44540d'), b: new THREE.Color('#4a5a0e'), f: new THREE.Color('#516310'), c: new THREE.Color(), g: new THREE.Color('#77797a') };
   Z.evoGC = GC;
-  const GBR = new THREE.Color('#8bc45a'), GDK = new THREE.Color('#2f6c31');
+  const GBR = new THREE.Color('#7fb552'), GDK = new THREE.Color('#3a7438');
   // v184 : relief doux du sol RENDU seulement (normales inclinees : collines de 90 a 180 m) ; la geometrie, les collisions et la trajectoire ne changent pas
   const relN = (x, z, o, nx, ny, nz) => {
     const gx = 0.0175 * Math.cos(x * 0.035 + 1) * Math.sin(z * 0.03) + 0.0213 * Math.cos(x * 0.071 + z * 0.05) + 0.004 * Math.cos(x * 0.11 - z * 0.07), gz = 0.015 * Math.sin(x * 0.035 + 1) * Math.cos(z * 0.03) + 0.015 * Math.cos(x * 0.071 + z * 0.05) - 0.0028 * Math.cos(x * 0.11 - z * 0.07);
@@ -155,6 +155,8 @@
         transformed.x += ( sin( uTime * 1.9 + gw.x * 0.31 + gw.z * 0.19 ) * 0.14 + sin( uTime * 3.4 + gw.z * 0.8 ) * 0.04 ) * gs;
         transformed.z += cos( uTime * 1.5 + gw.z * 0.27 + gw.x * 0.15 ) * 0.1 * gs;
         transformed.y -= aSway * ( 1.0 - gf );`);
+      // v186 : brins et petales sont lus des deux cotes SANS inverser la normale (avant, la face vue de dos etait eclairee par en dessous : brins et coeurs de fleurs presque noirs)
+      sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>'+String.fromCharCode(10)+' normal = normalize( vNormal );');
     };
     return m;
   })());
@@ -210,10 +212,10 @@
           if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82)) continue;
           if (solidAt(b, p[0], p[1], p[2])) continue;
           const sz = 0.9 + 0.7 * hsh(i, d * 0.7 + bi), L = (0.9 + 1.5 * hsh(i * 3.3, d + bi)) * sz, th = hsh(d + i, i * 3.3 + bi) * 3.1416, ca = Math.cos(th), sa = Math.sin(th), py = p[1] - 0.04, nb = nbLo + Math.floor(hsh(i, d * 2.1 + bi) * (nbHi - nbLo + 1));
-          const lay = (bi === 1 && hsh(i * 7.3, d + 5.1) >= 0.34) ? 1 : 0, af = bi === 1 ? (lay ? 150 : 260) : bi === 2 ? 210 : 260; cur = grp(Math.floor(dd / 100), lay); relN(p[0], p[2], cn, 0, 1, 0); const tv0 = cur.pos.length / 3; _tc.copy(_gc).multiplyScalar(0.9 + 0.22 * hsh(i * 1.3, d + bi)); _b.copy(_tc).multiplyScalar(0.66);   // base : la couleur du sol un peu plus sombre ; pointe : la couleur du sol
+          const lay = (bi === 1 && hsh(i * 7.3, d + 5.1) >= 0.34) ? 1 : 0, af = bi === 1 ? (lay ? 150 : 260) : bi === 2 ? 210 : 260; cur = grp(Math.floor(dd / 100), lay); relN(p[0], p[2], cn, 0, 1, 0); const tv0 = cur.pos.length / 3; _tc.copy(_gc).multiplyScalar(0.94 + 0.16 * hsh(i * 1.3, d + bi)); _b.copy(_tc).multiplyScalar(0.78);   // base : la couleur du sol un peu plus sombre ; pointe : la couleur du sol
           for (let j = 0; j < nb; j++) {
             const s = (hsh(j * 3.7, i + d) * 2 - 1) * 0.5, side = (hsh(j * 5.3, i * 1.1 + d) - 0.5) * 0.4 * sz, bx = p[0] + ca * s * L - sa * side, bz = p[2] + sa * s * L + ca * side;
-            const hp = 0.45 + 0.55 * Math.cos(s * 3.1416), hh = (0.5 + 0.8 * hsh(j * 5.1, i + d)) * hp * sz * 1.4, w = 0.075 * sz * wk, lean = hh * 0.3 * (hsh(j * 7.1, i) - 0.4), dx = -sa * lean * 0.6 + ca * lean * 0.5, dz = ca * lean * 0.6 + sa * lean * 0.5;
+            const hp = 0.45 + 0.55 * Math.cos(s * 3.1416), hh = (0.45 + 0.75 * hsh(j * 5.1, i + d)) * hp * sz * (0.85 + 0.3 * hsh(i * 2.3, d + bi)) * 1.02, w = 0.075 * sz * wk * 1.3, lean = hh * 0.3 * (hsh(j * 7.1, i) - 0.4), dx = -sa * lean * 0.6 + ca * lean * 0.5, dz = ca * lean * 0.6 + sa * lean * 0.5;
             if (tri === 3) {
               v(bx - ca * w * 0.4 - sa * w, py, bz - sa * w * 0.4 + ca * w, _b, 0, af); v(bx + ca * w * 0.4 + sa * w, py, bz + sa * w * 0.4 - ca * w, _b, 0, af); v(bx + dx * 0.4 - ca * w * 0.3, py + hh * 0.55, bz + dz * 0.4 - sa * w * 0.3, _tc, hh * 0.5, af);
               v(bx + ca * w * 0.4 + sa * w, py, bz + sa * w * 0.4 - ca * w, _b, 0, af); v(bx + dx * 0.4 + ca * w * 0.3, py + hh * 0.55, bz + dz * 0.4 + sa * w * 0.3, _tc, hh * 0.5, af); v(bx + dx * 0.4 - ca * w * 0.3, py + hh * 0.55, bz + dz * 0.4 - sa * w * 0.3, _tc, hh * 0.5, af);
@@ -224,9 +226,9 @@
         }
       }
       // v184 : FLEURS SAUVAGES en parterres irreguliers : marguerites (petales blancs, coeur jaune), boutons d'or, quelques bleues, violettes, roses ; inclinees vers la camera
-      const FW = [[0.36, '#fffdf4', 1], [0.68, '#f6d34b', 0], [0.82, '#76b5f4', 0], [0.94, '#a58ae0', 0], [1.01, '#e9a0c4', 0]];
+      const FW = [[0.42, '#fffdf4', 1], [0.76, '#f6d34b', 0], [0.88, '#76b5f4', 0], [0.96, '#a58ae0', 0], [1.01, '#e9a0c4', 0]];
       const pickF = (r) => { for (const f of FW) if (r < f[0]) return f; return FW[0]; };
-      const ncl = Math.max(3, Math.round(len * 0.8)), SK = 0.9, STM = new THREE.Color('#438d3d').multiplyScalar(SK), YEL = new THREE.Color('#ffd447').multiplyScalar(SK), _fc = new THREE.Color();
+      const ncl = Math.max(3, Math.round(len * 0.8)), SK = 0.9, STM = new THREE.Color('#438d3d').multiplyScalar(SK), YEL = new THREE.Color('#ffd23a'), _fc = new THREE.Color();
       for (let ci = 0; ci < ncl; ci++) {
         const cd = d + len * hsh(d + ci * 0.91, ci * 1.3), cl = (hsh(ci * 5.1, d * 0.17) < 0.5 ? -1 : 1) * (3.5 + 34 * Math.pow(hsh(ci * 2.3, d * 0.31), 1.5)), main = pickF(hsh(ci * 3.7, d * 0.53)), rc = 1.4 + 2.4 * hsh(ci * 7.7, d), nfl = 9 + Math.floor(hsh(ci * 4.3, d * 0.9) * 12);
         if (Math.sin(cd * 0.021 + cl * 0.033 + 1.7) + Math.sin(cd * 0.047 - cl * 0.029) < -0.5) continue;   // zones sans fleurs : parterres separes par de l'herbe seule
@@ -234,14 +236,14 @@
         for (let k = 0; k < nfl; k++) {
           const ang = hsh(ci + k * 1.7, d * 0.3) * 6.2832, rr0 = rc * Math.sqrt(hsh(k * 2.9, ci + d * 0.11)), dd = cd + Math.cos(ang) * rr0, lx = cl + Math.sin(ang) * rr0; if (dd < d || dd >= e || wet && wet(dd, lx, sc, T)) continue;
           const p = T.at(dd, lx, 0); gcol(p[0], p[2], _gc); if (gf) gf(dd, lx, _gc, sc); if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82) || solidAt(b, p[0], p[1], p[2])) continue;
-          const flay = hsh(k * 2.1, ci + d * 0.7) < 0.4 ? 0 : 1, fa = flay ? 120 : 190; cur = grp(Math.floor(dd / 100), flay); relN(p[0], p[2], cn, 0, 1, 0); const fv0 = cur.pos.length / 3, kind = hsh(k * 6.1, ci + d) < 0.8 ? main : pickF(hsh(k * 8.3, ci * 1.9 + d)), daisy = kind[2] === 1, hgt = 0.85 + 0.65 * hsh(k * 1.3, ci + d), R = (daisy ? 0.58 : 0.44) * (0.8 + 0.5 * hsh(k * 9.1, ci)), bx = p[0], bz = p[2], py = p[1] - 0.03, cx = bx + fx * hgt * 0.12, cz = bz + fz * hgt * 0.12, cy = py + hgt;
+          const flay = hsh(k * 2.1, ci + d * 0.7) < 0.4 ? 0 : 1, fa = flay ? 120 : 190; cur = grp(Math.floor(dd / 100), flay); relN(p[0], p[2], cn, 0, 1, 0); const fv0 = cur.pos.length / 3, kind = hsh(k * 6.1, ci + d) < 0.8 ? main : pickF(hsh(k * 8.3, ci * 1.9 + d)), daisy = kind[2] === 1, hgt = 0.6 + 0.5 * hsh(k * 1.3, ci + d), R = (daisy ? 0.42 : 0.32) * (0.8 + 0.5 * hsh(k * 9.1, ci)), bx = p[0], bz = p[2], py = p[1] - 0.03, cx = bx + fx * hgt * 0.12, cz = bz + fz * hgt * 0.12, cy = py + hgt;
           _fc.set(kind[1]).multiplyScalar(SK); _b.copy(STM);
           v(bx, py, bz, _b, 0, fa); v(bx + 0.03, py, bz, _b, 0, fa); v(cx, cy - R * 0.55, cz, STM, hgt * 0.6, fa);
           const th = hsh(k * 3.3, ci) * 6.2832, e1x = Math.cos(th) * 0.0 + fz, e1z = -fx, e2x = fx * 0.62, e2y = 0.78, e2z = fz * 0.62;   // plan de la corolle : lateral x (haut + vers l'avant)
           const P = (a, rad) => [cx + (e1x * Math.cos(a) * rad + e2x * Math.sin(a) * rad), cy + e2y * Math.sin(a) * rad, cz + (e1z * Math.cos(a) * rad + e2z * Math.sin(a) * rad)];
           const nP = daisy ? 7 : 5, sw = hgt * 0.6;
           for (let q = 0; q < nP; q++) { const a = q / nP * 6.2832 + th, h2 = 3.1416 / nP, A0 = P(a - h2, R * 0.3), A1 = P(a + h2, R * 0.3), A2 = P(a, R); v(A0[0], A0[1], A0[2], _fc, sw, fa); v(A1[0], A1[1], A1[2], _fc, sw, fa); v(A2[0], A2[1], A2[2], _fc, sw, fa); }
-          const cc = daisy ? YEL : _fc, rcn = R * 0.36, ox = -fx * 0.03, oz = -fz * 0.03;
+          const cc = daisy ? YEL : _fc, rcn = R * 0.46, ox = -fx * 0.03, oz = -fz * 0.03;
           for (let q = 0; q < 4; q++) { const a = q / 4 * 6.2832, a2 = (q + 1) / 4 * 6.2832, B0 = P(a, rcn), B1 = P(a2, rcn); v(cx + ox, cy + 0.03, cz + oz, cc, sw, fa); v(B0[0] + ox, B0[1] + 0.03, B0[2] + oz, cc, sw, fa); v(B1[0] + ox, B1[1] + 0.03, B1[2] + oz, cc, sw, fa); }
           cur.tufts.push([p[0], p[1], p[2], fv0, cur.pos.length / 3]);
         }
