@@ -79,6 +79,7 @@
       UI.panel(ctx, ox + cw * 0.06, Y(0.17), cw * 0.88, ph, { c: S(28) }); UI.text(ctx, '+' + (game.evoClearBonus || 600) + ' PIÈCES', cx, Y(0.17) + S(60), S(60), T.yellow, { shadow: false });
       ms.forEach((k, i) => UI.text(ctx, NAMES[k] + '  -  VOL ' + S0.marks[k].run + '  ' + E.fmt(S0.marks[k].sec), cx, Y(0.17) + S(130) + i * S(66), UI.fit(ctx, NAMES[k] + '  -  VOL 99  99:99', cw * 0.8, S(38)), k === 'boss' ? T.yellow : T.white, { shadow: false }));
     }
+    { const pw = S(112), ph = S(70), px0 = ox + cw - S(36) - pw, py0 = T0 + S(152); UI.btnSecondary(ctx, px0, py0, pw, ph, 'PAL ' + (CC.PALETTE ? CC.PALETTE.id : 'A'), { px: S(32) }); UI.tap(ui, px0, py0, pw, ph, () => { if (CC.PALETTE) CC.PALETTE.next(); }); }
     const bs = S(128), lx = ox + S(36), ly = T0 + S(330), free = Math.max(0, 3 - (E.freeGemsUsed ? E.freeGemsUsed(game) : 0));
     UI.glyph(ctx, 'shop', lx + bs / 2, ly + bs / 2, bs * 0.42, '#e8eaee'); UI.tap(ui, lx, ly, bs, bs, () => { ui.overlay = 'evoShop'; });
     if (!(game.meta && game.meta.noAds)) { const y = ly + bs + S(28); UI.glyph(ctx, 'ads', lx + bs / 2, y + bs * 0.36, bs * 0.2, T.red); UI.text(ctx, 'NO ADS', lx + bs / 2, y + bs * 0.74, UI.fit(ctx, 'NO ADS', bs * 0.86, bs * 0.24), T.red, { shadow: false }); UI.tap(ui, lx, y, bs, bs, () => { ui.overlay = 'evoShop'; }); }

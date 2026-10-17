@@ -92,6 +92,7 @@
       else if (key === 'waterSurf') m = new THREE.MeshLambertMaterial({ map: CC.Textures.get('water'), vertexColors: true, emissive: '#2a8aa8', emissiveIntensity: 0.75, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide });
       else if (key === 'water') m = new THREE.MeshPhongMaterial({ map: CC.Textures.get(key), vertexColors: true, emissive: '#0c2a3a', emissiveIntensity: 0.5, specular: '#bcdcf0', shininess: 70 });   // v103 : eau brillante (reflets du soleil)
       else m = new THREE.MeshLambertMaterial({ map: CC.Textures.get(key), vertexColors: true });
+      if (CC.PALETTE && CC.PALETTE.mat[key] && m.color) m.color.set(CC.PALETTE.mat[key]);   // v181 : palette du decor (briques, beton)
       this.materials.set(key, m);
       return m;
     }

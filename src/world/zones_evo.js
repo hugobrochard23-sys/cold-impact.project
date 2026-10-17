@@ -92,6 +92,7 @@
 
   // ---------- sol lisse : une vraie surface continue (normales calculees sur le terrain, pas de tranches) avec un degrade de verts et de champs ----------
   const GC = { a: new THREE.Color('#44540d'), b: new THREE.Color('#4a5a0e'), f: new THREE.Color('#516310'), c: new THREE.Color(), g: new THREE.Color('#77797a') };
+  Z.evoGC = GC;
   const gcol = (x, z, out) => {
     const n = 0.5 + 0.5 * (Math.sin(x * 0.011 + z * 0.017) * 0.5 + Math.sin(x * 0.027 - z * 0.013 + 1.3) * 0.3 + Math.sin(x * 0.05 + z * 0.043) * 0.2);
     out.copy(GC.a).lerp(GC.b, n);
@@ -160,11 +161,14 @@
       return _box.apply(this, arguments);
     };
   }
-  const solidAt = (b, x, y, z) => { const L = b._pave; if (!L) return false; _pt.set(x, y, z); for (let k = 0; k < L.length; k++) { const q = L[k]; if (Math.abs(x - q.c.x) > q.hx + q.hz + 1 || Math.abs(z - q.c.z) > q.hx + q.hz + 1) continue; const p = _pt.clone().sub(q.c).applyQuaternion(q.q); if (Math.abs(p.x) < q.hx + 0.5 && Math.abs(p.z) < q.hz + 0.5 && y > q.c.y - q.hy - 0.3 && y < q.c.y + q.hy + 0.08 + (q.hy < 0.5 ? 0.6 : 0) && q.c.y - q.hy < y + 1.4) return true; } return false; };
+  const solidIn = (L, x, y, z) => { if (!L) return false; _pt.set(x, y, z); for (let k = 0; k < L.length; k++) { const q = L[k]; if (Math.abs(x - q.c.x) > q.hx + q.hz + 1 || Math.abs(z - q.c.z) > q.hx + q.hz + 1) continue; const p = _pt.clone().sub(q.c).applyQuaternion(q.q); if (Math.abs(p.x) < q.hx + 0.5 && Math.abs(p.z) < q.hz + 0.5 && y > q.c.y - q.hy - 0.3 && y < q.c.y + q.hy + 0.08 + (q.hy < 0.5 ? 0.6 : 0) && q.c.y - q.hy < y + 1.4) return true; } return false; };
+  const solidAt = (b, x, y, z) => { if (solidIn(b._pave, x, y, z)) return true; for (const r of GREC) if (r.b !== b && r.b._pave && solidIn(r.b._pave, x, y, z)) return true; return false; };
+  const GREC = [];   // v181 : herbe des derniers troncons : une dalle posee par un troncon voisin efface les touffes deja creees dessous
   // v179 : HERBE EN TOUFFES ALLONGEES. Meme couleur que le sol (base un peu plus sombre, pointe = couleur du sol). Densite repartie sur toute la largeur ; les touffes lointaines ont moins de brins (legerete).
   Z.flushGrass = function (ctx) {
     const jobs = ctx.grassJobs; if (!jobs || !jobs.length) return; ctx.grassJobs = null;
-    const T = ctx.T, b = ctx.b, pos = [], nor = [], col = [], sway = [], far = [];
+    const T = ctx.T, b = ctx.b, pos = [], nor = [], col = [], sway = [], far = [], tufts = [];
+    for (let k = GREC.length - 1; k >= 0; k--) if (!GREC[k].b.root || !GREC[k].b.root.parent) GREC.splice(k, 1);
     const v = (x, y, z, c, w, f) => { pos.push(x, y, z); nor.push(0, 1, 0); col.push(c.r, c.g, c.b); sway.push(w); far.push(f); };
     for (const jb of jobs) {
       const { d, e, wet, sc, gf } = jb, len = e - d;
@@ -180,7 +184,7 @@
           if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82)) continue;
           if (solidAt(b, p[0], p[1], p[2])) continue;
           const sz = 0.9 + 0.7 * hsh(i, d * 0.7 + bi), L = (0.9 + 1.5 * hsh(i * 3.3, d + bi)) * sz, th = hsh(d + i, i * 3.3 + bi) * 3.1416, ca = Math.cos(th), sa = Math.sin(th), py = p[1] - 0.04, nb = nbLo + Math.floor(hsh(i, d * 2.1 + bi) * (nbHi - nbLo + 1));
-          _b.copy(_gc).multiplyScalar(0.8);   // base : la couleur du sol un peu plus sombre ; pointe : la couleur du sol
+          const tv0 = pos.length / 3; _b.copy(_gc).multiplyScalar(0.8);   // base : la couleur du sol un peu plus sombre ; pointe : la couleur du sol
           for (let j = 0; j < nb; j++) {
             const s = (hsh(j * 3.7, i + d) * 2 - 1) * 0.5, side = (hsh(j * 5.3, i * 1.1 + d) - 0.5) * 0.4 * sz, bx = p[0] + ca * s * L - sa * side, bz = p[2] + sa * s * L + ca * side;
             const hp = 0.45 + 0.55 * Math.cos(s * 3.1416), hh = (0.55 + 0.55 * hsh(j * 5.1, i + d)) * hp * sz * 1.25, w = 0.075 * sz * wk, lean = hh * 0.3 * (hsh(j * 7.1, i) - 0.4), dx = -sa * lean * 0.6 + ca * lean * 0.5, dz = ca * lean * 0.6 + sa * lean * 0.5;
@@ -190,6 +194,7 @@
               v(bx + dx * 0.4 - ca * w * 0.3, py + hh * 0.55, bz + dz * 0.4 - sa * w * 0.3, _gc, hh * 0.5, 230); v(bx + dx * 0.4 + ca * w * 0.3, py + hh * 0.55, bz + dz * 0.4 + sa * w * 0.3, _gc, hh * 0.5, 230); v(bx + dx, py + hh, bz + dz, _gc, hh, 230);
             } else { v(bx - sa * w, py, bz + ca * w, _b, 0, 230); v(bx + sa * w, py, bz - ca * w, _b, 0, 230); v(bx + dx, py + hh, bz + dz, _gc, hh, 230); }
           }
+          tufts.push([p[0], p[1], p[2], tv0, pos.length / 3]);
         }
       }
       // petites fleurs par-ci par-la
@@ -197,14 +202,18 @@
       for (let i = 0; i < nf; i++) {
         const dd = d + len * hsh(d + i * 0.91, i * 1.3), lx = (hsh(i * 2.3, d * 0.31) * 2 - 1) * 34; if (wet && wet(dd, lx, sc, T)) continue;
         const p = T.at(dd, lx, 0); gcol(p[0], p[2], _gc); if (gf) gf(dd, lx, _gc, sc); if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82) || solidAt(b, p[0], p[1], p[2])) continue;
-        const fc = FL[Math.floor(hsh(i, d * 0.77) * FL.length)], hgt = 0.35 + 0.4 * hsh(i, d), bx = p[0], bz = p[2], py = p[1] - 0.03, r0 = 0.07 + 0.03 * hsh(i * 2, d); _b.copy(_gc).multiplyScalar(0.8);
+        const fv0 = pos.length / 3, fc = FL[Math.floor(hsh(i, d * 0.77) * FL.length)], hgt = 0.35 + 0.4 * hsh(i, d), bx = p[0], bz = p[2], py = p[1] - 0.03, r0 = 0.07 + 0.03 * hsh(i * 2, d); _b.copy(_gc).multiplyScalar(0.8);
         v(bx, py, bz, _b, 0, 90); v(bx + 0.02, py, bz, _b, 0, 90); v(bx, py + hgt, bz, _gc, hgt * 0.5, 90);
         for (let q = 0; q < 5; q++) { const a = q / 5 * 6.2832, a2 = (q + 1) / 5 * 6.2832; v(bx + Math.cos(a) * r0, py + hgt, bz + Math.sin(a) * r0, fc, hgt * 0.5, 90); v(bx + Math.cos(a2) * r0, py + hgt, bz + Math.sin(a2) * r0, fc, hgt * 0.5, 90); v(bx, py + hgt + 0.04, bz, fc, hgt * 0.5, 90); }
+        tufts.push([p[0], p[1], p[2], fv0, pos.length / 3]);
       }
     }
+    // les dalles de CE troncon effacent les touffes des troncons voisins deja posees dessous
+    if (b._pave) for (const r of GREC) { const A_ = r.mesh.geometry.attributes.position; let ch = false; for (const t of r.tufts) { if (t[5]) continue; if (solidIn(b._pave, t[0], t[1], t[2])) { t[5] = 1; ch = true; for (let k = t[3]; k < t[4]; k++) A_.setXYZ(k, t[0], t[1] - 5, t[2]); } } if (ch) A_.needsUpdate = true; }
     if (!pos.length) return;
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('aSway', new THREE.Float32BufferAttribute(sway, 1)); g.setAttribute('aFar', new THREE.Float32BufferAttribute(far, 1));
     const mesh = new THREE.Mesh(g, grassMat()); mesh.frustumCulled = true; mesh.receiveShadow = false; mesh.onBeforeRender = (r, sc, cam) => { GU.value = performance.now() / 1000; GCAM.value.copy(cam.position); }; b.add(mesh);
+    GREC.push({ b, mesh, tufts }); while (GREC.length > 5) GREC.shift();
   };
 
   const campagne = { signature: 'rampe', scenes: {}, dress(S) {
