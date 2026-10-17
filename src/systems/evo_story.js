@@ -104,6 +104,7 @@
     if (g.cine3d && EVO.cineFrame) EVO.cineFrame(g, dt);
     const run = g.endlessRun, dist = run ? Math.max(0, run.dist) : 0;
     if (CC.Zones && CC.Zones.grassCull && g.camera) CC.Zones.grassCull(g.camera.position);   // v185
+    { const nr = g.state === 'FLIGHT' ? 1.0 : 0.35; if (g.camera && g.camera.near !== nr && !g.cine3d) { g.camera.near = nr; g.camera.updateProjectionMatrix(); } }   // v189 : plan proche a 1 m en vol : tampon de profondeur ~3x plus precis (fin des scintillements sol / dalles)
     if (!g.cine3d) EVO.applyMood(g, EVO.moodAt(g, dist));
     EVO.coinFrame(g, dt);
     if (g.audio && g.audio.ctx && g.audio.setWater) {

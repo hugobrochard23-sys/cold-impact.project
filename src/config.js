@@ -165,7 +165,7 @@ CC.CONFIG = {
   postfx: {
     enabled: true,
     vignette: 0.55, vignetteRadius: 0.78, vignetteSoftness: 0.55,
-    chromatic: 0.0018,
+    chromatic: 0.0,
     halftone: 0.35, halftoneCell: 3.0,
     bloomThreshold: 0.8, bloomStrength: 0.4,           // v038i : halo plus discret (la scène du monde miniature était éblouissante)
     grain: 0.025,

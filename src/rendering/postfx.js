@@ -27,9 +27,8 @@
       float r = length(cc * ar) / length(0.5 * ar);
       vec2 off = cc * ca * (0.25 + 2.2 * r * r);
       vec3 col;
-      col.r = texture2D(tScene, vUv + off).r;
-      col.g = texture2D(tScene, vUv).g;
-      col.b = texture2D(tScene, vUv - off).b;
+      if (ca > 0.0006) { col.r = texture2D(tScene, vUv + off).r; col.g = texture2D(tScene, vUv).g; col.b = texture2D(tScene, vUv - off).b; }   // v189 : un seul echantillon quand l'aberration est nulle (cas normal)
+      else col = texture2D(tScene, vUv).rgb;
       col += texture2D(tBloom, vUv).rgb * bloomStr;
       // tramage : points dont le rayon dépend de la luminance, appliqués surtout dans les ombres
       float l = luma(col);

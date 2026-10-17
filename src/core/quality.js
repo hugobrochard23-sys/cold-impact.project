@@ -12,6 +12,7 @@
     constructor(game) {
       this.game = game; this.cfg = CC.CONFIG.quality;
       this.tier = null; this.acc = 0; this.frames = 0;
+      this.scale = 1; this.dAcc = 0; this.dFrames = 0; this.good = 0;   // v189 : echelle de resolution dynamique (1 = pleine)
     }
 
     // niveau de départ : réglage du joueur, sinon selon l'appareil
@@ -41,7 +42,15 @@
     // appelé à chaque image avec le temps réel écoulé (s)
     watch(realDt) {
       const g = this.game;
-      if (g.testMode || (g.settings.graphics || 'auto') !== 'auto' || g.state !== 'FLIGHT' || g.paused) { this.acc = 0; this.frames = 0; return; }
+      if (g.testMode || (g.settings.graphics || 'auto') !== 'auto' || g.state !== 'FLIGHT' || g.paused) { this.acc = 0; this.frames = 0; this.dAcc = 0; this.dFrames = 0; return; }
+      // v189 : RESOLUTION DYNAMIQUE : sous 50 images/s, le rendu 3D perd 7 % de resolution (minimum 72 %) ; il remonte de 5 % apres 4 secondes pleinement fluides (60 images/s). L'interface reste nette.
+      this.dAcc += realDt; this.dFrames++;
+      if (this.dAcc >= 1) {
+        const f = this.dFrames / this.dAcc; this.dAcc = 0; this.dFrames = 0;
+        if (f < 50 && this.scale > 0.72) { this.scale = Math.max(0.72, +(this.scale - 0.07).toFixed(2)); this.good = 0; g.applyRenderScale(); }
+        else if (f >= 58) { if (++this.good >= 4 && this.scale < 1) { this.scale = Math.min(1, +(this.scale + 0.05).toFixed(2)); this.good = 0; g.applyRenderScale(); } }
+        else this.good = 0;
+      }
       this.acc += realDt; this.frames++;
       if (this.acc < this.cfg.autoWindow) return;
       const fps = this.frames / this.acc;
