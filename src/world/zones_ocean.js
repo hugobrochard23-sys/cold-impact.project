@@ -14,7 +14,7 @@
   const lam = (c, e) => new T3.MeshLambertMaterial(e ? { color: c, emissive: e } : { color: c });
   const basic = (c, o) => new T3.MeshBasicMaterial(Object.assign({ color: c }, o || {}));
   const mb = (grp, w, h, d, m, x, y, z) => { const o = new T3.Mesh(new T3.BoxGeometry(w, h, d), m); o.position.set(x, y, z); grp.add(o); return o; };
-  const SANDS = ['#a89c7e', '#9c9074', '#b0a485', '#948a6e'], DEEP = ['#566870', '#4c5e66', '#5e6e74', '#46585e'], CORAL = ['#e0705a', '#d8568a', '#e8a04a', '#b070d8', '#e85a5a', '#f0c050'];
+  const SANDS = ['#a89c7e', '#9c9074', '#b0a485', '#948a6e'], DEEP = ['#3a6a92', '#2f5c86', '#4a7ea8', '#285078'], CORAL = ['#e0705a', '#d8568a', '#e8a04a', '#b070d8', '#e85a5a', '#f0c050'];
   const yrel = (S, dc, yw) => yw - S.T.base(dc);                 // hauteur mondiale → hauteur relative au fond
   const sea = (S, dc) => -S.T.base(dc);                           // la surface, relative au fond
   const wpin = (fn) => (T, sc) => ({ lx: 0, fy: (d) => fn(d, sc) - T.base(d), from: 24, to: sc.d1 - sc.d0 - 24 });
@@ -22,8 +22,9 @@
 
   Z.oceanSurface = (S, d0, d1, hw, amp) => Z.evoWaves(S, d0, d1, hw, -Z.PROFILE.ocean.elev, 'waterSurf', '#7fd0ee', amp === undefined ? 0.5 : amp);
   // ---------- éléments de décor ----------
-  const rock = (S, dc, lx, y, s, r, gray) => { const p = S.at(dc, lx, y); TR.rock(S.b, p[0], p[1], p[2], s, r, { gray: gray || pk(r, DEEP), noMoss: true }); S.b.box({ p: [p[0], p[1] + s * 0.5, p[2]], s: [s * 1.6, s * 1.1, s * 1.6], render: false }); };
-  const kelp = (S, dc, lx, r) => { const h = r.between([8, 24]); for (let k = 0; k < 3; k++) S.cyl(dc + k * 0.7, lx + k * 0.6 - 0.6, 0, 0.32, h * r.between([0.7, 1]), 'col:' + pk(r, ['#3d8c4a', '#4a9a52', '#2f7a46']), undefined, 5, 0.1, false); };
+  const rock = (S, dc, lx, y, s, r, gray) => { const p = S.at(dc, lx, y); TR.rock(S.b, p[0], p[1], p[2], s, r, { gray: gray || pk(r, DEEP), noMoss: true, shade: '#1f5a70' }); S.b.box({ p: [p[0], p[1] + s * 0.5, p[2]], s: [s * 1.6, s * 1.1, s * 1.6], render: false }); };
+  const KELPC = [['#17704a', '#4fdc88'], ['#1f8a4a', '#7aea78'], ['#2a7a5a', '#3fe0b0'], ['#1a6a3c', '#62e07a']];
+  const kelp = (S, dc, lx, r) => { const p = S.at(dc, lx, 0), n = 4 + Math.floor(r() * 3), cc = pk(r, KELPC); for (let k = 0; k < n; k++) Z.addSway(S, p[0] + r.between([-1.6, 1.6]), p[1] - 0.1, p[2] + r.between([-1.6, 1.6]), r.between([7, 24]), r.between([0.8, 1.5]), cc[0], cc[1]); };   // v190 : varech : rubans qui ondulent (un seul mesh par troncon)
   const coral = (S, dc, lx, r) => { const c = pk(r, CORAL), n = 3 + Math.floor(r() * 4); for (let k = 0; k < n; k++) S.cyl(dc + r.between([-1.5, 1.5]), lx + r.between([-1.5, 1.5]), 0, r.between([0.5, 1.2]), r.between([2, 6]), 'col:' + c, undefined, 6, r.between([0.05, 0.3]), false); if (r() < 0.5) S.ball(dc, lx, 1.2, r.between([1.6, 3]), 'col:' + pk(r, CORAL), undefined, false, 0.7); };
   const wreck = (S, dc, lx, r, len) => {
     const L = len || 60, roll = r.between([-25, 25]), yaw = r.between([-30, 30]);
@@ -80,7 +81,7 @@
     sub: [{ u: 0, key: 'recif', name: 'LE RECIF' }, { u: 0.33, key: 'epaves', name: 'LES EPAVES' }, { u: 0.64, key: 'canyon', name: 'LE CANYON' }, { u: 0.92, key: 'cheminee', name: 'LA REMONTEE' }],
     pin: wpin((d, sc) => { const u = (d - sc.d0) / (sc.d1 - sc.d0); return mix3(u); }),
     relief(T, sc) { let lo = 0, hi = 0; const fn = (d) => { const u = (d - sc.d0) / (sc.d1 - sc.d0); return 40 * ss(0, 0.06, u) - 12 * ss(0.36, 0.6, u) - 80 * ss(0.64, 0.8, u) + 125 * ss(0.9, 0.99, u) + 4 * Math.sin(d / 37) * ss(0.06, 0.2, u) * (1 - ss(0.8, 0.9, u)); }; for (let d = sc.d0; d <= sc.d1; d += 4) { const v = fn(d); lo = Math.min(lo, v); hi = Math.max(hi, v); } sc.rlo = lo; sc.rhi = hi; return { fn, max: Math.max(-lo, hi) }; },
-    ground: (d, lx, c, sc) => { const u = (d - sc.d0) / (sc.d1 - sc.d0), dep = U.clamp(-(d * 0 + 0) , 0, 1); const sand = new T3.Color('#bdb08a'), deep = new T3.Color('#4a5e62'); c.copy(sand).lerp(deep, ss(0.3, 0.78, u) * (1 - ss(0.92, 1, u))); c.multiplyScalar(0.88 + 0.22 * Math.sin(lx * 0.31 + d * 0.12) * Math.sin(d * 0.27 - lx * 0.11)); },
+    ground: (d, lx, c, sc) => { const u = (d - sc.d0) / (sc.d1 - sc.d0), dep = U.clamp(-(d * 0 + 0) , 0, 1); const sand = new T3.Color('#d0cfbd'), turq = new T3.Color('#98d6dc'), deep = new T3.Color('#3f7488'); c.copy(sand).lerp(turq, 0.5 + 0.5 * Math.sin(lx * 0.045 + d * 0.021) * Math.sin(d * 0.034 - lx * 0.017 + 1.3)).lerp(deep, ss(0.3, 0.78, u) * (1 - ss(0.92, 1, u))); c.multiplyScalar(0.9 + 0.12 * Math.sin(lx * 0.31 + d * 0.12) * Math.sin(d * 0.27 - lx * 0.11) + 0.06 * Math.sin(d * 0.9 + lx * 0.25)); },   // v190 : sable clair a plaques turquoise + rides
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L, T = S.T;
       Z.oceanSurface(S, S.d0 + 10, S.d1, 140);

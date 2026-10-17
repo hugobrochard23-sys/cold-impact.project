@@ -701,12 +701,34 @@
       const T = run.T, d = run.dist, z = T.zoneOrder[T.zoneIndex(d) % T.zoneOrder.length];
       return z === 'eau' ? rk.pos.y < -4 : !!({ eolien: 1, carrier: 1, epaves: 1, port: 1 }[z]) && rk.pos.y - T.base(d) < -3.2;
     }
-    bubbles(dt, rk) {   // v106 : les bulles naissent à la POINTE du nez, sont petites, dérivent vers l'avant (≈ 22 % de la vitesse de la fusée) : elles reculent moins vite à l'écran
-      const B = this._bub || (this._bub = { list: [], t: 0, geo: new THREE.SphereGeometry(0.1, 6, 5), mat: new THREE.MeshBasicMaterial({ color: '#d8f2ff', transparent: true, opacity: 0.6, depthWrite: false }) });
-      if (rk) { const rate = U.clamp(rk.speed * 0.55, 4, 70), tip = rk.mesh && rk.mesh.userData && rk.mesh.userData.noseZ ? rk.mesh.userData.noseZ : 0.9; B.t += dt * rate;
-        while (B.t >= 1 && B.list.length < 190) { B.t -= 1; const m = new THREE.Mesh(B.geo, B.mat); m.position.copy(rk.noseTip(new V())).add(new V((Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3)).addScaledVector(rk.vel, -dt * Math.random());
-          m.scale.setScalar(0.2 + Math.random() * Math.random() * 0.8); m.userData = { v: rk.vel.clone().multiplyScalar(0.22).add(new V((Math.random() - 0.5) * 0.3, 0.3 + Math.random() * 0.5, (Math.random() - 0.5) * 0.3)), life: 3 + Math.random() * 1.2 }; this.scene.add(m); B.list.push(m); } } else B.t = 0;
-      for (let i = B.list.length - 1; i >= 0; i--) { const m = B.list[i], u = m.userData; u.life -= dt; m.position.addScaledVector(u.v, dt); u.v.multiplyScalar(1 - dt * 0.9); if (u.life < 0.6) m.scale.multiplyScalar(1 - dt * 2.5); if (u.life <= 0) { this.scene.remove(m); B.list.splice(i, 1); } }
+    // v190 : BULLES : un seul InstancedMesh (1 appel de dessin, aucune allocation par bulle). Traine de bulles nees a la tuyere (tailles et vitesses variees, laissees derriere la fusee,
+    // elles montent doucement et retrecissent avant de disparaitre) + quelques bulles au nez (comme avant : elles reculent peu a l'ecran).
+    bubbles(dt, rk) {
+      let B = this._bub;
+      if (!B) {
+        const N = 260, mat = new THREE.MeshBasicMaterial({ color: '#e6f7ff', transparent: true, opacity: 0.55, depthWrite: false }), im = new THREE.InstancedMesh(new THREE.SphereGeometry(0.1, 6, 5), mat, N);
+        im.frustumCulled = false; im.count = 0; im.renderOrder = 2;
+        B = this._bub = { im, N, n: 0, te: 0, tn: 0, p: new Float32Array(N * 3), v: new Float32Array(N * 3), life: new Float32Array(N), s: new Float32Array(N), m4: new THREE.Matrix4(), a: new V(), b: new V() };
+      }
+      if (B.im.parent !== this.scene) this.scene.add(B.im);
+      const sp = (px, py, pz, vx, vy, vz, life, size) => { if (B.n >= B.N) return; const k = B.n++, o = k * 3; B.p[o] = px; B.p[o + 1] = py; B.p[o + 2] = pz; B.v[o] = vx; B.v[o + 1] = vy; B.v[o + 2] = vz; B.life[k] = life; B.s[k] = size; };
+      if (rk) {
+        const spd = rk.speed, rnd = Math.random, eRate = U.clamp(spd * 0.7, 10, 90), nRate = U.clamp(spd * 0.2, 2, 20);
+        const nz = rk.nozzle(B.a), vx = rk.vel.x * 0.07, vy = rk.vel.y * 0.07, vz = rk.vel.z * 0.07;
+        B.te += dt * eRate;
+        while (B.te >= 1) { B.te -= 1; const r = rnd(); sp(nz.x + (rnd() - 0.5) * 0.25, nz.y + (rnd() - 0.5) * 0.25, nz.z + (rnd() - 0.5) * 0.25, vx + (rnd() - 0.5) * 0.5, vy + 0.3 + rnd() * 0.5, vz + (rnd() - 0.5) * 0.5, 2.2 + rnd() * 1.4, r < 0.7 ? 0.12 + rnd() * 0.25 : 0.4 + rnd() * 0.7); }
+        const tip = rk.noseTip(B.b); B.tn += dt * nRate;
+        while (B.tn >= 1) { B.tn -= 1; sp(tip.x + (rnd() - 0.5) * 0.3, tip.y + (rnd() - 0.5) * 0.3, tip.z + (rnd() - 0.5) * 0.3, rk.vel.x * 0.22 + (rnd() - 0.5) * 0.3, rk.vel.y * 0.22 + 0.3 + rnd() * 0.4, rk.vel.z * 0.22 + (rnd() - 0.5) * 0.3, 2.6 + rnd(), 0.2 + rnd() * rnd() * 0.5); }
+      }
+      const im = B.im, m4 = B.m4, damp = 1 - dt * 0.9;
+      for (let i = B.n - 1; i >= 0; i--) {
+        B.life[i] -= dt;
+        if (B.life[i] <= 0) { const l = --B.n; if (i !== l) { for (let c = 0; c < 3; c++) { B.p[i * 3 + c] = B.p[l * 3 + c]; B.v[i * 3 + c] = B.v[l * 3 + c]; } B.life[i] = B.life[l]; B.s[i] = B.s[l]; } continue; }
+        const o = i * 3; B.v[o] *= damp; B.v[o + 1] = B.v[o + 1] * damp + 0.25 * dt; B.v[o + 2] *= damp;
+        B.p[o] += B.v[o] * dt; B.p[o + 1] += B.v[o + 1] * dt; B.p[o + 2] += B.v[o + 2] * dt;
+      }
+      for (let i = 0; i < B.n; i++) { const o = i * 3, sc = B.s[i] * Math.min(1, B.life[i] / 0.7); m4.makeScale(sc, sc, sc); m4.setPosition(B.p[o], B.p[o + 1], B.p[o + 2]); im.setMatrixAt(i, m4); }
+      im.count = B.n; im.visible = B.n > 0; im.instanceMatrix.needsUpdate = true; if (B.n) im.instanceMatrix.updateRange = { offset: 0, count: B.n * 16 };
     }
     // ---------- v107 : COMMANDES SIMPLES (tactile, par défaut) ----------
     // La fusée vise un point du couloir 1 s devant elle ; le doigt déplace ce point à gauche / droite / haut / bas (décalage ox, oy en mètres par rapport à la ligne du niveau).
