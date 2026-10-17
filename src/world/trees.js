@@ -34,8 +34,8 @@
   };
   function this_quad(m, a, b, c, d, ca, cb, cc, cd) { m.quad(a, b, c, d, ca, cb, cc, cd); }
 
-  const CONIFER = [['#154832', '#398b54'], ['#1d5d40', '#398b54'], ['#154832', '#27724a'], ['#1d5d40', '#27724a'], ['#103a2c', '#27724a']];   // v184 : couleurs de reference x0.86 (la lumiere les remonte)
-  const BROAD = [['#3b6237', '#79b34b'], ['#507f3c', '#9dd05a'], ['#507f3c', '#b8e36b'], ['#3b6237', '#9dd05a'], ['#507f3c', '#79b34b']], BIRCH = [['#507f3c', '#9dd05a'], ['#3b6237', '#79b34b']];
+  const CONIFER = [['#1b5639', '#3d8b55'], ['#1b5639', '#28734a'], ['#216040', '#3d8b55'], ['#1b5639', '#337f4f'], ['#216040', '#28734a']];   // v186 : plus de faces presque noires
+  const BROAD = [['#527d3d', '#79b34b'], ['#527d3d', '#9bcf59'], ['#5a8844', '#b7e16c'], ['#527d3d', '#9bcf59'], ['#5a8844', '#79b34b']], BIRCH = [['#527d3d', '#9bcf59'], ['#5a8844', '#79b34b']];
   const AUTUMN = [['#8a5a22', '#c0873a'], ['#7a4a1e', '#b8742c']];
   const BARK = ['#795438', '#a17a50', '#503a2b', '#795438'];
   const hexk = (h, k) => mul(hex(h), k);
@@ -44,7 +44,7 @@
   const shade = (m, x, y, z, r, col) => { const c = hex(col); for (let k = 0; k < 8; k++) { const a0 = k / 8 * 6.2832, a1 = (k + 1) / 8 * 6.2832; m.tri([x, y + 0.07, z], [x + Math.cos(a0) * r, y + 0.07, z + Math.sin(a0) * r * 0.85], [x + Math.cos(a1) * r, y + 0.07, z + Math.sin(a1) * r * 0.85], c, c, c); } };
 
   T.conifer = function (b, x, y, z, h, rnd, o) {
-    o = o || {}; const m = new Mesh(), pal = CONIFER[Math.floor(rnd() * CONIFER.length)], dark = hexk(pal[0], 0.9 + 0.1 * rnd()), light = hexk(pal[1], 0.82 + 0.1 * rnd()), bark = hex(BARK[Math.floor(rnd() * BARK.length)]);
+    o = o || {}; const m = new Mesh(), pal = CONIFER[Math.floor(rnd() * CONIFER.length)], dark = hexk(pal[0], 0.95 + 0.1 * rnd()), light = hexk(pal[1], 0.84 + 0.1 * rnd()), bark = hex(BARK[Math.floor(rnd() * BARK.length)]);
     const tiers = o.far ? 5 + Math.floor(rnd() * 2) : 7 + Math.floor(rnd() * 3), R = h * rr(rnd, 0.17, 0.23), lean = [rr(rnd, -0.025, 0.025) * h, rr(rnd, -0.025, 0.025) * h];
     const cx = (t) => x + lean[0] * t, cz = (t) => z + lean[1] * t;
     // tronc évasé à la base, qui monte presque jusqu'à la pointe
@@ -89,7 +89,7 @@
   }
 
   T.broadleaf = function (b, x, y, z, h, rnd, o) {
-    o = o || {}; const birch = !o.autumn && !o.far && rnd() < 0.24, m = new Mesh(), PL = o.autumn ? AUTUMN : birch ? BIRCH : BROAD, pal = PL[Math.floor(rnd() * PL.length)], cDark = hexk(pal[0], 0.9 + 0.1 * rnd()), cLight = hexk(pal[1], 0.8 + 0.1 * rnd()), bark = birch ? hex('#d6d2c4') : hex(BARK[Math.floor(rnd() * BARK.length)]);
+    o = o || {}; const birch = !o.autumn && !o.far && rnd() < 0.24, m = new Mesh(), PL = o.autumn ? AUTUMN : birch ? BIRCH : BROAD, pal = PL[Math.floor(rnd() * PL.length)], cDark = hexk(pal[0], 0.95 + 0.1 * rnd()), cLight = hexk(pal[1], 0.78 + 0.1 * rnd()), bark = birch ? hex('#d6d2c4') : hex(BARK[Math.floor(rnd() * BARK.length)]);
     const th = h * (birch ? rr(rnd, 0.5, 0.6) : rr(rnd, 0.38, 0.48)), cr = h * (birch ? rr(rnd, 0.22, 0.28) : rr(rnd, 0.3, 0.38)), seed = rnd() * 100, lean = rr(rnd, -0.06, 0.06) * h;
     m.tube([x, y - 0.8, z], h * 0.05 + 0.45, [x, y + th * 0.25, z], h * 0.034 + 0.3, mul(bark, 0.65), mul(bark, 0.8), 8);
     m.tube([x, y + th * 0.25, z], h * 0.034 + 0.3, [x + lean, y + th, z], h * 0.022 + 0.18, mul(bark, 0.8), mul(bark, 0.95), 7);

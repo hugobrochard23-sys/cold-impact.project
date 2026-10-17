@@ -366,8 +366,8 @@
     // forêt de pins de chaque côté (le couloir central reste dégagé)
     // v117 : FORÊT — sapins à étages et feuillus en facettes (CC.Trees), serrés des deux côtés avec un fond de grands arbres ; buissons, rochers moussus, souches et troncs couchés
     const plant = (dc, lx, r, far) => {
-      if (!S.inClip(dc)) return; const p = S.at(dc, lx, 0), conif = r() < (far ? 0.75 : 0.58), h = far ? r.between([26, 44]) : r.between([15, 30]);
-      if (conif) CC.Trees.conifer(S.b, p[0], p[1], p[2], h, r, { far }); else CC.Trees.broadleaf(S.b, p[0], p[1], p[2], h * 0.85, r, { autumn: r() < 0.03, far });
+      if (!S.inClip(dc)) return; const p = S.at(dc, lx, 0), conif = r() < (far ? 0.62 : 0.42), h = far ? r.between([26, 44]) : r.between([15, 30]);
+      if (conif) CC.Trees.conifer(S.b, p[0], p[1], p[2], h, r, { far }); else CC.Trees.broadleaf(S.b, p[0], p[1], p[2], h * 0.85, r, { autumn: r() < 0, far });
       if (!far && Math.abs(lx - L.lx) < 34) S.b.box({ p: [p[0], p[1] + h * 0.4, p[2]], s: [h * 0.06 + 0.7, h * 0.8, h * 0.06 + 0.7], render: false });   // le tronc est solide
     };
     for (const sg of [-1, 1]) {
