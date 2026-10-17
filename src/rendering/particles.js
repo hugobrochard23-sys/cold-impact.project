@@ -120,9 +120,12 @@
         }
       }
       inst.count = this.n;
-      inst.instanceMatrix.needsUpdate = true;
-      if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
-      if (this.alpha) this.iAlpha.needsUpdate = true;
+      // v189 : seules les particules vivantes sont envoyees a la carte graphique (avant : tout le tampon, 700 a 1600 instances x 3 tampons x 12 groupes, a chaque image, meme vide)
+      if (this.n > 0 || this._was) {
+        const up = (at, cnt) => { at.needsUpdate = true; if (at.updateRange) { at.updateRange.offset = 0; at.updateRange.count = Math.max(cnt, 1); } };
+        up(inst.instanceMatrix, this.n * 16); if (inst.instanceColor) up(inst.instanceColor, this.n * 3); if (this.alpha) up(this.iAlpha, this.n);
+      }
+      this._was = this.n > 0;
     }
 
     clear() { this.n = 0; this.mesh.count = 0; }

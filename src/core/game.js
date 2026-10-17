@@ -86,6 +86,14 @@
       this.resize();
     }
 
+    // v189 : resolution dynamique : seul le rendu 3D change de taille (pas l'interface, pas la page) quand quality.scale varie
+    applyRenderScale() {
+      if (!this._cw) return;
+      const pr = this.testMode ? 1 : Math.min(window.devicePixelRatio || 1, CC.CONFIG.render.maxPixelRatio) * ((this.quality && this.quality.scale) || 1);
+      this.renderer.setPixelRatio(pr); this.renderer.setSize(this._cw, this._ch, false);
+      this.postfx.setSize(Math.round(this._cw * pr), Math.round(this._ch * pr));
+    }
+
     // ---------- environnement ----------
     initEnvironment() {
       this.skyMat = new THREE.ShaderMaterial({
@@ -196,7 +204,8 @@
       }
       else if (ch > h) { ch = h; cw = Math.round(h * ar); }
       this.root.style.width = cw + 'px'; this.root.style.height = ch + 'px';
-      const pr = this.testMode ? 1 : Math.min(window.devicePixelRatio || 1, CC.CONFIG.render.maxPixelRatio);
+      this._cw = cw; this._ch = ch;
+      const pr = this.testMode ? 1 : Math.min(window.devicePixelRatio || 1, CC.CONFIG.render.maxPixelRatio) * ((this.quality && this.quality.scale) || 1);   // v189 : x echelle dynamique (quality.js)
       this.renderer.setPixelRatio(pr);
       this.renderer.setSize(cw, ch, false);
       this.canvas.style.width = cw + 'px'; this.canvas.style.height = ch + 'px';
