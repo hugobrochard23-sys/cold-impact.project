@@ -25,18 +25,18 @@
   const _br = EVO.beginRun;
   EVO.beginRun = (g) => { _br(g); EVO.seaLevel = EVO.stage(g) === 2 ? 0 : undefined; g.evoGust = null; g.evoLight = null; };
   // --- sous l'eau : couleur de l'eau qui s'assombrit avec la profondeur, eau claire (on voit loin), lumière qui descend
-  const UW_TOP = C3('#58c4e6'), UW_DEEP = C3('#0c4a6e'), UW_HOR = C3('#3aa8d0'), _c = new T3.Color();
+  const UW_TOP = C3('#4fd2f2'), UW_DEEP = C3('#0a4a88'), UW_HOR = C3('#38b8e6'), UW_FAR = C3('#0e5aa0'), _c = new T3.Color();   // v190 : turquoise lumineux pres, bleu profond au loin
   const _am = EVO.applyMood;
   EVO.applyMood = (g, m) => {
     _am(g, m);
     if (EVO.seaLevel === undefined || !g.uwK || g.uwK < 0.01) { if (EVO.seaLevel !== undefined) g.fogBase = null; return; }
     const k = g.uwK, rk = g.rocket, depth = U.clamp(-(rk && rk.active ? rk.pos.y : -20) / 110, 0, 1), f = g.scene.fog, u = g.skyMat.uniforms;
     _c.copy(UW_TOP).lerp(UW_DEEP, depth * 0.85);
-    f.color.lerp(_c, k); f.near = U.lerp(f.near, 8, k); f.far = U.lerp(f.far, 380 - 190 * depth, k); g.renderer.setClearColor(f.color); g.fogBase = null;
+    _c.lerp(UW_FAR, 0.3); f.color.lerp(_c, k); _c.copy(UW_TOP).lerp(UW_DEEP, depth * 0.85); f.near = U.lerp(f.near, 8, k); f.far = U.lerp(f.far, 380 - 190 * depth, k); g.renderer.setClearColor(f.color); g.fogBase = null;
     u.cloud.value *= (1 - k); u.top.value.lerp(_c, k); u.horizon.value.lerp(_c, k); u.bottom.value.lerp(UW_DEEP, k * 0.7);
-    g.hemi.color.lerp(C3('#b8f0ff'), k); g.hemi.groundColor.lerp(C3('#14566e'), k); g.hemi.intensity = U.lerp(g.hemi.intensity, 1.0 - 0.38 * depth, k); g.ambient.intensity = U.lerp(g.ambient.intensity, 0.34, k);
+    g.hemi.color.lerp(C3('#c4f6ff'), k); g.hemi.groundColor.lerp(C3('#238a9c'), k); g.hemi.intensity = U.lerp(g.hemi.intensity, 1.0 - 0.38 * depth, k); g.ambient.intensity = U.lerp(g.ambient.intensity, 0.34, k);
     g.sun.intensity = U.lerp(g.sun.intensity, 0.95 * (1 - 0.7 * depth), k); g.sun.color.lerp(C3('#e8fbff'), k);
-    if (g.postParams) { g.postParams.tint = '#' + C3('#ffffff').lerp(C3('#cdf4ff'), k).getHexString(); g.postParams.bloomStrength = Math.max(g.postParams.bloomStrength, 0.12 * k); }
+    if (g.postParams) { g.postParams.tint = '#' + C3('#ffffff').lerp(C3('#cdf4ff'), k).getHexString(); g.postParams.bloomStrength = Math.max(g.postParams.bloomStrength, 0.12 * k); g.postParams.saturation = U.lerp(g.postParams.saturation === undefined ? 1 : g.postParams.saturation, 1.16, k); g.postParams.contrast = U.lerp(g.postParams.contrast === undefined ? 1 : g.postParams.contrast, 1.06, k); }
     g.nightK = U.lerp(g.nightK || 0, 0.35 * depth, k);
   };
   // --- neige marine : des particules qui défilent autour de la caméra quand on est sous l'eau (donnent le sens de la vitesse)
@@ -94,8 +94,60 @@
     tube.position.copy(g.pad.origin).add(new V(0, 0.3, 1.2)); tube.rotation.set(-g.pad.pitch || 0, 0, 0);
     if (Math.random() < dt * 10 && g.effects) { const p = g.pad.origin.clone().add(new V(rr(-1, 1), rr(-0.8, 0.8), rr(-2, 2))); g.effects.sparks.emit({ pos: p, vel: new V(rr(-0.3, 0.3), rr(0.8, 2), rr(-0.3, 0.3)), life: rr(1.5, 3), s0: 0.08, s1: 0.05, s2: 0.02, cols: [new T3.Color('#e8fbff')], drag: 0.4, grav: -1.2, a: 0.8, fout: 0.5 }); }
   };
+  // ---------- v190 : rayons de lumiere, caustiques, halo de tuyere ----------
+  CC.UWT = { value: 0 };   // temps partage des caustiques
+  CC.Caustics = (m) => {   // motif lumineux anime (somme de sinus, sans texture) ajoute au sable : plus fort pres de la surface, faible en profondeur
+    m.onBeforeCompile = (sh) => {
+      sh.uniforms.uT = CC.UWT;
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', 'varying vec3 vWP;\n#include <common>').replace('#include <begin_vertex>', '#include <begin_vertex>\nvWP = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', 'varying vec3 vWP; uniform float uT;\n#include <common>').replace('#include <fog_fragment>', '#include <fog_fragment>\n' + CAUS);
+    };
+  };
+  const CAUS = [
+    '{ vec2 q = vWP.xz * 0.16; float a = sin( q.x * 3.1 + uT * 0.9 + sin( q.y * 2.3 + uT * 0.6 ) ), b = sin( q.y * 3.7 - uT * 0.8 + sin( q.x * 2.1 - uT * 0.5 ) ), c = sin( ( q.x + q.y ) * 2.7 + uT * 0.7 );',
+    '  float v = pow( clamp( 0.5 + 0.34 * ( a * b + 0.5 * c ), 0.0, 1.0 ), 4.0 ), f = smoothstep( -105.0, -22.0, vWP.y );',
+    '  gl_FragColor.rgb += vec3( 0.20, 0.50, 0.56 ) * v * ( 0.15 + 0.85 * f ); }'].join(String.fromCharCode(10));
+  let rayTex = null, radTex = null;
+  const mkTex = (w, h, fn) => { const c = document.createElement('canvas'); c.width = w; c.height = h; fn(c.getContext('2d'), w, h); return new T3.CanvasTexture(c); };
+  // v190 : les 10 rayons forment UN SEUL mesh (1 appel de dessin) dont les sommets sont replaces chaque image (quads face a la camera, legerement inclines, couleur = intensite)
+  let rays = null;
+  const RN = 10, RU = [];
+  const raysTick = (g) => {
+    if (EVO.seaLevel === undefined || !g.scene) { if (rays) rays.visible = false; return; }
+    const cam = g.camera.position, uw = (g.uwK || 0) > 0.3 && cam.y < EVO.seaLevel - 1 && !g.cine3d;
+    if (!rays) {
+      rayTex = mkTex(64, 256, (x, w, h) => { const gv = x.createLinearGradient(0, 0, 0, h); gv.addColorStop(0, 'rgba(255,255,255,1)'); gv.addColorStop(0.4, 'rgba(255,255,255,0.5)'); gv.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = gv; x.fillRect(0, 0, w, h); x.globalCompositeOperation = 'destination-in'; const gh = x.createLinearGradient(0, 0, w, 0); gh.addColorStop(0, 'rgba(0,0,0,0)'); gh.addColorStop(0.5, 'rgba(0,0,0,1)'); gh.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = gh; x.fillRect(0, 0, w, h); });
+      const geo = new T3.BufferGeometry(), uv = [], idx = [];
+      for (let i = 0; i < RN; i++) { RU.push({ ox: rr(-80, 80), oz: rr(-80, 80), w: rr(7, 16), ph: rr(0, 6.28), k: rr(0.7, 1.2) }); uv.push(0, 1, 1, 1, 0, 0, 1, 0); const b = i * 4; idx.push(b, b + 2, b + 1, b + 1, b + 2, b + 3); }
+      geo.setAttribute('position', new T3.BufferAttribute(new Float32Array(RN * 12), 3)); geo.setAttribute('color', new T3.BufferAttribute(new Float32Array(RN * 12), 3)); geo.setAttribute('uv', new T3.Float32BufferAttribute(uv, 2)); geo.setIndex(idx);
+      rays = new T3.Mesh(geo, new T3.MeshBasicMaterial({ map: rayTex, vertexColors: true, transparent: true, blending: T3.AdditiveBlending, depthWrite: false, fog: false, side: T3.DoubleSide })); rays.renderOrder = -3; rays.frustumCulled = false;
+    }
+    if (rays.parent !== g.scene) g.scene.add(rays);
+    rays.visible = uw; if (!uw) return;
+    const rk = g.rocket, depth = U.clamp(-(rk && rk.active ? rk.pos.y : -20) / 110, 0, 1), t = EVO.clock, P = rays.geometry.attributes.position, C = rays.geometry.attributes.color, y0 = EVO.seaLevel, hh = 75;
+    for (let i = 0; i < RN; i++) {
+      const u = RU[i], wx = ((((u.ox - cam.x) % 160) + 240) % 160) - 80, wz = ((((u.oz - cam.z) % 160) + 240) % 160) - 80, cx = cam.x + wx, cz = cam.z + wz;
+      const yaw = Math.atan2(cam.x - cx, cam.z - cz), rx = Math.cos(yaw), rz = -Math.sin(yaw), hw = u.w * (1 + 0.15 * Math.sin(t * 0.3 + u.ph)) / 2, sh = 12;
+      const edge = Math.min(1, (80 - Math.max(Math.abs(wx), Math.abs(wz))) / 25), near = Math.min(1, Math.hypot(wx, wz) / 14), a = 0.16 * u.k * (0.7 + 0.3 * Math.sin(t * 0.5 + u.ph * 2)) * edge * near * (1 - 0.6 * depth);
+      const k = i * 12;   // haut gauche, haut droit, bas gauche, bas droit
+      P.array[k] = cx + rx * (sh - hw); P.array[k + 1] = y0; P.array[k + 2] = cz + rz * (sh - hw);
+      P.array[k + 3] = cx + rx * (sh + hw); P.array[k + 4] = y0; P.array[k + 5] = cz + rz * (sh + hw);
+      P.array[k + 6] = cx + rx * (-sh - hw); P.array[k + 7] = y0 - 2 * hh; P.array[k + 8] = cz + rz * (-sh - hw);
+      P.array[k + 9] = cx + rx * (-sh + hw); P.array[k + 10] = y0 - 2 * hh; P.array[k + 11] = cz + rz * (-sh + hw);
+      for (let q = 0; q < 4; q++) { C.array[k + q * 3] = 0.75 * a; C.array[k + q * 3 + 1] = 0.96 * a; C.array[k + q * 3 + 2] = a; }
+    }
+    P.needsUpdate = true; C.needsUpdate = true;
+  };
+  const haloTick = (g) => {
+    const rk = g.rocket; if (!rk || !rk.mesh || EVO.seaLevel === undefined) return;
+    const J = rk.mesh.userData.jet; if (!J) return;
+    if (!J.halo) { if (!radTex) radTex = mkTex(64, 64, (x, w, h) => { const gr = x.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.35, 'rgba(255,240,180,0.55)'); gr.addColorStop(1, 'rgba(255,220,120,0)'); x.fillStyle = gr; x.fillRect(0, 0, w, h); });
+      J.halo = new T3.Sprite(new T3.SpriteMaterial({ map: radTex, color: '#fff0b8', blending: T3.AdditiveBlending, transparent: true, depthWrite: false, fog: false, opacity: 0 })); J.halo.position.set(0, 0, 0.05); J.group.add(J.halo); }
+    const k = rk.thrustK || 0, f = rk.flick === undefined ? 0.5 : rk.flick;
+    J.halo.material.opacity = 0.26 * k * (0.8 + 0.4 * f); J.halo.scale.setScalar(0.6 + 0.5 * k * (0.9 + 0.2 * f));
+  };
   const _fr = EVO.frame;
-  EVO.frame = (g, dt) => { _fr(g, dt); snowTick(g, dt); stormTick(g, dt); padTick(g, dt); seaTick(g); if (g.audio && g.audio.setUnder) g.audio.setUnder(EVO.seaLevel !== undefined && !g.cine3d ? U.clamp(g.uwK || 0, 0, 1) : 0); };
+  EVO.frame = (g, dt) => { _fr(g, dt); CC.UWT.value = EVO.clock || 0; snowTick(g, dt); stormTick(g, dt); padTick(g, dt); seaTick(g); raysTick(g); haloTick(g); if (g.audio && g.audio.setUnder) g.audio.setUnder(EVO.seaLevel !== undefined && !g.cine3d ? U.clamp(g.uwK || 0, 0, 1) : 0); };
   // pictogramme de rafale (flèches de chaque côté de l'écran) dans le HUD
   const _hd = EVO.drawHud;
   EVO.drawHud = (hud, ctx, g, W, H, px) => {

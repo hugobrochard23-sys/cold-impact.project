@@ -189,7 +189,16 @@
   const solidAt = (b, x, y, z) => { if (solidIn(b._pave, x, y, z)) return true; for (const r of GREC) if (r.b !== b && r.b._pave && solidIn(r.b._pave, x, y, z)) return true; return false; };
   const GREC = [];   // v181 : herbe des derniers troncons : une dalle posee par un troncon voisin efface les touffes deja creees dessous
   // v179 : HERBE EN TOUFFES ALLONGEES. Meme couleur que le sol (base un peu plus sombre, pointe = couleur du sol). Densite repartie sur toute la largeur ; les touffes lointaines ont moins de brins (legerete).
+  // v190 : ALGUES : rubans a 5 segments qui ondulent avec le meme shader que l'herbe (aSway = amplitude, 0 a la base). Tous les rubans d'un troncon forment un seul mesh.
+  Z.addSway = (S, x, y, z, h, w, cb, ct, far) => {
+    const c = S.ctx, B = c.swayBuf || (c.swayBuf = { pos: [], nor: [], col: [], sway: [], far: [] }), ph = Math.random() * 6.28, yaw = Math.random() * 3.14, px = Math.cos(yaw), pz = Math.sin(yaw), cA = new THREE.Color(cb), cB = new THREE.Color(ct), cc = new THREE.Color(), N = 5, row = [];
+    for (let i = 0; i <= N; i++) { const t = i / N, wd = w * (1 - 0.82 * t) / 2, ox = Math.sin(t * 2.4 + ph) * h * 0.05, oz = Math.cos(t * 1.9 + ph) * h * 0.04; cc.copy(cA).lerp(cB, t); row.push([x + ox - px * wd, y + h * t, z + oz - pz * wd, x + ox + px * wd, y + h * t, z + oz + pz * wd, cc.r, cc.g, cc.b, h * t * t * 0.9]); }
+    const v = (r, k) => { B.pos.push(r[k * 3], r[k * 3 + 1], r[k * 3 + 2]); B.nor.push(0, 1, 0); B.col.push(r[6], r[7], r[8]); B.sway.push(r[9]); B.far.push(far || 420); };
+    for (let i = 0; i < N; i++) { const a = row[i], b = row[i + 1]; v(a, 0); v(a, 1); v(b, 0); v(a, 1); v(b, 1); v(b, 0); }
+  };
   Z.flushGrass = function (ctx) {
+    if (ctx.swayBuf && ctx.swayBuf.pos.length) { const B = ctx.swayBuf; ctx.swayBuf = null; const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(B.pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(B.nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(B.col, 3)); g.setAttribute('aSway', new THREE.Float32BufferAttribute(B.sway, 1)); g.setAttribute('aFar', new THREE.Float32BufferAttribute(B.far, 1)); g.computeBoundingSphere(); g.boundingSphere.radius += 6;
+      const m = new THREE.Mesh(g, grassMat()); m.frustumCulled = true; m.onBeforeRender = (r, sc, cam) => { GU.value = performance.now() / 1000; GCAM.value.copy(cam.position); }; ctx.b.add(m); }
     const jobs = ctx.grassJobs; if (!jobs || !jobs.length) return; ctx.grassJobs = null;
     const T = ctx.T, b = ctx.b;
     // v185 : un mesh par tranche de 100 m et par niveau de detail : 0 = touffes de base (visibles jusqu'a 260 m), 1 = touffes de remplissage et fleurs (fondues puis masquees au-dela de 150 m).

@@ -120,7 +120,7 @@
       const col = top > 0.35 && !o.noMoss ? lerp3(mul(base, tw), moss, Math.min(0.85, (top - 0.3) * 1.6)) : mul(base, tw * (0.72 + 0.3 * Math.max(0, top + 0.3)));
       m.tri([a[0], a[1], a[2]], [c[0], c[1], c[2]], [d[0], d[1], d[2]], col, col, col);
     }
-    shade(m, x, y, z, s * 1.2, '#3a6a3a'); ico.dispose(); const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
+    shade(m, x, y, z, s * 1.2, o.shade || '#3a6a3a'); ico.dispose(); const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
   };
 
   T.stump = function (b, x, y, z, s, rnd) {
