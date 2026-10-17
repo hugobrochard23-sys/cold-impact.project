@@ -1,7 +1,7 @@
 /* v183 : PALETTE UNIQUE du decor du niveau 1 (une seule direction artistique : prairie low-poly lumineuse et naturelle) : ciel, brume, herbe, briques, beton. */
 (function () {
   const EVO = CC.EVO; if (!EVO || !EVO.on) return;
-  const pal = { sky: ['#1676e8', '#9fd8fa', '#bfe0f2'], grass: ['#5a9c42', '#4f9440', '#6cae4c'], brick: '#ffd2bc', conc: '#f0e8d8' };
+  const pal = { sky: ['#1676e8', '#9fd8fa', '#bfe0f2'], grass: ['#5aa23a', '#4a9235', '#79b84d'], brick: '#ffd2bc', conc: '#f0e8d8' };
   CC.PALETTE = { mat: { brick: pal.brick, concrete: pal.conc } };
   // ciel et brume (aube, matin, jour)
   const M = EVO.MOOD || {}, C3 = (h) => new THREE.Color(h);

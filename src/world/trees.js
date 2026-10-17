@@ -34,15 +34,17 @@
   };
   function this_quad(m, a, b, c, d, ca, cb, cc, cd) { m.quad(a, b, c, d, ca, cb, cc, cd); }
 
-  const CONIFER = [['#103a2c', '#26734a'], ['#164a36', '#398c55'], ['#1e6042', '#398c55'], ['#164a36', '#26734a'], ['#103a2c', '#398c55']];   // v183 : sapins nuances, faces ombragees -> eclairees
-  const BROAD = [['#3b6337', '#80b94b'], ['#527f3d', '#a6d65b'], ['#527f3d', '#c0e879'], ['#3b6337', '#a6d65b'], ['#527f3d', '#80b94b']], BIRCH = [['#527f3d', '#a6d65b'], ['#3b6337', '#80b94b']];
+  const CONIFER = [['#154832', '#398b54'], ['#1d5d40', '#398b54'], ['#154832', '#27724a'], ['#1d5d40', '#27724a'], ['#103a2c', '#27724a']];   // v184 : couleurs de reference x0.86 (la lumiere les remonte)
+  const BROAD = [['#3b6237', '#79b34b'], ['#507f3c', '#9dd05a'], ['#507f3c', '#b8e36b'], ['#3b6237', '#9dd05a'], ['#507f3c', '#79b34b']], BIRCH = [['#507f3c', '#9dd05a'], ['#3b6237', '#79b34b']];
   const AUTUMN = [['#8a5a22', '#c0873a'], ['#7a4a1e', '#b8742c']];
-  const BARK = ['#795438', '#a17a50', '#68482f', '#49352a'];
+  const BARK = ['#795438', '#a17a50', '#503a2b', '#795438'];
+  const hexk = (h, k) => mul(hex(h), k);
+
   // v183 : ombre de contact (disque sombre pose juste au-dessus du sol, tres leger : 8 triangles)
   const shade = (m, x, y, z, r, col) => { const c = hex(col); for (let k = 0; k < 8; k++) { const a0 = k / 8 * 6.2832, a1 = (k + 1) / 8 * 6.2832; m.tri([x, y + 0.07, z], [x + Math.cos(a0) * r, y + 0.07, z + Math.sin(a0) * r * 0.85], [x + Math.cos(a1) * r, y + 0.07, z + Math.sin(a1) * r * 0.85], c, c, c); } };
 
   T.conifer = function (b, x, y, z, h, rnd, o) {
-    o = o || {}; const m = new Mesh(), pal = CONIFER[Math.floor(rnd() * CONIFER.length)], dark = hex(pal[0]), light = hex(pal[1]), bark = hex(BARK[Math.floor(rnd() * BARK.length)]);
+    o = o || {}; const m = new Mesh(), pal = CONIFER[Math.floor(rnd() * CONIFER.length)], dark = hexk(pal[0], 0.9 + 0.1 * rnd()), light = hexk(pal[1], 0.82 + 0.1 * rnd()), bark = hex(BARK[Math.floor(rnd() * BARK.length)]);
     const tiers = o.far ? 5 + Math.floor(rnd() * 2) : 7 + Math.floor(rnd() * 3), R = h * rr(rnd, 0.17, 0.23), lean = [rr(rnd, -0.025, 0.025) * h, rr(rnd, -0.025, 0.025) * h];
     const cx = (t) => x + lean[0] * t, cz = (t) => z + lean[1] * t;
     // tronc évasé à la base, qui monte presque jusqu'à la pointe
@@ -87,7 +89,7 @@
   }
 
   T.broadleaf = function (b, x, y, z, h, rnd, o) {
-    o = o || {}; const birch = !o.autumn && !o.far && rnd() < 0.24, m = new Mesh(), PL = o.autumn ? AUTUMN : birch ? BIRCH : BROAD, pal = PL[Math.floor(rnd() * PL.length)], cDark = hex(pal[0]), cLight = hex(pal[1]), bark = birch ? hex('#d6d2c4') : hex(BARK[Math.floor(rnd() * BARK.length)]);
+    o = o || {}; const birch = !o.autumn && !o.far && rnd() < 0.24, m = new Mesh(), PL = o.autumn ? AUTUMN : birch ? BIRCH : BROAD, pal = PL[Math.floor(rnd() * PL.length)], cDark = hexk(pal[0], 0.9 + 0.1 * rnd()), cLight = hexk(pal[1], 0.8 + 0.1 * rnd()), bark = birch ? hex('#d6d2c4') : hex(BARK[Math.floor(rnd() * BARK.length)]);
     const th = h * (birch ? rr(rnd, 0.5, 0.6) : rr(rnd, 0.38, 0.48)), cr = h * (birch ? rr(rnd, 0.22, 0.28) : rr(rnd, 0.3, 0.38)), seed = rnd() * 100, lean = rr(rnd, -0.06, 0.06) * h;
     m.tube([x, y - 0.8, z], h * 0.05 + 0.45, [x, y + th * 0.25, z], h * 0.034 + 0.3, mul(bark, 0.65), mul(bark, 0.8), 8);
     m.tube([x, y + th * 0.25, z], h * 0.034 + 0.3, [x + lean, y + th, z], h * 0.022 + 0.18, mul(bark, 0.8), mul(bark, 0.95), 7);
@@ -99,19 +101,19 @@
       const a = i / nbl * 6.2832 + rnd() * 0.8, d = i === 0 ? 0 : cr * rr(rnd, 0.5, 0.95), rad = cr * (i === 0 ? rr(rnd, 0.8, 0.95) : rr(rnd, 0.42, 0.64));
       blob(m, x + lean + Math.cos(a) * d, y + th + cr * (i === 0 ? 0.55 : rr(rnd, 0.15, 0.55)), z + Math.sin(a) * d, rad, 0.82, rnd, mul(cDark, 0.75), mul(cLight, 1.05), seed + i * 9.1, o.far);
     }
-    if (!o.far) shade(m, x, y, z, h * 0.26, '#2f6638');
+    if (!o.far) shade(m, x, y, z, h * 0.34, '#28633a');
     const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff', o.tint); g.dispose();
   };
 
   T.bush = function (b, x, y, z, s, rnd) {
-    const m = new Mesh(), pal = BROAD[Math.floor(rnd() * BROAD.length)], n = 2 + Math.floor(rnd() * 2), seed = rnd() * 100;
+    const m = new Mesh(), pal = BROAD[Math.floor(rnd() * BROAD.length)], n = 2 + Math.floor(rnd() * 2), seed = rnd() * 100; shade(m, x, y, z, s * 1.05, '#28633a');
     for (let i = 0; i < n; i++) blob(m, x + rr(rnd, -0.6, 0.6) * s, y + s * 0.38, z + rr(rnd, -0.6, 0.6) * s, s * rr(rnd, 0.6, 0.95), 0.75, rnd, mul(hex(pal[0]), 0.6), mul(hex(pal[1]), 0.82), seed + i * 5.3);
     const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
   };
 
   T.rock = function (b, x, y, z, s, rnd, o) {
     o = o || {}; const m = new Mesh(), ico = new THREE.IcosahedronGeometry(1, 1), P = ico.attributes.position, seed = rnd() * 50, ay = rnd() * 6.28, sx = rr(rnd, 0.9, 1.5), sz = rr(rnd, 0.8, 1.3);
-    const gray = o.gray || ['#c3cbd0', '#a1adb5', '#a1adb5', '#737f89', '#c3cbd0'][Math.floor(rnd() * 5)], moss = hex('#6a9a48'), base = hex(gray);
+    const gray = o.gray || ['#c2c9cd', '#9ca7af', '#9ca7af', '#737f89', '#beb096'][Math.floor(rnd() * 5)], moss = hex('#6a9a48'), base = hex(gray);
     const vert = (i) => { const px = P.getX(i), py = P.getY(i), pz = P.getZ(i), k = 0.78 + 0.4 * (Math.abs(Math.sin(px * 9.1 + py * 41.7 + pz * 23.3 + seed) * 43758.5453) % 1), cx = Math.cos(ay), sn = Math.sin(ay), X = px * sx * k, Z = pz * sz * k; return [x + (X * cx - Z * sn) * s, y + Math.max(py, -0.35) * 0.62 * k * s, z + (X * sn + Z * cx) * s, py]; };
     for (let i = 0; i < P.count; i += 3) {
       const a = vert(i), c = vert(i + 1), d = vert(i + 2), top = (a[3] + c[3] + d[3]) / 3, tw = 0.72 + 0.4 * ((Math.abs(Math.sin(i * 2.9 + seed)) * 10) % 1);
