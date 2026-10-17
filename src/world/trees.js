@@ -34,10 +34,12 @@
   };
   function this_quad(m, a, b, c, d, ca, cb, cc, cd) { m.quad(a, b, c, d, ca, cb, cc, cd); }
 
-  const CONIFER = [['#17583e', '#3fad60'], ['#104532', '#2e9a56'], ['#1b6a48', '#4cbb68'], ['#14503a', '#37a45c'], ['#1d6e4c', '#56c46c']];   // v182 : sapins etages vert profond -> vert vif
-  const BROAD = [['#28663a', '#8fd14a'], ['#2f7a3a', '#a6e04a'], ['#36863a', '#c4e84a'], ['#2c7038', '#7fc844'], ['#3a8a3c', '#b8e84c']], BIRCH = [['#3a8a3c', '#b8e84c'], ['#2f7a3a', '#a6e04a']];
+  const CONIFER = [['#103a2c', '#26734a'], ['#164a36', '#398c55'], ['#1e6042', '#398c55'], ['#164a36', '#26734a'], ['#103a2c', '#398c55']];   // v183 : sapins nuances, faces ombragees -> eclairees
+  const BROAD = [['#3b6337', '#80b94b'], ['#527f3d', '#a6d65b'], ['#527f3d', '#c0e879'], ['#3b6337', '#a6d65b'], ['#527f3d', '#80b94b']], BIRCH = [['#527f3d', '#a6d65b'], ['#3b6337', '#80b94b']];
   const AUTUMN = [['#8a5a22', '#c0873a'], ['#7a4a1e', '#b8742c']];
-  const BARK = ['#79502f', '#a87543', '#4b352a', '#6b4528'];
+  const BARK = ['#795438', '#a17a50', '#68482f', '#49352a'];
+  // v183 : ombre de contact (disque sombre pose juste au-dessus du sol, tres leger : 8 triangles)
+  const shade = (m, x, y, z, r, col) => { const c = hex(col); for (let k = 0; k < 8; k++) { const a0 = k / 8 * 6.2832, a1 = (k + 1) / 8 * 6.2832; m.tri([x, y + 0.07, z], [x + Math.cos(a0) * r, y + 0.07, z + Math.sin(a0) * r * 0.85], [x + Math.cos(a1) * r, y + 0.07, z + Math.sin(a1) * r * 0.85], c, c, c); } };
 
   T.conifer = function (b, x, y, z, h, rnd, o) {
     o = o || {}; const m = new Mesh(), pal = CONIFER[Math.floor(rnd() * CONIFER.length)], dark = hex(pal[0]), light = hex(pal[1]), bark = hex(BARK[Math.floor(rnd() * BARK.length)]);
@@ -68,6 +70,7 @@
     // cime
     const top = [cx(1), y + h * 1.02, cz(1)], tb = y + h * 0.9, tr = h * 0.03 + 0.15, ca = mul(light, 1.05), cb = mul(dark, 0.9);
     for (let k = 0; k < 5; k++) { const a0 = k / 5 * 6.2832, a1 = (k + 1) / 5 * 6.2832; m.tri(top, [cx(1) + Math.cos(a0) * tr, tb, cz(1) + Math.sin(a0) * tr], [cx(1) + Math.cos(a1) * tr, tb, cz(1) + Math.sin(a1) * tr], ca, cb, cb); }
+    if (!o.far) shade(m, x, y, z, h * 0.2, '#2c6039');
     const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff', o.tint); g.dispose();
   };
 
@@ -96,6 +99,7 @@
       const a = i / nbl * 6.2832 + rnd() * 0.8, d = i === 0 ? 0 : cr * rr(rnd, 0.5, 0.95), rad = cr * (i === 0 ? rr(rnd, 0.8, 0.95) : rr(rnd, 0.42, 0.64));
       blob(m, x + lean + Math.cos(a) * d, y + th + cr * (i === 0 ? 0.55 : rr(rnd, 0.15, 0.55)), z + Math.sin(a) * d, rad, 0.82, rnd, mul(cDark, 0.75), mul(cLight, 1.05), seed + i * 9.1, o.far);
     }
+    if (!o.far) shade(m, x, y, z, h * 0.26, '#2f6638');
     const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff', o.tint); g.dispose();
   };
 
@@ -107,14 +111,14 @@
 
   T.rock = function (b, x, y, z, s, rnd, o) {
     o = o || {}; const m = new Mesh(), ico = new THREE.IcosahedronGeometry(1, 1), P = ico.attributes.position, seed = rnd() * 50, ay = rnd() * 6.28, sx = rr(rnd, 0.9, 1.5), sz = rr(rnd, 0.8, 1.3);
-    const gray = o.gray || ['#d0d5d8', '#b4bcc2', '#9aa6ae', '#7d8b98', '#d0d5d8'][Math.floor(rnd() * 5)], moss = hex('#74b840'), base = hex(gray);
+    const gray = o.gray || ['#c3cbd0', '#a1adb5', '#a1adb5', '#737f89', '#c3cbd0'][Math.floor(rnd() * 5)], moss = hex('#6a9a48'), base = hex(gray);
     const vert = (i) => { const px = P.getX(i), py = P.getY(i), pz = P.getZ(i), k = 0.78 + 0.4 * (Math.abs(Math.sin(px * 9.1 + py * 41.7 + pz * 23.3 + seed) * 43758.5453) % 1), cx = Math.cos(ay), sn = Math.sin(ay), X = px * sx * k, Z = pz * sz * k; return [x + (X * cx - Z * sn) * s, y + Math.max(py, -0.35) * 0.62 * k * s, z + (X * sn + Z * cx) * s, py]; };
     for (let i = 0; i < P.count; i += 3) {
-      const a = vert(i), c = vert(i + 1), d = vert(i + 2), top = (a[3] + c[3] + d[3]) / 3, tw = 0.74 + 0.46 * ((Math.abs(Math.sin(i * 2.9 + seed)) * 10) % 1);
-      const col = top > 0.35 && !o.noMoss ? lerp3(mul(base, tw), moss, Math.min(0.85, (top - 0.3) * 1.6)) : mul(base, tw * (0.78 + 0.3 * Math.max(0, top + 0.3)));
+      const a = vert(i), c = vert(i + 1), d = vert(i + 2), top = (a[3] + c[3] + d[3]) / 3, tw = 0.72 + 0.4 * ((Math.abs(Math.sin(i * 2.9 + seed)) * 10) % 1);
+      const col = top > 0.35 && !o.noMoss ? lerp3(mul(base, tw), moss, Math.min(0.85, (top - 0.3) * 1.6)) : mul(base, tw * (0.72 + 0.3 * Math.max(0, top + 0.3)));
       m.tri([a[0], a[1], a[2]], [c[0], c[1], c[2]], [d[0], d[1], d[2]], col, col, col);
     }
-    ico.dispose(); const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
+    shade(m, x, y, z, s * 1.2, '#3a6a3a'); ico.dispose(); const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
   };
 
   T.stump = function (b, x, y, z, s, rnd) {
