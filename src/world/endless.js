@@ -462,7 +462,28 @@
     c.builder.dispose();
   }
 
+  /* v198 : ecran de chargement. Avant le premier vol d'un niveau on construit quelques troncons repartis sur tout le niveau, on compile leurs shaders, puis on les detruit : les
+     * programmes restent en memoire (les materiaux ne sont plus liberes), donc plus aucune compilation pendant le vol (c'etait la source des pics de 100-250 ms). */
+  function* prewarmG(game, L, st) {
+    const T = L.track, cfg = C(), n = Math.max(4, Math.ceil(((L && L.len) || 8500) / cfg.chunkLen)), ks = [];
+    for (let k = 2; k <= n + 1; k += 2) ks.push(k);
+    const spawned = T.spawned, E = CC.EVO, dynN = E && E.dyn ? E.dyn.length : 0, rob = E ? E.robot : null;
+    for (let i = 0; i < ks.length; i++) {
+      st.p = i / ks.length;
+      const gen = buildChunkG(game, T, ks[i]); let r; while (!(r = gen.next()).done) yield;
+      if (CC.Zones.grassWork) CC.Zones.grassWork(1e9);
+      yield;
+      try { game.renderer.compile(game.scene, game.camera); } catch (err) { /* sans effet */ }
+      yield;
+      disposeChunk(game, r.value);
+      yield;
+    }
+    T.spawned = spawned; if (E) { if (E.dyn) E.dyn.length = Math.min(E.dyn.length, dynN); E.robot = rob; }
+    st.p = 1;
+  }
+
   /* ---------- état d'une partie : tronçons, distance, paliers, zones, essence ---------- */
+  E.prewarmG = prewarmG;
   class Run {
     constructor(game, level) {
       this.game = game; this.level = level; this.T = level.track;

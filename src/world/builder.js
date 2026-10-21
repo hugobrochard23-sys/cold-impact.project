@@ -549,7 +549,7 @@
     dispose() {
       this.scene.remove(this.root);
       this.root.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
-      for (const m of this.materials.values()) m.dispose();
+      /* v198 : materiaux non liberes (leurs programmes de shader restent compiles ; recompiler en plein vol = pics) */
     }
   }
 

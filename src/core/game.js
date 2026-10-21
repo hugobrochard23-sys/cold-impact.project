@@ -348,6 +348,7 @@
       const ordP = this.params.get('order'), L = CC.Endless.level(seed, { zones: this.testMode ? null : this.progress.unlockedWorlds(), order: ld ? ld.order : (ordP ? ordP.split(',') : null), env: this.params.get('env') || (ld && ld.env) || null, levelLen: ld && ld.len, difK: ld && ld.difK, bossHp: ld && ld.hp, bossType: ld && ld.boss, padStyle: ld && ld.n, theme: ld && ld.theme, tutD: ld && ld.tutD, tutRel: ld && ld.tutRel, scenes: ld && ld.scenes, bossWall: ld && ld.bossWall, bossEnt: ld && ld.bossEnt, tgtGap: ld && ld.tgtGap, mids: ld && ld.mids, bossTint: ld && ld.bossTint, bossVar: ld && ld.bossVar, event: ld && ld.event, ease: ld && ld.ease, nightOk: ld && ld.nightOk, dens: ld && ld.dens });
       this.loadLevelFrom(L, -1);
       this.endlessRun = new CC.Endless.Run(this, L);
+      if ((!this.testMode || this.params.has('warm')) && CC.EVO && CC.EVO.on && ld && !(this.warmedLv || (this.warmedLv = {}))[ld.n || seed]) { this.warmedLv[ld.n || seed] = true; const st = { p: 0 }; this.warm = { st, gen: CC.Endless.prewarmG(this, L, st) }; }   // v198 : ecran de chargement (shaders compiles avant le vol)
       this.startGhost(ld);   // v083 : après le chargement (qui efface les anciens objets)
       this.progress.beginRun(); this.reviveUsed = false; this.hudFeed.length = 0; this.cellHap = 0; this.cellSnd = 0;
       if (opts.home) { this.enterPad(); return; }
@@ -1253,7 +1254,8 @@
       let sdt = dt; if (this.hitStop > 0) { this.hitStop -= dt; sdt = dt * (this.hitScale || 0.18); if (this.hitStop <= 0) this.hitScale = 0; }
       if (this.chromaBurst) this.chromaBurst = this.chromaBurst < 0.001 ? 0 : this.chromaBurst * 0.95;   // v066 : ralenti à chaque destruction
       const tutHold = CC.Tutorial && this.state === 'FLIGHT' && !this.paused ? CC.Tutorial.update(this, dt) : false;   // v089 : tutoriel interactif = jeu figé tant que le geste n'est pas fait
-      if (!this.paused && this.state !== 'BOOT' && !tutHold) this.safe(() => this.update(this.endlessRun && this.state === 'CRASHED' && this.impactT < 0.6 ? sdt * 0.35 : sdt));   // v040 : ralenti sur la collision
+      if (this.warm) { const t0 = performance.now(); try { for (;;) { if (this.warm.gen.next().done) { this.warm = null; break; } if (performance.now() - t0 > 12) break; } } catch (err) { this.warm = null; } }
+      if (!this.paused && this.state !== 'BOOT' && !this.warm && !tutHold) this.safe(() => this.update(this.endlessRun && this.state === 'CRASHED' && this.impactT < 0.6 ? sdt * 0.35 : sdt));   // v040 : ralenti sur la collision
       else { this.input.poll(0); this.rig.update(0); }
       try { this.render(performance.now() / 1000); this.renderErr = 0; }
       catch (e) { (window.__errs || (window.__errs = [])).push(String(e && e.stack || e).slice(0, 300)); if (this.testMode) throw e; if ((this.renderErr = (this.renderErr || 0) + 1) === 20) this.recoverBlack('exception'); }
