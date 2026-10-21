@@ -378,12 +378,14 @@
   // v202 : VRAIES COLLINES : une bande continue de chaque cote du couloir, hauteur et largeur definies par la distance ABSOLUE (aucune couture entre troncons, aucun cercle) ;
   // le relief monte doucement depuis la prairie, s'etale, puis se perd dans la brume. Les montagnes du fond forment un anneau complet autour du joueur (rendering/horizon.js).
   const hsn = (d, s) => 0.5 + 0.5 * (Math.sin(d / 173 + s * 1.7) * 0.5 + Math.sin(d / 67 + s * 3.1 + 1.3) * 0.3 + Math.sin(d / 29 + s * 5.3) * 0.2);
+  const HEND = { v: 0 };   // fin de la bande en cours : la colline s'abaisse doucement jusqu'a rien (aucune coupure franche)
   const hillH = (d, s, u) => {
-    const A = 16 + 74 * Math.pow(hsn(d, s), 1.4), W = 110 + 80 * (0.5 + 0.5 * Math.sin(d / 211 + s * 2.1)), q = u / W, t = Math.min(1, q / 0.55), rise = t * t * (3 - 2 * t), k = Math.max(0, Math.min(1, (q - 0.55) / 1.3));
+    const tp = HEND.v ? 1 - Math.max(0, Math.min(1, (d - (HEND.v - 140)) / 140)) : 1, A = tp * (16 + 74 * Math.pow(hsn(d, s), 1.4)), W = 110 + 80 * (0.5 + 0.5 * Math.sin(d / 211 + s * 2.1)), q = u / W, t = Math.min(1, q / 0.55), rise = t * t * (3 - 2 * t), k = Math.max(0, Math.min(1, (q - 0.55) / 1.3));
     return A * (rise - 0.35 * rise * k * k * (3 - 2 * k)) + 3.5 * Math.sin(d / 13 + u / 19) * rise;
   };
   const HU = [0, 10, 22, 36, 54, 76, 104, 138, 178, 224, 276, 336], HCOL = [new THREE.Color('#5c9a38'), new THREE.Color('#86bf4c'), new THREE.Color('#7fb48a')], _hc = new THREE.Color();
   function hillStrip(S, s, dmax) {
+    HEND.v = dmax || 0;
     const T = S.T, STEP = 8, d0 = Math.ceil(S.c0 / STEP) * STEP, P = [], N = [], C = [], pt = (d, u) => { const q = T.at(d, s * (T.vol(d) + 8 + u), 0); return [q[0], q[1] + hillH(d, s, u), q[2]]; };
     const vert = (d, u) => {
       const a = pt(d, u), dd = [pt(d + 3, u), pt(d - 3, u)], uu = [pt(d, u + 4), pt(d, Math.max(0, u - 4))];
@@ -405,7 +407,7 @@
   const campagne = { signature: 'rampe', scenes: {}, dress(S) {
     if (S.sc.name === 'riviere') { const dr = S.d0 + S.len * 0.5, p = S.T.at(dr, 0, 0); const q = S.T.at(dr + 10, 0, 0), q2 = S.T.at(dr - 10, 0, 0), l = Math.hypot(q[0] - q2[0], q[2] - q2[2]) || 1; S.b.water = [{ x: p[0], z: p[2], ux: (q[0] - q2[0]) / l, uz: (q[2] - q2[2]) / l, hw: S.vol(dr) + 70, hd: S.len * 0.3 + 6 }]; }   // v206 : plan d'eau de la riviere (trees.js l'evite)
 
-    if (S.sc.name === 'descente') { for (const sd of [-1, 1]) hillStrip(S, sd, S.d0 + 150); return; }   // v220 : les collines continuent sous le debut de la descente (plus de trou sur les cotes)
+    if (S.sc.name === 'descente') { for (const sd of [-1, 1]) hillStrip(S, sd, S.d0 + 330); return; }   // v220 : les collines continuent sous le debut de la descente (plus de trou sur les cotes)
     if (/^(ville|noyau)$/.test(S.sc.name)) return;   // v208 : ni collines, ni rochers, ni arbres dans la mine, le train, la gare et la ville
     // collines : bandes de relief continues de chaque cote (hillStrip)
     for (const sd of [-1, 1]) hillStrip(S, sd);
