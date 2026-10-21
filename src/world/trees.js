@@ -99,6 +99,7 @@
   T.broadleaf = function (b, x, y, z, h, rnd, o) { return T.conifer(b, x, y, z, h * 1.15, rnd, o); };
 
   T.bush = function (b, x, y, z, s, rnd) {
+    return;   // v213 : plus de buissons (les boules vertes)
     if (inWater(b, x, z)) return;
     const m = new Mesh(), pal = BROAD[Math.floor(rnd() * BROAD.length)], n = 2 + Math.floor(rnd() * 2), seed = rnd() * 100; /* v211 : plus d'ombre de contact */
     for (let i = 0; i < n; i++) blob(m, x + rr(rnd, -0.6, 0.6) * s, y + s * 0.38, z + rr(rnd, -0.6, 0.6) * s, s * rr(rnd, 0.6, 0.95), 0.75, rnd, mul(hex(pal[0]), 0.6), mul(hex(pal[1]), 0.82), seed + i * 5.3, i > 0);

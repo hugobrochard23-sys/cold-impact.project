@@ -186,6 +186,7 @@
       return true;
     };
     S.bush = (dc, lx) => {
+      return false;   // v213 : plus de buissons
       const s = r.between([1.2, 2.4]); if (dc < d0 + 4 || dc > d1 - 4 || Math.abs(lx) > vol(dc) - 1 || conflict(dc, lx, s, s, 0, s * 1.4, -R * 0.6)) return false;
       const p = T.at(dc, lx, s * 0.4), g = new THREE.IcosahedronGeometry(s, 0); b.addGeometry(g, new V(p[0], p[1], p[2]), new THREE.Quaternion(), new V(1, 0.7, 1), 'col:' + r.pick(['#2a4a2c', '#3a5a2c', '#2a5232']), undefined); g.dispose();
       return true;

@@ -286,7 +286,9 @@
     bx(dc, lx, yc, w, h, dd, mat, tint, collide, o) {
       if (!this.inClip(dc)) return null;
       { const dth = Math.abs(this.T.theta(dc + dd / 2) - this.T.theta(dc - dd / 2)); if (dth > 0.003) dd += (Math.abs(lx) + w / 2) * dth; }   // v064 : en virage, recouvrement des tranches
-      return this.b.box(Object.assign({ p: this.T.at(dc, lx, yc), s: [w, h, dd], r: [0, this.yaw(dc), 0], mat, tint, collide: collide !== false }, o || {}));
+      // v213 : une dalle plate posee au sol (beton, asphalte, voie, quai : 0,1 a 0,7 m d'epaisseur) a TOUJOURS une collision : la fusee ne s'enfonce plus dedans
+      const slab = h >= 0.1 && h <= 0.7 && w >= 1.5 && dd >= 1.5 && yc - h / 2 < 1.0 && !(typeof mat === 'string' && /^(emis|glass|water|hazard|basic)/.test(mat)) && !(o && o.render === false);
+      return this.b.box(Object.assign({ p: this.T.at(dc, lx, yc), s: [w, h, dd], r: [0, this.yaw(dc), 0], mat, tint, collide: collide !== false || slab }, o || {}));
     }
     // idem avec roulis (degrés) autour de l'axe du couloir, ou cap supplémentaire
     bxr(dc, lx, yc, w, h, dd, mat, tint, roll, dyaw, collide) {

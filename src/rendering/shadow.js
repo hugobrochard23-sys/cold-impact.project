@@ -31,7 +31,9 @@
       _o.copy(rk.pos); _p1.copy(_o).addScaledVector(DOWN, C.maxDist);
       const hit = g.world.sweep(_o, _p1, 0.02, GROUND);
       if (!hit) { this.mesh.visible = false; this.height = Infinity; return; }
-      const h = hit.t * C.maxDist; this.height = h;
+      let h = hit.t * C.maxDist; this.height = h;
+      // v213 : plus on est haut, plus l'ombre est portee vers l'AVANT (comme un soleil bas devant) : elle reste dans l'ecran au lieu de filer sous le bord bas
+      { const off = Math.min(h * 1.9, 230); if (off > 1) { _fwd.set(rk.vel.x, 0, rk.vel.z); if (_fwd.lengthSq() < 1e-3) _fwd.set(rk.fwd.x, 0, rk.fwd.z); _fwd.normalize(); _o.copy(rk.pos).addScaledVector(_fwd, off); _p1.copy(_o).addScaledVector(DOWN, C.maxDist); const h2 = g.world.sweep(_o, _p1, 0.02, GROUND); if (h2 && h2.normal.y > 0.3) { hit.t = h2.t; hit.normal.copy(h2.normal); this.height = h = h2.t * C.maxDist; } else { _o.copy(rk.pos); _p1.copy(_o).addScaledVector(DOWN, C.maxDist); } } }
       _n.copy(hit.normal); if (_n.y < 0.3) { this.mesh.visible = false; return; }   // paroi verticale : pas d'ombre
       // axe long : direction du vol projetée sur la surface ; axe court : perpendiculaire
       if (rk.vel.lengthSq() > 1) _fwd.copy(rk.vel).normalize(); else _fwd.copy(rk.fwd);
@@ -43,7 +45,7 @@
       _m.setPosition(_o.x + (_p1.x - _o.x) * hit.t + _n.x * 0.04, _o.y + (_p1.y - _o.y) * hit.t + _n.y * 0.04, _o.z + (_p1.z - _o.z) * hit.t + _n.z * 0.04);
       this.mesh.matrix.copy(_m); this.mesh.matrixWorldNeedsUpdate = true; this.mesh.updateMatrixWorld(true);
       // opacité : la plus forte près de la surface, s'efface avec la hauteur (jamais totalement : on garde le repère)
-      this.mat.opacity = C.opacity * (0.25 + 0.75 * Math.pow(1 - U.clamp(h / C.fadeDist, 0, 1), 0.8));
+      this.mat.opacity = C.opacity * (0.6 + 0.4 * Math.pow(1 - U.clamp(h / C.fadeDist, 0, 1), 0.8));   // v213 : bien moins pale en altitude
       this.mesh.visible = true;
     }
   }

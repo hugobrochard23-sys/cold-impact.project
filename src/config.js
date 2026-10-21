@@ -341,7 +341,7 @@ CC.CONFIG = {
   },
 
   // v034 : ombre portée sous la roquette (repère de hauteur)
-  shadow: { maxDist: 70, minSize: 0.85, growth: 0.085, maxSize: 4.2, opacity: 0.78, fadeDist: 55, stretch: 1.9 },
+  shadow: { maxDist: 260, minSize: 0.85, growth: 0.06, maxSize: 6.5, opacity: 0.8, fadeDist: 230, stretch: 1.9 },
 
   // v034 : coup de pouce du bouton de boost (sensation d'accélération)
   boost: { kickShake: 0.5, ringSize: 3.0, chromatic: 0.0016, speedLines: 22 },
