@@ -134,7 +134,7 @@
       if (this.level && this.level.endless && vd) { fFar = Math.min(fFar, vd); fNear = Math.min(fNear, fFar * 0.28); }
       this.fogBase = { near: fNear, far: fFar, color: new THREE.Color(env.fog.color) }; this.postTintBase = (env.postfx && env.postfx.tint) || '#ffffff';
       this.scene.fog.color.set(env.fog.color); if ((env.dark || 0) < 0.3) this.scene.fog.color.multiplyScalar(0.86); this.scene.fog.near = fNear; this.scene.fog.far = fFar;   // v116 : fond de couloir moins blanc
-      { const far = this.level && this.level.endless && vd ? vd + (CC.EVO && CC.EVO.on ? 330 : 90) : CC.CONFIG.camera.far; if (this.camera.far !== far) { this.camera.far = far; this.camera.updateProjectionMatrix(); } }   // v038g : rien n'est dessiné au-delà du brouillard
+      { const far = this.level && this.level.endless && vd ? vd + 90 : CC.CONFIG.camera.far; if (this.camera.far !== far) { this.camera.far = far; this.camera.updateProjectionMatrix(); } }   // v038g : rien n'est dessiné au-delà du brouillard
       this.renderer.setClearColor(this.scene.fog.color);
       this.hemi.color.set(env.hemi.sky); this.hemi.groundColor.set(env.hemi.ground); this.hemi.intensity = env.hemi.intensity;
       this.ambient.color.set(env.ambient.color); this.ambient.intensity = env.ambient.intensity;

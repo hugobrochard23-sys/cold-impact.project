@@ -521,6 +521,7 @@
       for (const sc of plan.scenes) {
         if (sc.d1 <= d0 || sc.d0 >= d1) continue;
         const S = new Scene(ctx, sc);
+        { const sk = sc.name + '|' + zi + '|' + sc.d0, seen = ctx.scSeen || (ctx.scSeen = new Set()); ctx.scFirst = !seen.has(sk); seen.add(sk); }   // v205 : le code d'une scene est rejoue a chaque etape de 20 m ; seul le premier passage garde ses objets poses hors `item`
         if (sc.name === 'arene') { arenaBuild(S, plan.zone); continue; }
         if (sc.name === 'legacy') { legacy(ctx, sc, plan.zone); continue; }
         const sd = def.scenes[sc.name];

@@ -160,7 +160,8 @@
       const run = game.endlessRun, on = !!run && !!this.style && game.state !== 'BOOT';
       this.ring.visible = on; this.glow.visible = on && this.darkOn;
       this.wantMtn = on && this.style === 'campagne' && this.openAir(run);
-      FADE.value += ((this.wantMtn ? 0.12 : 1) - FADE.value) * 0.06; this.mtn.visible = on && this.style === 'campagne' && FADE.value < 0.985;   // v203 : montagnes seulement a l'air libre (prairie, camp, riviere, foret), en brume legere ; fondu sinon
+      FADE.value += ((this.wantMtn ? 0.12 : 1) - FADE.value) * 0.06; this.mtn.visible = false;   // v205 : plus de montagnes du tout (le fond est uniquement le brouillard et le ciel)
+      FADE.value = 1;   // v203 : montagnes seulement a l'air libre (prairie, camp, riviere, foret), en brume legere ; fondu sinon
       if (!on) return;
       const cam = game.camera.position, b = run.T.base(Math.max(0, -game.rocket.pos.z));
       this.base += (b - this.base) * 0.05; if (Math.abs(this.base - b) > 300) this.base = b;

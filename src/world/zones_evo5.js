@@ -33,6 +33,7 @@
   }
   // train blindé : arrive en face dans le tunnel, sur la voie de gauche (la fusée passe au centre ou à droite)
   function train(S, dA, dB) {
+    if (!S.inClip(dA)) return;
     const T = S.T, g = new T3.Group(), hull = mat('#35433c'), dark = mat('#222824'), red = mat('#a8322a'), glow = basic('#fff0c0');
     // locomotive (avant = +z), puis wagons derrière (−z)
     bx(g, 6.4, 5.4, 18, hull, 0, 3.6, -9); bx(g, 6.8, 0.8, 18.4, dark, 0, 0.9, -9); bx(g, 6.6, 1.2, 10, red, 0, 5.8, -6); bx(g, 4.6, 2.2, 5, dark, 0, 7.2, -4); bx(g, 5.2, 1.3, 0.2, basic('#ffd890'), 0, 4.6, 0.05);

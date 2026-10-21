@@ -14,7 +14,7 @@
   const lamp = (S, dc, lx, y, col, size) => { S.bx(dc, lx, y, 1.2, 0.35, 0.8, 'emis:' + (col || '#ffe2a8'), undefined, false); S.glow(dc, lx, y - 0.3, col || '#ffe2a8', size || 12); };
   const boulder = (S, dc, lx, y, s, r, gray) => { const p = S.at(dc, lx, y); TR.rock(S.b, p[0], p[1], p[2], s, r, { gray: gray || pk(r, GREY), noMoss: true }); S.b.box({ p: [p[0], p[1] + s * 0.5, p[2]], s: [s * 1.6, s * 1.1, s * 1.6], render: false }); };
   const heading = (S, dc) => { const a = S.T.at(dc, 0, 0), b = S.T.at(dc - 6, 0, 0); return Math.atan2(b[0] - a[0], b[2] - a[2]); };   // cap vers les distances décroissantes (le robot FAIT FACE à la fusée)
-  const pos = (S, grp, dc, lx, y, yaw) => { const p = S.at(dc, lx, y); grp.position.set(p[0], p[1], p[2]); grp.rotation.y = yaw; S.b.root.add(grp); return grp; };
+  const pos = (S, grp, dc, lx, y, yaw) => { const p = S.at(dc, lx, y); grp.position.set(p[0], p[1], p[2]); grp.rotation.y = yaw; if (S.inClip(dc)) S.b.root.add(grp); return grp; };
   EVO.scenePos = (key) => { const c = (EVO.chapters || []).find((q) => q.key === key); const sd = D.scenes[key] || (Z.defs.ocean && Z.defs.ocean.scenes[key]); return c && sd ? { d0: c.d + 80, len: sd.len[0] } : null; };
 
   // ============================== LE GARDIEN ==============================
@@ -94,6 +94,7 @@
 
   EVO.buildRobot = buildRobot;
   function robot(S, dc) {
+    if (!S.inClip(dc)) return;   // v205 : une seule creation, quand l'etape de 20 m contient le gardien
     const { G, cols, S: sc } = buildRobot(), ud = G.userData, yaw = heading(S, dc);
     pos(S, G, dc, 0, 0, yaw);
     const st = { t0: Math.random() * 6, step: -1, fire: 2.5, seen: false, aim: 0, armPh: 0, ra: 0 }, _w = new V();

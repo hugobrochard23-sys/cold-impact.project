@@ -9,7 +9,7 @@
   EVO.addDyn = (obj, upd, cols, opt) => { const d = Object.assign({ obj, upd, cols: cols || [], near: 420 }, opt || {}); EVO.dyn.push(d); return obj; };
   const attached = (g, o) => { let p = o; while (p.parent) p = p.parent; return p === g.scene; };
   // un repère pour poser un objet dans le monde, avec le cap du couloir
-  EVO.placeGroup = (S, grp, dc, lx, y, dyawRad) => { const p = S.at(dc, lx, y); grp.position.set(p[0], p[1], p[2]); grp.rotation.y = CC.U.deg(S.yaw(dc)) + (dyawRad || 0); S.b.root.add(grp); return grp; };
+  EVO.placeGroup = (S, grp, dc, lx, y, dyawRad) => { const p = S.at(dc, lx, y); grp.position.set(p[0], p[1], p[2]); grp.rotation.y = CC.U.deg(S.yaw(dc)) + (dyawRad || 0); if (S.inClip(dc)) S.b.root.add(grp); return grp; };   // v205 : un seul exemplaire (l'etape de 20 m qui contient `dc`)
   EVO.colBox = (parent, w, h, d, x, y, z) => { const c = new THREE.Object3D(); c.userData.size = [w, h, d]; c.position.set(x || 0, y || 0, z || 0); parent.add(c); return c; };
   EVO.dynFrame = (g, dt) => {
     EVO.clock += dt;

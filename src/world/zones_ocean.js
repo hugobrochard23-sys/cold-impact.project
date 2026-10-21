@@ -54,7 +54,7 @@
   };
   const shaft = (S, dc, lx, depth) => {
     const p = S.at(dc, lx, depth * 0.5), m = new T3.Mesh(new T3.CylinderGeometry(7, 17, depth, 10, 1, true), new T3.MeshBasicMaterial({ color: '#cff2ff', transparent: true, opacity: rr(0.04, 0.07), blending: T3.AdditiveBlending, depthWrite: false, side: T3.DoubleSide, fog: false }));
-    m.position.set(p[0], p[1], p[2]); m.rotation.z = rr(-0.1, 0.1); S.b.root.add(m);
+    m.position.set(p[0], p[1], p[2]); m.rotation.z = rr(-0.1, 0.1); if (S.inClip(dc)) S.b.root.add(m);
   };
   // banc de poissons : N petits poissons qui tournent ensemble
   const school = (S, dc, lx, yw, n, col) => {
@@ -89,7 +89,7 @@
     }, cols, { near: 9999, span: 9999 });
     return g;
   };
-  function pos0(S, g, dc, lx, y) { const p = S.at(dc, lx, y); g.position.set(p[0], p[1], p[2]); S.b.root.add(g); }
+  function pos0(S, g, dc, lx, y) { const p = S.at(dc, lx, y); g.position.set(p[0], p[1], p[2]); if (S.inClip(dc)) S.b.root.add(g); }
   // arche de roche à traverser
   const arch = (S, dc, lx, y, w, h, r) => { rock(S, dc, lx - w / 2 - 6, 0, 14, r); rock(S, dc, lx + w / 2 + 6, 0, 14, r); for (let k = 0; k < 5; k++) rock(S, dc + r.between([-3, 3]), lx + (k - 2) * (w / 4), y + h + 5, r.between([8, 13]), r); };
 
