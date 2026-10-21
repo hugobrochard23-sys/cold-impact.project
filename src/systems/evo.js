@@ -32,6 +32,7 @@
     if (S.t0 === undefined) { S.t0 = 0; S.marks = {}; }
     if (S.gems === undefined) { S.gems = 0; S.chestAt = 0; }
     if (!S.seen) S.seen = {};
+    if (S.eco !== 194) { S.eco = 194; if (S.runs > 0 || S.rk > 0 || S.la > 0 || S.cm > 0) { S.rk = 0; S.la = 0; S.cm = 0; S.coins = 0; S.best = 0; S.runs = 0; S.t0 = 0; S.marks = {}; S.clr1 = 0; } }   // v194 : nouvelle economie (calquee sur la reference) : la progression des anciens prix est remise a zero une seule fois (gemmes, apparences et reglages sont conserves)
     if (!EVO._cheat) {
       EVO._cheat = 1; const q = (k) => { const m = new RegExp('[?&]' + k + '=(\\d+)').exec(location.search); return m ? parseInt(m[1], 10) : null; };
       const a = q('evocoins'); if (a !== null) S.coins = a; const b = q('evork'); if (b !== null) S.rk = b; const c = q('evola'); if (c !== null) S.la = c; const d = q('evocm'); if (d !== null) S.cm = d;
@@ -49,15 +50,27 @@
 
   // ---------- statistiques ----------
   // FUSEE : palier (0 tube, 1 ailes, 2 réacteur, 3 turbo) et barre dans le palier. Les ailes (portance) montent de 0,55 à 1 pendant le palier 1.
+  // v194 : REGLAGES DE VOL par palier (valeurs calees pour retrouver les durees et les distances de la reference ; window.__TUNE les surcharge pour les essais du banc de test)
+  const TUNE0 = { d0: 0.0052, w0: 0.57, l0: 47, l1: 2.5, lcap: 5, lmax: 58, d1: 0.0028, d1w: 0.001, d1n: 0.0004, stall: 12, stallT: 1, v2: 66, v3: 96, vs: 2.5, f0: 30, f1: 2.4, fb: 0.5, capD: 190, capV: 56, ls: 12, lw: 14, d2: 0.0078, d2w: 0.0042, d0s: 0 };
+  const TU = (k) => (window.__TUNE && window.__TUNE[k] !== undefined ? window.__TUNE[k] : TUNE0[k]);
   EVO.rocket = (n) => {
-    const tier = Math.min(3, Math.floor(n / 5)), s = Math.min(5, n - 5 * tier), wing = tier >= 1 ? Math.min(1, 0.55 + 0.1 * Math.min(n - 5, 4.5)) : 0;
-    const vmax = tier >= 2 ? [0, 0, 34, 38][tier] + 0.8 * s : 0, drag = tier >= 1 ? 0.0078 - 0.0042 * wing : 0.0100 - 0.0006 * s;
+    const tier = Math.min(3, Math.floor(n / 5)), s = Math.min(5, n - 5 * tier), wing = tier >= 1 ? Math.min(1, 0.55 + 0.1 * Math.min(n - 5, 4.5)) : TU('w0');
+    const vmax = tier >= 2 ? [0, 0, TU('v2'), TU('v3')][tier] + TU('vs') * s : 0, drag = tier >= 2 ? TU('d2') - TU('d2w') * wing : tier >= 1 ? TU('d1') - TU('d1w') * wing - TU('d1n') * (n - 5) : TU('d0') - TU('d0s') * s;
     return { n, tier, s, name: RK_TIERS[tier], wing, vmax, drag, thrust: vmax * vmax * drag, gripOff: tier >= 1 ? 1.2 + 4.5 * wing : 0.7,
-      dmg: 1.2 + 0.2 * n + 0.4 * tier, fuel: tier >= 2 ? 16 + 6 * (n - 10) : 0, refuel: 0, kick: tier === 0 ? 4 : tier === 1 ? 8 : 5 };
+      dmg: 1.2 + 0.2 * n + 0.4 * tier, fuel: tier >= 2 ? TU('f0') + TU('f1') * (n - 10) : 0, refuel: 0, kick: tier === 0 ? 4 : tier === 1 ? 8 : 5 };
   };
-  EVO.launcher = (n) => { const tier = Math.min(2, Math.floor(n / 5)); return { n, tier, s: Math.min(5, n - 5 * tier), name: LA_TIERS[tier], speed: 30 + 1.2 * Math.min(n, 15) + 1.5 * tier, fuelBonus: 2.5 * Math.max(0, n - 5) }; };
-  EVO.mult = (n) => 1 + 0.25 * n;   // v130 : chaque niveau de PIECES rapporte +25 % : il se rembourse en 2 vols
-  EVO.cost = (id, n) => (id === 'rk' ? Math.round(90 * Math.pow(1.19, Math.min(n, 19)) * Math.pow(1.09, Math.max(0, n - 19))) : id === 'la' ? Math.round(70 * Math.pow(1.19, Math.min(n, 14)) * Math.pow(1.09, Math.max(0, n - 14))) : n < 5 ? COIN_COST[n] : Math.round(1100 * Math.pow(1.45, n - 4)));   // v129 : les premieres ameliorations (ailes) arrivent en 2-3 vols
+  EVO.launcher = (n) => { const tier = Math.min(2, Math.floor(n / 5)); return { n, tier, s: Math.min(5, n - 5 * tier), name: LA_TIERS[tier], speed: TU('l0') + TU('l1') * Math.min(n, TU('lcap')) + 1.5 * tier, fuelBonus: TU('fb') * Math.max(0, n - 5) }; };
+  // v194 : ECONOMIE CALEE SUR LA REFERENCE (releves sur enregistrement d'un jeu d'evolution d'avion : docs/economie). Niveau d'amelioration affiche L = n + 1.
+  //   la (A, lanceur) : 180 x 1,40^(L-1)        cm (C, revenu) : 100 x 1,65^(L-1), multiplicateur de revenu par paliers        rk (B, fusee) : 180 x 1,10^(L-1) jusqu'a 290, puis 996, x1,33, 3619 au niveau 11, x1,35
+  const MULT_TAB = [1, 1.1, 1.2, 1.3, 1.4, 2, 2.2, 2.4, 2.6, 2.8, 4];   // niveau 1..11 (le niveau 9 n'a pas ete lu : interpole)
+  EVO.mult = (n) => (n < MULT_TAB.length ? MULT_TAB[n] : 4 + 0.4 * (n - 10));
+  EVO.cost = (id, n) => { const L = n + 1;
+    if (id === 'la') return Math.round(180 * Math.pow(1.4, L - 1));
+    if (id === 'cm') return Math.round(100 * Math.pow(1.65, L - 1));
+    if (L <= 6) return Math.round(180 * Math.pow(1.1, L - 1));
+    if (L <= 10) return Math.round(996 * Math.pow(1.33, L - 7));
+    return Math.round(3619 * Math.pow(1.35, L - 11)); };
+  EVO.SCORE_K = (g) => (EVO.stage && EVO.stage(g) === 2 ? 1 : 8450 / 6910);   // la reference compte 1 piece par metre sur une carte de 8 450 m ; la notre mesure 6 910 m : meme total de pieces sur la carte
   EVO.nextCost = (g, id) => { const S = EVO.save(g), n = S[id]; return n >= MAXN[id] ? null : EVO.cost(id, n); };
   EVO.dmgNow = (g) => { const r = EVO.rocket(EVO.save(g).rk), sp = g.rocket && g.rocket.active ? g.rocket.vel.length() : 38; return r.dmg * U.clamp(sp / 38, 0.9, 1.5); };
   EVO.canKill = (g, t) => !!(g.evo && g.evo.preview) || !t.evoHp || EVO.dmgNow(g) + 0.001 >= t.evoHp;
@@ -262,7 +275,7 @@
     g.pad.charge = U.clamp(0.1 + 0.9 * (a.ch || 0), 0, 1);
     if (a.lock) { a.lockT += dt; if (a.lockT > 0.14) { g.evoAimLast = a; g.pad.manual = false; g.fire(); g.evoAim = null; } }
   };
-  EVO.launchSpeed = (g) => EVO.launcher(EVO.save(g).la).speed * (g.evoLaunchMult || 1);
+  EVO.launchSpeed = (g) => Math.min(TU('lmax'), EVO.launcher(EVO.save(g).la).speed * (g.evoLaunchMult || 1));
 
   // ---------- vol ----------
   EVO.beginRun = (g) => {
@@ -286,13 +299,13 @@
   EVO.tick = (g, dt) => {
     const ev = g.evo, rk = g.rocket, run = g.endlessRun; if (!ev || !run || g.state !== 'FLIGHT' || !rk.active) { if (g.rig) g.rig.fallK = (g.rig.fallK || 0) * Math.max(0, 1 - dt * 4); return; }
     const S = EVO.save(g), r = EVO.rocket(S.rk), sp = rk.vel.length();
-    ev.maxD = Math.max(ev.maxD, run.dist);
+    ev.maxD = Math.max(ev.maxD, run.dist); if (run.dist < TU('capD') && sp > TU('capV')) rk.vel.multiplyScalar(Math.pow(Math.max(0.9, TU('capV') / sp), dt * 6));   // v194 : sur les 190 premiers metres (rampe, porte du camp) la vitesse est plafonnee : le decor de depart n'est pas fait pour 80 m/s
     C.endless.fuelTarget = 0;
     { const W = CC.Zones.evoWater; if (W) { const dy = rk.pos.y - W.y; if (W.prev !== undefined && W.prev * dy < 0 && run.dist > W.d0 - 30 && run.dist < W.d1 + 30) { const fx = g.effects, pp = rk.pos.clone(); pp.y = W.y; fx.ring(pp, new V(0, 1, 0), 0.4, 7, 0.6, '#d6eefc', 0.8); fx.ring(pp, new V(0, 1, 0), 0.2, 4, 0.45, '#ffffff', 0.7); g.rig.shake = Math.max(g.rig.shake, 0.25); g.audio.play('uiTick'); } W.prev = dy; } }
     const CH = EVO.chapters;   // v123 : bandeau et prime à chaque nouveau chapitre franchi
-    if (CH && !ev.preview) while (ev.chap < CH.length && run.dist >= CH[ev.chap].d) { const c = CH[ev.chap++], b = Math.round(40 * c.i * EVO.mult(S.cm)); ev.chapCoins += b; CC.L1.msg(g, c.name, 1.6, '#ffe9a0'); g.audio.play('levelUp'); if (EVO.onChapter) EVO.onChapter(g, c, S); }
+    if (CH && !ev.preview) while (ev.chap < CH.length && run.dist >= CH[ev.chap].d) { const c = CH[ev.chap++], b = Math.round(40 * c.i * EVO.mult(S.cm)); ev.chapCoins += 0; CC.L1.msg(g, c.name, 1.6, '#ffe9a0'); g.audio.play('levelUp'); if (EVO.onChapter) EVO.onChapter(g, c, S); }
     // planeur : les ailes portent (elles annulent une partie de la gravité tant que la vitesse est suffisante)
-    if (r.wing > 0 && !ev.preview) rk.vel.y += C.physics.gravity * r.wing * (r.tier >= 2 && rk.fuel <= 0.01 ? 0.25 : 0.62) * U.clamp((sp - 12) / 14, 0, 1.1) * dt;   // v125 : plus de carburant ou plus de vitesse = on pique   // v123 : lent = les ailes ne portent plus : elle pique, on peut redresser avec la vitesse reprise
+    if (r.wing > 0 && !ev.preview) rk.vel.y += C.physics.gravity * r.wing * (r.tier >= 2 && rk.fuel <= 0.01 ? 0.25 : 0.62) * U.clamp((sp - TU('ls')) / TU('lw'), 0, 1.1) * dt;   // v125 : plus de carburant ou plus de vitesse = on pique   // v123 : lent = les ailes ne portent plus : elle pique, on peut redresser avec la vitesse reprise
     if (ev.preview) rk.vel.y += C.physics.gravity * 0.95 * U.clamp(sp / 17, 0, 1.1) * dt;
     // filet de sécurité : la fusée ne s'enfonce jamais dans le sol (elle roule dessus, le glissement la fait s'écraser)
     { const gyy = run.T.base(Math.max(0, run.dist)) + 0.32; if (rk.pos.y < gyy) { rk.pos.y = gyy; if (rk.vel.y < 0) rk.vel.y = 0; rk.sliding = Math.max(rk.sliding || 0, 0.03); } }
@@ -301,7 +314,7 @@
     if (out && !ev.preview && sp < 24 && rk.fwd.y > -0.55) g.input.addAim(0, -1.5 * U.clamp((24 - sp) / 8, 0, 1) * dt);   // v125 : décrochage : sans poussée et sans vitesse, le nez plonge (on récupère en reprenant de la vitesse)
     if (out && rk.sliding > 0 && (ev.slideT = (ev.slideT || 0) + dt) > 0.7) { ev.slideT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; }
     if (!out || rk.sliding <= 0) ev.slideT = 0;
-    if (out && sp < 4 && g.flightTime > 1) { if ((ev.lowT = (ev.lowT || 0) + dt) > 1.2) { ev.lowT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; } } else ev.lowT = 0;   // v125 : immobile = fini
+    if (out && sp < TU('stall') && g.flightTime > 1) { if ((ev.lowT = (ev.lowT || 0) + dt) > TU('stallT')) { ev.lowT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; } } else ev.lowT = 0;   // v125 : immobile = fini
     if (r.tier >= 2 && !ev.fuelOut && !ev.preview && rk.fuel <= 0.01 && g.flightTime > 0.6) { ev.fuelOut = true; CC.L1.msg(g, 'PLUS DE CARBURANT', 1.3, '#ff8a5a'); }
     if (rk.fuel > 0.3) ev.fuelOut = false;
     // caméra de chute : on regarde vers le sol quand on tombe
@@ -431,7 +444,7 @@
     EVO.endTumble(g);
     if (g.evo && g.evo.preview) { g.evoPreview = false; g.evoLast = { zone2: true, t0: 0 }; g.goHome({}); return; }
     const S = EVO.save(g), ev = g.evo || { kills: 0, coins: 0, maxD: 0 }, run = g.endlessRun, dist = Math.round(Math.max(ev.maxD, run ? run.dist : 0)), m = EVO.mult(S.cm);
-    const distCoins = Math.floor(dist * 1.1 * m * EVO.COIN_K), lines = [['DISTANCE ' + dist + ' M', distCoins]];
+    const sd = Math.round(dist * EVO.SCORE_K(g)), distCoins = Math.floor(sd * m), lines = [['DISTANCE ' + sd + ' M', distCoins]];
     if (ev.kills) lines.push(['ENNEMIS ' + ev.kills, ev.coins - (ev.bossHits ? Math.round(150 * m) * ev.bossHits : 0)]);
     if (ev.bossHits) lines.push(['COUPS AU BOSS ' + ev.bossHits, Math.round(150 * m) * ev.bossHits]);
     if (ev.chapCoins) lines.push(['CHAPITRE ' + ev.chap + ' SUR ' + (EVO.chapters ? EVO.chapters.length : 1), ev.chapCoins]);
@@ -447,7 +460,7 @@
     g.evoReport = true; g.evoAdDone = false; g.ui.overlay = 'evoReport';   // v152 : le rapport de vol s'affiche sur le lieu du crash ; SUIVANT ramene au menu
   };
   // SUIVANT : mini pub de 5 s des le 5e vol (sauf pub de fin deja regardee), puis retour au menu
-  EVO.COIN_K = 2.4;   // v173 : on gagne 2,4 fois plus de pieces (progression plus facile au debut)
+  EVO.COIN_K = 0.25;   // v194 : la reference ne paie QUE la distance (total = distance x multiplicateur) : un ennemi detruit ne rapporte plus qu'une petite prime
   EVO.INTERSTITIAL = false;   // v173 : pas de pub imposee entre les vols pour l'instant
   EVO.afterReport = (g) => {
     if (!g.evoReport) return; const S = EVO.save(g);
