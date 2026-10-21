@@ -95,19 +95,20 @@
   /* v202 : ANNEAU DE MONTAGNES EN VOLUME. Deux couronnes de sommets a facettes (neige, roche bleutee, pied fondu dans la brume) tout autour du joueur : on se sent entoure,
    * y compris droit devant, quoi que le couloir construise. L'anneau suit la camera (comme un ciel) ; a 700-1000 m le decalage serait invisible de toute facon.
    * La brume est appliquee APRES l'eclairage (uHaze = couleur du brouillard) : le pied de chaque montagne se confond exactement avec le fond. */
-  function ringGeometry(seed) {
+  function ringGeometry(seed) {   // v204 : collines de plaine, rocheuses et vertes, sans neige : basses, larges, a facettes douces
     const rng = U.makeRng(seed), rr = (a, b) => a + (b - a) * rng(), P = [], C = [], Z = [];
-    const lo = new THREE.Color('#4c6f94'), mid = new THREE.Color('#7595b4'), hi = new THREE.Color('#e4edf5'), col = new THREE.Color();
-    const tiers = [[-0.12, 1.0, 1], [0.26, 0.82, 0.6], [0.55, 0.6, 0.3], [0.8, 0.36, 0.08]];   // v203 : flancs plus larges, sommets arrondis : des massifs, plus des pics
+    const lo = new THREE.Color('#6d8a55'), mid = new THREE.Color('#8f9079'), hi = new THREE.Color('#a9a58e'), col = new THREE.Color();
+    const tiers = [[-0.2, 1.0, 1], [0.3, 0.8, 0.55], [0.72, 0.56, 0.3], [1.0, 0.36, 0.15]];
     const mountain = (cx, cz, H, R, haze) => {
-      const N = 12, ring = [], rot = rng() * 6.28, top = [cx + R * (rng() - 0.5) * 0.3, H, cz + R * (rng() - 0.5) * 0.3];
-      for (let t = 0; t < 4; t++) { const q = []; for (let i = 0; i < N; i++) { const a = rot + i / N * 6.2832 + t * 0.35 + rr(-0.12, 0.12), rad = R * tiers[t][1] * rr(0.75, 1.25); q.push([cx + Math.cos(a) * rad * 1.15, tiers[t][0] * H + (t ? rr(-0.04, 0.04) * H : 0), cz + Math.sin(a) * rad]); } ring.push(q); }
-      const cl = (t, y) => { if (t === 0) col.copy(lo); else if (t === 1) col.copy(lo).lerp(mid, rr(0.3, 0.9)); else if (t === 2) col.copy(mid).lerp(hi, y > 0.7 * H ? 0.3 : rr(0, 0.06)); else col.copy(mid).lerp(hi, 0.72); return [col.r, col.g, col.b]; };
-      const tri = (a, b, c, ta, tb, tc) => { for (const [v, t] of [[a, ta], [b, tb], [c, tc]]) { P.push(v[0], v[1], v[2]); C.push(...cl(t, v[1])); Z.push(Math.min(1, tiers[t][2] * 0.9 + haze)); } };
+      const N = 14, ring = [], rot = rng() * 6.28, ext = rr(0.85, 1.25);
+      for (let t = 0; t < 4; t++) { const q = []; for (let i = 0; i < N; i++) { const a = rot + i / N * 6.2832 + t * 0.2 + rr(-0.06, 0.06), rad = R * tiers[t][1] * rr(0.88, 1.12); q.push([cx + Math.cos(a) * rad * ext, tiers[t][0] * H + (t ? rr(-0.05, 0.05) * H : 0), cz + Math.sin(a) * rad]); } ring.push(q); }
+      const top = [cx, H * 1.04, cz];
+      const cl = (t) => { if (t === 0) col.copy(lo); else if (t === 1) col.copy(lo).lerp(mid, rr(0.35, 0.7)); else if (t === 2) col.copy(mid).lerp(hi, rr(0.1, 0.45)); else col.copy(hi).lerp(mid, rr(0, 0.4)); return [col.r, col.g, col.b]; };
+      const tri = (a, b, c, ta, tb, tc) => { const k = cl(Math.max(ta, tb, tc)); for (const [v, t] of [[a, ta], [b, tb], [c, tc]]) { P.push(v[0], v[1], v[2]); C.push(k[0], k[1], k[2]); Z.push(Math.min(1, tiers[t][2] * 0.9 + haze)); } };   // une couleur par facette : aspect taille a la serpe, sans degrade de pic de glace
       for (let t = 0; t < 3; t++) for (let i = 0; i < N; i++) { const j = (i + 1) % N; tri(ring[t][i], ring[t + 1][i], ring[t + 1][j], t, t + 1, t + 1); tri(ring[t][i], ring[t + 1][j], ring[t][j], t, t + 1, t); }
       for (let i = 0; i < N; i++) tri(ring[3][i], top, ring[3][(i + 1) % N], 3, 3, 3);
     };
-    for (const [n, rad, h0, h1, r0, r1, haze] of [[34, 1020, 170, 300, 300, 440, 0.34], [28, 790, 100, 190, 230, 340, 0.2]]) for (let i = 0; i < n; i++) { const a = (i + rr(-0.3, 0.3)) / n * 6.2832, rd = rad * rr(0.93, 1.07); mountain(Math.cos(a) * rd, Math.sin(a) * rd, rr(h0, h1), rr(r0, r1), haze); }
+    for (const [n, rad, h0, h1, r0, r1, haze] of [[46, 1020, 46, 108, 300, 520, 0.24], [38, 800, 30, 70, 240, 420, 0.14]]) for (let i = 0; i < n; i++) { const a = (i + rr(-0.3, 0.3)) / n * 6.2832, rd = rad * rr(0.95, 1.05); mountain(Math.cos(a) * rd, Math.sin(a) * rd, rr(h0, h1), rr(r0, r1), haze); }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3)); g.setAttribute('aHz', new THREE.Float32BufferAttribute(Z, 1)); g.computeVertexNormals();
     return g;
   }
@@ -153,7 +154,7 @@
     openAir(run) {
       const T = run.T, d = run.dist, sc = this._sc;
       if (!sc || d < sc.d0 || d >= sc.d1) { let f = null; try { const zi = T.zoneIndex(d), pl = CC.Zones.plan(T, zi); for (const q of pl.scenes) if (d >= q.d0 && d < q.d1) { f = q; break; } } catch (e) { f = null; } this._sc = f || { d0: d, d1: d + 20, name: '' }; }
-      return /^(rampe|camp|riviere|foret|route)$/.test(this._sc.name || '');
+      return /^(rampe|camp|riviere|foret|route)$/.test(this._sc.name || '') && d < this._sc.d1 - 90;
     }
     update(game) {
       const run = game.endlessRun, on = !!run && !!this.style && game.state !== 'BOOT';
@@ -163,7 +164,7 @@
       if (!on) return;
       const cam = game.camera.position, b = run.T.base(Math.max(0, -game.rocket.pos.z));
       this.base += (b - this.base) * 0.05; if (Math.abs(this.base - b) > 300) this.base = b;
-      this.mtn.position.set(cam.x, this.base - 6, cam.z);
+      if (this.y0 === undefined) this.y0 = this.base; this.mtn.position.set(cam.x, this.y0 - 4, cam.z);   // v204 : hauteur fixe dans le monde (avant : elles descendaient avec le couloir)
       this.ring.position.set(cam.x, this.base + 220 * SC, cam.z); this.glow.position.copy(this.ring.position);   // la ligne de sol de la bande est à 90 m au-dessus de son bord bas
     }
   }
