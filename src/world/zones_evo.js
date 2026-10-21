@@ -108,7 +108,7 @@
     out.copy(GC.a).lerp(GC.b, n);
     const q = 0.5 + 0.5 * Math.sin(x * 0.043 + Math.sin(z * 0.029) * 2.0) * Math.sin(z * 0.047 + Math.sin(x * 0.021) * 1.7 + 1.1);   // v184 : plaques ensoleillees / ombrees
     const sb = Math.max(0, Math.min(1, (q - 0.5) / 0.4)), sd = Math.max(0, Math.min(1, (0.42 - q) / 0.35));   // v187 : transitions de teinte progressives
-    if (sb > 0) out.lerp(GBR, 0.55 * sb * sb * (3 - 2 * sb)); else if (sd > 0) out.lerp(GDK, 0.5 * sd * sd * (3 - 2 * sd));
+    if (sb > 0) out.lerp(GBR, 0.22 * sb * sb * (3 - 2 * sb)); else if (sd > 0) out.lerp(GDK, 0.2 * sd * sd * (3 - 2 * sd));   // v220 : taches de teinte (ronds plus sombres) adoucies
     const f = Math.sin(x * 0.021 + 0.7) * Math.sin(z * 0.019 + 2.1); if (f > 0.35) out.lerp(GC.f, Math.min(0.75, (f - 0.35) * 2));
     return out;
   };
@@ -383,29 +383,30 @@
     return A * (rise - 0.35 * rise * k * k * (3 - 2 * k)) + 3.5 * Math.sin(d / 13 + u / 19) * rise;
   };
   const HU = [0, 10, 22, 36, 54, 76, 104, 138, 178, 224, 276, 336], HCOL = [new THREE.Color('#5c9a38'), new THREE.Color('#86bf4c'), new THREE.Color('#7fb48a')], _hc = new THREE.Color();
-  function hillStrip(S, s) {
+  function hillStrip(S, s, dmax) {
     const T = S.T, STEP = 8, d0 = Math.ceil(S.c0 / STEP) * STEP, P = [], N = [], C = [], pt = (d, u) => { const q = T.at(d, s * (T.vol(d) + 8 + u), 0); return [q[0], q[1] + hillH(d, s, u), q[2]]; };
     const vert = (d, u) => {
       const a = pt(d, u), dd = [pt(d + 3, u), pt(d - 3, u)], uu = [pt(d, u + 4), pt(d, Math.max(0, u - 4))];
       const tx = dd[0][0] - dd[1][0], ty = dd[0][1] - dd[1][1], tz = dd[0][2] - dd[1][2], ux = uu[0][0] - uu[1][0], uy = uu[0][1] - uu[1][1], uz = uu[0][2] - uu[1][2];
       let nx = ty * uz - tz * uy, ny = tz * ux - tx * uz, nz = tx * uy - ty * ux; if (ny < 0) { nx = -nx; ny = -ny; nz = -nz; } const l = Math.hypot(nx, ny, nz) || 1;
-      const hh = a[1] - T.at(d, s * (T.vol(d) + 8 + u), 0)[1], n = 0.5 + 0.5 * Math.sin(d * 0.21 + u * 0.13 + s), f = Math.min(1, hh / 60 * 0.6 + n * 0.35); _hc.copy(HCOL[0]).lerp(HCOL[1], f).lerp(HCOL[2], Math.min(0.4, u / 336 * 0.45));
+      gcol(a[0], a[2], _hc);   // v220 : exactement la couleur et le motif du sol : la colline prolonge l'herbe
       return { p: a, n: [nx / l, ny / l, nz / l], c: [_hc.r, _hc.g, _hc.b] };
     };
-    for (let d = d0; d < S.c1; d += STEP) {
+    for (let d = d0; d < Math.min(S.c1, dmax || 1e9); d += STEP) {
       const A = HU.map((u) => vert(d, u)), B = HU.map((u) => vert(d + STEP, u));
       for (let k = 0; k < HU.length - 1; k++) for (const v of [A[k], B[k], B[k + 1], A[k], B[k + 1], A[k + 1]]) { P.push(v.p[0], v.p[1], v.p[2]); N.push(v.n[0], v.n[1], v.n[2]); C.push(v.c[0], v.c[1], v.c[2]); }
     }
     if (!P.length) return;
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(P.length / 3 * 2), 2));
-    S.b.addGeometry(g, new THREE.Vector3(), new THREE.Quaternion(), null, 'tree:#ffffff'); g.dispose();
+    S.b.addGeometry(g, new THREE.Vector3(), new THREE.Quaternion(), null, 'hill:#ffffff'); g.dispose();
     const dm = (S.c0 + S.c1) / 2, hc = hillH(dm, s, 40) * 0.8; if (hc > 3) S.bx(dm, s * (T.vol(dm) + 8 + 40 + 45), hc / 2, 90, hc, S.c1 - S.c0, 'col:#5c9a38', undefined, true, { render: false });
   }
 
   const campagne = { signature: 'rampe', scenes: {}, dress(S) {
     if (S.sc.name === 'riviere') { const dr = S.d0 + S.len * 0.5, p = S.T.at(dr, 0, 0); const q = S.T.at(dr + 10, 0, 0), q2 = S.T.at(dr - 10, 0, 0), l = Math.hypot(q[0] - q2[0], q[2] - q2[2]) || 1; S.b.water = [{ x: p[0], z: p[2], ux: (q[0] - q2[0]) / l, uz: (q[2] - q2[2]) / l, hw: S.vol(dr) + 70, hd: S.len * 0.3 + 6 }]; }   // v206 : plan d'eau de la riviere (trees.js l'evite)
 
-    if (/^(descente|ville|noyau)$/.test(S.sc.name)) return;   // v208 : ni collines, ni rochers, ni arbres dans la mine, le train, la gare et la ville
+    if (S.sc.name === 'descente') { for (const sd of [-1, 1]) hillStrip(S, sd, S.d0 + 150); return; }   // v220 : les collines continuent sous le debut de la descente (plus de trou sur les cotes)
+    if (/^(ville|noyau)$/.test(S.sc.name)) return;   // v208 : ni collines, ni rochers, ni arbres dans la mine, le train, la gare et la ville
     // collines : bandes de relief continues de chaque cote (hillStrip)
     for (const sd of [-1, 1]) hillStrip(S, sd);
     if (!/^(rampe|camp|riviere|foret|route)$/.test(S.sc.name)) return;   // forteresse et fuite : decor propre a la scene
