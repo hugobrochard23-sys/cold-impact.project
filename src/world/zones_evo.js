@@ -372,8 +372,26 @@
     }
   };
 
+  // v200 : vraies montagnes en volume (facettes eclairees, calotte de neige, pied fondu dans la brume), fixees dans le monde : elles defilent avec la parallaxe au lieu d'etre un dessin colle sur le fond
+  let _mm = null;
+  function mountain(S, dc, lx, r, k) {
+    const p = S.at(dc, lx, 0), N = 9, H = r.between([170, 330]) * (k || 1), R = r.between([150, 250]) * (k || 1), tiers = [[-0.1, 1.0], [0.3, 0.7], [0.62, 0.42], [0.82, 0.2]], P = [], C = [];
+    const hz = new THREE.Color('#cfdbe0'), lo = new THREE.Color('#7f9bb4'), mid = new THREE.Color('#9db4c8'), hi = new THREE.Color('#e8f0f6'), col = new THREE.Color();
+    const px = (i, t) => { const a = i / N * 6.2832 + r() * 0.25 + t * 0.4, rad = R * tiers[t][1] * (0.78 + 0.5 * r()); return [Math.cos(a) * rad * 1.15, tiers[t][0] * H + (t ? (r() - 0.5) * H * 0.06 : 0), Math.sin(a) * rad]; };
+    const ring = tiers.map((_, t) => { const q = []; for (let i = 0; i < N; i++) q.push(px(i, t)); return q; }), top = [R * (r() - 0.5) * 0.2, H, R * (r() - 0.5) * 0.2];
+    const cl = (t, y) => { if (t === 0) col.copy(hz).lerp(lo, 0.25); else if (t === 1) col.copy(lo).lerp(mid, 0.5 + 0.3 * r()); else if (t === 2) col.copy(mid).lerp(hi, y > 0.6 * H ? 0.5 : 0.12 * r()); else col.copy(hi); return [col.r, col.g, col.b]; };
+    const tri = (a, b, c, ta, tb, tc) => { for (const [v, t] of [[a, ta], [b, tb], [c, tc]]) { P.push(v[0], v[1], v[2]); C.push(...cl(t, v[1])); } };
+    for (let t = 0; t < 3; t++) for (let i = 0; i < N; i++) { const j = (i + 1) % N; tri(ring[t][i], ring[t + 1][i], ring[t + 1][j], t, t + 1, t + 1); tri(ring[t][i], ring[t + 1][j], ring[t][j], t, t + 1, t); }
+    for (let i = 0; i < N; i++) tri(ring[3][i], top, ring[3][(i + 1) % N], 3, 3, 3);
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3)); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, _mm || (_mm = new THREE.MeshLambertMaterial({ vertexColors: true, fog: false, emissive: '#2c3e52' })));
+    m.position.set(p[0], p[1] - 20, p[2]); m.rotation.y = r() * 6.28; m.matrixAutoUpdate = false; m.updateMatrix(); m.frustumCulled = true; S.b.add(m);
+  }
+
   const campagne = { signature: 'rampe', scenes: {}, dress(S) {
 
+    for (const s of [-1, 1]) S.rows(S.d0, S.d1, 170, 0.8, (dc) => S.item(dc, (r) => mountain(S, dc, s * r.between([430, 720]), r)));
+    for (const s of [-1, 1]) S.rows(S.d0, S.d1, 150, 0.8, (dc) => S.item(dc, (r) => mountain(S, dc, s * r.between([320, 540]), r, 0.62)));
     // collines rondes à l'horizon, des deux côtés (ellipsoïdes aplaties : un vrai relief doux, pas des boîtes)
     for (const s of [-1, 1]) S.rows(S.d0, S.d1, 42, 0.7, (dc) => S.item(dc, (r) => { const v = S.vol(dc), rad = r.between([60, 190]), lx = s * (v + 14 + rad + r.between([0, 90])), sy = r.between([0.2, 0.42]); S.ball(dc, lx, -rad * sy * 0.12, rad, 'col:' + pick(r, GREENS), undefined, Math.abs(lx) < 150, sy); }));
     // petits blocs de pierre posés dans l'herbe : des reliefs à frôler
