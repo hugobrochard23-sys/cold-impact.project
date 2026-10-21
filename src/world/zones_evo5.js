@@ -15,6 +15,19 @@
   const basic = (c, o) => new T3.MeshBasicMaterial(Object.assign({ color: c }, o || {}));
   const bx = (grp, w, h, d, m, x, y, z) => { const o = new T3.Mesh(new T3.BoxGeometry(w, h, d), m); o.position.set(x, y, z); grp.add(o); return o; };
 
+  // segment de boite oriente sur la pente (lacet + tangage) entre deux distances du couloir : la voie epouse le terrain au lieu de rester horizontale
+  function slopeBox(S, m0, m1, lx, y, w, h, mat, tint) {
+    const p0 = S.at(m0, lx, y), p1 = S.at(m1, lx, y), dx = p1[0] - p0[0], dy = p1[1] - p0[1], dz = p1[2] - p0[2], hz = Math.hypot(dx, dz), Ln = Math.hypot(hz, dy) + 0.05;
+    S.b.box({ p: [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, (p0[2] + p1[2]) / 2], s: [w, h, Ln], r: [-Math.atan2(dy, hz) * 180 / Math.PI, Math.atan2(dx, dz) * 180 / Math.PI, 0], mat, tint, collide: false, shadow: false });
+  }
+  function railTrack(S, a, b2, lx) {
+    for (let m = a; m < b2 - 0.01; m += 3) {
+      const m1 = Math.min(b2, m + 3.05);
+      slopeBox(S, m, m1, lx, 0.1, 3.5, 0.22, 'col:#4a4844');
+      for (const o of [-0.75, 0.75]) { slopeBox(S, m, m1, lx + o, 0.3, 0.2, 0.08, 'metal', '#7a7e84'); slopeBox(S, m, m1, lx + o, 0.39, 0.1, 0.16, 'metal', '#9a9ea4'); slopeBox(S, m, m1, lx + o, 0.5, 0.17, 0.08, 'metal', '#b4b8be'); }
+      for (let k = 0; k < 3; k++) { const s0 = m + k * 1.0; slopeBox(S, s0, Math.min(b2, s0 + 0.38), lx, 0.26, 2.5, 0.12, 'planks', '#6a5238'); }
+    }
+  }
   // ---------- éléments animés ----------
   // cage d'ascenseur qui monte et descend le long d'une paroi (décor : jamais sur la trajectoire)
   function cage(S, dc, lx, y0, amp, ph) {
@@ -31,26 +44,54 @@
     EVO.placeGroup(S, g, dc, lx, y, 0);
     EVO.addDyn(g, (t) => { g.rotation.z = Math.sin(t * sp + ph) * 0.5; g.rotation.x = Math.cos(t * sp * 0.7 + ph) * 0.35; }, [], { near: 700 });
   }
+  // v208 : geometrie fusionnee par matiere (une boite = une instance, un seul maillage par matiere : ~7 appels de dessin pour tout le train)
+  function mergeItems(items, material) {
+    const P = [], N = [], I = [], m4 = new T3.Matrix4(), q = new T3.Quaternion(), e = new T3.Euler(); let off = 0;
+    for (const it of items) {
+      const g = it.r ? new T3.CylinderGeometry(it.r, it.r, it.w, 12) : new T3.BoxGeometry(it.w, it.h, it.d);
+      if (it.r) g.rotateZ(Math.PI / 2);
+      m4.compose(new T3.Vector3(it.x, it.y, it.z), q.setFromEuler(e.set(0, it.ry || 0, 0)), new T3.Vector3(1, 1, 1)); g.applyMatrix4(m4);
+      const p = g.attributes.position.array, n = g.attributes.normal.array, ix = g.index.array; for (let k = 0; k < p.length; k++) { P.push(p[k]); N.push(n[k]); } for (let k = 0; k < ix.length; k++) I.push(ix[k] + off); off += p.length / 3; g.dispose();
+    }
+    const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(P, 3)); geo.setAttribute('normal', new T3.Float32BufferAttribute(N, 3)); geo.setIndex(I);
+    return new T3.Mesh(geo, material);
+  }
   // train blindé : arrive en face dans le tunnel, sur la voie de gauche (la fusée passe au centre ou à droite)
   function train(S, dA, dB) {
     if (!S.inClip(dA)) return;
-    const T = S.T, g = new T3.Group(), hull = mat('#35433c'), dark = mat('#222824'), red = mat('#a8322a'), glow = basic('#fff0c0');
-    // locomotive (avant = +z), puis wagons derrière (−z)
-    bx(g, 6.4, 5.4, 18, hull, 0, 3.6, -9); bx(g, 6.8, 0.8, 18.4, dark, 0, 0.9, -9); bx(g, 6.6, 1.2, 10, red, 0, 5.8, -6); bx(g, 4.6, 2.2, 5, dark, 0, 7.2, -4); bx(g, 5.2, 1.3, 0.2, basic('#ffd890'), 0, 4.6, 0.05);
-    for (const sx of [-1.8, 1.8]) bx(g, 1.3, 1.3, 0.3, glow, sx, 2.4, 0.1);
-    const spot = new T3.Mesh(new T3.ConeGeometry(9, 80, 12, 1, true), new T3.MeshBasicMaterial({ color: '#fff2c8', transparent: true, opacity: 0.05, depthWrite: false, blending: T3.AdditiveBlending, side: T3.DoubleSide, fog: false })); spot.geometry.translate(0, 40, 0); spot.rotation.x = Math.PI / 2; spot.position.set(0, 2.4, 0); g.add(spot);
-    for (let i = 0; i < 7; i++) { const z = -22 - i * 15.5; bx(g, 6.2, 5.0, 14.5, i % 2 ? mat('#4a5048') : mat('#3e4640'), 0, 3.5, z); bx(g, 6.5, 0.6, 14.8, dark, 0, 0.9, z); for (let k = -1; k <= 1; k++) bx(g, 6.4, 0.3, 0.3, red, 0, 4.2, z + k * 4.5); }
+    const T = S.T, g = new T3.Group(), glow = basic('#fff0c0');
+    const M = { hull: mat('#3b4d44'), hull2: mat('#46564c'), dark: mat('#1f2523'), red: mat('#b2362a'), cream: mat('#d9d3bd'), steel: mat('#6a6f74'), glass: basic('#9adcff') }, L = {}; for (const k of Object.keys(M)) L[k] = [];
+    const add = (k, w, h, d, x, y, z) => L[k].push({ w, h, d, x, y, z }), wheel = (x, y, z) => L.steel.push({ r: 0.72, w: 0.38, x, y, z });
+    // locomotive : caisse, nez incline, cabine vitree, bandeau rouge et creme, events, tampons, bogies a 2 essieux
+    add('dark', 6.6, 0.9, 19, 0, 1.0, -9); add('hull', 6.2, 3.7, 15.6, 0, 3.3, -10.2); add('hull', 5.8, 2.7, 3.4, 0, 2.7, 1.5); add('hull', 5.4, 1.6, 2.6, 0, 3.9, -0.4);
+    add('red', 6.3, 0.7, 18.2, 0, 2.3, -8.6); add('cream', 6.28, 0.22, 18.2, 0, 2.8, -8.6); add('hull', 5.3, 1.9, 6.4, 0, 6.0, -4.8); add('dark', 5.7, 0.35, 6.8, 0, 7.05, -4.8);
+    add('glass', 4.9, 1.05, 0.12, 0, 6.2, -1.56); for (const sx of [-1, 1]) { add('glass', 0.12, 0.95, 3.4, sx * 2.68, 6.2, -4.6); add('dark', 0.1, 2.6, 2.4, sx * 3.12, 3.2, -9); }
+    for (const z of [-10, -13.5, -17]) add('steel', 1.7, 0.5, 1.7, 0, 5.4, z);
+    for (const sx of [-1.9, 1.9]) { add('steel', 0.6, 0.5, 0.7, sx, 1.2, 2.5); add('steel', 0.6, 0.5, 0.7, sx, 1.2, -19.4); }
+    for (const z of [-3.2, -5.6, -12.8, -15.2]) for (const sx of [-2.35, 2.35]) wheel(sx, 0.72, z);
+    for (let i = 0; i < 7; i++) {
+      const zc = -22 - i * 15.5, hk = i % 2 ? 'hull2' : 'hull';
+      add('dark', 6.5, 0.7, 14.8, 0, 1.0, zc); add(hk, 6.2, 3.9, 14.2, 0, 3.3, zc); add('red', 6.3, 0.34, 14.2, 0, 4.9, zc); add('cream', 6.26, 0.2, 14.2, 0, 2.2, zc);
+      add('dark', 5.4, 0.5, 13.4, 0, 5.5, zc); add('steel', 1.5, 0.3, 2.6, 0, 5.85, zc);
+      for (const sx of [-1, 1]) { add('dark', 0.1, 2.7, 2.3, sx * 3.12, 3.05, zc); for (const dz of [-5.2, 5.2]) add('cream', 0.1, 0.5, 1.3, sx * 3.12, 4.1, zc + dz); }
+      add('steel', 0.5, 0.4, 1.5, 0, 1.2, zc + 7.9);
+      for (const dz of [-4.6, -2.4, 2.4, 4.6]) for (const sx of [-2.35, 2.35]) wheel(sx, 0.72, zc + dz);
+    }
+    for (const k of Object.keys(M)) if (L[k].length) g.add(mergeItems(L[k], M[k]));
+    for (const sx of [-1.8, 1.8]) { const h = new T3.Mesh(new T3.BoxGeometry(1.3, 1.3, 0.3), glow); h.position.set(sx, 2.7, 3.25); g.add(h); }
+    const spot = new T3.Mesh(new T3.ConeGeometry(9, 80, 12, 1, true), new T3.MeshBasicMaterial({ color: '#fff2c8', transparent: true, opacity: 0.05, depthWrite: false, blending: T3.AdditiveBlending, side: T3.DoubleSide, fog: false })); spot.geometry.translate(0, 40, 0); spot.rotation.x = Math.PI / 2; spot.position.set(0, 2.6, 3.3); g.add(spot);
     const len = 22 + 7 * 15.5; EVO.colBox(g, 7.2, 8.4, len, 0, 4.2, -len / 2 + 2);
-    S.b.root.add(g);
+    S.b.root.add(g); g.rotation.order = 'YXZ';
     const st = { on: false, t0: 0, horn: false };
     EVO.addDyn(g, (t, dt, game) => {
       const run = game.endlessRun; if (!run) return;
       if (!st.on && run.dist > dA - 130 && game.state === 'FLIGHT') { st.on = true; st.t0 = t; game.audio.play('trainHorn'); game.rig.shake = Math.max(game.rig.shake, 0.4); }
-      if (!st.on) { g.visible = false; return; }
+      if (!st.on) { g.visible = false; if (game.audio.setTrain) game.audio.setTrain(0); return; }
       const dd = dB - 46 * (t - st.t0); g.visible = dd > dA - 60;
-      if (!g.visible) return;
-      const p = T.at(dd, -9.5, 0.2), q = T.at(dd - 6, -9.5, 0.2); g.position.set(p[0], p[1], p[2]); g.rotation.y = Math.atan2(q[0] - p[0], q[2] - p[2]);
+      if (!g.visible) { if (game.audio.setTrain) game.audio.setTrain(0); return; }
+      const lc = S.lane(dd).lx - 9, p = T.at(dd, lc, 0.2), q = T.at(dd - 6, lc, 0.2); g.position.set(p[0], p[1], p[2]); g.rotation.y = Math.atan2(q[0] - p[0], q[2] - p[2]); g.rotation.x = -Math.atan2(q[1] - p[1], Math.hypot(q[0] - p[0], q[2] - p[2]));   // suit la pente
       if (!st.horn2 && game.rocket.active && game.rocket.pos.distanceTo(g.position) < 160) { st.horn2 = true; game.audio.play('trainHorn'); }
+      if (game.audio.setTrain) { const dist = game.rocket.active ? game.rocket.pos.distanceTo(g.position) : 999; game.audio.setTrain(Math.pow(Math.max(0, 1 - dist / 240), 1.4)); }
     }, g.children.filter((o) => o.userData.size), { near: 9999, span: 9999 });
   }
 
@@ -98,7 +139,7 @@
         for (const s of [-1, 1]) S.bx(m, Lc + s * (hw + 7), 30, 14, 100, 12.8, 'concreteDark', pk(r, CONC), true);
         if (m < tRoof) S.bx(m, Lc, H + 6, 2 * hw + 28, 12, 12.8, 'concreteDark', pk(r, CONC), true);
         for (const s of [-1, 1]) { S.bx(m, Lc + s * (hw - 0.3), 0.8, 0.3, 1.6, 12.8, 'hazard', undefined, false); S.bx(m, Lc + s * (hw - 0.4), H - 3, 0.9, 0.9, 12.6, 'metal', '#6a6e74', false); if (Math.round(m / 12) % 2 === 0) { S.bx(m, Lc + s * (hw - 0.3), 15, 0.2, 0.6, 8, 'emis:#ffb04a', undefined, false); S.glow(m, Lc + s * (hw - 1.5), 15, '#ffb04a', 16); } }
-        for (const x of [-9, 9]) { for (const o of [-0.75, 0.75]) S.bx(m, Lc + x + o, 0.3, 0.2, 0.25, 12.4, 'metal', '#7a7e84', false); S.bx(m, Lc + x, 0.08, 6, 0.16, 12.4, 'col:#4a4844', undefined, false); S.bx(m, Lc + x, 0.22, 4.4, 0.2, 0.8, 'planks', '#6a5238', false); }
+        for (const x of [-9, 9]) railTrack(S, m - 6, m + 6, Lc + x);   // v208 : voie complete qui suit le sol (ballast, traverses, deux rails a patin, ame et champignon)
       });
       for (let dc = t0 + 10; dc < t1 - 10; dc += 24) S.item(dc, (r) => {
         const Lc = S.lane(dc).lx;
@@ -125,6 +166,12 @@
   function tower(S, dc, lx, w, dd, h, r) {
     S.place(dc, lx, w, dd, 0, h + 10, () => {
       S.bx(dc, lx, h / 2, w, h, dd, pk(r, BTX), pk(r, ['#c8ccd4', '#b8bcc8', '#a8b0c0', '#d0c8c0']), true);
+      // v208 : socle, pilastres d'angle, corniche, couronnement en retrait, liseré lumineux : une vraie tour (et non plus un pave)
+      S.bx(dc, lx, 3, w + 2.4, 6, dd + 2.4, 'concreteDark', '#5e646e', true);
+      for (const sa of [-1, 1]) for (const sb of [-1, 1]) S.bx(dc + sa * (dd / 2 + 0.1), lx + sb * (w / 2 + 0.1), h / 2, 1.3, h, 1.3, 'concreteDark', '#4c525c', false);
+      S.bx(dc, lx, h + 0.55, w + 1.4, 1.1, dd + 1.4, 'concreteDark', '#707680', false);
+      S.bx(dc, lx, h - 1.6, w + 0.5, 0.45, dd + 0.5, 'emis:' + pk(r, NEON), undefined, false);
+      if (h > 52) { const ch = r.between([6, 14]); S.bx(dc, lx, h + 1.1 + ch / 2, w * 0.62, ch, dd * 0.62, pk(r, BTX), '#9aa2b2', false); S.bx(dc, lx, h + 1.2 + ch + 0.4, w * 0.7, 0.8, dd * 0.7, 'concreteDark', '#707680', false); }
       const face = lx > 0 ? -1 : 1, fx = lx + face * (w / 2 + 0.12);
       for (let k = 0; k < 5 + Math.floor(r() * 4); k++) { const y = 8 + r() * (h - 12); S.bx(dc + r.between([-dd * 0.2, dd * 0.2]), fx, y, 0.25, 1.4, dd * r.between([0.4, 0.85]), 'emis:' + pk(r, NEON), undefined, false); }
       if (h > 60) { S.bx(dc, lx, h + 2.4, 1, 5, 1, 'metal', '#444', false); S.bx(dc, lx, h + 5.2, 1.4, 1.2, 1.4, 'emis:#ff3a2a', undefined, false); S.glow(dc, lx, h + 5, '#ff3a2a', 22); }

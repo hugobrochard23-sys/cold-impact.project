@@ -111,7 +111,15 @@
       for (const s of [-1, 1]) { S.bx(dc - 6, s * 17, 2.2, 7, 4.4, 6, 'brick', pk(r, BR), true); S.bx(dc - 6, s * 17, 4.7, 8.2, 0.7, 7.2, 'corrugated', '#7a5446', true); S.bx(dc - 2.6, s * 17, 2.6, 0.2, 1.6, 3, 'glass', undefined, false); sandbags(S, dc + 6, s * 14, 3, r); sandbags(S, dc - 14, s * 22, 4, r); }
       for (let k = -5; k <= 5; k++) { if (Math.abs(k) < 1) continue; for (const s of [-1, 1]) if (k * 12 > 0 || true) S.bx(dc + k * 6, s * 30, 2, 0.2, 4, 6, 'chainlink', undefined, false); }
       // mirador : quatre pieds, cabine en planches, toit ; la tourelle est dessus
-      for (const [a, b] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) S.bx(dc + 12 + a * 2.6, 34 + b * 2.6, 7.5, 0.7, 15, 0.7, 'metal', '#6a6e74', true);
+      for (const [a, b] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) S.bx(dc + 12 + a * 2.6, 34 + b * 2.6, 7.5, 0.9, 15, 0.9, 'metal', '#6a6e74', true);
+      // v208 : mirador consolide : entretoises, croix de saint-andre, plancher, echelle, garde-corps
+      for (const yy of [3.5, 9]) { for (const a of [-1, 1]) { S.bx(dc + 12 + a * 2.6, 34, yy, 0.4, 0.4, 5.2, 'metal', '#5a5e64', false); S.bx(dc + 12, 34 + a * 2.6, yy, 5.2, 0.4, 0.4, 'metal', '#5a5e64', false); } }
+      for (const a of [-1, 1]) { S.bxr(dc + 12 + a * 2.6, 34, 7.2, 14.2, 0.3, 0.3, 'metal', '#5a5e64', 68 * a, 0, false); S.bxr(dc + 12, 34 + a * 2.6, 7.2, 0.3, 14.2, 0.3, 'metal', '#5a5e64', 0, 0, false); }
+      S.bx(dc + 12, 34, 14.3, 9.8, 0.5, 9.8, 'planks', '#6a5238', true);
+      for (const o of [-0.6, 0.6]) S.bx(dc + 7.6, 34 + o, 7.2, 0.16, 14.4, 0.16, 'metal', '#8a8e94', false);
+      for (let yy = 0.7; yy < 14; yy += 0.9) S.bx(dc + 7.6, 34, yy, 1.4, 0.12, 0.12, 'metal', '#8a8e94', false);
+      for (const [a, b] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) S.bx(dc + 12 + a * 4.5, 34 + b * 4.5, 19.6, 0.4, 2.8, 0.4, 'metal', '#6a6e74', false);
+      for (const sd of [-1, 1]) { S.bx(dc + 12 + sd * 4.7, 34, 15.1, 0.2, 0.2, 9.4, 'metal', '#8a8e94', false); S.bx(dc + 12, 34 + sd * 4.7, 15.1, 9.4, 0.2, 0.2, 'metal', '#8a8e94', false); }
       S.bx(dc + 12, 34, 16, 8, 3.4, 8, 'planks', '#8a7254', true); S.bx(dc + 12, 34, 18.2, 9.4, 0.8, 9.4, 'corrugated', '#6a4a3c', true); lamp(S, dc + 12, 30, 15, '#ffd8a0');
       crate(S, dc + 24, -26, r, 2); drum(S, dc + 20, -28, r); drum(S, dc + 21.5, -27.5, r);
     });

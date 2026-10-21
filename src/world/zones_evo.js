@@ -281,7 +281,7 @@
       const bands = [[0, 14, 17, 10, 13, 1.85], [14, 34, 12, 6, 8, 2.1], [34, 62, 6, 4, 5, 2.7]];
       let bi = 0;
       for (const [lo, hi, dens, nbLo, nbHi, wk] of bands) {
-        const area = 2 * (hi - lo), n = Math.max(2, Math.round(len * area * dens * 0.78 / 28)); bi++;
+        const area = 2 * (hi - lo), n = Math.max(2, Math.round(len * area * dens * 0.78 / 28 * (d < 150 ? 1.8 : 1))); bi++;   // v208 : pres du lanceur, herbe plus fine et plus fournie
         for (let i = 0; i < n; i++) {
           const dd = d + len * hsh(d + i * 0.37 + lo, i * 1.9 + bi), lx = (hsh(i * 1.7 + hi, d * 0.13 + bi) < 0.5 ? -1 : 1) * (lo + (hi - lo) * hsh(i * 2.9 + bi, d * 0.7 + hi));
           if (hsh(i * 9.7, d + bi) > 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(dd * 0.07 + lx * 0.09 + Math.sin(lx * 0.05) * 2))) continue;   // plaques un peu moins denses (test peu couteux d'abord)
@@ -293,7 +293,7 @@
           const lay = (bi === 1 && hsh(i * 7.3, d + 5.1) >= 0.34) ? 1 : 0, af = bi === 1 ? (lay ? 130 : 250) : bi === 2 ? 190 : 250, G = grp(Math.floor(dd / 100), lay, bi - 1);
           relN(p[0], p[2], cn, 0, 1, 0); _tc.copy(_gc).multiplyScalar(0.96 + 0.1 * hsh(i * 1.3, d + bi));
           G.tufts.push([p[0], p[1], p[2], G.tp.length, 0]);
-          G.tp.push(p[0], p[1] - 0.04, p[2]); G.tc.push(seed, af, nb, wk); G.tcol.push(_tc.r, _tc.g, _tc.b); G.tn.push(cn[0], cn[2]);
+          G.tp.push(p[0], p[1] - 0.04, p[2]); G.tc.push(seed, af, nb, dd < 150 ? wk * 0.58 : wk); G.tcol.push(_tc.r, _tc.g, _tc.b); G.tn.push(cn[0], cn[2]);
         }
       }
       // FLEURS SAUVAGES en parterres irreguliers : marguerites (petales blancs, coeur jaune), boutons d'or, quelques bleues, violettes, roses ; inclinees vers la camera
@@ -305,7 +305,7 @@
         if (Math.sin(cd * 0.021 + cl * 0.033 + 1.7) + Math.sin(cd * 0.047 - cl * 0.029) < -0.5) continue;   // zones sans fleurs : parterres separes par de l'herbe seule
         const t0 = T.at(cd, cl, 0), t1 = T.at(cd + 2, cl, 0), tl = Math.hypot(t1[0] - t0[0], t1[2] - t0[2]) || 1, fx = (t1[0] - t0[0]) / tl, fz = (t1[2] - t0[2]) / tl;   // sens de la piste
         for (let k = 0; k < nfl; k++) {
-          const ang = hsh(ci + k * 1.7, d * 0.3) * 6.2832, rr0 = rc * Math.sqrt(hsh(k * 2.9, ci + d * 0.11)), dd = cd + Math.cos(ang) * rr0, lx = cl + Math.sin(ang) * rr0; if (dd < d || dd >= e || wet && wet(dd, lx, sc, T)) continue;
+          const ang = hsh(ci + k * 1.7, d * 0.3) * 6.2832, rr0 = rc * Math.sqrt(hsh(k * 2.9, ci + d * 0.11)), dd = cd + Math.cos(ang) * rr0, lx = cl + Math.sin(ang) * rr0; if (dd < d || dd >= e || dd < 175 || wet && wet(dd, lx, sc, T)) continue;   // pas de fleurs pres du lanceur
           const p = T.at(dd, lx, 0); gcol(p[0], p[2], _gc); if (gf) gf(dd, lx, _gc, sc); if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82) || solidAt(b, p[0], p[1], p[2])) continue;
           const flay = hsh(k * 2.1, ci + d * 0.7) < 0.4 ? 0 : 1, fa = flay ? 100 : 170, G = grp(Math.floor(dd / 100), flay); relN(p[0], p[2], cn, 0, 1, 0);
           const kind = hsh(k * 6.1, ci + d) < 0.8 ? main : pickF(hsh(k * 8.3, ci * 1.9 + d)), daisy = kind[2] === 1, hgt = 0.6 + 0.5 * hsh(k * 1.3, ci + d), R = (daisy ? 0.38 : 0.29) * (0.8 + 0.5 * hsh(k * 9.1, ci)) * 1.0, th = hsh(k * 3.3, ci) * 6.2832;
@@ -403,8 +403,10 @@
   const campagne = { signature: 'rampe', scenes: {}, dress(S) {
     if (S.sc.name === 'riviere') { const dr = S.d0 + S.len * 0.5, p = S.T.at(dr, 0, 0); const q = S.T.at(dr + 10, 0, 0), q2 = S.T.at(dr - 10, 0, 0), l = Math.hypot(q[0] - q2[0], q[2] - q2[2]) || 1; S.b.water = [{ x: p[0], z: p[2], ux: (q[0] - q2[0]) / l, uz: (q[2] - q2[2]) / l, hw: S.vol(dr) + 70, hd: S.len * 0.3 + 6 }]; }   // v206 : plan d'eau de la riviere (trees.js l'evite)
 
+    if (/^(descente|ville|noyau)$/.test(S.sc.name)) return;   // v208 : ni collines, ni rochers, ni arbres dans la mine, le train, la gare et la ville
     // collines : bandes de relief continues de chaque cote (hillStrip)
     for (const sd of [-1, 1]) hillStrip(S, sd);
+    if (!/^(rampe|camp|riviere|foret|route)$/.test(S.sc.name)) return;   // forteresse et fuite : decor propre a la scene
     // petits blocs de pierre posés dans l'herbe : des reliefs à frôler
     const wetRv = (dc) => S.sc.name === 'riviere' && Math.abs(dc - (S.d0 + S.len * 0.5)) < S.len * 0.3 + 6;   // v206 : rien (arbre, ferme, rocher) ne pousse dans l'eau de la riviere
     S.rows(S.d0, S.d1, 24, 0.85, (dc) => S.item(dc, (r) => { if (wetRv(dc)) return; const lx = S.lane(dc).lx + (r() < 0.5 ? -1 : 1) * r.between([16, 62]), sz = r.between([1.6, 4.6]), p = S.at(dc, lx, 0); TR.rock(S.b, p[0], p[1], p[2], sz, r, {}); S.b.box({ p: [p[0], p[1] + sz * 0.5, p[2]], s: [sz * 1.6, sz * 1.1, sz * 1.6], render: false }); }));

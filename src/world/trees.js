@@ -95,37 +95,8 @@
     ico.dispose(); m.smooth = false;
   }
 
-  T.broadleaf = function (b, x, y, z, h, rnd, o) {
-    if (inWater(b, x, z)) return;
-    o = o || {}; const birch = !o.autumn && !o.far && rnd() < 0.24, m = new Mesh(), PL = o.autumn ? AUTUMN : birch ? BIRCH : BROAD, pal = PL[Math.floor(rnd() * PL.length)], cDark = hexk(pal[0], 0.95 + 0.1 * rnd()), cLight = hexk(pal[1], 0.78 + 0.1 * rnd()), bark = birch ? hex('#d6d2c4') : hex(BARK[Math.floor(rnd() * BARK.length)]);
-    const th = h * (birch ? rr(rnd, 0.5, 0.6) : rr(rnd, 0.38, 0.48)), cr = h * (birch ? rr(rnd, 0.22, 0.28) : rr(rnd, 0.3, 0.38)), seed = rnd() * 100, lean = rr(rnd, -0.06, 0.06) * h;
-    m.tube([x, y - 0.8, z], h * 0.05 + 0.45, [x, y + th * 0.25, z], h * 0.034 + 0.3, mul(bark, 0.65), mul(bark, 0.8), 8);
-    m.tube([x, y + th * 0.25, z], h * 0.034 + 0.3, [x + lean, y + th, z], h * 0.022 + 0.18, mul(bark, 0.8), mul(bark, 0.95), 7);
-    const nb = 2 + Math.floor(rnd() * 2);
-    for (let i = 0; i < nb; i++) { const a = rnd() * 6.28, s = rr(rnd, 0.28, 0.42) * h; m.tube([x + lean * 0.6, y + th * 0.62, z], h * 0.016 + 0.14, [x + lean + Math.cos(a) * s, y + th + s * 0.55, z + Math.sin(a) * s], 0.07, mul(bark, 0.85), mul(bark, 1), 6); }
-    if (birch) for (let k = 0; k < 5; k++) { const yy = y + th * (0.12 + k * 0.17); m.tube([x + lean * k * 0.1, yy, z], h * 0.03 + 0.3, [x + lean * k * 0.1, yy + th * 0.03, z], h * 0.03 + 0.32, hex('#2a2822'), hex('#2a2822'), 7); }   // marques sombres de l'ecorce
-    // v207 : couronne en ETAGES comme les sapins (structuree, taillee a la serpe) : 3 a 4 plateaux arrondis, larges en bas, plus petits vers le haut, vert fonce dessous, vert clair dessus
-    const tiersN = o.far ? 3 : (birch ? 3 : 4) + (rnd() < 0.4 ? 1 : 0), ch = cr * 1.35, wk = birch ? 0.75 : 1.0, ph = rnd() * 6.28;
-    for (let i = 0; i < tiersN; i++) {
-      const t = tiersN > 1 ? i / (tiersN - 1) : 0, y0 = y + th * 0.92 + t * ch * 0.8, Ri = cr * wk * (1.3 - 0.78 * Math.pow(t, 1.1)) * rr(rnd, 0.92, 1.08), dh = cr * (0.42 - 0.1 * t), K = o.far ? 7 : 9, px = x + lean * (0.6 + 0.4 * t), pz = z, shd = 0.74 + 0.36 * t;
-      const cOuter = mul(lerp3(cDark, cLight, 0.4 + 0.45 * t), shd * 1.12), cInner = mul(lerp3(cDark, cLight, 0.7), shd * 1.18), cUnder = mul(cDark, shd * 0.55), cApex = mul(cLight, shd * 1.2);
-      const outer = [], inner = [];
-      for (let k = 0; k < K; k++) {
-        const a = ph + i * 0.5 + k / K * 6.2832 + rr(rnd, -0.13, 0.13), ro = Ri * (k % 2 ? rr(rnd, 0.8, 0.94) : rr(rnd, 0.96, 1.12)), ri = Ri * rr(rnd, 0.5, 0.62);
-        outer.push([px + Math.cos(a) * ro, y0 - dh * 0.1 + rr(rnd, -0.12, 0.12) * dh, pz + Math.sin(a) * ro]);
-        inner.push([px + Math.cos(a + 0.18) * ri, y0 + dh * 0.62, pz + Math.sin(a + 0.18) * ri]);
-      }
-      const apex = [px, y0 + dh * 0.95, pz], under = [px, y0 - dh * 0.5, pz];
-      for (let k = 0; k < K; k++) {
-        const j = (k + 1) % K;
-        m.tri(apex, inner[k], inner[j], cApex, cInner, cInner);
-        m.quad(inner[k], outer[k], outer[j], inner[j], cInner, cOuter, cOuter, cInner);
-        m.tri(under, outer[j], outer[k], cUnder, cUnder, cUnder);
-      }
-    }
-    if (!o.far) shade(m, x, y, z, h * 0.34, '#28633a');
-    const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff', o.tint); g.dispose();
-  };
+  // v208 : un seul type d'arbre, le sapin (les feuillus sont remplaces par des sapins de meme hauteur)
+  T.broadleaf = function (b, x, y, z, h, rnd, o) { return T.conifer(b, x, y, z, h * 1.15, rnd, o); };
 
   T.bush = function (b, x, y, z, s, rnd) {
     if (inWater(b, x, z)) return;
@@ -135,21 +106,23 @@
   };
 
   // v207 : ROCHER EN BLOCS : 1 a 3 blocs poses les uns sur les autres (grands plans, sommet plus etroit, arêtes franches), couleurs en bandes, mousse sur le dessus : massif et structure, comme la paroi de la mine
-  T.rock = function (b, x, y, z, s, rnd, o) {
+  T.rock = function (b, x, y, z, s, rnd, o) {   // v208 : UN SEUL bloc soude (prisme irregulier, sommet plus etroit), couleurs differentes sur chaque face : aucun empilement, aucune herbe entre les morceaux
     if (inWater(b, x, z)) return;
     o = o || {}; const m = new Mesh(), gray = o.gray || ['#c2c9cd', '#9ca7af', '#9ca7af', '#737f89', '#beb096'][Math.floor(rnd() * 5)], moss = hex('#6a9a48'), base = hex(gray);
-    const nb = s > 2.6 ? 2 + (rnd() < 0.55 ? 1 : 0) : (rnd() < 0.5 ? 2 : 1); let yy = y - 0.05, ox = 0, oz = 0;
-    for (let i = 0; i < nb; i++) {
-      const k = 1 - i * 0.26, w = s * rr(rnd, 1.0, 1.6) * k, d = s * rr(rnd, 0.9, 1.4) * k, hh = s * rr(rnd, 0.55, 0.95) * (i ? 0.8 : 1), tp = rr(rnd, 0.16, 0.34), ay = rnd() * 6.28, ca = Math.cos(ay), sa = Math.sin(ay);
-      const cx = x + ox, cz = z + oz, J = () => rr(rnd, -0.09, 0.09);
-      const pt = (u, v, hgt, inset) => { const lx = u * w * 0.5 * (1 - inset) + J() * w, lz = v * d * 0.5 * (1 - inset) + J() * d; return [cx + lx * ca - lz * sa, yy + hgt + (hgt > 0 ? J() * hh : 0), cz + lx * sa + lz * ca]; };
-      const B = [pt(-1, -1, 0, 0), pt(1, -1, 0, 0), pt(1, 1, 0, 0), pt(-1, 1, 0, 0)], T4 = [pt(-1, -1, hh, tp), pt(1, -1, hh, tp), pt(1, 1, hh, tp), pt(-1, 1, hh, tp)];
-      const band = mul(base, 0.84 + 0.2 * rnd()), band2 = mul(base, 0.64 + 0.14 * rnd()), topc = o.noMoss ? mul(base, 1.08) : lerp3(mul(base, 1.0), moss, 0.7 - 0.12 * i);
-      for (let e = 0; e < 4; e++) { const f = (e + 1) % 4, sh = e % 2 ? 0.92 : 1.0; m.quad(B[e], B[f], T4[f], T4[e], mul(band2, sh), mul(band2, sh), mul(band, sh), mul(band, sh)); }
-      m.quad(T4[0], T4[1], T4[2], T4[3], topc, topc, topc, topc);
-      yy += hh * 0.9; ox += rr(rnd, -0.25, 0.25) * w; oz += rr(rnd, -0.25, 0.25) * d;
+    const N = 6 + Math.floor(rnd() * 2), w = s * rr(rnd, 1.25, 1.8), d = s * rr(rnd, 1.0, 1.5), hh = s * rr(rnd, 0.95, 1.5), tp = rr(rnd, 0.22, 0.4), ay = rnd() * 6.28, ca = Math.cos(ay), sa = Math.sin(ay), bot = [], top = [];
+    for (let k = 0; k < N; k++) {
+      const a = k / N * 6.2832 + rr(rnd, -0.2, 0.2), rw = rr(rnd, 0.82, 1.12), cx = Math.cos(a) * w * 0.5 * rw, cz = Math.sin(a) * d * 0.5 * rw;
+      bot.push([x + cx * ca - cz * sa, y - 0.12, z + cx * sa + cz * ca]);
+      const ix = cx * (1 - tp) + rr(rnd, -0.08, 0.08) * w, iz = cz * (1 - tp) + rr(rnd, -0.08, 0.08) * d;
+      top.push([x + ix * ca - iz * sa, y + hh * rr(rnd, 0.85, 1.12), z + ix * sa + iz * ca]);
     }
-    shade(m, x, y, z, s * 1.15, o.shade || '#3a6a3a'); const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
+    for (let k = 0; k < N; k++) {
+      const j = (k + 1) % N, lo = mul(base, 0.58 + 0.12 * rnd()), hi = mul(base, 0.86 + 0.22 * rnd());
+      m.quad(bot[k], bot[j], top[j], top[k], lo, lo, hi, hi);
+    }
+    const c0 = [x, y + hh * 1.08, z], topc = o.noMoss ? mul(base, 1.08) : lerp3(mul(base, 1.0), moss, 0.62);
+    for (let k = 0; k < N; k++) { const j = (k + 1) % N, cc = k % 2 && !o.noMoss ? lerp3(topc, moss, 0.4) : topc; m.tri(c0, top[k], top[j], mul(cc, 1.08), cc, cc); }
+    const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
   };
 
   T.stump = function (b, x, y, z, s, rnd) {

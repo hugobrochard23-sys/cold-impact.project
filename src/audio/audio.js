@@ -177,6 +177,17 @@
       if (this.uwWasUnder !== undefined && (k > 0.5) !== this.uwWasUnder) this.play('splash');
       this.uwWasUnder = k > 0.5; this._uk = k; this.applyWater();
     }
+    // v208 : train qui passe : grondement grave continu (roues + caisse), claquements de joints de rail reguliers, qui montent quand il est proche
+    setTrain(k) {
+      if (!this.ctx || !this.noise) return; const ctx = this.ctx, t = ctx.currentTime;
+      if (!this.trainRum) {
+        const mkSrc = (rate) => { const s = ctx.createBufferSource(); s.buffer = this.noise; s.loop = true; s.playbackRate.value = rate; s.start(); return s; };
+        const lf = ctx.createBiquadFilter(); lf.type = 'lowpass'; lf.frequency.value = 170; lf.Q.value = 0.8; this.trainRum = ctx.createGain(); this.trainRum.gain.value = 0; mkSrc(0.4).connect(lf); lf.connect(this.trainRum); this.trainRum.connect(this.ambBus || this.master);
+        const bf = ctx.createBiquadFilter(); bf.type = 'bandpass'; bf.frequency.value = 1700; bf.Q.value = 1.1; this.trainClack = ctx.createGain(); this.trainClack.gain.value = 0; mkSrc(1).connect(bf); bf.connect(this.trainClack); this.trainClack.connect(this.ambBus || this.master);
+        const lfo = ctx.createOscillator(); lfo.type = 'square'; lfo.frequency.value = 6.5; this.trainLfo = ctx.createGain(); this.trainLfo.gain.value = 0; lfo.connect(this.trainLfo); this.trainLfo.connect(this.trainClack.gain); lfo.start();
+      }
+      this.trainRum.gain.setTargetAtTime(k * 0.9, t, 0.2); this.trainClack.gain.setTargetAtTime(k * 0.1, t, 0.2); this.trainLfo.gain.setTargetAtTime(k * 0.1, t, 0.2);
+    }
     setWater(k) { this._wk = k; this.applyWater(); }
     applyWater() { if (this.ctx && this.waterG) this.waterG.gain.setTargetAtTime(Math.max(0, Math.max(this._wk || 0, (this._uk || 0) * 1.1)) * 0.32, this.ctx.currentTime, 0.2); }
     // événements sonores lointains, tirés au hasard (klaxon, train lointain, corne de navire, oiseaux…) : le monde existe hors de l'écran
