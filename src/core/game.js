@@ -82,7 +82,7 @@
       window.addEventListener('resize', () => this.resize());
       // v036b : perte du contexte WebGL (mémoire du téléphone) : on laisse three.js le recréer et on redimensionne au retour
       this.canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.glLost = true; (window.__blk || (window.__blk = [])).push({ reason: 'contextlost' }); });
-      this.canvas.addEventListener('webglcontextrestored', () => { this.glLost = false; this.resize(); if ((this.glLostN = (this.glLostN || 0) + 1) >= 2 && this.quality) this.quality.apply('low'); });
+      this.canvas.addEventListener('webglcontextrestored', () => { this.glLost = false; this.resize(); this.glLostN = (this.glLostN || 0) + 1; });
       this.resize();
     }
 
@@ -1233,10 +1233,6 @@
       } else if (st === 2) {
         this.renderer.forceContextLoss();
         setTimeout(() => { this.renderer.forceContextRestore(); this.resize(); }, 150);
-      } else if (st === 3) {
-        if (this.quality) this.quality.apply('low');
-      } else {
-        this.settings.postfx = false;
       }
     }
 

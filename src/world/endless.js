@@ -174,13 +174,22 @@
   };
 
   /* ---------- tronçon ---------- */
-  function buildChunk(game, T, k) {
+  // v195 : la construction d'un troncon est un GENERATEUR : elle se fait en petites etapes (20 m de decor, puis un lot de geometrie a la fois) reparties sur plusieurs images,
+  // au lieu d'un bloc de 50 a 180 ms (plusieurs centaines de ms sur telephone) tous les 200 m. Le resultat est identique ; buildChunk() le fait d'un coup (debut de partie, tests).
+  const ASYNC_TEST = /[?&]async=1/.test(location.search);
+  function buildChunk(game, T, k) { const it = buildChunkG(game, T, k); let r; while (!(r = it.next()).done); return r.value; }
+  function* buildChunkG(game, T, k) {
+    const nB0 = game.world.boxes.length; let ok = false, bRef = null;
+    try { const it = buildChunkBody(game, T, k, (b) => { bRef = b; }); let r, si = 0; for (;;) { const t0 = window.__GSTEPS ? performance.now() : 0; r = it.next(); if (window.__GSTEPS) window.__GSTEPS.push([k, si++, Math.round((performance.now() - t0) * 10) / 10]); if (r.done) break; yield; } ok = true; return r.value; }
+    finally { if (!ok) { game.world.removeBoxes(game.world.boxes.slice(nB0)); if (bRef) bRef.dispose(); } }   // abandon (nouvelle partie) : on retire ce qui a deja ete pose
+  }
+  function* buildChunkBody(game, T, k, onB) {
     const cfg = C(), d0 = k * cfg.chunkLen, d1 = d0 + cfg.chunkLen;
     const r = G.stream(T.seed, 'chunk' + k);
     r.pick = (a) => a[Math.floor(r() * a.length)];
     const world = game.world, nBoxes = world.boxes.length;
     const pseudo = { seed: (T.seed ^ (k * 7919)) >>> 0, env: { sky: { stars: true } }, routes: [] };   // pas de nuages par tronçon
-    const b = new CC.LevelBuilder(game.scene, world, pseudo);
+    const b = new CC.LevelBuilder(game.scene, world, pseudo); onB(b);
     b.segLen = CC.CONFIG.render.segLen;   // v038g : lots découpés en tranches (visibilité et ombres)
     const gates = [];                                   // points de passage { d, lx, y } (pilote automatique, matériaux)
     const busy = [], reserved = [];
@@ -214,7 +223,8 @@
 
     // sol, passages entre zones, scènes (src/world/zones*.js)
     const ctx = { game, b, T, r, d0, d1, gates, busy, reserved, ZONES, special: null, rings: [], glows: [], doors: [] };
-    CC.Zones.build(ctx);
+    { const SL = 20; ctx.noFlush = true; for (let a = d0; a < d1 - 0.01; a += SL) { ctx.d0 = a; ctx.d1 = Math.min(d1, a + SL); ctx.keepSpecial = a > d0; CC.Zones.build(ctx); yield; }
+      ctx.d0 = d0; ctx.d1 = d1; ctx.noFlush = false; ctx.keepSpecial = false; if (CC.Zones.flushGrass) CC.Zones.flushGrass(ctx); if (CC.Life && CC.Life.flushGlows) CC.Life.flushGlows(ctx); yield; }
 
     // v040 : ligne du RECORD — un portique jaune en travers de la route à la distance du meilleur vol
     { const gd = game.progress && game.progress.P && game.progress.P.bestDist;
@@ -248,7 +258,7 @@
       } else p = place(d, lx, ly + (t.dy || 0) + r.between([-1.5, 1.5]), air, RO.RAD[type] || (air ? 8 : 5.5));
       if (!p) continue;   // pas de place libre : pas de cible (jamais dans un mur)
       b.target(type, p, T.yawAcross(d) + (type === 'truck' ? 90 : 0) + RO.face(type), RO.opts(type, { snow: t.zone === 'banquise', unarmed: d * dk < 250 || r() > U.clamp(0.3 + (d * dk - 250) / 3000, 0.3, 0.9), tint: Math.abs(Math.round(p[0] * 0.37 + p[2] * 0.11)) % 4, evoHp: CC.EVO && CC.EVO.on && !T.preview ? CC.EVO.hpAt(d) : undefined }));   // les premiers ne tirent pas ; ensuite de plus en plus souvent
-      busy.push(d);
+      busy.push(d); yield;   // v195 : un modele d ennemi par etape
       if (type === 'boat' || type === 'hover' || type === 'rib') continue;   // hors trajectoire : pas de point de passage
       const hy = air ? p[1] - T.base(d) : 1.6;
       gates.push({ d: d - 55, lx: T.laneX(d - 55), y: T.laneY(d - 55) * 0.7 }, { d: d - 22, lx, y: hy + 3 }, { d, lx, y: hy }, { d: d + 30, lx: T.laneX(d + 30), y: T.laneY(d + 30) * 0.8 });
@@ -348,7 +358,7 @@
     }
 
     if (k >= 0) T.spawned = (T.spawned || 0) + b.targets.filter((q) => !q.boss && !q.hazard).length;   // v082 : nombre de cibles du niveau (étoiles)
-    b.finish();
+    { const fg = b.finishG(); let q; while (!(q = fg.next()).done) yield; }
     const boxes = world.boxes.slice(nBoxes);
     // route du pilote automatique et des matériaux : la trajectoire, tous les 14 m, sauf près des passages obligés (cibles, portails)
     gates.sort((a, c) => a.d - c.d);
@@ -470,23 +480,30 @@
       if (g.horizon) g.horizon.setEnv(env);
     }
     // construit les tronçons jusqu'à `ahead` devant la tête, détruit ceux trop loin derrière
-    ensure(kHead) {
-      const cfg = C(), g = this.game;
+    // construit les tronçons jusqu'à `ahead` devant la tête, détruit ceux trop loin derrière.
+    // Sans `budgetMs` : tout est construit tout de suite. Avec : la construction avance par petites etapes (budget en ms par image), sauf pour le troncon courant et le suivant (toujours prets).
+    ensure(kHead, budgetMs) {
+      const cfg = C(), g = this.game, deadline = budgetMs === undefined ? Infinity : performance.now() + budgetMs;
+      for (const [k, c] of this.chunks) if (k < kHead - cfg.behind) { disposeChunk(g, c); this.chunks.delete(k); }
       for (let k = Math.max(-1, kHead - cfg.behind); k <= kHead + cfg.ahead; k++) {
         if (this.chunks.has(k)) continue;
-        const c = buildChunk(g, this.T, k);
+        const must = budgetMs === undefined || k <= kHead + 1;
+        if (!this.job || this.job.k !== k) { if (this.job) this.job.gen.return(); this.job = { k, gen: buildChunkG(g, this.T, k) }; }
+        let r; do { r = this.job.gen.next(); } while (!r.done && (must || performance.now() < deadline));
+        if (!r.done) return;   // reprise a l'image suivante
+        const c = r.value; this.job = null;
         this.chunks.set(k, c);
         g.targets.push(...c.targets); g.entities.push(...c.entities);
         this.level.route.push(...c.route);
         for (const t of c.tanks) this.pending.push({ c, t });
         if (g.autopilot) for (const p of c.route) g.autopilot.route.push(new V().fromArray(p));
+        if (!must && performance.now() >= deadline) return;
       }
-      for (const [k, c] of this.chunks) if (k < kHead - cfg.behind) { disposeChunk(g, c); this.chunks.delete(k); }
     }
     update(dt) {
       const g = this.game, rk = g.rocket, cfg = C();
       if (rk.active) this.dist = Math.max(this.dist, this.T.project(rk.pos, this.dist));   // v063 : progression le long du couloir (qui tourne)
-      this.ensure(Math.floor(this.dist / cfg.chunkLen));
+      this.ensure(Math.floor(this.dist / cfg.chunkLen), g.testMode && !ASYNC_TEST ? undefined : 3);
       const job = this.pending.shift();
       if (job && this.chunks.get(job.c.k) === job.c) {
         const gty = job.t.type || 'tank', e = job.c.builder.guard(gty, job.t.pos, job.t.yaw, { scale: CC.Roster.scale(gty), tint: Math.abs(Math.round(job.t.pos[0] * 0.37 + job.t.pos[2] * 0.11)) % 4, drift: gty === 'jet' ? 16 : 0 });   // s'ajoute aux listes du tronçon
@@ -573,7 +590,7 @@
       if (got > 0.05) { this.fuelGain = (this.fuelGainT > 0 ? this.fuelGain : 0) + got; this.fuelGainT = 1.4; }
     }
     stageLabel() { const D = G.Difficulties.get(G.difficultyIds()[this.stage]); return D; }
-    dispose() { for (const c of this.chunks.values()) disposeChunk(this.game, c); this.chunks.clear(); }
+    dispose() { if (this.job) { this.job.gen.return(); this.job = null; } for (const c of this.chunks.values()) disposeChunk(this.game, c); this.chunks.clear(); }
   }
   E.Run = Run;
 

@@ -514,7 +514,7 @@
     passage(ctx);
     // scènes qui recouvrent ce tronçon
     const ziA = T.zoneIndex(d0), ziB = T.zoneIndex(d1 - 0.01);
-    ctx.special = null;
+    if (!ctx.keepSpecial) ctx.special = null;
     for (let zi = ziA; zi <= ziB; zi++) {
       const plan = Z.plan(T, zi), def = Z.defs[plan.zone];
       for (const sc of plan.scenes) {
@@ -530,6 +530,7 @@
     if (Z.backdrop) Z.backdrop(ctx);   // v038b : couches de bâtiments / conteneurs / montagnes très hauts sur les côtés
     if (Z.tight) Z.tight(ctx);   // v038 : portes serrées (src/world/tight.js)
     if (Z.chaos) Z.chaos(ctx);   // v065 : champs d'obstacles dans tous les sens (src/world/zones_chaos.js)
+    if (ctx.noFlush) return;   // v195 : construction par etapes : l'herbe et les lueurs sont posees une seule fois, a la fin du troncon
     if (Z.flushGrass) Z.flushGrass(ctx);   // v177 : l'herbe est posee en dernier : elle evite le beton et les batiments
     if (CC.Life && CC.Life.flushGlows) CC.Life.flushGlows(ctx);
   };

@@ -18,18 +18,18 @@
 
   // v038g : découpe un lot en tranches de `L` m le long du couloir (z) : le test de visibilité écarte les tranches hors champ, et la passe d'ombres
   // ne redessine plus tout un tronçon de 200 m pour une roquette qui n'en voit que 70
-  function splitBatch(b, L) {
-    const groups = new Map(), P = b.pos, I = b.idx;
-    for (let t = 0; t < I.length; t += 3) {
-      const a = I[t], c = I[t + 1], d = I[t + 2], cz = (P[a * 3 + 2] + P[c * 3 + 2] + P[d * 3 + 2]) / 3, seg = Math.floor(-cz / L);
-      let g = groups.get(seg); if (!g) { g = { pos: [], nor: [], uv: [], col: [], idx: [], shadow: b.shadow, map: new Map() }; groups.set(seg, g); }
-      for (const o of [a, c, d]) {
-        let n = g.map.get(o);
-        if (n === undefined) { n = g.pos.length / 3; g.map.set(o, n); g.pos.push(P[o * 3], P[o * 3 + 1], P[o * 3 + 2]); g.nor.push(b.nor[o * 3], b.nor[o * 3 + 1], b.nor[o * 3 + 2]); g.uv.push(b.uv[o * 2], b.uv[o * 2 + 1]); g.col.push(b.col[o * 3], b.col[o * 3 + 1], b.col[o * 3 + 2]); }
+  function splitBatch(b, L) {   // v195 : tableaux types et table de correspondance par tranche (avant : une Map et un tableau temporaire par triangle)
+    const P = b.pos, I = b.idx, NOR = b.nor, UV = b.uv, COL = b.col, nT = (I.length / 3) | 0, nV = (P.length / 3) | 0, segOf = new Int32Array(nT), groups = new Map();
+    for (let t = 0, q = 0; t < nT; t++, q += 3) segOf[t] = Math.floor(-(P[I[q] * 3 + 2] + P[I[q + 1] * 3 + 2] + P[I[q + 2] * 3 + 2]) / 3 / L);
+    for (let t = 0, q = 0; t < nT; t++, q += 3) {
+      const seg = segOf[t]; let g = groups.get(seg); if (!g) { g = { pos: [], nor: [], uv: [], col: [], idx: [], shadow: b.shadow, remap: new Int32Array(nV).fill(-1), n: 0 }; groups.set(seg, g); }
+      for (let e = 0; e < 3; e++) {
+        const o = I[q + e]; let n = g.remap[o];
+        if (n < 0) { n = g.remap[o] = g.n++; const o3 = o * 3, o2 = o * 2; g.pos.push(P[o3], P[o3 + 1], P[o3 + 2]); g.nor.push(NOR[o3], NOR[o3 + 1], NOR[o3 + 2]); g.uv.push(UV[o2], UV[o2 + 1]); g.col.push(COL[o3], COL[o3 + 1], COL[o3 + 2]); }
         g.idx.push(n);
       }
     }
-    return [...groups.values()];
+    const out = []; for (const g of groups.values()) { g.remap = null; out.push(g); } return out;
   }
 
   /* v036 : toutes les couleurs unies ('col:#hex', 'basic:#hex') partagent UN lot de géométrie (blanc) et passent leur couleur en teinte par
@@ -216,9 +216,10 @@
       return g;
     }
 
-    finish() {
+    finish() { const it = this.finishG(); while (!it.next().done); }
+    *finishG() {
       this.decorateBuildings();
-      this.decorateSky();
+      this.decorateSky(); yield;
       for (const [key, b0] of this.batches) {
         if (!b0.idx.length) continue;
         for (const b of (this.segLen && b0.idx.length > 900 ? splitBatch(b0, this.segLen) : [b0])) {
@@ -227,8 +228,9 @@
           mesh.castShadow = b.shadow && !key.startsWith('basic:') && key !== 'glass';
           mesh.receiveShadow = !key.startsWith('basic:');
           mesh.matrixAutoUpdate = false;
-          this.root.add(mesh);
+          this.root.add(mesh); yield;
         }
+        yield;
       }
       this.batches.clear();
     }

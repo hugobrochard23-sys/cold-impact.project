@@ -198,22 +198,22 @@
   };
   // ---------- v194 : herbe et fleurs instanciees (shaders) ----------
   // les gabarits (un seul brin-triangle x NBL, un seul modele de fleur) sont partages par tous les meshes
-  const NBL = 13;
-  let _tt = null, _ft = null;
-  const tuftTemplate = () => _tt || (_tt = (() => {
-    const n = NBL * 3, bc = new Float32Array(n * 2), col = new Float32Array(n * 3);
-    for (let j = 0; j < NBL; j++) for (let c = 0; c < 3; c++) { const k = j * 3 + c; bc[k * 2] = j; bc[k * 2 + 1] = c; const f = c < 2 ? 0.78 : 1.0; col[k * 3] = col[k * 3 + 1] = col[k * 3 + 2] = f; }
-    return { position: new THREE.BufferAttribute(new Float32Array(n * 3), 3), aBC: new THREE.BufferAttribute(bc, 2), color: new THREE.BufferAttribute(col, 3) };
-  })());
+  const _tts = {}; let _ft = null;
+  // gabarit de touffe : n brins (un triangle chacun) ; wm = largeur des brins (les gabarits LOINTAINS ont moins de brins, plus larges : meme couverture)
+  const tuftTemplate = (nb, wm) => { const key = nb + '_' + wm; return _tts[key] || (_tts[key] = (() => {
+    const n = nb * 3, bc = new Float32Array(n * 3), col = new Float32Array(n * 3);
+    for (let j = 0; j < nb; j++) for (let c = 0; c < 3; c++) { const k = j * 3 + c; bc[k * 3] = j; bc[k * 3 + 1] = c; bc[k * 3 + 2] = wm; const f = c < 2 ? 0.78 : 1.0; col[k * 3] = col[k * 3 + 1] = col[k * 3 + 2] = f; }
+    return { position: new THREE.BufferAttribute(new Float32Array(n * 3), 3), aBC: new THREE.BufferAttribute(bc, 3), color: new THREE.BufferAttribute(col, 3) };
+  })()); };
   const flowerTemplate = () => _ft || (_ft = (() => {
     // parts : 0 tige (3 sommets), 1 petales (7 x 3), 2 coeur (4 x 3) ; aBC = (partie * 100 + indice, coin)
     const rows = []; for (let c = 0; c < 3; c++) rows.push([0, c]);
     for (let q = 0; q < 7; q++) for (let c = 0; c < 3; c++) rows.push([100 + q, c]);
     for (let q = 0; q < 4; q++) for (let c = 0; c < 3; c++) rows.push([200 + q, c]);
-    const bc = new Float32Array(rows.length * 2); rows.forEach((r, k) => { bc[k * 2] = r[0]; bc[k * 2 + 1] = r[1]; });
-    return { position: new THREE.BufferAttribute(new Float32Array(rows.length * 3), 3), aBC: new THREE.BufferAttribute(bc, 2), color: null };
+    const bc = new Float32Array(rows.length * 3); rows.forEach((r, k) => { bc[k * 3] = r[0]; bc[k * 3 + 1] = r[1]; bc[k * 3 + 2] = 1; });
+    return { position: new THREE.BufferAttribute(new Float32Array(rows.length * 3), 3), aBC: new THREE.BufferAttribute(bc, 3), color: null };
   })());
-  const GLSL_COMMON = `uniform float uTime; uniform vec3 uCam; attribute vec2 aBC; attribute vec3 aPos; attribute vec2 aNrm;
+  const GLSL_COMMON = `uniform float uTime; uniform vec3 uCam; attribute vec3 aBC; attribute vec3 aPos; attribute vec2 aNrm;
     float gh( float a, float b ) { return fract( sin( a * 127.1 + b * 311.7 ) * 43758.5453 ); }
     vec3 gWind( vec3 gw, float sway, float far ) { float gf = 1.0 - smoothstep( far * 0.55, far, distance( gw, uCam ) ); float gs = sway * ( 0.6 + 0.4 * sin( gw.x * 0.11 + gw.z * 0.13 ) );
       return vec3( ( sin( uTime * 1.9 + gw.x * 0.31 + gw.z * 0.19 ) * 0.14 + sin( uTime * 3.4 + gw.z * 0.8 ) * 0.04 ) * gs, - sway * ( 1.0 - gf ), cos( uTime * 1.5 + gw.z * 0.27 + gw.x * 0.15 ) * 0.1 * gs ); }`;
@@ -236,7 +236,7 @@
       float kh = kd < 0.22 ? 1.3 : ( kd > 0.82 ? 0.7 : 1.0 ), kw = kd < 0.22 ? 0.65 : ( kd > 0.82 ? 1.2 : 1.0 ), hv = 0.85 + 0.3 * gh( seed, 6.6 );
       float j = aBC.x, c = aBC.y, on = step( j + 0.5, nbF );
       float s = ( gh( j * 3.7, seed ) * 2.0 - 1.0 ) * 0.5, side = ( gh( j * 5.3, seed * 1.1 ) - 0.5 ) * 0.4 * sz;
-      float hp = 0.45 + 0.55 * cos( s * 3.1416 ), hh = ( 0.45 + 0.75 * gh( j * 5.1, seed ) ) * hp * sz * hv * 1.02 * kh * on, w = 0.075 * sz * wk * 1.3 * kw * on;
+      float hp = 0.45 + 0.55 * cos( s * 3.1416 ), hh = ( 0.45 + 0.75 * gh( j * 5.1, seed ) ) * hp * sz * hv * 1.02 * kh * on, w = 0.075 * sz * wk * 1.3 * kw * on * aBC.z;
       float lean = hh * 0.3 * ( gh( j * 7.1, seed ) - 0.4 );
       float lu = s * Lt, lv = side, ly = 0.0;
       if ( c < 0.5 ) { lv += w; } else if ( c < 1.5 ) { lv -= w; } else { lu += 0.5 * lean; lv += 0.6 * lean; ly = hh; }
@@ -271,7 +271,7 @@
     // beaucoup moins de calcul a la creation d'un troncon, et plus aucun envoi de gros tampons au GPU.
     // Un mesh par tranche de 100 m et par niveau de detail : 0 = touffes de base (portee 260 m), 1 = remplissage et une part des fleurs (portee 150 m).
     const groups = new Map();
-    const grp = (sk, layer) => { const k = sk * 4 + layer; let g = groups.get(k); if (!g) groups.set(k, g = { layer, sk, tp: [], tc: [], tcol: [], tn: [], fp: [], fa: [], fb: [], fcol: [], fcen: [], fn: [], tufts: [], flowers: [] }); return g; };
+    const grp = (sk, layer, cls) => { cls = cls || 0; const k = (sk * 4 + layer) * 4 + cls; let g = groups.get(k); if (!g) groups.set(k, g = { layer, sk, cls, tp: [], tc: [], tcol: [], tn: [], fp: [], fa: [], fb: [], fcol: [], fcen: [], fn: [], tufts: [], flowers: [] }); return g; };
     for (let k = GREC.length - 1; k >= 0; k--) if (!GREC[k].b.root || !GREC[k].b.root.parent) GREC.splice(k, 1);
     const cn = [0, 1, 0];   // normale du sol, calculee une fois par touffe / fleur
     const runJob = (jb) => {
@@ -289,7 +289,7 @@
           if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82)) continue;
           if (solidAt(b, p[0], p[1], p[2])) continue;
           const nb = nbLo + Math.floor(hsh(i, d * 2.1 + bi) * (nbHi - nbLo + 1)), seed = 1 + hsh(i * 1.7 + bi, d * 0.013) * 97;
-          const lay = (bi === 1 && hsh(i * 7.3, d + 5.1) >= 0.34) ? 1 : 0, af = bi === 1 ? (lay ? 150 : 260) : bi === 2 ? 210 : 260, G = grp(Math.floor(dd / 100), lay);
+          const lay = (bi === 1 && hsh(i * 7.3, d + 5.1) >= 0.34) ? 1 : 0, af = bi === 1 ? (lay ? 150 : 260) : bi === 2 ? 210 : 260, G = grp(Math.floor(dd / 100), lay, bi - 1);
           relN(p[0], p[2], cn, 0, 1, 0); _tc.copy(_gc).multiplyScalar(0.96 + 0.1 * hsh(i * 1.3, d + bi));
           G.tufts.push([p[0], p[1], p[2], G.tp.length, 0]);
           G.tp.push(p[0], p[1] - 0.04, p[2]); G.tc.push(seed, af, nb, wk); G.tcol.push(_tc.r, _tc.g, _tc.b); G.tn.push(cn[0], cn[2]);
@@ -335,7 +335,7 @@
       }
       const mk = (G, isFlower) => {
         const n = isFlower ? G.fp.length / 3 : G.tp.length / 3; if (!n) return null;
-        const g = new THREE.InstancedBufferGeometry(), T0 = isFlower ? flowerTemplate() : tuftTemplate();
+        const g = new THREE.InstancedBufferGeometry(), NBc = [13, 8, 5][G.cls || 0], T0 = isFlower ? flowerTemplate() : tuftTemplate(NBc, 1);
         g.setAttribute('position', T0.position); g.setAttribute('aBC', T0.aBC); if (T0.color) g.setAttribute('color', T0.color); g.instanceCount = n;
         const pos = isFlower ? G.fp : G.tp, aP = new THREE.InstancedBufferAttribute(new Float32Array(pos), 3); g.setAttribute('aPos', aP);
         if (isFlower) { g.setAttribute('aF1', new THREE.InstancedBufferAttribute(new Float32Array(G.fa), 4)); g.setAttribute('aF2', new THREE.InstancedBufferAttribute(new Float32Array(G.fb), 3)); g.setAttribute('aCol', new THREE.InstancedBufferAttribute(new Float32Array(G.fcol), 3)); g.setAttribute('aNrm', new THREE.InstancedBufferAttribute(new Float32Array(G.fn), 2)); }
@@ -343,6 +343,7 @@
         let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, z0 = 1e9, z1 = -1e9; for (let k = 0; k < pos.length; k += 3) { x0 = Math.min(x0, pos[k]); x1 = Math.max(x1, pos[k]); y0 = Math.min(y0, pos[k + 1]); y1 = Math.max(y1, pos[k + 1]); z0 = Math.min(z0, pos[k + 2]); z1 = Math.max(z1, pos[k + 2]); }
         g.boundingSphere = new THREE.Sphere(new THREE.Vector3((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2), Math.hypot(x1 - x0, y1 - y0, z1 - z0) / 2 + 6);
         const mesh = new THREE.Mesh(g, isFlower ? flowerMat() : tuftMat()); mesh.frustumCulled = true; mesh.receiveShadow = false; mesh.userData.reach = G.layer ? 150 : 260;
+        if (!isFlower) { const gF = new THREE.InstancedBufferGeometry(), TF = tuftTemplate(Math.ceil(NBc * 0.55), 1.5); for (const k in g.attributes) gF.setAttribute(k, g.attributes[k]); gF.setAttribute('position', TF.position); gF.setAttribute('aBC', TF.aBC); gF.setAttribute('color', TF.color); gF.instanceCount = n; gF.boundingSphere = g.boundingSphere; mesh.userData.gNear = g; mesh.userData.gFar = gF; mesh.userData.far = false; }   // LOD : au-dela de ~140 m, la touffe a ~45 % de brins en moins, plus larges
         mesh.onBeforeRender = (r, sc, cam) => { GU.value = performance.now() / 1000; GCAM.value.copy(cam.position); }; b.add(mesh); GMESH.push(mesh); return aP;
       };
       for (const G of groups.values()) {
@@ -366,7 +367,8 @@
     if (GQ.length) Z.grassWork(3);
     for (let k = GMESH.length - 1; k >= 0; k--) {
       const m = GMESH[k]; if (!m.parent) { GMESH.splice(k, 1); continue; }
-      const bs = m.geometry.boundingSphere; _cs.copy(bs.center).applyMatrix4(m.matrixWorld); m.visible = _cs.distanceTo(cam) - bs.radius < m.userData.reach + 6;
+      const bs = m.geometry.boundingSphere; _cs.copy(bs.center).applyMatrix4(m.matrixWorld); const dc = _cs.distanceTo(cam); m.visible = dc - bs.radius < m.userData.reach + 6;
+      const U_ = m.userData; if (U_.gFar) { const far = U_.far ? dc > 128 : dc > 142; if (far !== U_.far) { U_.far = far; m.geometry = far ? U_.gFar : U_.gNear; } }
     }
   };
 

@@ -447,7 +447,6 @@
         ['SOUND FX', Math.round(s.sfx * 100) + '%', (d) => { s.sfx = U.clamp(Math.round((s.sfx + d * 0.1) * 10) / 10, 0, 1); }],
         ['POST FX', s.postfx ? 'ON' : 'OFF', () => { s.postfx = !s.postfx; }],
         ['SHOW FPS', game.debug ? 'ON' : 'OFF', () => { game.debug = !game.debug; }],
-        ['GRAPHICS', this.graphicsLabel(game), () => this.cycleGraphics(game)],
         ['SAMPLE ADS', s.ads === false ? 'OFF' : 'ON', () => { s.ads = s.ads === false; }],
       ];
       rows.forEach((row, i) => {
