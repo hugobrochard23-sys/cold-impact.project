@@ -18,9 +18,11 @@
 
   // v038g : découpe un lot en tranches de `L` m le long du couloir (z) : le test de visibilité écarte les tranches hors champ, et la passe d'ombres
   // ne redessine plus tout un tronçon de 200 m pour une roquette qui n'en voit que 70
-  function splitBatch(b, L) {   // v195 : tableaux types et table de correspondance par tranche (avant : une Map et un tableau temporaire par triangle)
+  function splitBatch(b, L, dir) {   // v195 : tableaux types et table de correspondance par tranche (avant : une Map et un tableau temporaire par triangle)
     const P = b.pos, I = b.idx, NOR = b.nor, UV = b.uv, COL = b.col, nT = (I.length / 3) | 0, nV = (P.length / 3) | 0, segOf = new Int32Array(nT), groups = new Map();
-    for (let t = 0, q = 0; t < nT; t++, q += 3) segOf[t] = Math.floor(-(P[I[q] * 3 + 2] + P[I[q + 1] * 3 + 2] + P[I[q + 2] * 3 + 2]) / 3 / L);
+    if (dir) { const ox = dir.ox, oz = dir.oz, dx = dir.dx / 3, dz = dir.dz / 3;   // v199 : tranches le long du couloir (et non selon z du monde : un couloir en diagonale donnait des boites de 300 m, jamais ecartees)
+      for (let t = 0, q = 0; t < nT; t++, q += 3) { const a = I[q] * 3, c = I[q + 1] * 3, e = I[q + 2] * 3; segOf[t] = Math.floor(((P[a] + P[c] + P[e]) * dx + (P[a + 2] + P[c + 2] + P[e + 2]) * dz - ox * dir.dx - oz * dir.dz) / L); } }
+    else for (let t = 0, q = 0; t < nT; t++, q += 3) segOf[t] = Math.floor(-(P[I[q] * 3 + 2] + P[I[q + 1] * 3 + 2] + P[I[q + 2] * 3 + 2]) / 3 / L);
     for (let t = 0, q = 0; t < nT; t++, q += 3) {
       const seg = segOf[t]; let g = groups.get(seg); if (!g) { g = { pos: [], nor: [], uv: [], col: [], idx: [], shadow: b.shadow, remap: new Int32Array(nV).fill(-1), n: 0 }; groups.set(seg, g); }
       for (let e = 0; e < 3; e++) {
@@ -222,7 +224,7 @@
       this.decorateSky(); yield;
       for (const [key, b0] of this.batches) {
         if (!b0.idx.length) continue;
-        for (const b of (this.segLen && b0.idx.length > 900 ? splitBatch(b0, this.segLen) : [b0])) {
+        for (const b of (this.segLen && b0.idx.length > 900 ? splitBatch(b0, this.segLen, this.segDir) : [b0])) {
           const g = geometryFromBatch(b);
           const mesh = new THREE.Mesh(g, this.mat(key));
           mesh.castShadow = b.shadow && !key.startsWith('basic:') && key !== 'glass';

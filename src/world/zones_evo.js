@@ -289,7 +289,7 @@
           if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82)) continue;
           if (solidAt(b, p[0], p[1], p[2])) continue;
           const nb = nbLo + Math.floor(hsh(i, d * 2.1 + bi) * (nbHi - nbLo + 1)), seed = 1 + hsh(i * 1.7 + bi, d * 0.013) * 97;
-          const lay = (bi === 1 && hsh(i * 7.3, d + 5.1) >= 0.34) ? 1 : 0, af = bi === 1 ? (lay ? 150 : 260) : bi === 2 ? 210 : 260, G = grp(Math.floor(dd / 100), lay, bi - 1);
+          const lay = (bi === 1 && hsh(i * 7.3, d + 5.1) >= 0.34) ? 1 : 0, af = bi === 1 ? (lay ? 105 : 185) : bi === 2 ? 150 : 185, G = grp(Math.floor(dd / 100), lay, bi - 1);
           relN(p[0], p[2], cn, 0, 1, 0); _tc.copy(_gc).multiplyScalar(0.96 + 0.1 * hsh(i * 1.3, d + bi));
           G.tufts.push([p[0], p[1], p[2], G.tp.length, 0]);
           G.tp.push(p[0], p[1] - 0.04, p[2]); G.tc.push(seed, af, nb, wk); G.tcol.push(_tc.r, _tc.g, _tc.b); G.tn.push(cn[0], cn[2]);
@@ -306,7 +306,7 @@
         for (let k = 0; k < nfl; k++) {
           const ang = hsh(ci + k * 1.7, d * 0.3) * 6.2832, rr0 = rc * Math.sqrt(hsh(k * 2.9, ci + d * 0.11)), dd = cd + Math.cos(ang) * rr0, lx = cl + Math.sin(ang) * rr0; if (dd < d || dd >= e || wet && wet(dd, lx, sc, T)) continue;
           const p = T.at(dd, lx, 0); gcol(p[0], p[2], _gc); if (gf) gf(dd, lx, _gc, sc); if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82) || solidAt(b, p[0], p[1], p[2])) continue;
-          const flay = hsh(k * 2.1, ci + d * 0.7) < 0.4 ? 0 : 1, fa = flay ? 120 : 190, G = grp(Math.floor(dd / 100), flay); relN(p[0], p[2], cn, 0, 1, 0);
+          const flay = hsh(k * 2.1, ci + d * 0.7) < 0.4 ? 0 : 1, fa = flay ? 85 : 135, G = grp(Math.floor(dd / 100), flay); relN(p[0], p[2], cn, 0, 1, 0);
           const kind = hsh(k * 6.1, ci + d) < 0.8 ? main : pickF(hsh(k * 8.3, ci * 1.9 + d)), daisy = kind[2] === 1, hgt = 0.6 + 0.5 * hsh(k * 1.3, ci + d), R = (daisy ? 0.38 : 0.29) * (0.8 + 0.5 * hsh(k * 9.1, ci)) * 1.0, th = hsh(k * 3.3, ci) * 6.2832;
           _fc.set(kind[1]).multiplyScalar(SK);
           G.flowers.push([p[0], p[1], p[2], G.fp.length, 0]);
@@ -342,8 +342,8 @@
         else { g.setAttribute('aCfg', new THREE.InstancedBufferAttribute(new Float32Array(G.tc), 4)); g.setAttribute('aCol', new THREE.InstancedBufferAttribute(new Float32Array(G.tcol), 3)); g.setAttribute('aNrm', new THREE.InstancedBufferAttribute(new Float32Array(G.tn), 2)); }
         let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, z0 = 1e9, z1 = -1e9; for (let k = 0; k < pos.length; k += 3) { x0 = Math.min(x0, pos[k]); x1 = Math.max(x1, pos[k]); y0 = Math.min(y0, pos[k + 1]); y1 = Math.max(y1, pos[k + 1]); z0 = Math.min(z0, pos[k + 2]); z1 = Math.max(z1, pos[k + 2]); }
         g.boundingSphere = new THREE.Sphere(new THREE.Vector3((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2), Math.hypot(x1 - x0, y1 - y0, z1 - z0) / 2 + 6);
-        const mesh = new THREE.Mesh(g, isFlower ? flowerMat() : tuftMat()); mesh.frustumCulled = true; mesh.receiveShadow = false; mesh.userData.reach = G.layer ? 150 : 260;
-        if (!isFlower) { const gF = new THREE.InstancedBufferGeometry(), TF = tuftTemplate(Math.ceil(NBc * 0.55), 1.5); for (const k in g.attributes) gF.setAttribute(k, g.attributes[k]); gF.setAttribute('position', TF.position); gF.setAttribute('aBC', TF.aBC); gF.setAttribute('color', TF.color); gF.instanceCount = n; gF.boundingSphere = g.boundingSphere; mesh.userData.gNear = g; mesh.userData.gFar = gF; mesh.userData.far = false; }   // LOD : au-dela de ~140 m, la touffe a ~45 % de brins en moins, plus larges
+        const mesh = new THREE.Mesh(g, isFlower ? flowerMat() : tuftMat()); mesh.frustumCulled = true; mesh.receiveShadow = false; mesh.userData.reach = G.layer ? 105 : 185;
+        if (!isFlower) { const gF = new THREE.InstancedBufferGeometry(), TF = tuftTemplate(Math.ceil(NBc * 0.45), 1.7); for (const k in g.attributes) gF.setAttribute(k, g.attributes[k]); gF.setAttribute('position', TF.position); gF.setAttribute('aBC', TF.aBC); gF.setAttribute('color', TF.color); gF.instanceCount = n; gF.boundingSphere = g.boundingSphere; mesh.userData.gNear = g; mesh.userData.gFar = gF; mesh.userData.far = false; }   // LOD : au-dela de ~140 m, la touffe a ~45 % de brins en moins, plus larges
         mesh.onBeforeRender = (r, sc, cam) => { GU.value = performance.now() / 1000; GCAM.value.copy(cam.position); }; b.add(mesh); GMESH.push(mesh); return aP;
       };
       for (const G of groups.values()) {
@@ -368,7 +368,7 @@
     for (let k = GMESH.length - 1; k >= 0; k--) {
       const m = GMESH[k]; if (!m.parent) { GMESH.splice(k, 1); continue; }
       const bs = m.geometry.boundingSphere; _cs.copy(bs.center).applyMatrix4(m.matrixWorld); const dc = _cs.distanceTo(cam); m.visible = dc - bs.radius < m.userData.reach + 6;
-      const U_ = m.userData; if (U_.gFar) { const far = U_.far ? dc > 128 : dc > 142; if (far !== U_.far) { U_.far = far; m.geometry = far ? U_.gFar : U_.gNear; } }
+      const U_ = m.userData; if (U_.gFar) { const far = U_.far ? dc > 78 : dc > 90; if (far !== U_.far) { U_.far = far; m.geometry = far ? U_.gFar : U_.gNear; } }
     }
   };
 

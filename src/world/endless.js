@@ -195,6 +195,7 @@
     const filt = { on: false, ctx: null, seen: new Set() };
     { const radd = THREE.Object3D.prototype.add, nearD = (p) => { let best = d0, bd = Infinity; for (let d = d0 - 120; d <= d1 + 120; d += 6) { const q = T.at(d, 0, 0), dx = q[0] - p.x, dz = q[2] - p.z, e = dx * dx + dz * dz; if (e < bd) { bd = e; best = d; } } return best; };
       b.root.add = function () { for (let i = 0; i < arguments.length; i++) { const o = arguments[i]; if (filt.on && filt.ctx && !(filt.ctx.itemDepth > 0) && o && o.isObject3D && !o.isLight) { if (o.position.x !== 0 || o.position.z !== 0) { const q = nearD(o.position); if (q < d0 || q >= d1) continue; } const key = Math.round(o.position.x * 4) + ',' + Math.round(o.position.y * 4) + ',' + Math.round(o.position.z * 4) + ':' + o.type + ':' + o.children.length; if (filt.seen.has(key)) continue; filt.seen.add(key); } radd.call(this, o); } return this; }; }
+    { const pa = T.at(d0, 0, 0), pb = T.at(d1, 0, 0), ll = Math.hypot(pb[0] - pa[0], pb[2] - pa[2]) || 1; b.segDir = { ox: pa[0], oz: pa[2], dx: (pb[0] - pa[0]) / ll, dz: (pb[2] - pa[2]) / ll }; }
     b.segLen = CC.CONFIG.render.segLen;   // v038g : lots découpés en tranches (visibilité et ombres)
     const gates = [];                                   // points de passage { d, lx, y } (pilote automatique, matériaux)
     const busy = [], reserved = [];
@@ -477,6 +478,16 @@
       yield;
       disposeChunk(game, r.value);
       yield;
+    }
+    { // v199 : objets des explosions (anneaux, traces de brulure, epave calcinee) : invisibles tant qu'il n'y a pas d'explosion, donc compiles / envoyes au GPU au premier tir = petit gel
+      const fx = game.effects, T3 = THREE, ms = [], tex = [];
+      if (fx) { for (const q of (fx.rings || []).concat(fx.decals || [])) ms.push(q.mesh); }
+      let ch = null; if (CC.Target) { const mat = CC.Target.charred || (CC.Target.charred = new T3.MeshLambertMaterial({ color: '#221f1c' })); ch = new T3.Mesh(new T3.BoxGeometry(0.01, 0.01, 0.01), mat); ch.frustumCulled = false; game.scene.add(ch); }
+      const was = ms.map((m) => m.visible); ms.forEach((m) => { m.visible = true; if (m.material.map) tex.push(m.material.map); });
+      if (fx) for (const P of fx.pools || []) if (P.mesh.material.map) tex.push(P.mesh.material.map);
+      for (const t of tex) { try { game.renderer.initTexture(t); } catch (err) { /* sans effet */ } }
+      try { game.renderer.compile(game.scene, game.camera); } catch (err) { /* sans effet */ }
+      ms.forEach((m, i) => { m.visible = was[i]; }); if (ch) { game.scene.remove(ch); ch.geometry.dispose(); }
     }
     T.spawned = spawned; if (E) { if (E.dyn) E.dyn.length = Math.min(E.dyn.length, dynN); E.robot = rob; }
     st.p = 1;
