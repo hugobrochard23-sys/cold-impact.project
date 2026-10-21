@@ -390,6 +390,15 @@
         add(ch, v0.clone().multiplyScalar(0.55).add(new V(rr(-3, 3), rr(2, 7), rr(-3, 3))), new V(rr(-9, 9), rr(-9, 9), rr(-9, 9)), 0.22);
       }
     }
+    // v212 : le jet de la tuyere s'eteint ; les pieces sont PLIEES (ailerons repliés, propulseurs de travers, fuselage coude vers l'avant)
+    { const J = rk.mesh.userData.jet; if (J) J.group.visible = false; }
+    for (const q of P) { const ch = q.m, sub = ch.children && ch.children[0];
+      if (sub && sub.isMesh) { sub.rotation.z += (Math.random() < 0.5 ? -1 : 1) * rr(0.4, 1.0); sub.scale.y *= rr(0.7, 0.95); }   // ailerons : repliés au pied
+      else { ch.quaternion.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(rr(-0.5, 0.5), rr(-0.3, 0.3), rr(-0.4, 0.4)))); } }   // propulseurs, volets : de travers
+    for (const m of rk.mesh.children) if (m.isMesh && m.geometry && m.geometry.attributes.position && !m.userData.bent) {   // fuselage : coude
+      const og = m.geometry, g2 = og.clone(), pa = g2.attributes.position, z0 = -0.1, ax = Math.random() < 0.5 ? 0.9 : -0.9, ay = rr(-0.4, 0.5);
+      for (let i = 0; i < pa.count; i++) { const t = pa.getZ(i) - z0; if (t > 0) { pa.setX(i, pa.getX(i) + ax * t * t * 0.55); pa.setY(i, pa.getY(i) + ay * t * t * 0.55); pa.setZ(i, pa.getZ(i) - 0.12 * t * t); } }
+      pa.needsUpdate = true; g2.computeVertexNormals(); m.userData._og = og; m.userData.bent = true; m.geometry = g2; }
     const body = { m: rk.mesh, v: v0.clone().multiplyScalar(0.75), w: new V(0, 0, Math.random() < 0.5 ? 3.5 : -3.5), r: 0.2, rest: false, isBody: true };
     P.push(body); rk.mesh.visible = true;
     // éclats du tube : petits morceaux de bois / carton qui se détachent dès le premier choc
@@ -417,6 +426,7 @@
   };
   EVO.endTumble = (g) => {
     const Tm = g.evoTumble; if (!Tm) return;
+    for (const m of g.rocket.mesh.children) if (m.userData && m.userData.bent) { const bg = m.geometry; m.geometry = m.userData._og; bg.dispose(); m.userData.bent = false; }   // fuselage redresse pour le vol suivant
     for (const q of Tm.P) if (!q.isBody && q.m.parent) { q.m.parent.remove(q.m); if (q.m.geometry) q.m.geometry.dispose(); }
     if (Tm.flag) g.scene.remove(Tm.flag);
     g.evoTumble = null;
@@ -488,6 +498,9 @@
       else if (ground && Tm.t > 5.5 && q.v.lengthSq() < 12) { q.v.multiplyScalar(0.8); q.w.multiplyScalar(0.8); }
     }
     for (const q of Tm.P) if (q.isBody && !q.rest && Math.random() < 0.3 && q.v.lengthSq() > 6) sparks(g, q.m.position, 1, 3);
+    { const J = g.rocket.mesh.userData.jet; if (J) J.group.visible = false; }
+    // epave qui fume : fumee noire continue, quelques braises au debut
+    Tm.smokeT = (Tm.smokeT || 0) - dt; if (Tm.smokeT <= 0) { Tm.smokeT = 0.07; const fx = g.effects, bp = Tm.body.m.position; fx.darkSmoke.emit({ pos: bp.clone().add(new V(rr(-0.15, 0.15), 0.1, rr(-0.15, 0.15))), vel: new V(rr(-0.3, 0.3), rr(1.2, 2.2), rr(-0.3, 0.3)), life: rr(1.3, 2.2), s0: 0.15, s1: rr(0.5, 0.8), s2: 1.1, peak: 0.3, cols: fx.pal.blackSmoke, drag: 1, a: 0.5, fin: 0.1, fout: 0.35, wind: 1, turb: 1.6 }); if (Tm.t < 3 && Math.random() < 0.4) sparks(g, bp, 2, 4); }
     // camera : suit la fusee ou qu'elle aille (elle garde son cote actuel, se rapproche si la fusee s'eloigne, reste au-dessus du sol)
     { const bp = Tm.body.m.position; g.rig.focus.copy(bp);
       _dq.copy(g.rig.pos).sub(bp); const hd = Math.hypot(_dq.x, _dq.z) || 1; if (hd < 2) { _dq.set(-Tm.v0.x, 0, -Tm.v0.z); if (_dq.lengthSq() < 1e-4) _dq.set(0, 0, 1); }

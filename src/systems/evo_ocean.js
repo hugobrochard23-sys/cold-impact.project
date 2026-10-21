@@ -158,7 +158,7 @@
     J.halo.material.opacity = 0.2 * k * (0.8 + 0.4 * f); J.halo.scale.setScalar(0.6 + 0.5 * k * (0.9 + 0.2 * f));
   };
   const _fr = EVO.frame;
-  EVO.frame = (g, dt) => { _fr(g, dt); CC.UWT.value = EVO.clock || 0; snowTick(g, dt); stormTick(g, dt); padTick(g, dt); seaTick(g); raysTick(g); haloTick(g); if (g.audio && g.audio.setUnder) g.audio.setUnder(EVO.seaLevel !== undefined && !g.cine3d ? U.clamp(g.uwK || 0, 0, 1) : 0); };
+  EVO.frame = (g, dt) => { _fr(g, dt); CC.UWT.value = EVO.clock || 0; snowTick(g, dt); stormTick(g, dt); padTick(g, dt); seaTick(g); raysTick(g); haloTick(g); if (g.audio && g.audio.setUnder) g.audio.setUnder(EVO.seaLevel !== undefined && !g.cine3d ? U.clamp(g.uwK || 0, 0, 1) : (g._uw1 || 0)); };
   // pictogramme de rafale (flèches de chaque côté de l'écran) dans le HUD
   const _hd = EVO.drawHud;
   EVO.drawHud = (hud, ctx, g, W, H, px) => {

@@ -111,6 +111,7 @@
       const W = CC.Zones.evoWater; let k = 0;
       if (W && run && g.rocket && g.rocket.active && g.state === 'FLIGHT') { if (dist > W.d0 - 120 && dist < W.d1 + 120) { const dy = Math.abs(g.rocket.pos.y - W.y); k = U.clamp(1 - dy / 90, 0, 1) * (1 - U.clamp((Math.max(W.d0 - dist, dist - W.d1)) / 120, 0, 1)); } }
       g.audio.setWater(k);
+      g._uw1 = W && run && g.rocket && g.rocket.active && g.state === 'FLIGHT' && dist > W.d0 && dist < W.d1 ? U.clamp((W.y - g.rocket.pos.y) / 1.2, 0, 1) : 0;   // v212 : sous la surface de la riviere : sons etouffes comme dans l'ocean
     }
   };
 

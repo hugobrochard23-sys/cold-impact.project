@@ -27,7 +27,7 @@
       this.mesh.visible = false;
       game.scene.add(this.mesh);
       this.light = new THREE.PointLight('#ff8a2a', 0, 16, 1.4);     // OBSERVÉ : la flamme éclaire les murs en orange
-      game.scene.add(this.light);
+      game.scene.add(this.light); this.light.visible = false;   // v212 : la fusee n'eclaire plus rien (lumiere desactivee)
       this.rope = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V(), new V()]), new THREE.LineBasicMaterial({ color: '#111111' }));
       this.rope.frustumCulled = false; this.rope.visible = false;
       game.scene.add(this.rope);
