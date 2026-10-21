@@ -372,13 +372,15 @@
   EVO.kbFrame = (g) => {
     const now = performance.now(); for (const t of g.targets) { const k = t._kb; if (!k || !t.object) continue; const e = Math.min(1, (now - k.t0) / 350), v = 1 - Math.pow(1 - e, 3), d = 3.2 * (v - k.done); k.done = v; t.object.position.addScaledVector(k.dir, d); if (e >= 1) t._kb = null; }
   };
-  EVO.softCrash = (kind) => kind === 'stalled' || kind === 'weak' || kind === 'wall';
+  EVO.softCrash = (kind) => kind === 'stalled' || kind === 'weak' || kind === 'wall' || kind === 'hazard' || kind === 'cable';   // v209 : tous les chocs ricochent (la fusee ne disparait plus dans une boule de feu)
   const _tq = new THREE.Quaternion(), _ta = new V();
   const rr = (a, b) => a + Math.random() * (b - a);
   const _pc = new THREE.Color();
   const sparks = (g, p, n, sp) => { const fx = g.effects; for (let i = 0; i < n; i++) fx.sparks.emit({ pos: p, vel: new V(rr(-1, 1), rr(0.3, 1), rr(-1, 1)).multiplyScalar(rr(sp * 0.5, sp)), life: rr(0.3, 0.8), s0: 0.05, s1: 0.04, s2: 0.01, cols: fx.pal.ember, drag: 1.2, grav: 6, a: 1, fout: 0.4 }); };
-  EVO.startTumble = (g, kind, pos) => {
+  EVO.startTumble = (g, kind, pos, normal) => {
     const rk = g.rocket, sc = g.scene, v0 = rk.vel.clone(), P = [];
+    // v209 : ricochet : la vitesse est renvoyee par la surface touchee (restitution 0,5), la fusee est decollee de la paroi
+    if (normal && normal.lengthSq() > 0.01) { const n = normal.clone().normalize(), vn = v0.dot(n); if (vn < 0) v0.addScaledVector(n, -1.5 * vn); rk.mesh.position.copy(rk.pos).addScaledVector(n, 0.35); rk.pos.addScaledVector(n, 0.35); }
     const add = (m, v, w, r) => { P.push({ m, v, w, r: r || 0.12, rest: false }); };
     const groups = g.evoParts || {};
     for (const k of Object.keys(groups)) {
@@ -394,15 +396,24 @@
     { const cols = ['#b8925e', '#c9a46c', '#8a6a44', '#e8dcc0', '#6e5230'], bp = rk.pos.clone();
       for (let i = 0; i < 12; i++) { const sz = rr(0.06, 0.2), ch = new THREE.Mesh(new THREE.BoxGeometry(sz, sz * rr(0.3, 0.8), sz * rr(1, 2.2)), new THREE.MeshLambertMaterial({ color: cols[i % cols.length] })); ch.position.copy(bp).add(new V(rr(-0.2, 0.2), rr(0, 0.3), rr(-0.3, 0.3))); ch.quaternion.setFromEuler(new THREE.Euler(rr(0, 6), rr(0, 6), rr(0, 6))); sc.add(ch);
         add(ch, v0.clone().multiplyScalar(rr(0.2, 0.6)).add(new V(rr(-4, 4), rr(2, 8), rr(-4, 4))), new V(rr(-14, 14), rr(-14, 14), rr(-14, 14)), sz * 0.6); } }
-    g.evoTumble = { P, t: 0, dur: 3.1, flag: null, kind, body, v0: v0.clone() };
+    g.evoTumble = { P, t: 0, dur: 14, flag: null, kind, body, v0: v0.clone() };
     g.audio.play('clunk', pos); g.rig.shake = 0.5; g.style.dropCombos();
     sparks(g, pos, 26, 10);
   };
+  // v209 : drapeau du record : mat blanc a pommeau dore, grande banderole ondulante (rouge, galons blancs, flamme jaune), socle de pierres, poussiere
   const plantFlag = (g, p, dist) => {
-    const grp = new THREE.Group(), c = document.createElement('canvas'); c.width = 256; c.height = 128; const x = c.getContext('2d');
-    x.fillStyle = '#d8402c'; x.fillRect(0, 0, 256, 128); x.fillStyle = '#ffffff'; x.fillRect(0, 0, 256, 10); x.fillRect(0, 118, 256, 10); x.font = 'bold 66px monospace'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(dist + ' M', 128, 66);
-    const tex = new THREE.CanvasTexture(c), pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.2, 6), new THREE.MeshLambertMaterial({ color: '#e8e8e8' })), cloth = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.9), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide }));
-    pole.position.y = 1.6; cloth.position.set(0.92, 2.65, 0); grp.add(pole, cloth); grp.position.copy(p); grp.userData.cloth = cloth; g.scene.add(grp); return grp;
+    const grp = new THREE.Group(), c = document.createElement('canvas'); c.width = 384; c.height = 192; const x = c.getContext('2d');
+    const gr = x.createLinearGradient(0, 0, 0, 192); gr.addColorStop(0, '#e8503a'); gr.addColorStop(1, '#b8281c'); x.fillStyle = gr; x.fillRect(0, 0, 384, 192);
+    x.fillStyle = '#ffffff'; x.fillRect(0, 0, 384, 14); x.fillRect(0, 178, 384, 14); x.fillStyle = '#ffd23a'; x.fillRect(0, 14, 384, 5); x.fillRect(0, 173, 384, 5);
+    x.fillStyle = 'rgba(0,0,0,0.25)'; x.font = 'bold 92px monospace'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(dist + ' M', 194, 100); x.fillStyle = '#ffffff'; x.fillText(dist + ' M', 190, 96);
+    const tex = new THREE.CanvasTexture(c), mat = (col) => new THREE.MeshLambertMaterial({ color: col });
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 4.2, 8), mat('#f2f2f2')); pole.position.y = 2.1;
+    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 8), mat('#ffd23a')); knob.position.y = 4.3;
+    const cg = new THREE.PlaneGeometry(2.4, 1.2, 14, 1), cloth = new THREE.Mesh(cg, new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide })); cloth.position.set(1.28, 3.5, 0);
+    const pen = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.9, 3), new THREE.MeshBasicMaterial({ color: '#ffd23a', side: THREE.DoubleSide })); pen.rotation.z = -Math.PI / 2; pen.position.set(2.95, 3.5, 0);
+    grp.add(pole, knob, cloth, pen);
+    for (let i = 0; i < 7; i++) { const a = i / 7 * 6.28, st = new THREE.Mesh(new THREE.IcosahedronGeometry(0.2 + 0.1 * ((i * 7) % 3) / 2, 0), mat(i % 2 ? '#8e949a' : '#a8aeb4')); st.position.set(Math.cos(a) * 0.5, 0.09, Math.sin(a) * 0.5); st.scale.y = 0.65; grp.add(st); }
+    grp.position.copy(p); grp.userData.cloth = cloth; grp.userData.pen = pen; grp.userData.cg = cg; grp.userData.base = Float32Array.from(cg.attributes.position.array); g.scene.add(grp); return grp;
   };
   EVO.endTumble = (g) => {
     const Tm = g.evoTumble; if (!Tm) return;
@@ -410,32 +421,70 @@
     if (Tm.flag) g.scene.remove(Tm.flag);
     g.evoTumble = null;
   };
+  const _pv = new V(), _nx = new V(), _dq = new V(), _cl = new V(), _ci = new THREE.Matrix4(), _cn = new V();
+  // v209 : PHYSIQUE REELLE : chaque morceau (fuselage, ailes, eclats) est balaye contre le monde entier (sol, murs, toits, rochers : meme monde que le vol) et contre les objets mobiles
+  // (robot, train, cages) ; rebond avec restitution, frottement et rotation induite. Aucun morceau ne traverse plus rien.
+  const dynPush = (g, q, rad) => {
+    for (const d of EVO.dyn) {
+      if (!d.obj.visible || d.obj.position.distanceTo(q.m.position) > 120 + (d.span || 0)) continue;
+      for (const c of d.cols) {
+        c.updateWorldMatrix(true, false); _ci.copy(c.matrixWorld).invert(); _cl.copy(q.m.position).applyMatrix4(_ci);
+        const s = c.userData.size, e = rad / c.matrixWorld.getMaxScaleOnAxis(); let ax = -1, best = 1e9, sg = 1;
+        const ox = s[0] / 2 + e - Math.abs(_cl.x), oy = s[1] / 2 + e - Math.abs(_cl.y), oz = s[2] / 2 + e - Math.abs(_cl.z);
+        if (ox <= 0 || oy <= 0 || oz <= 0) continue;
+        if (ox < best) { best = ox; ax = 0; sg = Math.sign(_cl.x) || 1; } if (oy < best) { best = oy; ax = 1; sg = Math.sign(_cl.y) || 1; } if (oz < best) { best = oz; ax = 2; sg = Math.sign(_cl.z) || 1; }
+        _cn.set(ax === 0 ? sg : 0, ax === 1 ? sg : 0, ax === 2 ? sg : 0).transformDirection(c.matrixWorld);
+        q.m.position.addScaledVector(_cn, best * c.matrixWorld.getMaxScaleOnAxis() + 0.02);
+        const vn = q.v.dot(_cn); if (vn < 0) { q.v.addScaledVector(_cn, -1.4 * vn); q.w.x += rr(-4, 4); q.w.z += rr(-4, 4); }
+        return true;
+      }
+    }
+    return false;
+  };
+  const _fk = { t: 0, normal: new V(0, 1, 0), inside: false, pen: 0 };
+  const floorAt = (g, p) => { const run = g.endlessRun, T = run.T, d = T.project(p, run.dist), q = T.at(d, 0, 0); return q[1]; };
+  EVO.groundY = (g, p) => { const W = g.world; _pv.set(p.x, p.y + 6, p.z); _nx.set(p.x, p.y - 80, p.z); const h = W.sweep(_pv, _nx, 0.05); return h ? _pv.y + (_nx.y - _pv.y) * h.t : null; };
   EVO.tumbleFrame = (g, dt) => {
     const Tm = g.evoTumble; if (!Tm) return; Tm.t += dt;
-    const run = g.endlessRun, T = run && run.T, gy = T ? T.base(Math.max(0, run.dist)) : 0;
-    for (const q of Tm.P) {
+    const run = g.endlessRun, T = run && run.T, gy = T ? T.base(Math.max(0, run.dist)) : 0, W = g.world, SUB = 3, h = dt / SUB;
+    for (let sub = 0; sub < SUB; sub++) for (const q of Tm.P) {
       if (q.rest) continue;
-      q.v.y -= 16 * dt; q.m.position.addScaledVector(q.v, dt);
-      const lim = gy + q.r * (q.isBody ? 1.2 : 1);
-      if (q.m.position.y < lim) {
-        q.m.position.y = lim;
-        if (Math.abs(q.v.y) > 2.5) { q.v.y = -q.v.y * 0.32; if (Math.random() < 0.5) sparks(g, q.m.position, 3, 5); } else q.v.y = 0;
-        const f = Math.max(0, 1 - (q.isBody ? 1.5 : 3.2) * dt); q.v.x *= f; q.v.z *= f; q.w.multiplyScalar(Math.max(0, 1 - 2.2 * dt));
-        if (q.v.lengthSq() < 0.15 && q.w.lengthSq() < 0.5) q.rest = true;
+      const rad = q.isBody ? 0.4 : Math.max(0.07, q.r * 0.8);
+      q.v.y -= 16 * h; _pv.copy(q.m.position); _nx.copy(_pv).addScaledVector(q.v, h);
+      let hit = W.sweep(_pv, _nx, rad);
+      if (!hit && T) { const fy = floorAt(g, _nx); if (_nx.y - rad < fy) { const den = _pv.y - _nx.y; _fk.t = den > 1e-6 ? Math.max(0, Math.min(1, (_pv.y - rad - fy) / den)) : 0; hit = _fk; } }   // zones sans sol dans le monde physique : sol visible du couloir
+      if (!hit) q.m.position.copy(_nx);
+      else {
+        const n = hit.normal; q.m.position.copy(_pv).addScaledVector(_dq.subVectors(_nx, _pv), hit.t).addScaledVector(n, 0.03 + (hit.inside ? hit.pen : 0));
+        const vn = q.v.dot(n);
+        if (vn < 0) {
+          const e = q.isBody ? 0.4 : 0.3; q.v.addScaledVector(n, -(1 + e) * vn);
+          if (-vn > 2.5 && Math.random() < 0.5) sparks(g, q.m.position, 3, 5);
+          const vt = _dq.copy(q.v).addScaledVector(n, -q.v.dot(n)), rw = new V(n.y * vt.z - n.z * vt.y, n.z * vt.x - n.x * vt.z, n.x * vt.y - n.y * vt.x).divideScalar(rad * 1.6); q.w.lerp(rw, 0.35);   // roule sans glisser : la rotation suit la vitesse et s'eteint avec elle
+          if (n.y > 0.6) { const f = Math.max(0, 1 - (q.isBody ? 4.5 : 6) * h * 3); q.v.x *= f; q.v.z *= f; q.w.multiplyScalar(Math.max(0, 1 - 4.5 * h * 3)); if (Math.abs(vn) < 2 && q.v.lengthSq() < 4.5 && q.w.lengthSq() < 12) { q.rest = true; q.v.set(0, 0, 0); q.w.set(0, 0, 0); } }
+          else { q.v.multiplyScalar(0.9); q.w.multiplyScalar(0.92); }
+        }
       }
-      const wl = q.w.length(); if (wl > 0.01) { _ta.copy(q.w).divideScalar(wl); _tq.setFromAxisAngle(_ta, wl * dt); q.m.quaternion.premultiply(_tq); }
-      if (q.isBody && Math.random() < 0.5 && q.m.position.y < gy + 0.6) sparks(g, q.m.position, 1, 3);
+      if (dynPush(g, q, rad) && q.v.lengthSq() < 1.2 && q.w.lengthSq() < 3) { q.rest = true; q.v.set(0, 0, 0); q.w.set(0, 0, 0); }   // pose sur un objet mobile (robot, train)
+      if (q.m.position.y < gy - 60) { q.m.position.y = gy + 1; q.v.set(0, 0, 0); }   // filet : tombee hors du monde
+      const wl = q.w.length(); if (wl > 0.01) { _ta.copy(q.w).divideScalar(wl); _tq.setFromAxisAngle(_ta, wl * h); q.m.quaternion.premultiply(_tq); }
     }
+    for (const q of Tm.P) if (q.isBody && !q.rest && Math.random() < 0.4 && q.v.lengthSq() > 4) sparks(g, q.m.position, 1, 3);
     g.rig.focus.copy(Tm.body.m.position);
-    { const bp = Tm.body.m.position, bk = Tm.back || (Tm.back = new V(-Tm.v0.x, 0, -Tm.v0.z).normalize()); const want = new V(bp.x + bk.x * 4.2, Math.max(bp.y + 2.0, gy + 2.0), bp.z + bk.z * 4.2); g.rig.pos.lerp(want, 1 - Math.exp(-4 * dt)); g.camera.position.copy(g.rig.pos); }
-    if (!Tm.flag && Tm.t > 2.15) {
-      const p = Tm.body.m.position.clone(); p.y = gy; Tm.flag = plantFlag(g, p, Math.round(Math.max(0, run.dist))); Tm.flag.scale.y = 0.01; Tm.flagT = 0;
-      g.effects.ring(p.clone().setY(gy + 0.2), new V(0, 1, 0), 0.3, 4, 0.5, '#ffffff', 0.7); g.audio.play('clunk', p); g.rig.shake = Math.max(g.rig.shake, 0.3);
+    { const bp = Tm.body.m.position, bk = Tm.back || (Tm.back = new V(-Tm.v0.x, 0, -Tm.v0.z).normalize()); const want = new V(bp.x + bk.x * 4.2, bp.y + 2.0, bp.z + bk.z * 4.2); g.rig.pos.lerp(want, 1 - Math.exp(-4 * dt)); g.camera.position.copy(g.rig.pos); }
+    if (!Tm.flag && (Tm.body.rest ? Tm.t > 0.9 : (Tm.t > 7 && (() => { const gg = EVO.groundY(g, Tm.body.m.position); return gg === null || Tm.body.m.position.y - gg < 2.5; })()) || Tm.t > 13)) {
+      const bp = Tm.body.m.position, gh = EVO.groundY(g, bp), fl = floorAt(g, bp), p = new V(bp.x, Tm.body.rest ? bp.y - 0.38 : (gh !== null && gh > bp.y - 45 ? gh : bp.y - 0.38), bp.z);   // le drapeau se pose TOUJOURS sur le sol reel sous la fusee
+      Tm.flag = plantFlag(g, p, Math.round(Math.max(0, run.dist))); Tm.flag.scale.y = 0.01; Tm.flagT = 0;
+      g.effects.ring(p.clone().setY(p.y + 0.2), new V(0, 1, 0), 0.3, 4, 0.5, '#ffffff', 0.7); g.audio.play('clunk', p); g.rig.shake = Math.max(g.rig.shake, 0.3);
+      for (let i = 0; i < 14; i++) g.effects.sparks.emit({ pos: p.clone().setY(p.y + 0.2), vel: new V(rr(-3, 3), rr(0.5, 2.5), rr(-3, 3)), life: rr(0.5, 1.1), s0: 0.1, s1: 0.2, s2: 0.3, cols: g.effects.pal.ember, drag: 2, grav: 1, a: 0.5, fout: 0.5 });
+      Tm.dur = Math.max(Tm.dur, Tm.t + 1.4);
     }
     if (Tm.flag) {
-      Tm.flagT += dt; const k = Math.min(1, Tm.flagT / 0.35), e = 1 + 2.2 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2);
-      Tm.flag.scale.y = Math.max(0.01, e); Tm.flag.userData.cloth.rotation.y = 0.25 * Math.sin(Tm.flagT * 7);
-      Tm.flag.rotation.y = Math.atan2(g.camera.position.x - Tm.flag.position.x, g.camera.position.z - Tm.flag.position.z);
+      Tm.flagT += dt; const k = Math.min(1, Tm.flagT / 0.35), e = 1 + 2.2 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2), F = Tm.flag;
+      F.scale.y = Math.max(0.01, e); F.rotation.y = Math.atan2(g.camera.position.x - F.position.x, g.camera.position.z - F.position.z);
+      const pa = F.userData.cg.attributes.position, B = F.userData.base, tt = Tm.flagT * 6;   // la banderole ondule dans le vent (amplitude croissante vers le bout)
+      for (let i = 0; i < pa.count; i++) { const u = (B[i * 3] + 1.2) / 2.4; pa.setZ(i, Math.sin(u * 5 - tt) * 0.16 * u + Math.sin(u * 9 - tt * 1.7) * 0.04 * u); pa.setY(i, B[i * 3 + 1] - u * u * 0.08 * Math.sin(tt * 0.5)); }
+      pa.needsUpdate = true; F.userData.pen.position.z = Math.sin(2.4 / 2 * 5 - tt) * 0.16; F.userData.pen.rotation.y = Math.sin(tt) * 0.3;
     }
   };
 

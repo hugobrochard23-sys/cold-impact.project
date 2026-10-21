@@ -867,7 +867,7 @@
       this.lastSpeed = 0; this.crashKind = kind;
       const soft = !!(this.evo && CC.EVO.softCrash && CC.EVO.softCrash(kind));   // v126 : evolution : on s'ecrase (ailes arrachees, roule-boule) au lieu d'exploser
       rk.active = false; if (!soft) rk.mesh.visible = false; rk.light.intensity = 0; rk.rope.visible = false; rk.grapple.active = false;
-      if (soft) { CC.EVO.startTumble(this, kind, pos); } else {
+      if (soft) { CC.EVO.startTumble(this, kind, pos, normal); } else {
       this.effects.explosion(pos, normal, false, 'orange');
       this.audio.play('boom', pos); }
       this.style.dropCombos();

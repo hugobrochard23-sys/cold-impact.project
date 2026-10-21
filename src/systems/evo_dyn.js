@@ -21,17 +21,31 @@
       if (d.upd) d.upd(EVO.clock, dt, g, d);
     }
   };
+  const _q = new V(), _nrm = new V(), _prev = new V(); let _hasPrev = false;
+  // v209 : test BALAYE (la fusee fait plus d'1 m par image : un point seul traversait les pieces fines) ; la normale de la face touchee sert au ricochet
   EVO.dynHit = (g) => {
-    const rk = g.rocket; if (!rk || !rk.active || g.state !== 'FLIGHT') return;
+    const rk = g.rocket; if (!rk || !rk.active || g.state !== 'FLIGHT') { _hasPrev = false; return; }
+    const n0 = _hasPrev ? 4 : 1;
     for (const d of EVO.dyn) {
       if (!d.obj.visible || d.obj.position.distanceTo(rk.pos) > 260 + (d.span || 0)) continue;
       d.obj.updateWorldMatrix(true, true);
       for (const c of d.cols) {
-        c.updateWorldMatrix(true, false); _inv.copy(c.matrixWorld).invert(); _p.copy(rk.pos).applyMatrix4(_inv);
+        c.updateWorldMatrix(true, false); _inv.copy(c.matrixWorld).invert();
         const s = c.userData.size, sc = c.matrixWorld.getMaxScaleOnAxis(), r = 1.2 / sc;
-        if (Math.abs(_p.x) < s[0] / 2 + r && Math.abs(_p.y) < s[1] / 2 + r && Math.abs(_p.z) < s[2] / 2 + r) { if (d.hit && d.hit(g, d)) return; g.onRocketCrash('wall', rk.pos.clone(), new V(0, 1, 0)); return; }
+        for (let k = 0; k < n0; k++) {
+          _q.copy(rk.pos); if (_hasPrev) _q.lerp(_prev, k / n0);
+          _p.copy(_q).applyMatrix4(_inv);
+          const ox = s[0] / 2 + r - Math.abs(_p.x), oy = s[1] / 2 + r - Math.abs(_p.y), oz = s[2] / 2 + r - Math.abs(_p.z);
+          if (ox > 0 && oy > 0 && oz > 0) {
+            if (d.hit && d.hit(g, d)) return;
+            if (ox <= oy && ox <= oz) _nrm.set(Math.sign(_p.x) || 1, 0, 0); else if (oy <= oz) _nrm.set(0, Math.sign(_p.y) || 1, 0); else _nrm.set(0, 0, Math.sign(_p.z) || 1);
+            _nrm.transformDirection(c.matrixWorld); _hasPrev = false;
+            g.onRocketCrash('wall', _q.clone(), _nrm.clone()); return;
+          }
+        }
       }
     }
+    _prev.copy(rk.pos); _hasPrev = true;
   };
   const _fr = EVO.frame; EVO.frame = (g, dt) => { _fr(g, dt); EVO.dynFrame(g, dt); };
   const _tk = EVO.tick; EVO.tick = (g, dt) => { _tk(g, dt); EVO.dynHit(g); };
