@@ -1,52 +1,44 @@
-/* v034 : OMBRE DE LA ROQUETTE — repère de hauteur. Un rayon part de la roquette vers le bas ; là où il touche (sol, toit, pont,
- * poutre), une tache sombre s'allonge dans le sens du vol :
- *   - proche du sol : petite, nette, sombre, collée à la roquette ;
- *   - en altitude : plus large, plus floue, plus pâle, et de plus en plus en retard sur le regard.
- * Le joueur juge d'un coup d'œil « je suis à 2 m du toit » ou « il y a un pont sous moi » sans lire aucune jauge.
- * Coût : un rayon (grille de hachage) et un plan texturé par image ; aucune ombre 3D supplémentaire (les vraies ombres du soleil
- * sont trop fines pour une roquette de 20 cm). */
+/* v034 / v214 : OMBRE DE LA ROQUETTE — repere de hauteur. Un rayon part de la roquette vers le bas ; la ou il touche (sol, toit, pont, poutre) on dessine l'OMBRE REELLE :
+ * chaque piece de la fusee (fuselage, ailes, ailerons, propulseurs...) est reprojetee a plat sur la surface, verticalement sous la fusee. Meme forme que la fusee a tous les paliers
+ * (si elle s'ameliore, son ombre aussi), meme taille, opacite constante : ni flou, ni fondu, ni agrandissement avec la hauteur. */
 (function () {
   const V = THREE.Vector3;
-  const U = CC.U;
-  const _o = new V(), _p1 = new V(), _fwd = new V(), _x = new V(), _y = new V(), _n = new V(), _m = new THREE.Matrix4(), DOWN = new V(0, -1, 0);
+  const _o = new V(), _p1 = new V(), _pm = new THREE.Matrix4(), DOWN = new V(0, -1, 0);
   const GROUND = (b) => b.kind === 'solid' || b.kind === 'brick' || b.kind === 'hazard';
 
   class RocketShadow {
     constructor(game) {
-      this.game = game; this.cfg = CC.CONFIG.shadow; this.k = 0;
-      const c = document.createElement('canvas'); c.width = c.height = 64;
-      const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 2, 32, 32, 31);
-      gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(0.5, 'rgba(0,0,0,0.75)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
-      g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
-      this.mat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, fog: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
-      this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), this.mat);
-      this.mesh.matrixAutoUpdate = false; this.mesh.renderOrder = 1; this.mesh.visible = false; this.mesh.frustumCulled = false;
-      game.scene.add(this.mesh);
-      this.height = Infinity;
+      this.game = game; this.cfg = CC.CONFIG.shadow; this.height = Infinity;
+      this.mat = new THREE.MeshBasicMaterial({ color: '#000000', transparent: true, opacity: 0.42, depthWrite: false, fog: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+      this.group = new THREE.Group(); this.group.matrixAutoUpdate = false; this.group.visible = false; this.group.frustumCulled = false;
+      game.scene.add(this.group); this.mesh = this.group;   // `mesh` : compatibilite (le jeu masque l'ombre par mesh.visible)
+      this.clones = new Map();
     }
 
     update(dt) {
       const g = this.game, rk = g.rocket, C = this.cfg;
-      if (!rk.active || g.state === 'CRASHED') { this.mesh.visible = false; this.height = Infinity; return; }
+      if (!rk.active || g.state === 'CRASHED' || !rk.mesh.visible) { this.group.visible = false; this.height = Infinity; return; }
       _o.copy(rk.pos); _p1.copy(_o).addScaledVector(DOWN, C.maxDist);
       const hit = g.world.sweep(_o, _p1, 0.02, GROUND);
-      if (!hit) { this.mesh.visible = false; this.height = Infinity; return; }
-      let h = hit.t * C.maxDist; this.height = h;
-      // v213 : plus on est haut, plus l'ombre est portee vers l'AVANT (comme un soleil bas devant) : elle reste dans l'ecran au lieu de filer sous le bord bas
-      { const off = Math.min(h * 1.9, 230); if (off > 1) { _fwd.set(rk.vel.x, 0, rk.vel.z); if (_fwd.lengthSq() < 1e-3) _fwd.set(rk.fwd.x, 0, rk.fwd.z); _fwd.normalize(); _o.copy(rk.pos).addScaledVector(_fwd, off); _p1.copy(_o).addScaledVector(DOWN, C.maxDist); const h2 = g.world.sweep(_o, _p1, 0.02, GROUND); if (h2 && h2.normal.y > 0.3) { hit.t = h2.t; hit.normal.copy(h2.normal); this.height = h = h2.t * C.maxDist; } else { _o.copy(rk.pos); _p1.copy(_o).addScaledVector(DOWN, C.maxDist); } } }
-      _n.copy(hit.normal); if (_n.y < 0.3) { this.mesh.visible = false; return; }   // paroi verticale : pas d'ombre
-      // axe long : direction du vol projetée sur la surface ; axe court : perpendiculaire
-      if (rk.vel.lengthSq() > 1) _fwd.copy(rk.vel).normalize(); else _fwd.copy(rk.fwd);
-      _y.copy(_fwd).addScaledVector(_n, -_fwd.dot(_n));
-      if (_y.lengthSq() < 1e-4) _y.set(0, 0, -1).addScaledVector(_n, _n.z);
-      _y.normalize(); _x.crossVectors(_y, _n).normalize();
-      const w = U.clamp(C.minSize + h * C.growth, C.minSize, C.maxSize), len = w * (1 + (C.stretch - 1) * U.clamp(rk.speed / 60, 0, 1));
-      _m.makeBasis(_x.multiplyScalar(w), _y.multiplyScalar(len), _n);
-      _m.setPosition(_o.x + (_p1.x - _o.x) * hit.t + _n.x * 0.04, _o.y + (_p1.y - _o.y) * hit.t + _n.y * 0.04, _o.z + (_p1.z - _o.z) * hit.t + _n.z * 0.04);
-      this.mesh.matrix.copy(_m); this.mesh.matrixWorldNeedsUpdate = true; this.mesh.updateMatrixWorld(true);
-      // opacité : la plus forte près de la surface, s'efface avec la hauteur (jamais totalement : on garde le repère)
-      this.mat.opacity = C.opacity * (0.6 + 0.4 * Math.pow(1 - U.clamp(h / C.fadeDist, 0, 1), 0.8));   // v213 : bien moins pale en altitude
-      this.mesh.visible = true;
+      if (!hit) { this.group.visible = false; this.height = Infinity; return; }
+      const h = hit.t * C.maxDist; this.height = h;
+      const n = hit.normal; if (n.y < 0.3) { this.group.visible = false; return; }   // paroi verticale : pas d'ombre
+      const px = _o.x + (_p1.x - _o.x) * hit.t + n.x * 0.03, py = _o.y + (_p1.y - _o.y) * hit.t + n.y * 0.03, pz = _o.z + (_p1.z - _o.z) * hit.t + n.z * 0.03;
+      // projection verticale sur le plan (point p0, normale n) : x et z inchanges, y = p0.y - (n.x (x - p0.x) + n.z (z - p0.z)) / n.y
+      _pm.set(1, 0, 0, 0, -n.x / n.y, 0, -n.z / n.y, py + (n.x * px + n.z * pz) / n.y, 0, 0, 1, 0, 0, 0, 0, 1);
+      rk.mesh.updateMatrixWorld(true);
+      const J = rk.mesh.userData.jet, used = new Set();
+      rk.mesh.traverse((o) => {
+        if (!o.isMesh) return;
+        for (let p = o; p; p = p.parent) { if (!p.visible) return; if (J && p === J.group) return; if (p === rk.mesh) break; }
+        const m = o.material; if (m && m.transparent && m.blending === THREE.AdditiveBlending) return;
+        let c = this.clones.get(o);
+        if (!c) { c = new THREE.Mesh(o.geometry, this.mat); c.matrixAutoUpdate = false; c.frustumCulled = false; c.renderOrder = 1; this.group.add(c); this.clones.set(o, c); }
+        else if (c.geometry !== o.geometry) c.geometry = o.geometry;
+        c.matrix.multiplyMatrices(_pm, o.matrixWorld); c.matrixWorld.copy(c.matrix); c.visible = true; used.add(o);
+      });
+      for (const [o, c] of this.clones) if (!used.has(o)) { c.visible = false; if (!o.parent) { this.group.remove(c); this.clones.delete(o); } }
+      this.group.visible = true;
     }
   }
 

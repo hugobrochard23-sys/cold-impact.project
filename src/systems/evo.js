@@ -130,7 +130,12 @@
     const tail = fins(wm, M.red, 0.22, 0.09, 0.2, 0.08, -0.36, Math.PI / 4, false);
     const flaps = new THREE.Group(); { const f = fins(M.red, M.red, 0.3, 0.1, 0.075, 0.02, -0.02, 0, false, 0.034); f.children.forEach((c) => { c.children[0].position.y = 0.085 + 0.262; }); flaps.add(f); }   // v207 : volets plus epais que l'aile (meme plan = scintillement blanc/rouge)
     const boost = new THREE.Group(); for (const s of [-1, 1]) { boost.add(cyl(0.05, 0.05, 0.62, M.red, s * 0.2, -0.092, -0.12)); boost.add(cyl(0.0, 0.05, 0.14, M.white, s * 0.2, -0.092, 0.28)); boost.add(cyl(0.04, 0.055, 0.1, M.dark, s * 0.2, -0.092, -0.47)); }   // v207 : propulseurs sous le plan des ailes (avant : l'aile les traversait)
-    P.wings = wings; P.tail = tail; P.flaps = flaps; P.boost = boost;
+    // v214 : fusee plus vivante : feux de navigation (rouge a gauche, vert a droite) qui clignotent, anneaux de tuyere incandescents sur les propulseurs, feu stroboscopique blanc a la queue
+    const nav = (col, x, y, z) => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.026, 8, 6), new THREE.MeshBasicMaterial({ color: col, transparent: true, fog: false })); m.position.set(x, y, z); return m; };
+    const navs = [nav('#ff3a3a', -0.43, 0, -0.1), nav('#3aff6a', 0.43, 0, -0.1)]; wings.add(navs[0], navs[1]);
+    const strobe = nav('#ffffff', 0, 0.2, -0.4); tail.add(strobe); navs.push(strobe);
+    for (const s of [-1, 1]) { const ring = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.012, 6, 14), new THREE.MeshBasicMaterial({ color: '#ff9a3a', fog: false })); ring.position.set(s * 0.2, -0.092, -0.52); boost.add(ring); }
+    P.wings = wings; P.tail = tail; P.flaps = flaps; P.boost = boost; root.userData.navs = navs;
     for (const k of Object.keys(P)) { P[k].userData.k = 0; root.add(P[k]); }
     root.userData.P = P; return root;
   }
@@ -201,6 +206,8 @@
   EVO.applySkinOnly = (g) => { EVO.applySkin(g); };
   EVO.frame = (g, dt) => {
     if (g.evoTumble) EVO.tumbleFrame(g, dt);
+    { const pr = g.rocket && g.rocket.mesh.userData.evoParts, nv = pr && pr.userData.navs;   // clignotement des feux (v214)
+      if (nv) { const t = performance.now() / 1000; nv[0].material.opacity = Math.sin(t * 5) > 0.2 ? 1 : 0.25; nv[1].material.opacity = Math.sin(t * 5 + 2.1) > 0.2 ? 1 : 0.25; nv[2].material.opacity = Math.sin(t * 9) > 0.86 ? 1 : 0.0; } }
     EVO.kbFrame(g); EVO.pistonFrame(g, dt);
     const wt = CC.Textures && CC.Textures.get && CC.Textures.get('water'); if (wt && wt.offset) wt.offset.y += dt * 0.12;   // v123 : l'eau coule (rivière, cascades)
     const A = g.evoAnim; if (!A) return;

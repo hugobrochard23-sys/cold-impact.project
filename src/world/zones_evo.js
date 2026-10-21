@@ -408,8 +408,9 @@
     for (const sd of [-1, 1]) hillStrip(S, sd);
     if (!/^(rampe|camp|riviere|foret|route)$/.test(S.sc.name)) return;   // forteresse et fuite : decor propre a la scene
     // petits blocs de pierre posés dans l'herbe : des reliefs à frôler
+    const onSite = (dc, lx) => S.sc.name === 'camp' && (Z.campSites || [[70, 50, 50], [232, 48, 42], [340, 52, 56], [470, 80, 30], [570, 52, 66]]).some(([d, hd, hl]) => Math.abs(dc - (S.d0 + d)) < hd && Math.abs(lx) < hl);   // v214
     const wetRv = (dc) => S.sc.name === 'riviere' && Math.abs(dc - (S.d0 + S.len * 0.5)) < S.len * 0.3 + 6;   // v206 : rien (arbre, ferme, rocher) ne pousse dans l'eau de la riviere
-    S.rows(S.d0, S.d1, 24, 0.85, (dc) => S.item(dc, (r) => { if (wetRv(dc)) return; const lx = S.lane(dc).lx + (r() < 0.5 ? -1 : 1) * r.between([16, 62]), sz = r.between([1.6, 4.6]), p = S.at(dc, lx, 0); TR.rock(S.b, p[0], p[1], p[2], sz, r, {}); S.b.box({ p: [p[0], p[1] + sz * 0.5, p[2]], s: [sz * 1.6, sz * 1.1, sz * 1.6], render: false }); }));
+    S.rows(S.d0, S.d1, 24, 0.85, (dc) => S.item(dc, (r) => { if (wetRv(dc)) return; const lx = S.lane(dc).lx + (r() < 0.5 ? -1 : 1) * r.between([16, 62]); if (onSite(dc, lx)) return; const sz = r.between([1.6, 4.6]), p = S.at(dc, lx, 0); TR.rock(S.b, p[0], p[1], p[2], sz, r, {}); S.b.box({ p: [p[0], p[1] + sz * 0.5, p[2]], s: [sz * 1.6, sz * 1.1, sz * 1.6], render: false }); }));
     // bosquets et arbres épars
     for (const s of [-1, 1]) S.rows(S.d0, S.d1, 22, 0.9, (dc) => S.item(dc, (r) => { if (wetRv(dc)) return; const lx = s * (S.vol(dc) - r.between([2, 70])); (r() < 0.5 ? oakT : pineT)(S, dc, lx, r); }));
     // fermes, moulins, lignes électriques au loin

@@ -131,7 +131,7 @@
   function fuelDepot(S, dc) {
     S.reserve(dc, 0, 90, 90);
     S.item(dc, (r) => {
-      S.bx(dc, 0, 0.12, 100, 0.2, 90, 'concrete', '#b4b6b2', false, { shadow: false });
+      S.bx(dc - 5, 0, 0.12, 100, 0.2, 80, 'concrete', '#b4b6b2', false, { shadow: false });
       for (const s of [-1, 1]) for (let i = 0; i < 3; i++) {
         const d2 = dc - 28 + i * 28, lx = s * 32 + (i % 2) * s * 4;
         S.cyl(d2, lx, 0, 8, 11, 'col:#bfc2bc', undefined, 16, 8, true); S.cyl(d2, lx, 11, 8.3, 0.7, 'col:#8a8e94', undefined, 16, 8.3, false); S.cyl(d2, lx, 5.4, 8.15, 1.4, 'col:#c8402c', undefined, 16, 8.15, false);
@@ -150,7 +150,7 @@
 
   // ---------- 4. PISTE DESAFFECTEE : béton fissuré, avions épaves, tour de contrôle en briques, manche à air ----------
   function runway(S, dc) {
-    const len = 190;
+    const len = 150;   // v214 : raccourcie : ses dalles ne chevauchent plus celles du depot et du site industriel
     S.reserve(dc, 0, 70, len);
     S.item(dc, (r) => {
       for (let d2 = dc - len / 2; d2 < dc + len / 2; d2 += 20) { S.bx(d2 + 10, 0, 0.1, 46, 0.2, 20.4, 'concrete', '#bdbdb8', false, { shadow: false }); if (Math.round(d2 / 20) % 2 === 0) S.bx(d2 + 10, 0, 0.22, 1.4, 0.05, 11, 'col:#d8d4bc', undefined, false, { shadow: false }); }
@@ -177,7 +177,8 @@
   function industrial(S, dc) {
     S.reserve(dc, 0, 100, 110);
     S.item(dc, (r) => {
-      S.bx(dc, 0, 0.12, 110, 0.2, 110, 'concrete', '#aeb0ac', false, { shadow: false });
+      S.bx(dc + 15, 0, 0.12, 110, 0.2, 80, 'concrete', '#aeb0ac', false, { shadow: false });
+      for (const [fd, fs] of [[dc - 20, -1], [dc + 16, 1]]) S.bx(fd, fs * 36, 0.14, 32, 0.2, 46, 'concrete', '#a4a6a2', false, { shadow: false });   // dalle sous chaque hall
       for (const [d2, lx, h] of [[dc - 36, -38, 42], [dc - 6, 40, 36], [dc + 30, -42, 46]]) {
         S.cyl(d2, lx, 0, 3.6, h, 'brick', '#b09486', 12, 2.4, true); S.cyl(d2, lx, h - 4, 3.0, 1.2, 'col:#2a2a2a', undefined, 12, 3.0, false); S.cyl(d2, lx, h * 0.55, 3.2, 1, 'col:#c8c8c0', undefined, 12, 3.2, false);
         S.bx(d2, lx, 1.4, 9, 2.8, 9, 'brick', '#9a8274', true);
@@ -189,6 +190,12 @@
         for (let k = 0; k < 4; k++) { S.bxr(d2 - 15 + k * 10, lx, 17.2, w + 1, 0.6, 10.4, 'corrugated', pk(r, RUST), 22, 0, true); S.bx(d2 - 15 + k * 10 + 4.7, lx, 18.3, w + 1, 3.2, 0.5, 'glass', undefined, false); }
         for (let k = 0; k < 4; k++) S.bx(d2 - 16 + k * 10.6, lx - s * (w / 2 + 0.2), 8, 0.3, 4, 5, 'glass', undefined, false);
         S.bx(d2, lx - s * (w / 2 + 3), 1.2, 3, 2.4, 14, 'col:#4a5a3a', undefined, true);
+        // v214 : habillage de facade : soubassement, pilastres de briques claires, corniche, grandes baies sombres et portail de chargement
+        S.bx(d2, lx, 0.6, w + 0.7, 1.2, dd + 0.7, 'concreteDark', '#5e6068', true);
+        S.bx(d2, lx, 16.35, w + 1.1, 0.7, dd + 1.1, 'concrete', '#c8c8c0', false);
+        for (let k = 0; k < 6; k++) { const zz = d2 - dd / 2 + 3 + k * (dd - 6) / 5; for (const sf of [-1, 1]) S.bx(zz, lx + sf * (w / 2 + 0.22), 8, 0.9, 15.2, 1.3, 'brick', '#b89886', false); }
+        for (let k = 0; k < 5; k++) { const zz = d2 - dd / 2 + 3 + (k + 0.5) * (dd - 6) / 5; for (const sf of [-1, 1]) { S.bx(zz, lx + sf * (w / 2 + 0.12), 9.5, 0.2, 5.2, 4.8, 'col:#222a33', undefined, false); S.bx(zz, lx + sf * (w / 2 + 0.2), 9.5, 0.12, 5.6, 0.3, 'col:#d8d8d0', undefined, false); } }
+        for (const ef of [-1, 1]) { S.bx(d2 + ef * (dd / 2 + 0.12), lx, 3.6, 7.4, 7.2, 0.3, 'col:#34383e', undefined, false); S.bx(d2 + ef * (dd / 2 + 0.2), lx, 7.4, 8.4, 0.5, 0.4, 'col:#e0b020', undefined, false); }
       }
       // passerelles et tuyaux en travers : on passe dessous, entre, ou dessus
       for (const [d2, y, mat, tint, th] of [[dc - 24, 11, 'metal', '#8a8e94', 0.7], [dc - 24, 12, 'metal', '#8a8e94', 0.15], [dc + 6, 26, 'metal', '#9a7a58', 1.6]]) S.bx(d2, 0, y, 76, th, th < 1 ? 2.6 : 1.6, mat, tint, th > 0.5);
@@ -217,5 +224,6 @@
       S.item(d0 + 600, (r) => Z.kit.radome(S, d0 + 600, 64));
       hangar(S, d0 + at.hangar); checkpoint(S, d0 + at.checkpoint); fuelDepot(S, d0 + at.fuel); runway(S, d0 + at.runway); industrial(S, d0 + at.industrial);
       for (const k of Object.keys(at)) S.gate(d0 + at[k] - 50, 0, 15);
+      Z.campSites = [[at.hangar, 50, 50], [at.checkpoint, 48, 42], [at.fuel, 52, 56], [at.runway, 80, 30], [at.industrial, 52, 66]];   // zones betonnees : ni rochers ni arbres dessus (zones_evo.js)
     } };
 })();

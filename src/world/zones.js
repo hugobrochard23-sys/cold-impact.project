@@ -279,7 +279,10 @@
     item(dc, fn) {
       const r = G.stream(this.T.seed, 'it' + this.sc.key + '_' + (this.ic++)); r.pick = (a) => a[Math.floor(r() * a.length)];
       if (!this.inClip(dc)) return false;
-      const cx = this.ctx; cx.itemDepth = (cx.itemDepth || 0) + 1; try { fn(r); } finally { cx.itemDepth--; }   // v196 : les objets poses HORS item sont filtres par position (voir endless.js)
+      // v214 : pendant la construction d'un objet, la fenetre de coupe s'elargit a tout le TRONCON (et non plus la tranche de 20 m) : les pieces d'un meme objet (halls, tours, ponts...)
+      // plus longues que 20 m n'etaient posees qu'en partie depuis la construction par etapes (v195) : des batiments entiers manquaient
+      const cx = this.ctx, o0 = this.c0, o1 = this.c1; if (cx.cd0 !== undefined) { this.c0 = Math.min(o0, cx.cd0); this.c1 = Math.max(o1, cx.cd1); }
+      cx.itemDepth = (cx.itemDepth || 0) + 1; try { fn(r); } finally { cx.itemDepth--; this.c0 = o0; this.c1 = o1; }   // v196 : les objets poses HORS item sont filtres par position (voir endless.js)
       return true;
     }
     // boîte dans le repère du couloir : dc (distance), lx (travers), yc (centre en hauteur au-dessus du sol), w × h × dd

@@ -227,7 +227,7 @@
     }
 
     // sol, passages entre zones, scènes (src/world/zones*.js)
-    const ctx = { game, b, T, r, d0, d1, gates, busy, reserved, ZONES, special: null, rings: [], glows: [], doors: [] };
+    const ctx = { game, b, T, r, d0, d1, cd0: d0, cd1: d1, gates, busy, reserved, ZONES, special: null, rings: [], glows: [], doors: [] };
     filt.ctx = ctx; filt.on = true;
     { const SL = 20; ctx.noFlush = true; for (let a = d0; a < d1 - 0.01; a += SL) { ctx.d0 = a; ctx.d1 = Math.min(d1, a + SL); ctx.keepSpecial = a > d0; CC.Zones.build(ctx); yield; }
       filt.on = false; ctx.d0 = d0; ctx.d1 = d1; ctx.noFlush = false; ctx.keepSpecial = false; if (CC.Zones.flushGrass) CC.Zones.flushGrass(ctx); if (CC.Life && CC.Life.flushGlows) CC.Life.flushGlows(ctx); yield; }
