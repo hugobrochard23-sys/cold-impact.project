@@ -6,7 +6,7 @@
 (function () {
   const U = CC.U;
   const THEME = {
-    bg: '#1E2024', bg2: '#16181c', border: '#3A3E45', border2: '#52565e', yellow: '#FFE600', yellowD: '#B8A400', yellowL: '#FFF56a', red: '#FF2B2B', redD: '#9a1414',
+    bg: '#172D43', bg2: '#101923', border: '#8A6A30', border2: '#FFB52E', yellow: '#FFE600', yellowD: '#B8A400', yellowL: '#FFF56a', red: '#FF2B2B', redD: '#9a1414',
     white: '#FFFFFF', ink: '#101216', dim: '#8d929b', grey: '#3A3E45',
     font: '"Rajdhani","Barlow Condensed","Arial Narrow",sans-serif',   // changer la police : ici seulement
   };
