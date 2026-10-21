@@ -157,7 +157,7 @@
         transformed.z += cos( uTime * 1.5 + gw.z * 0.27 + gw.x * 0.15 ) * 0.1 * gs;
         transformed.y -= aSway * ( 1.0 - gf );`);
       // v186 : brins et petales sont lus des deux cotes SANS inverser la normale (avant, la face vue de dos etait eclairee par en dessous : brins et coeurs de fleurs presque noirs)
-      sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>'+String.fromCharCode(10)+' normal = normalize( vNormal );');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uShAmt; varying float vSh;').replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb *= 1.0 - uShAmt * vSh;').replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>'+String.fromCharCode(10)+' normal = normalize( vNormal );');
     };
     return m;
   })());
@@ -213,17 +213,19 @@
     const bc = new Float32Array(rows.length * 3); rows.forEach((r, k) => { bc[k * 3] = r[0]; bc[k * 3 + 1] = r[1]; bc[k * 3 + 2] = 1; });
     return { position: new THREE.BufferAttribute(new Float32Array(rows.length * 3), 3), aBC: new THREE.BufferAttribute(bc, 3), color: null };
   })());
-  const GLSL_COMMON = `uniform float uTime; uniform vec3 uCam; attribute vec3 aBC; attribute vec3 aPos; attribute vec2 aNrm;
+  const GLSL_COMMON = `uniform sampler2D uShTex; uniform vec3 uShC; uniform float uShS; varying float vSh;
+    float shM( vec3 w ) { vec2 q = vec2( ( w.x - uShC.x ) / uShS + 0.5, 0.5 - ( w.z - uShC.z ) / uShS ); if ( q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0 ) return 0.0; return texture2D( uShTex, q ).r; }
+    uniform float uTime; uniform vec3 uCam; attribute vec3 aBC; attribute vec3 aPos; attribute vec2 aNrm;
     float gh( float a, float b ) { return fract( sin( a * 127.1 + b * 311.7 ) * 43758.5453 ); }
     vec3 gWind( vec3 gw, float sway, float far ) { float gf = 1.0 - smoothstep( far * 0.55, far, distance( gw, uCam ) ); float gs = sway * ( 0.6 + 0.4 * sin( gw.x * 0.11 + gw.z * 0.13 ) );
       return vec3( ( sin( uTime * 1.9 + gw.x * 0.31 + gw.z * 0.19 ) * 0.14 + sin( uTime * 3.4 + gw.z * 0.8 ) * 0.04 ) * gs, - sway * ( 1.0 - gf ), cos( uTime * 1.5 + gw.z * 0.27 + gw.x * 0.15 ) * 0.1 * gs ); }`;
   const mkInst = (attrs, bodyV, colV, key) => {
     const m = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }); m.customProgramCacheKey = () => key;   // sans cle propre, les deux materiaux partageraient le meme programme (meme texte de fonction)
     m.onBeforeCompile = (sh) => {
-      sh.uniforms.uTime = GU; sh.uniforms.uCam = GCAM;
+      sh.uniforms.uTime = GU; sh.uniforms.uCam = GCAM; sh.uniforms.uShTex = CC.SHU.uShTex; sh.uniforms.uShC = CC.SHU.uShC; sh.uniforms.uShS = CC.SHU.uShS; sh.uniforms.uShAmt = CC.SHU.uShAmt;
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\n' + GLSL_COMMON + '\n' + attrs)
         .replace('#include <beginnormal_vertex>', 'vec3 objectNormal = vec3( aNrm.x, sqrt( max( 0.0, 1.0 - dot( aNrm, aNrm ) ) ), aNrm.y );')
-        .replace('#include <begin_vertex>', bodyV).replace('#include <color_vertex>', colV);
+        .replace('#include <begin_vertex>', bodyV + '\nvSh = shM( ( modelMatrix * vec4( transformed, 1.0 ) ).xyz );').replace('#include <color_vertex>', colV);
       // brins et petales lus des deux cotes SANS inverser la normale
       sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>' + String.fromCharCode(10) + ' normal = normalize( vNormal );');
     };

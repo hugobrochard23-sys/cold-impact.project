@@ -25,7 +25,7 @@
         c, hx: s[0] / 2, hy: s[1] / 2, hz: s[2] / 2,
         ux: new V(1, 0, 0).applyQuaternion(q), uy: new V(0, 1, 0).applyQuaternion(q), uz: new V(0, 0, 1).applyQuaternion(q),
         kind: opts.kind || 'solid', ref: opts.ref || null, active: true, _stamp: 0,
-        ground: !!opts.ground,
+        ground: !!opts.ground, invisible: !!opts.invisible,
       };
       // AABB monde
       const ex = Math.abs(b.ux.x) * b.hx + Math.abs(b.uy.x) * b.hy + Math.abs(b.uz.x) * b.hz;

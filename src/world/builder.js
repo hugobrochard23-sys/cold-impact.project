@@ -126,7 +126,7 @@
         this.buildings.push({ pos, w, h, d, q: q.clone(), facade: m.side, tint: o.tint });
       }
       if (o.collide !== false && o.kind !== 'noCollide') {
-        return this.world.addBox({ center: pos, size: o.s, quat: q, kind: o.kind || 'solid', ground: o.ground, ref: o.ref });
+        return this.world.addBox({ center: pos, size: o.s, quat: q, kind: o.kind || 'solid', ground: o.ground, ref: o.ref, invisible: o.render === false && !o.ground });   // invisible : collision seule (l'ombre l'ignore)
       }
       return null;
     }
