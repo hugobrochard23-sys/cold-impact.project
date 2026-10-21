@@ -71,7 +71,7 @@
     } else if (style === 'peaks') {
       peaks(60, 190, 0.22, 240); peaks(50, 150, 0.36, 180); peaks(30, 100, 0.55, 140);
     } else if (style === 'campagne') {
-      alp(120, 270, 0.9, 420, '#a9cbe2', '#c1d9e8', '#98b9d2'); alp(70, 190, 0.95, 290, '#729fc4', '#b0cde0', '#4c7195'); hills(34, 100, 0.44, 0, 1.1); pines(16, 44, 0.48, 12); hills(14, 52, 0.58, 5, 0.6); pines(9, 30, 0.7, 9);
+      /* v201 : plus de montagnes peintes : les vraies (zones_evo.js, mountain) les remplacent */ hills(34, 100, 0.44, 0, 1.1); pines(16, 44, 0.48, 12); hills(14, 52, 0.58, 5, 0.6); pines(9, 30, 0.7, 9);
     } else if (style === 'forest') {
       hills(40, 130, 0.22, 0, 1.6); hills(30, 90, 0.36, 0, 1.0); pines(18, 50, 0.46, 12); hills(14, 46, 0.55, 5, 0.6); pines(10, 32, 0.68, 9);
     } else if (style === 'seabed') {

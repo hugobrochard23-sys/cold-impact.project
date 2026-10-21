@@ -392,6 +392,8 @@
 
     for (const s of [-1, 1]) S.rows(S.d0, S.d1, 170, 0.8, (dc) => S.item(dc, (r) => mountain(S, dc, s * r.between([430, 720]), r)));
     for (const s of [-1, 1]) S.rows(S.d0, S.d1, 150, 0.8, (dc) => S.item(dc, (r) => mountain(S, dc, s * r.between([320, 540]), r, 0.62)));
+    S.rows(S.d0, S.d1, 230, 0.8, (dc) => S.item(dc, (r) => mountain(S, dc, (r() < 0.5 ? -1 : 1) * r.between([560, 900]), r, 1.2)));   // fond : grands sommets lointains
+    S.rows(S.d0, S.d1, 190, 0.8, (dc) => S.item(dc, (r) => mountain(S, dc, (r() < 0.5 ? -1 : 1) * r.between([300, 460]), r, 0.95)));
     // collines rondes à l'horizon, des deux côtés (ellipsoïdes aplaties : un vrai relief doux, pas des boîtes)
     for (const s of [-1, 1]) S.rows(S.d0, S.d1, 42, 0.7, (dc) => S.item(dc, (r) => { const v = S.vol(dc), rad = r.between([60, 190]), lx = s * (v + 14 + rad + r.between([0, 90])), sy = r.between([0.2, 0.42]); S.ball(dc, lx, -rad * sy * 0.12, rad, 'col:' + pick(r, GREENS), undefined, Math.abs(lx) < 150, sy); }));
     // petits blocs de pierre posés dans l'herbe : des reliefs à frôler
