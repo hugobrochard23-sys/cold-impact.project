@@ -68,7 +68,9 @@
       for (let dc = d(0.03); dc < d(0.405); dc += 13) S.item(dc + 6.5, (r) => {
         const m = dc + 6.5, Lc = S.lane(m).lx, fl = T.rel(m), u = (m - S.d0) / L, hf = halfAt(u), top = 36 - fl;
         for (const s of [-1, 1]) {
-          S.bx(m, Lc + s * (hf + 14), (top - 15) / 2, 28, top + 15, 13.8, 'concreteWarm', pk(r, u < 0.3 ? SAND : CAVE), true);
+          { const tn = pk(r, u < 0.3 ? SAND : CAVE), tk = (k) => '#' + new T3.Color(tn).multiplyScalar(k).getHexString();   // v206 : paroi unie (sans quadrillage) + strates en saillie de teintes voisines : une falaise, plus un mur
+            S.bx(m, Lc + s * (hf + 14), (top - 15) / 2, 28, top + 15, 13.8, 'col:' + tn, undefined, true);
+            for (let k = 0, nb = 2 + Math.floor(r() * 3); k < nb; k++) { const pr = r.between([0.5, 1.7]), hh = r.between([3, 8]), yy = r.between([-6, Math.max(2, top - 8)]); S.bx(m, Lc + s * (hf - pr / 2 + 0.1), yy, pr, hh, 14.2, 'col:' + tk(r.between([0.9, 1.1])), undefined, false, { shadow: false }); } }
           for (let y = -10; y < top - 10; y += (u < 0.3 ? 21 : 13)) { const sz = r.between(u < 0.3 ? [15, 23] : [6, 10]); boulder(S, m + r.between([-3, 3]), Lc + s * (hf + 1.8 * sz + r.between([0, 3])), y + 1, sz, r, pk(r, u < 0.3 ? SAND : CAVE)); }
         }
         if (u < 0.28 && r() < 0.5) { const s = r() < 0.5 ? -1 : 1; lamp(S, m, Lc + s * (hf - 2), 14 + r.between([0, 18]), '#ffd89a', 14); }

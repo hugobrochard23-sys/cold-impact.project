@@ -376,14 +376,17 @@
       const p = [x, gy + s * 0.18, z];
       this.box({ p, s: size, r: rot, render: false });                   // collision inchangée
       // design : rocher à facettes (icosaèdre déformé, base aplatie, un peu enterré) au lieu d'un pavé
-      const dr = this.deco, geo = new THREE.IcosahedronGeometry(0.62, 0), P = geo.attributes.position, jit = new Map();
+      const dr = this.deco, geo = new THREE.IcosahedronGeometry(0.62, 1), P = geo.attributes.position, jit = new Map();   // v206 : 80 facettes et ombrage doux (galet arrondi) au lieu de 20 facettes plates
       for (let i = 0; i < P.count; i++) {
         const key = P.getX(i).toFixed(3) + ',' + P.getY(i).toFixed(3) + ',' + P.getZ(i).toFixed(3);
-        if (!jit.has(key)) jit.set(key, dr.range(0.78, 1.18));
+        if (!jit.has(key)) jit.set(key, dr.range(0.88, 1.14));
         const k = jit.get(key);
         P.setXYZ(i, P.getX(i) * k, Math.max(-0.42, P.getY(i) * k), P.getZ(i) * k);
       }
       geo.computeVertexNormals();
+      { const Nn = geo.attributes.normal, acc = new Map(), kk = (i) => P.getX(i).toFixed(3) + ',' + P.getY(i).toFixed(3) + ',' + P.getZ(i).toFixed(3);
+        for (let i = 0; i < P.count; i++) { const k = kk(i); let a = acc.get(k); if (!a) acc.set(k, a = [0, 0, 0]); a[0] += Nn.getX(i); a[1] += Nn.getY(i); a[2] += Nn.getZ(i); }
+        for (let i = 0; i < P.count; i++) { const a = acc.get(kk(i)), l = Math.hypot(a[0], a[1], a[2]) || 1; Nn.setXYZ(i, a[0] / l, a[1] / l, a[2] / l); } }
       const tint = '#' + new THREE.Color(1, 1, 1).multiplyScalar(dr.range(0.8, 1.05)).getHexString();
       this.addGeometry(geo, new V(p[0], p[1] - s * 0.05, p[2]), this.quatFrom(rot), new V(size[0], size[1] * 1.15, size[2]), mat || 'col:#5b6472', tint);
       geo.dispose();

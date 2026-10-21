@@ -11,16 +11,22 @@
   const mul = (c, k) => [Math.min(1, c[0] * k), Math.min(1, c[1] * k), Math.min(1, c[2] * k)];
   const lerp3 = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
   const rr = (rnd, a, b) => a + (b - a) * rnd();
+  // v206 : plans d'eau (rectangles orientes declares par la scene) : ni arbre, ni rocher, ni buisson dedans
+  const inWater = (b, x, z) => { const W = b && b.water; if (!W) return false; for (const w of W) { const dx = x - w.x, dz = z - w.z, al = dx * w.ux + dz * w.uz, ac = -dx * w.uz + dz * w.ux; if (Math.abs(ac) < w.hw && Math.abs(al) < w.hd) return true; } return false; };
 
   // constructeur de géométrie : on pousse des triangles (a, b, c) avec une couleur par sommet ; normales plates à la fin
-  function Mesh() { this.p = []; this.c = []; }
-  Mesh.prototype.tri = function (a, b, c, ca, cb, cc) { this.p.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]); this.c.push(ca[0], ca[1], ca[2], cb[0], cb[1], cb[2], cc[0], cc[1], cc[2]); };
+  function Mesh() { this.p = []; this.c = []; this.sm = []; this.smooth = false; }
+  Mesh.prototype.tri = function (a, b, c, ca, cb, cc) { this.sm.push(this.smooth ? 1 : 0); this.p.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]); this.c.push(ca[0], ca[1], ca[2], cb[0], cb[1], cb[2], cc[0], cc[1], cc[2]); };
   Mesh.prototype.quad = function (a, b, c, d, ca, cb, cc, cd) { this.tri(a, b, c, ca, cb, cc); this.tri(a, c, d, ca, cc, cd); };
   Mesh.prototype.geo = function () {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(this.p, 3));
     g.setAttribute('color', new THREE.Float32BufferAttribute(this.c, 3));
     g.computeVertexNormals();
+    // v206 : masses (feuillages, buissons, rochers) ombrees en DOUX : la normale de chaque sommet est la moyenne des faces qui s'y touchent (aspect arrondi, « bonbon »), la silhouette reste taillee
+    { const Nn = g.attributes.normal.array, Pp = this.p, acc = new Map(), key = (i) => Math.round(Pp[i] * 40) + ',' + Math.round(Pp[i + 1] * 40) + ',' + Math.round(Pp[i + 2] * 40);
+      for (let t = 0; t < this.sm.length; t++) if (this.sm[t]) for (let v = 0; v < 3; v++) { const i = t * 9 + v * 3, k = key(i); let a = acc.get(k); if (!a) acc.set(k, a = [0, 0, 0]); a[0] += Nn[i]; a[1] += Nn[i + 1]; a[2] += Nn[i + 2]; }
+      for (let t = 0; t < this.sm.length; t++) if (this.sm[t]) for (let v = 0; v < 3; v++) { const i = t * 9 + v * 3, a = acc.get(key(i)), l = Math.hypot(a[0], a[1], a[2]) || 1; Nn[i] = a[0] / l; Nn[i + 1] = a[1] / l; Nn[i + 2] = a[2] / l; } }
     g.setAttribute('uv', new THREE.Float32BufferAttribute(new Array(this.p.length / 3 * 2).fill(0), 2));
     return g;
   };
@@ -44,6 +50,7 @@
   const shade = (m, x, y, z, r, col) => { const c = hex(col), o = mul(c, 1.2); for (const [k, y0, cc] of [[1, 0.06, o], [0.6, 0.075, c]]) for (let q = 0; q < 8; q++) { const a0 = q / 8 * 6.2832, a1 = (q + 1) / 8 * 6.2832, R = r * k; m.tri([x, y + y0, z], [x + Math.cos(a0) * R, y + y0, z + Math.sin(a0) * R * 0.85], [x + Math.cos(a1) * R, y + y0, z + Math.sin(a1) * R * 0.85], cc, cc, cc); } };   // v187 : ombre de contact en deux anneaux (penombre + coeur)
 
   T.conifer = function (b, x, y, z, h, rnd, o) {
+    if (inWater(b, x, z)) return;
     o = o || {}; const m = new Mesh(), pal = CONIFER[Math.floor(rnd() * CONIFER.length)], dark = hexk(pal[0], 0.95 + 0.1 * rnd()), light = hexk(pal[1], 0.84 + 0.1 * rnd()), bark = hex(BARK[Math.floor(rnd() * BARK.length)]);
     const tiers = o.far ? 5 + Math.floor(rnd() * 2) : 7 + Math.floor(rnd() * 3), R = h * rr(rnd, 0.17, 0.23), lean = [rr(rnd, -0.025, 0.025) * h, rr(rnd, -0.025, 0.025) * h];
     const cx = (t) => x + lean[0] * t, cz = (t) => z + lean[1] * t;
@@ -78,17 +85,18 @@
 
   // blob irrégulier (icosphère jittérée, couleurs en dégradé bas → haut)
   function blob(m, cx, cy, cz, rad, sy, rnd, cLow, cHigh, seed, lo) {
-    const ico = new THREE.IcosahedronGeometry(1, lo ? 0 : 1), P = ico.attributes.position, jit = (px, py, pz) => 0.84 + 0.3 * (Math.abs(Math.sin(px * 12.9898 + py * 78.233 + pz * 37.719 + seed) * 43758.5453) % 1);
+    m.smooth = true; const ico = new THREE.IcosahedronGeometry(1, lo ? 0 : 1), P = ico.attributes.position, jit = (px, py, pz) => 0.84 + 0.3 * (Math.abs(Math.sin(px * 12.9898 + py * 78.233 + pz * 37.719 + seed) * 43758.5453) % 1);
     const v = (i) => { const px = P.getX(i), py = P.getY(i), pz = P.getZ(i), k = jit(px, py, pz); return [[cx + px * rad * k, cy + py * rad * sy * k, cz + pz * rad * k], py]; };
     for (let i = 0; i < P.count; i += 3) {
       const a = v(i), b = v(i + 1), c = v(i + 2), col = (hh) => lerp3(cLow, cHigh, Math.max(0, Math.min(1, 0.5 + hh * 0.6)));
       const fy = (a[1] + b[1] + c[1]) / 3, tweak = 0.92 + 0.16 * ((Math.abs(Math.sin(i * 3.7 + seed)) * 10) % 1);
       m.tri(a[0], b[0], c[0], mul(col(a[1]), tweak), mul(col(b[1]), tweak), mul(col(c[1]), tweak));
     }
-    ico.dispose();
+    ico.dispose(); m.smooth = false;
   }
 
   T.broadleaf = function (b, x, y, z, h, rnd, o) {
+    if (inWater(b, x, z)) return;
     o = o || {}; const birch = !o.autumn && !o.far && rnd() < 0.24, m = new Mesh(), PL = o.autumn ? AUTUMN : birch ? BIRCH : BROAD, pal = PL[Math.floor(rnd() * PL.length)], cDark = hexk(pal[0], 0.95 + 0.1 * rnd()), cLight = hexk(pal[1], 0.78 + 0.1 * rnd()), bark = birch ? hex('#d6d2c4') : hex(BARK[Math.floor(rnd() * BARK.length)]);
     const th = h * (birch ? rr(rnd, 0.5, 0.6) : rr(rnd, 0.38, 0.48)), cr = h * (birch ? rr(rnd, 0.22, 0.28) : rr(rnd, 0.3, 0.38)), seed = rnd() * 100, lean = rr(rnd, -0.06, 0.06) * h;
     m.tube([x, y - 0.8, z], h * 0.05 + 0.45, [x, y + th * 0.25, z], h * 0.034 + 0.3, mul(bark, 0.65), mul(bark, 0.8), 8);
@@ -106,21 +114,24 @@
   };
 
   T.bush = function (b, x, y, z, s, rnd) {
+    if (inWater(b, x, z)) return;
     const m = new Mesh(), pal = BROAD[Math.floor(rnd() * BROAD.length)], n = 2 + Math.floor(rnd() * 2), seed = rnd() * 100; shade(m, x, y, z, s * 1.05, '#28633a');
     for (let i = 0; i < n; i++) blob(m, x + rr(rnd, -0.6, 0.6) * s, y + s * 0.38, z + rr(rnd, -0.6, 0.6) * s, s * rr(rnd, 0.6, 0.95), 0.75, rnd, mul(hex(pal[0]), 0.6), mul(hex(pal[1]), 0.82), seed + i * 5.3, i > 0);
     const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
   };
 
   T.rock = function (b, x, y, z, s, rnd, o) {
+    if (inWater(b, x, z)) return;
     o = o || {}; const m = new Mesh(), ico = new THREE.IcosahedronGeometry(1, 1), P = ico.attributes.position, seed = rnd() * 50, ay = rnd() * 6.28, sx = rr(rnd, 0.9, 1.5), sz = rr(rnd, 0.8, 1.3);
     const gray = o.gray || ['#c2c9cd', '#9ca7af', '#9ca7af', '#737f89', '#beb096'][Math.floor(rnd() * 5)], moss = hex('#6a9a48'), base = hex(gray);
-    const vert = (i) => { const px = P.getX(i), py = P.getY(i), pz = P.getZ(i), k = 0.78 + 0.4 * (Math.abs(Math.sin(px * 9.1 + py * 41.7 + pz * 23.3 + seed) * 43758.5453) % 1), cx = Math.cos(ay), sn = Math.sin(ay), X = px * sx * k, Z = pz * sz * k; return [x + (X * cx - Z * sn) * s, y + Math.max(py, -0.35) * 0.62 * k * s, z + (X * sn + Z * cx) * s, py]; };
+    const vert = (i) => { const px = P.getX(i), py = P.getY(i), pz = P.getZ(i), k = 0.88 + 0.22 * (Math.abs(Math.sin(px * 9.1 + py * 41.7 + pz * 23.3 + seed) * 43758.5453) % 1), cx = Math.cos(ay), sn = Math.sin(ay), X = px * sx * k, Z = pz * sz * k; return [x + (X * cx - Z * sn) * s, y + Math.max(py, -0.35) * 0.62 * k * s, z + (X * sn + Z * cx) * s, py]; };
+    m.smooth = true;
     for (let i = 0; i < P.count; i += 3) {
       const a = vert(i), c = vert(i + 1), d = vert(i + 2), top = (a[3] + c[3] + d[3]) / 3, tw = 0.72 + 0.4 * ((Math.abs(Math.sin(i * 2.9 + seed)) * 10) % 1);
       const col = top > 0.35 && !o.noMoss ? lerp3(mul(base, tw), moss, Math.min(0.85, (top - 0.3) * 1.6)) : mul(base, tw * (0.72 + 0.3 * Math.max(0, top + 0.3)));
       m.tri([a[0], a[1], a[2]], [c[0], c[1], c[2]], [d[0], d[1], d[2]], col, col, col);
     }
-    shade(m, x, y, z, s * 1.2, o.shade || '#3a6a3a'); ico.dispose(); const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
+    m.smooth = false; shade(m, x, y, z, s * 1.2, o.shade || '#3a6a3a'); ico.dispose(); const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
   };
 
   T.stump = function (b, x, y, z, s, rnd) {

@@ -401,15 +401,17 @@
   }
 
   const campagne = { signature: 'rampe', scenes: {}, dress(S) {
+    if (S.sc.name === 'riviere') { const dr = S.d0 + S.len * 0.5, p = S.T.at(dr, 0, 0); const q = S.T.at(dr + 10, 0, 0), q2 = S.T.at(dr - 10, 0, 0), l = Math.hypot(q[0] - q2[0], q[2] - q2[2]) || 1; S.b.water = [{ x: p[0], z: p[2], ux: (q[0] - q2[0]) / l, uz: (q[2] - q2[2]) / l, hw: S.vol(dr) + 70, hd: S.len * 0.3 + 6 }]; }   // v206 : plan d'eau de la riviere (trees.js l'evite)
 
     // collines : bandes de relief continues de chaque cote (hillStrip)
     for (const sd of [-1, 1]) hillStrip(S, sd);
     // petits blocs de pierre posés dans l'herbe : des reliefs à frôler
-    S.rows(S.d0, S.d1, 24, 0.85, (dc) => S.item(dc, (r) => { const lx = S.lane(dc).lx + (r() < 0.5 ? -1 : 1) * r.between([16, 62]), sz = r.between([1.6, 4.6]), p = S.at(dc, lx, 0); TR.rock(S.b, p[0], p[1], p[2], sz, r, {}); S.b.box({ p: [p[0], p[1] + sz * 0.5, p[2]], s: [sz * 1.6, sz * 1.1, sz * 1.6], render: false }); }));
+    const wetRv = (dc) => S.sc.name === 'riviere' && Math.abs(dc - (S.d0 + S.len * 0.5)) < S.len * 0.3 + 6;   // v206 : rien (arbre, ferme, rocher) ne pousse dans l'eau de la riviere
+    S.rows(S.d0, S.d1, 24, 0.85, (dc) => S.item(dc, (r) => { if (wetRv(dc)) return; const lx = S.lane(dc).lx + (r() < 0.5 ? -1 : 1) * r.between([16, 62]), sz = r.between([1.6, 4.6]), p = S.at(dc, lx, 0); TR.rock(S.b, p[0], p[1], p[2], sz, r, {}); S.b.box({ p: [p[0], p[1] + sz * 0.5, p[2]], s: [sz * 1.6, sz * 1.1, sz * 1.6], render: false }); }));
     // bosquets et arbres épars
-    for (const s of [-1, 1]) S.rows(S.d0, S.d1, 22, 0.9, (dc) => S.item(dc, (r) => { const lx = s * (S.vol(dc) - r.between([2, 70])); (r() < 0.5 ? oakT : pineT)(S, dc, lx, r); }));
+    for (const s of [-1, 1]) S.rows(S.d0, S.d1, 22, 0.9, (dc) => S.item(dc, (r) => { if (wetRv(dc)) return; const lx = s * (S.vol(dc) - r.between([2, 70])); (r() < 0.5 ? oakT : pineT)(S, dc, lx, r); }));
     // fermes, moulins, lignes électriques au loin
-    for (const s of [-1, 1]) S.rows(S.d0, S.d1, 130, 0.6, (dc) => S.item(dc, (r) => { const lx = s * r.between([55, S.vol(dc) - 10]), k = r(); (k < 0.4 ? farmhouse : k < 0.65 ? windmill : k < 0.85 ? haystack : (S2, d2, l2) => pylonLine(S2, d2, l2))(S, dc, lx, r); }));
+    for (const s of [-1, 1]) S.rows(S.d0, S.d1, 130, 0.6, (dc) => S.item(dc, (r) => { if (wetRv(dc)) return; const lx = s * r.between([55, S.vol(dc) - 10]), k = r(); (k < 0.4 ? farmhouse : k < 0.65 ? windmill : k < 0.85 ? haystack : (S2, d2, l2) => pylonLine(S2, d2, l2))(S, dc, lx, r); }));
   } };
   Z.defs.campagne = campagne;
 
@@ -444,7 +446,7 @@
     });
     foe(S, 'tank', dr, 10, 0, { name: 'CHAR CACHE', armed: false });
     foe(S, 'boat', S.d0 + 245, -20, 0, { name: 'VEDETTE', path: 60, speed: 8 });
-    for (let i = 0; i < 12; i++) { const dc = S.d0 + 8 + S.sr() * (S.len - 16), s = S.sr() < 0.5 ? -1 : 1, lx = s * S.sr.between([30, S.vol(dc) - 8]); if (Math.abs(dc - dr) < 40) continue; S.item(dc, (r) => (r() < 0.5 ? oakT : pineT)(S, dc, lx, r)); }
+    for (let i = 0; i < 12; i++) { const dc = S.d0 + 8 + S.sr() * (S.len - 16), s = S.sr() < 0.5 ? -1 : 1, lx = s * S.sr.between([30, S.vol(dc) - 8]); if (Math.abs(dc - dr) < 62) continue; S.item(dc, (r) => (r() < 0.5 ? oakT : pineT)(S, dc, lx, r)); }
   } };
 
   // ===== FORET : une forêt dense avec une clairière et un lance-missiles sur la colline

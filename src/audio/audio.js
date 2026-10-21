@@ -168,8 +168,17 @@
       this.bedHiss.gain.setTargetAtTime(g('hiss'), t, tc); this.bedHissF.frequency.setTargetAtTime(A.hissF || 5200, t, tc);
       if (this.music) this.music.setStyle(zone, dark);
     }
-    setUnder(k) { if (this.ctx && this.uwF) this.uwF.frequency.setTargetAtTime(22000 - k * 21200, this.ctx.currentTime, 0.12); }
-    setWater(k) { if (this.ctx && this.waterG) this.waterG.gain.setTargetAtTime(Math.max(0, k) * 0.32, this.ctx.currentTime, 0.2); }
+    // v206 : sous l'eau, vrai son d'ocean : sons etouffes (filtre passe-bas ~500 Hz), grondement profond continu, souffle d'eau, eclaboussure en entrant et en sortant
+    setUnder(k) {
+      if (!this.ctx || !this.uwF) return; const t = this.ctx.currentTime;
+      this.uwF.frequency.setTargetAtTime(22000 - k * 21500, t, 0.12);
+      if (!this.uwRumble && this.noise) { const src = this.ctx.createBufferSource(); src.buffer = this.noise; src.loop = true; src.playbackRate.value = 0.35; const f = this.ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 180; f.Q.value = 0.7; this.uwRumble = this.ctx.createGain(); this.uwRumble.gain.value = 0; src.connect(f); f.connect(this.uwRumble); this.uwRumble.connect(this.ambBus || this.master); src.start(); }
+      if (this.uwRumble) this.uwRumble.gain.setTargetAtTime(k * 0.55, t, 0.25);
+      if (this.uwWasUnder !== undefined && (k > 0.5) !== this.uwWasUnder) this.play('splash');
+      this.uwWasUnder = k > 0.5; this._uk = k; this.applyWater();
+    }
+    setWater(k) { this._wk = k; this.applyWater(); }
+    applyWater() { if (this.ctx && this.waterG) this.waterG.gain.setTargetAtTime(Math.max(0, Math.max(this._wk || 0, (this._uk || 0) * 1.1)) * 0.32, this.ctx.currentTime, 0.2); }
     // événements sonores lointains, tirés au hasard (klaxon, train lointain, corne de navire, oiseaux…) : le monde existe hors de l'écran
     updateAmbient(dt) {
       if (!this.ctx || !this.zoneNow) return;
