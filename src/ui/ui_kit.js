@@ -54,20 +54,16 @@
   UI.panel = (ctx, x, y, w, h, o) => {
     o = o || {}; const c = o.c === undefined ? Math.min(w, h) * 0.12 : o.c;
     UI.cham(ctx, x, y, w, h, c); ctx.fillStyle = o.fill || THEME.bg; ctx.fill();
-    if (o.border !== null) { UI.cham(ctx, x, y, w, h, c); ctx.lineWidth = o.bw || Math.max(2, S(3)); ctx.strokeStyle = o.border || THEME.border; ctx.stroke(); }
+    // v223 : plus aucun contour de panneau (style a plat)
   };
-  const face = (ctx, x, y, w, h, c, top, bot, lip, lipCol, edge) => {
-    const l = lip ? Math.max(2, h * lip) : 0;
-    if (l) { UI.cham(ctx, x, y + l, w, h - l, c); ctx.fillStyle = lipCol; ctx.fill(); }
-    UI.cham(ctx, x, y, w, h - l, c); const g = ctx.createLinearGradient(0, y, 0, y + h - l); g.addColorStop(0, top); g.addColorStop(1, bot); ctx.fillStyle = g; ctx.fill();
-    ctx.save(); UI.cham(ctx, x, y, w, h - l, c); ctx.clip(); ctx.fillStyle = 'rgba(255,255,255,0.16)'; ctx.fillRect(x, y, w, (h - l) * 0.38); ctx.restore();
-    if (edge) { UI.cham(ctx, x, y, w, h, c); ctx.lineWidth = Math.max(1.5, S(2)); ctx.strokeStyle = edge; ctx.stroke(); }
+  const face = (ctx, x, y, w, h, c, top, bot, lip, lipCol, edge) => {   // v223 : une seule teinte, sans contour ni reflet ; simple ombre
+    ctx.save(); ctx.translate(0, Math.max(3, h * 0.05)); UI.cham(ctx, x, y, w, h, c); ctx.fillStyle = 'rgba(8,10,16,0.35)'; ctx.fill(); ctx.restore(); UI.cham(ctx, x, y, w, h, c); ctx.fillStyle = top; ctx.fill();
   };
   // boutons : primaire (jaune), secondaire (sombre a bordure jaune), danger (rouge), desactive (gris)
   UI.btnPrimary = (ctx, x, y, w, h, label, o) => {
     o = o || {}; const c = Math.min(h * 0.28, S(22)), dis = o.disabled; const press = o.pressed ? h * 0.03 : 0;
     if (dis) { face(ctx, x, y, w, h, c, '#454a52', '#3a3e45', 0.08, '#2a2d33', THEME.border); }
-    else face(ctx, x, y + press, w, h - press, c, '#F4C400', '#CC9A00', 0.1, '#7a5c00', '#6a4f00');
+    else face(ctx, x, y + press, w, h - press, c, '#F2B600', null);
     const col = dis ? THEME.dim : THEME.white;
     if (o.sub) { UI.text(ctx, label, x + w / 2 + (o.icon ? h * 0.2 : 0), y + h * 0.33, UI.fit(ctx, label, w * 0.86, h * 0.34), col, { flat: !!o.flatLabel }); o.subDraw ? o.subDraw(x + w / 2, y + h * 0.7, h) : UI.text(ctx, o.sub, x + w / 2, y + h * 0.7, h * 0.32, col, { shadow: false }); }
     else UI.text(ctx, label, x + w / 2, y + h * 0.46, UI.fit(ctx, label, w * (o.maxW || 0.84), o.px || h * 0.42), col, { shadow: false });

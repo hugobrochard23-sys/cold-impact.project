@@ -47,18 +47,18 @@
     const shk = game.evoShake && game.evoShake.id === id && now - game.evoShake.t0 < 350 ? Math.sin((now - game.evoShake.t0) / 25) * S(10) : 0, bt = game.evoBought, bk = bt && bt.id === id ? U.clamp(1 - (now - bt.t0) / 520, 0, 1) : 0, k2 = 1 + 0.05 * Math.sin(bk * 3.1416);
     const rx = x + shk, ccx = rx + w / 2, ccy = y + h / 2;
     ctx.save(); ctx.translate(ccx, ccy); ctx.scale(k2, k2); ctx.translate(-ccx, -ccy);
-    const fr = UI.goldFrame(ctx, rx, y, w, h, { r: S(30), b: Math.max(S(6), w * 0.035), cut: false });
-    UI.outlined(ctx, name, rx + w * 0.09, y + h * 0.085, UI.fit(ctx, name, w * 0.58, S(32)), T.white, '#0b1420', { align: 'left', ow: 0.16, drop: false });
+    const fr = UI.goldFrame(ctx, rx, y, w, h, { r: S(30), fill: '#1E3550' });
+    UI.outlined(ctx, name, rx + w * 0.09, y + h * 0.085, UI.fit(ctx, name, w * 0.58, S(32)), T.white, null, { align: 'left' });
     const ix = rx + w * 0.085, iy = y + h * 0.15, iw = w * 0.83, ih = h * 0.4;
     UI.artFrame(ctx, ix, iy, iw, ih, id === 'cm' ? 'gold' : 'blue');
     UI.icon(ctx, ico, ix + iw / 2, iy + ih / 2, ih * 0.82);
-    if (id === 'cm') UI.outlined(ctx, 'X' + f1(E.mult(n)), ix + iw / 2, iy + ih * 0.86, S(34), T.white, '#5a2a08', { ow: 0.2, drop: false });
+    if (id === 'cm') UI.outlined(ctx, 'X' + f1(E.mult(n)), ix + iw / 2, iy + ih * 0.86, S(34), T.white);
     UI.levelBadge(ctx, rx + w - S(30), y + S(8), S(34), n + 1);
     UI.progressSquares(ctx, rx + w * 0.085, y + h * 0.585, w * 0.83, h * 0.05, done, 5, { full });
     const bx = rx + w * 0.07, bw = w * 0.86, bh = h * 0.285, by = y + h - bh - h * 0.045, frac = cost === null ? 1 : U.clamp(S0.coins / cost, 0, 1);
     const cs = U.formatInt(cost), face = UI.greenButton(ctx, bx, by, bw, bh, { disabled: !can, sheen: can });
-    UI.outlined(ctx, 'AMÉLIORER', bx + bw / 2, face.y + face.h * 0.3, UI.fit(ctx, 'AMÉLIORER', bw * 0.84, face.h * 0.3), T.white, can ? C0.greenX : '#2b3430', { ow: 0.2, drop: false });
-    { const ps = face.h * 0.3, pw = UI.tw(ctx, cs, ps) + ps * 1.3; UI.icon(ctx, 'coin', bx + bw / 2 - pw / 2 + ps * 0.5, face.y + face.h * 0.7, ps * 1.15); UI.outlined(ctx, cs, bx + bw / 2 - pw / 2 + ps * 1.25, face.y + face.h * 0.7, UI.fit(ctx, cs, bw * 0.55, ps), can ? T.white : '#ffb0a0', can ? C0.greenX : '#2b3430', { align: 'left', ow: 0.2, drop: false }); }
+    UI.outlined(ctx, 'AMÉLIORER', bx + bw / 2, face.y + face.h * 0.3, UI.fit(ctx, 'AMÉLIORER', bw * 0.84, face.h * 0.3), T.white);
+    { const ps = face.h * 0.3, pw = UI.tw(ctx, cs, ps) + ps * 1.3; UI.icon(ctx, 'coin', bx + bw / 2 - pw / 2 + ps * 0.5, face.y + face.h * 0.7, ps * 1.15); UI.outlined(ctx, cs, bx + bw / 2 - pw / 2 + ps * 1.25, face.y + face.h * 0.7, UI.fit(ctx, cs, bw * 0.55, ps), can ? T.white : '#ffb0a0', null, { align: 'left' }); }
     if (!can && cost !== null) { ctx.save(); rr0(ctx, bx, by, bw, bh, bh * 0.26); ctx.clip(); ctx.fillStyle = C0.goldL; ctx.fillRect(bx, by + bh - S(8), bw * frac, S(8)); ctx.restore(); }
     if (bk > 0) { ctx.fillStyle = 'rgba(255,255,255,' + bk * 0.35 + ')'; UI.cham(ctx, rx, y, w, h, S(26)); ctx.fill(); }
     ctx.restore();
@@ -70,9 +70,9 @@
     topBar(ui, ctx, game, F, S0, E);
     if (anim) { const a = U.clamp(anim.t / 0.4, 0, 1) * (1 - U.smooth(anim.dur - 0.6, anim.dur, anim.t)), name = anim.label + ' !'; ctx.save(); ctx.globalAlpha = a; UI.text(ctx, name, cx, Y(0.2), UI.fit(ctx, name, cw * 0.9, S(130)), T.yellow, { outline: true }); UI.text(ctx, 'NOUVELLE PIÈCE', cx, Y(0.27), S(52), T.white, { outline: true }); ctx.restore(); return; }
     { const g = ctx.createLinearGradient(0, Y(0.62), 0, Y(0.69)); g.addColorStop(0, 'rgba(10,30,14,0)'); g.addColorStop(1, 'rgba(10,30,14,0.55)'); ctx.fillStyle = g; ctx.fillRect(0, Y(0.62), W, Y(0.69) - Y(0.62)); ctx.fillStyle = 'rgba(10,30,14,0.55)'; ctx.fillRect(0, Y(0.69), W, HH); }
-    { const r0 = E.rocket(S0.rk), nm = TIERNAME[r0.tier], bw = S(600), bh = S(124), bx = cx - bw / 2, by = T0 + S(172), fr = UI.goldFrame(ctx, bx, by, bw, bh, { r: S(28), cut: true, b: S(8) });
-      UI.icon(ctx, 'missile_ogive', bx + S(84), by + bh / 2 - S(2), S(104)); UI.outlined(ctx, nm, bx + bw * 0.58, by + bh * 0.4, UI.fit(ctx, nm, bw * 0.6, S(52)), T.white, '#0b1420', { ow: 0.16, drop: false });
-      { const px = bx + S(170), pw = bw - S(210), py = by + bh * 0.66, ph = S(18), k = U.clamp((r0.s || 0) / 5, 0, 1); rr0(ctx, px, py, pw, ph, ph / 2); ctx.fillStyle = C0.night2; ctx.fill(); ctx.lineWidth = S(2.5); ctx.strokeStyle = '#40566B'; ctx.stroke(); if (k > 0.01) { rr0(ctx, px + S(2), py + S(2), Math.max(ph, (pw - S(4)) * k), ph - S(4), (ph - S(4)) / 2); ctx.fillStyle = C0.goldL; ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,0.5)'; rr0(ctx, px + S(6), py + S(4), Math.max(ph * 0.8, (pw - S(12)) * k), S(4), S(2)); ctx.fill(); } } }
+    { const r0 = E.rocket(S0.rk), nm = TIERNAME[r0.tier], bw = S(600), bh = S(124), bx = cx - bw / 2, by = T0 + S(172), fr = UI.goldFrame(ctx, bx, by, bw, bh, { r: S(28), cut: true, fill: '#1E3550' });
+      UI.icon(ctx, 'missile_ogive', bx + S(84), by + bh / 2 - S(2), S(104)); UI.outlined(ctx, nm, bx + bw * 0.58, by + bh * 0.4, UI.fit(ctx, nm, bw * 0.6, S(52)), T.white);
+      { const px = bx + S(170), pw = bw - S(210), py = by + bh * 0.66, ph = S(18), k = U.clamp((r0.s || 0) / 5, 0, 1); rr0(ctx, px, py, pw, ph, ph / 2); ctx.fillStyle = '#0F1B28'; ctx.fill(); if (k > 0.01) { rr0(ctx, px + S(2), py + S(2), Math.max(ph, (pw - S(4)) * k), ph - S(4), (ph - S(4)) / 2); ctx.fillStyle = '#FFC21F'; ctx.fill(); } } }
     if (last && last.zone2) {
       const NAMES = { rk5: 'AILES', rk10: 'RÉACTEUR', rk15: 'TURBO', weak: '1ER ENNEMI TROP FORT', d300: '300 M', d1000: '1000 M', d2000: '2000 M', boss: 'BOSS VAINCU' };
       const ms = Object.keys(S0.marks || {}).filter((k) => NAMES[k]).sort((a, b) => S0.marks[a].sec - S0.marks[b].sec).slice(0, 6), ph = S(120) + ms.length * S(66);
@@ -86,19 +86,14 @@
     { const unlocked = S0.runs >= 3, ready = E.chestReady(game), wait = Math.max(0, (S0.chestAt || 0) - Date.now()), rx0 = ox + cw - S(36) - bs, y = ly, pulse = 0.5 + 0.5 * Math.sin(now / 240);
       UI.chestFrame(ctx, rx0, y, bs, ready, unlocked, now);
       // (lueur du coffre pret : voir UI.chestFrame)
-      { const lab = !unlocked ? '3 VOLS' : ready ? 'OUVRIR' : secFmt(wait), pw = bs * 1.08, ph = S(52), px = rx0 + bs / 2 - pw / 2, py = y + bs + S(10); UI.orangePlate(ctx, px, py, pw, ph, ready); UI.outlined(ctx, lab, px + pw / 2, py + ph * 0.46, UI.fit(ctx, lab, pw * 0.86, S(34)), T.white, '#5a2a08', { ow: 0.2, drop: false }); }
+      { const lab = !unlocked ? '3 VOLS' : ready ? 'OUVRIR' : secFmt(wait), pw = bs * 1.08, ph = S(52), px = rx0 + bs / 2 - pw / 2, py = y + bs + S(10); UI.orangePlate(ctx, px, py, pw, ph, ready); UI.outlined(ctx, lab, px + pw / 2, py + ph * 0.46, UI.fit(ctx, lab, pw * 0.86, S(34)), T.white); }
       if (unlocked) UI.tap(ui, rx0, y, bs, bs + S(50), () => E.openChest(game));
       if (E.stage) { const y2 = y + bs + S(86); UI.levelPlate(ctx, rx0, y2, bs, S(92), 'NIV ' + E.stage(game), E.stage(game)); UI.tap(ui, rx0, y2, bs, S(80), () => { game.evoLvPop = !game.evoLvPop; });
         if (game.evoLvPop) { const stg = E.stage(game), pw = S(420), rh = S(104), px0 = rx0 + bs - pw, py0 = y2 + S(100); hit(ui, px0, py0, pw, rh * 2, () => {}); UI.panel(ctx, px0, py0 - S(10), pw, rh * 2 + S(20), { c: S(24), border: T.white });
           for (let nn = 1; nn <= 2; nn++) { const yy = py0 + (nn - 1) * rh, open = true, on = stg === nn; if (on) { ctx.fillStyle = 'rgba(255,230,0,0.14)'; ctx.fillRect(px0 + S(6), yy + S(4), pw - S(12), rh - S(8)); } UI.text(ctx, 'NIVEAU ' + nn, px0 + S(30), yy + rh / 2, S(44), open ? T.white : T.dim, { align: 'left', shadow: false }); if (!open) UI.glyph(ctx, 'lock', px0 + pw - S(50), yy + rh / 2, S(26), T.dim); hit(ui, px0, yy, pw, rh, () => { game.evoLvPop = false; if (open && !on) E.switchStage(game, nn); }); }
           hit(ui, 0, T0, W, HH, () => { game.evoLvPop = false; }); } } }
-    { const k = 1 + 0.02 * Math.sin(now / 420), s = 'APPUYEZ POUR LANCER', bw = cw * 0.8, bh = S(112), bx = cx - bw / 2, by = Y(0.628);
-      ctx.save(); ctx.translate(cx, by + bh / 2); ctx.scale(k, k); ctx.translate(-cx, -(by + bh / 2));
-      UI.bigArrow(ctx, bx - S(30), by + bh / 2, S(46), -1); UI.bigArrow(ctx, bx + bw + S(30), by + bh / 2, S(46), 1);
-      UI.woodPlate(ctx, bx, by, bw, bh, { r: S(34), bw: 0.09 });
-      UI.icon(ctx, 'missile_ogive', bx + S(86), by + bh / 2, S(96)); UI.outlined(ctx, s, bx + bw * 0.56, by + bh * 0.47, UI.fit(ctx, s, bw * 0.68, S(70)), T.white, C0.woodX, { ow: 0.17 });
-      for (const rx2 of [bx + S(26), bx + bw - S(26)]) { ctx.beginPath(); ctx.arc(rx2, by + bh * 0.2, S(5), 0, 6.2832); ctx.fillStyle = '#C8CDD3'; ctx.fill(); ctx.lineWidth = S(2); ctx.strokeStyle = C0.woodX; ctx.stroke(); }
-      ctx.restore(); }
+    { const k = 1 + 0.025 * Math.sin(now / 420), s = 'APPUYEZ POUR LANCER', yy = Y(0.688); ctx.save(); ctx.translate(cx, yy); ctx.scale(k, k); ctx.translate(-cx, -yy);
+      UI.outlined(ctx, s, cx, yy, UI.fit(ctx, s, cw * 0.92, S(86)), C0.white, '#0b0d12', { keep: true, ow: 0.17 }); ctx.restore(); }
     const gap = S(18), marg = S(28), cwd = (cw - marg * 2 - gap * 2) / 3, cy0 = Y(0.738), chh = HH * 0.255 - S(6), cards = [];
     ['la', 'rk', 'cm'].forEach((id, i) => cards.push(card(ui, ctx, game, E, S0, id, ox + marg + i * (cwd + gap), cy0, cwd, chh, now)));
     for (const c of cards) if (c.id === 'rk' && S0.rk >= 20) { const r = S(30), bx = c.ix + c.iw - r * 1.3, by = c.iy + c.ih - r * 1.3; UI.panel(ctx, bx - r, by - r, r * 2, r * 2, { c: r * 0.4, fill: T.bg, border: T.white, bw: S(3) }); UI.glyph(ctx, 'star', bx, by, r * 0.55, T.yellow); UI.tap(ui, bx - r, by - r, r * 2, r * 2, () => { ui.overlay = 'evoSkins'; }); }
