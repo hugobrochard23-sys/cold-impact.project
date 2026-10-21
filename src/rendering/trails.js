@@ -124,8 +124,8 @@
         const pa = at(Math.max(0, i - 1)).p, pb = at(Math.min(count - 1, i + 1)).p;
         _d.subVectors(pa, pb); if (_d.lengthSq() < 1e-8) _d.copy(rocketFwd);
         if (q.boost) _c.copy(YELLOW).lerp(RED, Math.min(1, k * 1.6)); else _c.copy(WHITE);
-        const alpha = (q.boost ? cfg.alphaBoost : cfg.alpha) * (1 - k) * this.camFade(q.p, camera);
-        put(L, q.p, _d.normalize(), camera, (q.boost ? cfg.widthBoost : cfg.width) * (1 - 0.5 * k), _c, alpha);
+        const alpha = (q.boost ? cfg.alphaBoost : cfg.alpha) * Math.pow(1 - k, 1.9) * this.camFade(q.p, camera);   // v211 : fondu progressif jusqu'a la transparence complete a l'arriere
+        put(L, q.p, _d.normalize(), camera, (q.boost ? cfg.widthBoost : cfg.width) * (1 - 0.75 * k), _c, alpha);
       }
       finish(L);
     }

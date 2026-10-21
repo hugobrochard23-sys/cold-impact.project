@@ -17,7 +17,7 @@
   const MCOL = { 4: T.yellowL, 3: T.yellow, 2: '#8a7d00', 1.5: '#4a4d54' };
   // ---------- compat pour les anciens appels (evo.js, evo_story.js, evo_flow.js) ----------
   Home.evoUI = {
-    txt: (ctx, s, x, y, px, fill, o) => UI.text(ctx, s, x, y, px, fill, { align: o && o.align, outline: !!(o && o.sw >= 0.2), shadow: !(o && o.shadow === false) }),
+    txt: (ctx, s, x, y, px, fill, o) => UI.text(ctx, s, x, y, px, fill, { align: o && o.align, outline: !!(o && o.sw >= 0.2), shadow: !(o && o.shadow === false), stroke: !!(o && o.stroke) }),
     tw: UI.tw, fit: UI.fit, coin: (ctx, x, y, r) => UI.icon(ctx, 'coin', x, y, r * 2), gem: (ctx, x, y, r) => UI.icon(ctx, 'gem', x, y, r * 2),
     star: (ctx, x, y, r) => { ctx.save(); ctx.translate(x, y); ctx.fillStyle = T.yellow; ctx.strokeStyle = T.ink; ctx.lineWidth = Math.max(2, r * 0.12); ctx.beginPath(); for (let k = 0; k < 10; k++) { const a = -1.5708 + k * 0.6283, rad = k % 2 ? r * 0.45 : r; ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad); } ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); },
     panel: (ctx, x, y, w, h, r, fill, f2, border) => UI.panel(ctx, x, y, w, h, { fill: fill && fill.length ? fill : T.bg, border: border === null ? null : border }),
@@ -262,11 +262,22 @@
     { let near = false; for (const m of g.missiles || []) { if (m.alive && m.pos.distanceTo(rk.pos) < 140) { near = true; break; } } if (near && g.state === 'FLIGHT') { const a = 0.55 + 0.45 * Math.sin(now / 110); ctx.save(); ctx.globalAlpha = a; const wy = H * 0.125, wr = S(24), tx = W / 2 - S(150); ctx.lineJoin = 'round'; ctx.lineWidth = S(5); ctx.strokeStyle = T.red; ctx.beginPath(); ctx.moveTo(tx, wy - wr); ctx.lineTo(tx + wr * 0.95, wy + wr * 0.7); ctx.lineTo(tx - wr * 0.95, wy + wr * 0.7); ctx.closePath(); ctx.stroke(); UI.text(ctx, '!', tx, wy + wr * 0.2, wr * 0.9, T.red, { shadow: false }); UI.text(ctx, 'MISSILE !', W / 2 + S(22), wy + wr * 0.1, S(44), T.red, { outline: true, ow: 0.2 }); ctx.restore(); } }
     { const pct = U.clamp(run.dist / Math.max(1, (TT && TT.levelLen) || 5000), 0, 1), bw = S(58), bh = H * 0.27, bx = ox + u - S(52) - bw, by = top + S(70);
       UI.checkFlag(ctx, bx - S(6), top, bw + S(12), S(60)); UI.gaugeV(ctx, bx, by, bw, bh, pct); UI.icon(ctx, 'missile_ogive', bx + bw / 2, by + bh * (1 - pct) - S(10), S(84), { rot: -Math.PI / 4 }); UI.text(ctx, Math.round(pct * 100) + '%', bx + bw / 2, by + bh + S(52), S(70), T.white, { outline: true }); }
-    { const kmh = rk.active ? rk.vel.length() * 3.6 : 0; UI.text(ctx, Math.round(kmh) + ' KM/H', ox + S(40), H * 0.022 + S(210), S(40), 'rgba(255,255,255,0.8)', { align: 'left' }); }
+    { const kmh = rk.active ? rk.vel.length() * 3.6 : 0, R = S(66), cx = ox + S(44) + R, cy = top + S(236) + R * 0.25, f = Math.min(1, kmh / 450), a0 = Math.PI * 0.75, a1 = Math.PI * 2.25, ang = a0 + f * (a1 - a0);   // v211 : cadran
+      ctx.save();
+      const rim = ctx.createLinearGradient(cx, cy - R, cx, cy + R); rim.addColorStop(0, '#f4f7fb'); rim.addColorStop(1, '#8a95a6'); ctx.fillStyle = rim; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.2832); ctx.fill();
+      const face = ctx.createLinearGradient(cx, cy - R, cx, cy + R); face.addColorStop(0, '#5ab8f0'); face.addColorStop(1, '#1f5f9e'); ctx.fillStyle = face; ctx.beginPath(); ctx.arc(cx, cy, R * 0.82, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.16)'; ctx.beginPath(); ctx.ellipse(cx, cy - R * 0.32, R * 0.62, R * 0.4, 0, 0, 6.2832); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = Math.max(2, R * 0.035); ctx.lineCap = 'round';
+      for (let i = 0; i <= 9; i++) { const t = a0 + (a1 - a0) * i / 9, r1 = R * 0.74, r2 = R * (i % 3 === 0 ? 0.6 : 0.66); ctx.beginPath(); ctx.moveTo(cx + Math.cos(t) * r1, cy + Math.sin(t) * r1); ctx.lineTo(cx + Math.cos(t) * r2, cy + Math.sin(t) * r2); ctx.stroke(); }
+      ctx.translate(cx, cy); ctx.rotate(ang);   // aiguille : une petite fusee qui pointe vers la vitesse
+      ctx.fillStyle = '#12304f'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(1.5, R * 0.03); ctx.beginPath(); ctx.moveTo(R * 0.74, 0); ctx.quadraticCurveTo(R * 0.6, -R * 0.075, R * 0.42, -R * 0.075); ctx.lineTo(R * 0.12, -R * 0.075); ctx.lineTo(R * 0.12, R * 0.075); ctx.lineTo(R * 0.42, R * 0.075); ctx.quadraticCurveTo(R * 0.6, R * 0.075, R * 0.74, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ff5a3a'; ctx.beginPath(); ctx.moveTo(R * 0.12, -R * 0.075); ctx.lineTo(R * 0.02, -R * 0.2); ctx.lineTo(R * 0.24, -R * 0.075); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(R * 0.12, R * 0.075); ctx.lineTo(R * 0.02, R * 0.2); ctx.lineTo(R * 0.24, R * 0.075); ctx.closePath(); ctx.fill();
+      ctx.restore(); ctx.save(); ctx.fillStyle = '#12304f'; ctx.beginPath(); ctx.arc(cx, cy, R * 0.09, 0, 6.2832); ctx.fill(); ctx.restore();
+      UI.text(ctx, String(Math.round(kmh)), cx, cy + R * 0.38, R * 0.5, '#ffffff', { stroke: true }); UI.text(ctx, 'KM/H', cx, cy + R * 0.66, R * 0.22, '#ffffff', { stroke: true }); }
   };
   // petit compteur de pieces de la partie, sous la vitesse
   Home.evoUI.coinCounter = function (ctx, g, W, H, tot, bump) {
-    const u = H > W ? W : Math.min(W, H * 0.62), ox = (W - u) / 2; UI.begin(u, g.hudPr || 1); const h = S(76) * bump, y = H * 0.022 + S(250), s = U.formatInt(tot), w = UI.tw(ctx, s, h * 0.6) + h * 1.8;
+    const u = H > W ? W : Math.min(W, H * 0.62), ox = (W - u) / 2; UI.begin(u, g.hudPr || 1); const h = S(76) * bump, y = H * 0.022 + S(400), s = U.formatInt(tot), w = UI.tw(ctx, s, h * 0.6) + h * 1.8;
     UI.currencyPill(ctx, null, ox + S(36), y, w, h, 'coin', s);
   };
   // le bouton de pause (element de page) prend le meme habillage : carre chanfreine sombre, deux barres jaunes

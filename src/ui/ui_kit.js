@@ -44,6 +44,7 @@
   UI.text = (ctx, s, x, y, px, color, o) => {
     // v173 : aucun contour : le texte clair est double d'une copie sombre decalee de quelques pixels vers le bas (petit relief)
     o = o || {}; ctx.save(); UI.setFont(ctx, px); ctx.textAlign = o.align || 'center'; ctx.textBaseline = 'middle';
+    if (o.stroke) { ctx.lineJoin = 'round'; ctx.miterLimit = 2; ctx.lineWidth = Math.max(2, px * 0.2); ctx.strokeStyle = '#0b0d12'; ctx.strokeText(s, x, y); ctx.fillStyle = color || THEME.white; ctx.fillText(s, x, y); ctx.restore(); return; }   // v211 : contour noir plat, sans relief
     const off = px * (o.outline ? 0.075 : 0.055);   // l'ecart du relief suit la taille du texte
     if (!o.flat) { ctx.fillStyle = 'rgba(8,9,12,0.95)'; ctx.fillText(s, x, y + off); }
     ctx.fillStyle = color || THEME.white; ctx.fillText(s, x, y); ctx.restore();

@@ -580,7 +580,7 @@
     const top = Math.max(10, H * 0.02);
     if (ev.preview) { F.draw(ctx, 'APERCU : ZONE 2', W / 2, top + px * 3, px * 1.1, '#9fe8b0', { align: 'center' }); return; }
     // distance : juste au-dessus de la fusée ; compteur de vitesse (cadran) en haut à gauche
-    if (rk.active) { _v.set(rk.pos.x, rk.pos.y + 1.7 + 0.6 * (rk.mesh.scale.x || 1), rk.pos.z); CC.Curve.apply(_v, g.camera).project(g.camera); if (_v.z < 1 && _v.z > -1 && CC.Home.evoUI) CC.Home.evoUI.txt(ctx, Math.round(run.dist) + ' M', (_v.x * 0.5 + 0.5) * W, Math.max(H * 0.285, (-_v.y * 0.5 + 0.5) * H - px * 3), Math.max(15, H * 0.026), '#ffffff', { sw: 0.2 }); }
+    if (rk.active) { _v.set(rk.pos.x, rk.pos.y + 1.7 + 0.6 * (rk.mesh.scale.x || 1), rk.pos.z); CC.Curve.apply(_v, g.camera).project(g.camera); if (_v.z < 1 && _v.z > -1 && CC.Home.evoUI) CC.Home.evoUI.txt(ctx, Math.round(run.dist) + ' M', (_v.x * 0.5 + 0.5) * W, Math.max(H * 0.285, (-_v.y * 0.5 + 0.5) * H - px * 3), Math.max(15, H * 0.026), '#ffffff', { sw: 0.2, stroke: true }); }
     if (CC.Home && CC.Home.evoUI && CC.Home.evoUI.hud) CC.Home.evoUI.hud(ctx, g, W, H, px);   // v159 : compteur, jauge de carburant et progression au style de la reference
     // v171 : un seul petit repere sur l'ennemi le plus proche + petit voyant rouge sur les autres (plus discret avec l'experience)
     if (rk.active && g.state === 'FLIGHT' && CC.UI2) { const UI2 = CC.UI2, tg = []; const rr = EVO.save(g).runs;
