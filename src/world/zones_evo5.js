@@ -8,7 +8,7 @@
   const pk = (r, a) => a[Math.floor(r() * a.length)];
   const SAND = ['#9c9482', '#948c7a', '#a39b88', '#8c8472'], CAVE = ['#6a645a', '#625c52', '#706a60', '#5a544a'], CONC = ['#a4a6a2', '#9a9c98', '#acaea8'];
   const rel = (sc, fn) => { let lo = 0, hi = 0; for (let d = sc.d0; d <= sc.d1; d += 4) { const v = fn(d); if (v < lo) lo = v; if (v > hi) hi = v; } sc.rlo = lo; sc.rhi = hi; return { fn, max: Math.max(-lo, hi) }; };
-  const boulder = (S, dc, lx, y, s, r, gray) => { const p = S.at(dc, lx, y); TR.rock(S.b, p[0], p[1], p[2], s, r, { gray: gray || pk(r, SAND), noMoss: true }); S.b.box({ p: [p[0], p[1] + s * 0.5, p[2]], s: [s * 1.6, s * 1.1, s * 1.6], render: false }); };
+  const boulder = (S, dc, lx, y, s, r, gray) => { const p = S.at(dc, lx, y); TR.rock(S.b, p[0], p[1], p[2], s, r, { gray: gray || pk(r, SAND), noMoss: true, shade: '#74634c' }); S.b.box({ p: [p[0], p[1] + s * 0.5, p[2]], s: [s * 1.6, s * 1.1, s * 1.6], render: false }); };
   const lamp = (S, dc, lx, y, col, size) => { S.bx(dc, lx, y, 1.2, 0.35, 0.8, 'emis:' + (col || '#ffe2a8'), undefined, false); S.glow(dc, lx, y - 0.3, col || '#ffe2a8', size || 12); };
   const T3 = THREE;
   const mat = (c, e) => new T3.MeshLambertMaterial(e ? { color: c, emissive: e } : { color: c });
@@ -85,7 +85,7 @@
         EVO.addDyn(g, (t) => { wheel.rotation.x = t * 0.6; }, []);
       });
       S.item(d(0.17), (r) => { const fl = T.rel(d(0.17)), Lc = S.lane(d(0.17)).lx, y = 36 - fl - 8; S.bx(d(0.17), Lc, y, 2 * 52 + 24, 1.6, 2.4, 'metal', '#8a8e94', true); S.bx(d(0.17), Lc, y + 1.6, 2 * 52 + 24, 0.3, 2.6, 'hazard', undefined, false); for (const s of [-1, 1]) S.bx(d(0.17), Lc + s * 56, (y - 1) / 2, 2, y, 2, 'metal', '#6a6e74', true); for (let k = -4; k <= 4; k++) lamp(S, d(0.17), Lc + k * 13, y - 1, '#ffd89a', 9); });
-      for (let i = 0; i < 9; i++) S.item(d(0.05 + i * 0.027), (r) => { const m = d(0.05 + i * 0.027), Lc = S.lane(m).lx, s = i % 2 ? 1 : -1, hf = halfAt(0.05 + i * 0.027); S.ball(m, Lc + s * (hf - 14 + r.between([-4, 4])), 0, r.between([5, 9]), 'col:' + pk(r, ['#8a7a62', '#7d6d56', '#94846c']), undefined, true, 0.8); });
+      for (let i = 0; i < 9; i++) S.item(d(0.05 + i * 0.027), (r) => { const m = d(0.05 + i * 0.027), Lc = S.lane(m).lx, s = i % 2 ? 1 : -1, hf = halfAt(0.05 + i * 0.027); boulder(S, m, Lc + s * (hf - 14 + r.between([-4, 4])), 0, r.between([6, 11]), r, pk(r, ['#8a7a62', '#7d6d56', '#94846c'])); });   // v207 : blocs de roche (plus de boules)
       // ---- puits : lampes, câbles, cages d'ascenseur, poutres en travers (on passe du côté dégagé)
       for (let dc = d(0.31); dc < d(0.4); dc += 10) S.item(dc, (r) => { const Lc = S.lane(dc).lx; for (const s of [-1, 1]) { lamp(S, dc, Lc + s * 24, 8 + r.between([0, 30]), r() < 0.5 ? '#ffd89a' : '#ff8a5a', 15); S.bx(dc, Lc + s * 25.5, 20, 0.3, 80, 0.3, 'col:#222', undefined, false); } });
       cage(S, d(0.325), -19, 4, 18, 0); cage(S, d(0.345), 19, 30, 22, 2.2); cage(S, d(0.37), -19, 18, 20, 4); cage(S, d(0.39), 19, 8, 18, 1);

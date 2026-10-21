@@ -104,10 +104,24 @@
     const nb = 2 + Math.floor(rnd() * 2);
     for (let i = 0; i < nb; i++) { const a = rnd() * 6.28, s = rr(rnd, 0.28, 0.42) * h; m.tube([x + lean * 0.6, y + th * 0.62, z], h * 0.016 + 0.14, [x + lean + Math.cos(a) * s, y + th + s * 0.55, z + Math.sin(a) * s], 0.07, mul(bark, 0.85), mul(bark, 1), 6); }
     if (birch) for (let k = 0; k < 5; k++) { const yy = y + th * (0.12 + k * 0.17); m.tube([x + lean * k * 0.1, yy, z], h * 0.03 + 0.3, [x + lean * k * 0.1, yy + th * 0.03, z], h * 0.03 + 0.32, hex('#2a2822'), hex('#2a2822'), 7); }   // marques sombres de l'ecorce
-    const nbl = o.far ? 4 : (birch ? 6 : 7) + Math.floor(rnd() * 4);
-    for (let i = 0; i < nbl; i++) {
-      const a = i / nbl * 6.2832 + rnd() * 0.8, d = i === 0 ? 0 : cr * rr(rnd, 0.5, 0.95), rad = cr * (i === 0 ? rr(rnd, 0.8, 0.95) : rr(rnd, 0.42, 0.64));
-      blob(m, x + lean + Math.cos(a) * d, y + th + cr * (i === 0 ? 0.55 : rr(rnd, 0.15, 0.55)), z + Math.sin(a) * d, rad, 0.82, rnd, mul(cDark, 0.75), mul(cLight, 1.05), seed + i * 9.1, o.far || i > 1);   // v199 : seules les 2 plus grosses masses de la couronne gardent 80 faces
+    // v207 : couronne en ETAGES comme les sapins (structuree, taillee a la serpe) : 3 a 4 plateaux arrondis, larges en bas, plus petits vers le haut, vert fonce dessous, vert clair dessus
+    const tiersN = o.far ? 3 : (birch ? 3 : 4) + (rnd() < 0.4 ? 1 : 0), ch = cr * 1.35, wk = birch ? 0.75 : 1.0, ph = rnd() * 6.28;
+    for (let i = 0; i < tiersN; i++) {
+      const t = tiersN > 1 ? i / (tiersN - 1) : 0, y0 = y + th * 0.92 + t * ch * 0.8, Ri = cr * wk * (1.3 - 0.78 * Math.pow(t, 1.1)) * rr(rnd, 0.92, 1.08), dh = cr * (0.42 - 0.1 * t), K = o.far ? 7 : 9, px = x + lean * (0.6 + 0.4 * t), pz = z, shd = 0.74 + 0.36 * t;
+      const cOuter = mul(lerp3(cDark, cLight, 0.4 + 0.45 * t), shd * 1.12), cInner = mul(lerp3(cDark, cLight, 0.7), shd * 1.18), cUnder = mul(cDark, shd * 0.55), cApex = mul(cLight, shd * 1.2);
+      const outer = [], inner = [];
+      for (let k = 0; k < K; k++) {
+        const a = ph + i * 0.5 + k / K * 6.2832 + rr(rnd, -0.13, 0.13), ro = Ri * (k % 2 ? rr(rnd, 0.8, 0.94) : rr(rnd, 0.96, 1.12)), ri = Ri * rr(rnd, 0.5, 0.62);
+        outer.push([px + Math.cos(a) * ro, y0 - dh * 0.1 + rr(rnd, -0.12, 0.12) * dh, pz + Math.sin(a) * ro]);
+        inner.push([px + Math.cos(a + 0.18) * ri, y0 + dh * 0.62, pz + Math.sin(a + 0.18) * ri]);
+      }
+      const apex = [px, y0 + dh * 0.95, pz], under = [px, y0 - dh * 0.5, pz];
+      for (let k = 0; k < K; k++) {
+        const j = (k + 1) % K;
+        m.tri(apex, inner[k], inner[j], cApex, cInner, cInner);
+        m.quad(inner[k], outer[k], outer[j], inner[j], cInner, cOuter, cOuter, cInner);
+        m.tri(under, outer[j], outer[k], cUnder, cUnder, cUnder);
+      }
     }
     if (!o.far) shade(m, x, y, z, h * 0.34, '#28633a');
     const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff', o.tint); g.dispose();
@@ -120,18 +134,22 @@
     const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
   };
 
+  // v207 : ROCHER EN BLOCS : 1 a 3 blocs poses les uns sur les autres (grands plans, sommet plus etroit, arêtes franches), couleurs en bandes, mousse sur le dessus : massif et structure, comme la paroi de la mine
   T.rock = function (b, x, y, z, s, rnd, o) {
     if (inWater(b, x, z)) return;
-    o = o || {}; const m = new Mesh(), ico = new THREE.IcosahedronGeometry(1, 1), P = ico.attributes.position, seed = rnd() * 50, ay = rnd() * 6.28, sx = rr(rnd, 0.9, 1.5), sz = rr(rnd, 0.8, 1.3);
-    const gray = o.gray || ['#c2c9cd', '#9ca7af', '#9ca7af', '#737f89', '#beb096'][Math.floor(rnd() * 5)], moss = hex('#6a9a48'), base = hex(gray);
-    const vert = (i) => { const px = P.getX(i), py = P.getY(i), pz = P.getZ(i), k = 0.88 + 0.22 * (Math.abs(Math.sin(px * 9.1 + py * 41.7 + pz * 23.3 + seed) * 43758.5453) % 1), cx = Math.cos(ay), sn = Math.sin(ay), X = px * sx * k, Z = pz * sz * k; return [x + (X * cx - Z * sn) * s, y + Math.max(py, -0.35) * 0.62 * k * s, z + (X * sn + Z * cx) * s, py]; };
-    m.smooth = true;
-    for (let i = 0; i < P.count; i += 3) {
-      const a = vert(i), c = vert(i + 1), d = vert(i + 2), top = (a[3] + c[3] + d[3]) / 3, tw = 0.72 + 0.4 * ((Math.abs(Math.sin(i * 2.9 + seed)) * 10) % 1);
-      const col = top > 0.35 && !o.noMoss ? lerp3(mul(base, tw), moss, Math.min(0.85, (top - 0.3) * 1.6)) : mul(base, tw * (0.72 + 0.3 * Math.max(0, top + 0.3)));
-      m.tri([a[0], a[1], a[2]], [c[0], c[1], c[2]], [d[0], d[1], d[2]], col, col, col);
+    o = o || {}; const m = new Mesh(), gray = o.gray || ['#c2c9cd', '#9ca7af', '#9ca7af', '#737f89', '#beb096'][Math.floor(rnd() * 5)], moss = hex('#6a9a48'), base = hex(gray);
+    const nb = s > 2.6 ? 2 + (rnd() < 0.55 ? 1 : 0) : (rnd() < 0.5 ? 2 : 1); let yy = y - 0.05, ox = 0, oz = 0;
+    for (let i = 0; i < nb; i++) {
+      const k = 1 - i * 0.26, w = s * rr(rnd, 1.0, 1.6) * k, d = s * rr(rnd, 0.9, 1.4) * k, hh = s * rr(rnd, 0.55, 0.95) * (i ? 0.8 : 1), tp = rr(rnd, 0.16, 0.34), ay = rnd() * 6.28, ca = Math.cos(ay), sa = Math.sin(ay);
+      const cx = x + ox, cz = z + oz, J = () => rr(rnd, -0.09, 0.09);
+      const pt = (u, v, hgt, inset) => { const lx = u * w * 0.5 * (1 - inset) + J() * w, lz = v * d * 0.5 * (1 - inset) + J() * d; return [cx + lx * ca - lz * sa, yy + hgt + (hgt > 0 ? J() * hh : 0), cz + lx * sa + lz * ca]; };
+      const B = [pt(-1, -1, 0, 0), pt(1, -1, 0, 0), pt(1, 1, 0, 0), pt(-1, 1, 0, 0)], T4 = [pt(-1, -1, hh, tp), pt(1, -1, hh, tp), pt(1, 1, hh, tp), pt(-1, 1, hh, tp)];
+      const band = mul(base, 0.84 + 0.2 * rnd()), band2 = mul(base, 0.64 + 0.14 * rnd()), topc = o.noMoss ? mul(base, 1.08) : lerp3(mul(base, 1.0), moss, 0.7 - 0.12 * i);
+      for (let e = 0; e < 4; e++) { const f = (e + 1) % 4, sh = e % 2 ? 0.92 : 1.0; m.quad(B[e], B[f], T4[f], T4[e], mul(band2, sh), mul(band2, sh), mul(band, sh), mul(band, sh)); }
+      m.quad(T4[0], T4[1], T4[2], T4[3], topc, topc, topc, topc);
+      yy += hh * 0.9; ox += rr(rnd, -0.25, 0.25) * w; oz += rr(rnd, -0.25, 0.25) * d;
     }
-    m.smooth = false; shade(m, x, y, z, s * 1.2, o.shade || '#3a6a3a'); ico.dispose(); const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
+    shade(m, x, y, z, s * 1.15, o.shade || '#3a6a3a'); const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
   };
 
   T.stump = function (b, x, y, z, s, rnd) {

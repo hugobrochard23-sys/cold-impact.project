@@ -98,7 +98,7 @@
   for (let i = 0; i < SKIN_C.length; i++) {
     const d = SKIN_C[i], s = { id: 'evoT' + i, name: 'evoT' + i, short: 'evoT' + i, tier: 'base', price: 0, tierLabel: '', c: Object.assign({}, d.c), flame: d.flame || '#ff8a2a',
       dims: { r: i < 2 ? 0.1 : 0.085, len: i < 2 ? 0.8 : 1.0, noseLen: i < 2 ? 0.26 : 0.38, noseR: i < 2 ? 0.07 : 0.012, fins: 0, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 },
-      parts: d.cap ? [{ k: 'cyl', r: 0.108, h: 0.14, p: [0, 0, -0.42], rot: [90, 0, 0], c: '#a8844f' }, { k: 'box', w: 0.215, h: 0.05, d: 0.2, p: [0, 0, 0.1], c: '#e8d8a8' }] : [] };
+      parts: d.cap ? [{ k: 'cyl', r: 0.108, h: 0.14, p: [0, 0, -0.42], rot: [90, 0, 0], c: '#a8844f' }, { k: 'cyl', r: 0.105, h: 0.2, p: [0, 0, 0.1], rot: [90, 0, 0], c: '#e8d8a8' }] : [] };
     CC.Skins.byId[s.id] = s;
   }
   let _pm = null;
@@ -113,11 +113,11 @@
     const g = new THREE.ExtrudeGeometry(sh, { depth: th, bevelEnabled: false }); g.translate(0, 0, -th / 2);   // plan (z du corps, envergure y), épaisseur x
     g.rotateY(Math.PI / 2); return g;
   }
-  function fins(mat, matTip, rootC, tipC, span, sweep, z, ang0, withTip) {
+  function fins(mat, matTip, rootC, tipC, span, sweep, z, ang0, withTip, thick) {
     const grp = new THREE.Group();
     for (let k = 0; k < 4; k++) {
       const f = new THREE.Group(); f.rotation.z = ang0 + k * Math.PI / 2; grp.add(f);
-      const m = new THREE.Mesh(finGeo(rootC, tipC, span, sweep, 0.022), mat); m.position.set(0, 0.085, z); f.add(m);
+      const m = new THREE.Mesh(finGeo(rootC, tipC, span, sweep, thick || 0.022), mat); m.position.set(0, 0.085, z); f.add(m);
       if (withTip) { const t = new THREE.Mesh(finGeo(tipC * 0.9, tipC * 0.6, 0.06, 0.02, 0.026), matTip); t.position.set(0, 0.085 + span - 0.06, z - sweep - tipC * 0.05); f.add(t); }
     }
     return grp;
@@ -128,8 +128,8 @@
     const wm = tier >= 2 ? M.white : M.card;
     const wings = fins(wm, M.red, 0.36, 0.14, 0.34, 0.12, -0.02, 0, false);
     const tail = fins(wm, M.red, 0.22, 0.09, 0.2, 0.08, -0.36, Math.PI / 4, false);
-    const flaps = new THREE.Group(); { const f = fins(M.red, M.red, 0.3, 0.1, 0.075, 0.02, -0.02, 0, false); f.children.forEach((c) => { c.children[0].position.y = 0.085 + 0.27; }); flaps.add(f); }
-    const boost = new THREE.Group(); for (const s of [-1, 1]) { boost.add(cyl(0.05, 0.05, 0.62, M.red, s * 0.2, -0.05, -0.12)); boost.add(cyl(0.0, 0.05, 0.14, M.white, s * 0.2, -0.05, 0.28)); boost.add(cyl(0.04, 0.055, 0.1, M.dark, s * 0.2, -0.05, -0.47)); }
+    const flaps = new THREE.Group(); { const f = fins(M.red, M.red, 0.3, 0.1, 0.075, 0.02, -0.02, 0, false, 0.034); f.children.forEach((c) => { c.children[0].position.y = 0.085 + 0.262; }); flaps.add(f); }   // v207 : volets plus epais que l'aile (meme plan = scintillement blanc/rouge)
+    const boost = new THREE.Group(); for (const s of [-1, 1]) { boost.add(cyl(0.05, 0.05, 0.62, M.red, s * 0.2, -0.092, -0.12)); boost.add(cyl(0.0, 0.05, 0.14, M.white, s * 0.2, -0.092, 0.28)); boost.add(cyl(0.04, 0.055, 0.1, M.dark, s * 0.2, -0.092, -0.47)); }   // v207 : propulseurs sous le plan des ailes (avant : l'aile les traversait)
     P.wings = wings; P.tail = tail; P.flaps = flaps; P.boost = boost;
     for (const k of Object.keys(P)) { P[k].userData.k = 0; root.add(P[k]); }
     root.userData.P = P; return root;
