@@ -279,7 +279,8 @@
     item(dc, fn) {
       const r = G.stream(this.T.seed, 'it' + this.sc.key + '_' + (this.ic++)); r.pick = (a) => a[Math.floor(r() * a.length)];
       if (!this.inClip(dc)) return false;
-      fn(r); return true;
+      const cx = this.ctx; cx.itemDepth = (cx.itemDepth || 0) + 1; try { fn(r); } finally { cx.itemDepth--; }   // v196 : les objets poses HORS item sont filtres par position (voir endless.js)
+      return true;
     }
     // boîte dans le repère du couloir : dc (distance), lx (travers), yc (centre en hauteur au-dessus du sol), w × h × dd
     bx(dc, lx, yc, w, h, dd, mat, tint, collide, o) {

@@ -190,6 +190,11 @@
     const world = game.world, nBoxes = world.boxes.length;
     const pseudo = { seed: (T.seed ^ (k * 7919)) >>> 0, env: { sky: { stars: true } }, routes: [] };   // pas de nuages par tronçon
     const b = new CC.LevelBuilder(game.scene, world, pseudo); onB(b);
+    // v196 : UN SEUL EXEMPLAIRE de chaque objet pose directement par une scene (robot, trains, lampes...) : le code d'une scene s'execute une fois par etape de 20 m (et une fois par troncon
+    // qui la recouvre) ; un objet hors `item` est donc garde seulement s'il se trouve vraiment dans ce troncon. Avant : des dizaines d'exemplaires empiles (jusqu'a 27 robots, 35 lumieres, 4500 appels de dessin).
+    const filt = { on: false, ctx: null, seen: new Set() };
+    { const radd = THREE.Object3D.prototype.add, nearD = (p) => { let best = d0, bd = Infinity; for (let d = d0 - 120; d <= d1 + 120; d += 6) { const q = T.at(d, 0, 0), dx = q[0] - p.x, dz = q[2] - p.z, e = dx * dx + dz * dz; if (e < bd) { bd = e; best = d; } } return best; };
+      b.root.add = function () { for (let i = 0; i < arguments.length; i++) { const o = arguments[i]; if (filt.on && filt.ctx && !(filt.ctx.itemDepth > 0) && o && o.isObject3D && !o.isLight) { if (o.position.x !== 0 || o.position.z !== 0) { const q = nearD(o.position); if (q < d0 || q >= d1) continue; } const key = Math.round(o.position.x * 4) + ',' + Math.round(o.position.y * 4) + ',' + Math.round(o.position.z * 4) + ':' + o.type + ':' + o.children.length; if (filt.seen.has(key)) continue; filt.seen.add(key); } radd.call(this, o); } return this; }; }
     b.segLen = CC.CONFIG.render.segLen;   // v038g : lots découpés en tranches (visibilité et ombres)
     const gates = [];                                   // points de passage { d, lx, y } (pilote automatique, matériaux)
     const busy = [], reserved = [];
@@ -223,8 +228,9 @@
 
     // sol, passages entre zones, scènes (src/world/zones*.js)
     const ctx = { game, b, T, r, d0, d1, gates, busy, reserved, ZONES, special: null, rings: [], glows: [], doors: [] };
+    filt.ctx = ctx; filt.on = true;
     { const SL = 20; ctx.noFlush = true; for (let a = d0; a < d1 - 0.01; a += SL) { ctx.d0 = a; ctx.d1 = Math.min(d1, a + SL); ctx.keepSpecial = a > d0; CC.Zones.build(ctx); yield; }
-      ctx.d0 = d0; ctx.d1 = d1; ctx.noFlush = false; ctx.keepSpecial = false; if (CC.Zones.flushGrass) CC.Zones.flushGrass(ctx); if (CC.Life && CC.Life.flushGlows) CC.Life.flushGlows(ctx); yield; }
+      filt.on = false; ctx.d0 = d0; ctx.d1 = d1; ctx.noFlush = false; ctx.keepSpecial = false; if (CC.Zones.flushGrass) CC.Zones.flushGrass(ctx); if (CC.Life && CC.Life.flushGlows) CC.Life.flushGlows(ctx); yield; }
 
     // v040 : ligne du RECORD — un portique jaune en travers de la route à la distance du meilleur vol
     { const gd = game.progress && game.progress.P && game.progress.P.bestDist;
