@@ -280,7 +280,7 @@
       const bands = [[0, 14, 31, 10, 13, 1.85], [14, 34, 15, 6, 8, 2.1], [34, 62, 7.5, 4, 5, 2.7]];
       let bi = 0;
       for (const [lo, hi, dens, nbLo, nbHi, wk] of bands) {
-        const area = 2 * (hi - lo), n = Math.max(2, Math.round(len * area * dens * 1.12 / 28)); bi++;
+        const area = 2 * (hi - lo), n = Math.max(2, Math.round(len * area * dens * 0.78 / 28)); bi++;
         for (let i = 0; i < n; i++) {
           const dd = d + len * hsh(d + i * 0.37 + lo, i * 1.9 + bi), lx = (hsh(i * 1.7 + hi, d * 0.13 + bi) < 0.5 ? -1 : 1) * (lo + (hi - lo) * hsh(i * 2.9 + bi, d * 0.7 + hi));
           if (hsh(i * 9.7, d + bi) > 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(dd * 0.07 + lx * 0.09 + Math.sin(lx * 0.05) * 2))) continue;   // plaques un peu moins denses (test peu couteux d'abord)

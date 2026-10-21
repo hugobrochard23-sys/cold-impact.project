@@ -68,7 +68,7 @@
     cy(head, 5, 6, 6, dark, 0, -8, -1, 10); ball(head, 12, body, 0, 0.6, 0, 1, 0.82, 1.02); plate(head, 22, 9, 8, plateL, 0, 5.4, -2, 3); plate(head, 18, 7.5, 5, dark, 0, -0.6, 10.2, 2.4);
     cy(head, 3.3, 3.3, 2.4, cyan, 0, -0.4, 12.2, 16, Math.PI / 2); cy(head, 4.4, 4.4, 1.2, chrome, 0, -0.4, 11.3, 16, Math.PI / 2); for (const sx of [-1, 1]) { plate(head, 4.6, 1, 1.4, amber, sx * 7.4, -0.6, 12.1, 0.3, 0.3); plate(head, 3, 6, 9, dark, sx * 12, -0.4, 0, 1, 0.6); plate(head, 5, 7, 5, plateM, sx * 11, 3.4, 5.5, 1.5); }
     cy(head, 0.3, 0.5, 20, dark, -7, 17, -6, 6); cy(head, 0.3, 0.5, 14, dark, 7, 15, -6, 6); ball(head, 0.9, emi('#ff3a2a'), -7, 27.4, -6);
-    const eyeL = new T3.PointLight('#5ad2ff', 0, 120); eyeL.position.set(0, -0.4, 15); head.add(eyeL);
+    const eyeL = { intensity: 0 };   // v196 : plus de lumiere reelle (chaque lumiere coute a chaque pixel du monde et force une recompilation des shaders quand elle apparait)
     { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(180,235,255,1)'); gr.addColorStop(0.25, 'rgba(90,210,255,0.55)'); gr.addColorStop(1, 'rgba(90,210,255,0)'); x.fillStyle = gr; x.fillRect(0, 0, 64, 64);
       const sp = new T3.Sprite(new T3.SpriteMaterial({ map: new T3.CanvasTexture(c), transparent: true, blending: T3.AdditiveBlending, depthWrite: false, fog: false })); sp.scale.set(15, 15, 1); sp.position.set(0, -0.4, 13.5); head.add(sp);
       for (const sx of [-1, 1]) { const s2 = sp.clone(); s2.scale.set(5, 5, 1); s2.material = sp.material.clone(); s2.material.color.set('#ff9a30'); s2.position.set(sx * 7.4, -0.6, 12.8); head.add(s2); } }

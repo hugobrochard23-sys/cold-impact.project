@@ -190,7 +190,7 @@
       this.shards = new ParticlePool(scene, { max: 700, material: new THREE.MeshLambertMaterial({ transparent: true, opacity: 0.7 }) });
       this.pools = [this.flame, this.glow, this.smoke, this.darkSmoke, this.sparks, this.quads, this.debris, this.streaks, this.shards];
       this.lights = [];
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 1; i++) {
         const l = new THREE.PointLight('#ffffff', 0, 30, 1.6);
         scene.add(l);
         this.lights.push({ light: l, life: 1, age: 1, i0: 0, c0: new THREE.Color(), c1: new THREE.Color() });
