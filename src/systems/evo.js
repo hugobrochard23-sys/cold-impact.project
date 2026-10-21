@@ -380,7 +380,7 @@
   EVO.startTumble = (g, kind, pos, normal) => {
     const rk = g.rocket, sc = g.scene, v0 = rk.vel.clone(), P = [];
     // v209 : ricochet : la vitesse est renvoyee par la surface touchee (restitution 0,5), la fusee est decollee de la paroi
-    if (normal && normal.lengthSq() > 0.01) { const n = normal.clone().normalize(), vn = v0.dot(n); if (vn < 0) v0.addScaledVector(n, -1.5 * vn); rk.mesh.position.copy(rk.pos).addScaledVector(n, 0.35); rk.pos.addScaledVector(n, 0.35); }
+    if (normal && normal.lengthSq() > 0.01) { const n = normal.clone().normalize(), vn = v0.dot(n); if (vn < 0) v0.addScaledVector(n, -1.12 * vn); v0.multiplyScalar(0.55); rk.mesh.position.copy(rk.pos).addScaledVector(n, 0.3); rk.pos.addScaledVector(n, 0.3); }
     const add = (m, v, w, r) => { P.push({ m, v, w, r: r || 0.12, rest: false }); };
     const groups = g.evoParts || {};
     for (const k of Object.keys(groups)) {
@@ -390,13 +390,13 @@
         add(ch, v0.clone().multiplyScalar(0.55).add(new V(rr(-3, 3), rr(2, 7), rr(-3, 3))), new V(rr(-9, 9), rr(-9, 9), rr(-9, 9)), 0.22);
       }
     }
-    const body = { m: rk.mesh, v: v0.clone().multiplyScalar(0.7), w: new V(0, 0, Math.random() < 0.5 ? 7 : -7), r: 0.4, rest: false, isBody: true };
+    const body = { m: rk.mesh, v: v0.clone().multiplyScalar(0.75), w: new V(0, 0, Math.random() < 0.5 ? 3.5 : -3.5), r: 0.2, rest: false, isBody: true };
     P.push(body); rk.mesh.visible = true;
     // éclats du tube : petits morceaux de bois / carton qui se détachent dès le premier choc
     { const cols = ['#b8925e', '#c9a46c', '#8a6a44', '#e8dcc0', '#6e5230'], bp = rk.pos.clone();
       for (let i = 0; i < 12; i++) { const sz = rr(0.06, 0.2), ch = new THREE.Mesh(new THREE.BoxGeometry(sz, sz * rr(0.3, 0.8), sz * rr(1, 2.2)), new THREE.MeshLambertMaterial({ color: cols[i % cols.length] })); ch.position.copy(bp).add(new V(rr(-0.2, 0.2), rr(0, 0.3), rr(-0.3, 0.3))); ch.quaternion.setFromEuler(new THREE.Euler(rr(0, 6), rr(0, 6), rr(0, 6))); sc.add(ch);
         add(ch, v0.clone().multiplyScalar(rr(0.2, 0.6)).add(new V(rr(-4, 4), rr(2, 8), rr(-4, 4))), new V(rr(-14, 14), rr(-14, 14), rr(-14, 14)), sz * 0.6); } }
-    g.evoTumble = { P, t: 0, dur: 14, flag: null, kind, body, v0: v0.clone() };
+    g.evoTumble = { P, t: 0, dur: 12, flag: null, kind, body, v0: v0.clone() };
     g.audio.play('clunk', pos); g.rig.shake = 0.5; g.style.dropCombos();
     sparks(g, pos, 26, 10);
   };
@@ -412,7 +412,7 @@
     const cg = new THREE.PlaneGeometry(2.4, 1.2, 14, 1), cloth = new THREE.Mesh(cg, new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide })); cloth.position.set(1.28, 3.5, 0);
     const pen = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.9, 3), new THREE.MeshBasicMaterial({ color: '#ffd23a', side: THREE.DoubleSide })); pen.rotation.z = -Math.PI / 2; pen.position.set(2.95, 3.5, 0);
     grp.add(pole, knob, cloth, pen);
-    for (let i = 0; i < 7; i++) { const a = i / 7 * 6.28, st = new THREE.Mesh(new THREE.IcosahedronGeometry(0.2 + 0.1 * ((i * 7) % 3) / 2, 0), mat(i % 2 ? '#8e949a' : '#a8aeb4')); st.position.set(Math.cos(a) * 0.5, 0.09, Math.sin(a) * 0.5); st.scale.y = 0.65; grp.add(st); }
+    const mound = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.4, 0.1, 10), mat('#6a5a44')); mound.position.y = 0.05; grp.add(mound);   // petit tertre de terre (plus de pierres)
     grp.position.copy(p); grp.userData.cloth = cloth; grp.userData.pen = pen; grp.userData.cg = cg; grp.userData.base = Float32Array.from(cg.attributes.position.array); g.scene.add(grp); return grp;
   };
   EVO.endTumble = (g) => {
@@ -421,9 +421,10 @@
     if (Tm.flag) g.scene.remove(Tm.flag);
     g.evoTumble = null;
   };
-  const _pv = new V(), _nx = new V(), _dq = new V(), _cl = new V(), _ci = new THREE.Matrix4(), _cn = new V();
-  // v209 : PHYSIQUE REELLE : chaque morceau (fuselage, ailes, eclats) est balaye contre le monde entier (sol, murs, toits, rochers : meme monde que le vol) et contre les objets mobiles
-  // (robot, train, cages) ; rebond avec restitution, frottement et rotation induite. Aucun morceau ne traverse plus rien.
+  const _pv = new V(), _nx = new V(), _dq = new V(), _cl = new V(), _ci = new THREE.Matrix4(), _cn = new V(), _ax = new V(), _pe = new V(), _up = new V(0, 1, 0), _q2 = new THREE.Quaternion(), _fl = new V();
+  // v209/v210 : PHYSIQUE REELLE. Chaque morceau est balaye contre le monde entier (sol, murs, toits, rochers : meme monde que le vol) et contre les objets mobiles (robot, train, cages).
+  // Choc contre un mur ou une pierre : la vitesse est presque eteinte (restitution 0,1), au sol : frottement fort, rebond faible, roulis lent, repos rapide. Le fuselage est teste par son centre ET
+  // par son nez et sa queue : il ne peut plus s'enfoncer dans le sol, et il finit couche a plat.
   const dynPush = (g, q, rad) => {
     for (const d of EVO.dyn) {
       if (!d.obj.visible || d.obj.position.distanceTo(q.m.position) > 120 + (d.span || 0)) continue;
@@ -435,54 +436,75 @@
         if (ox < best) { best = ox; ax = 0; sg = Math.sign(_cl.x) || 1; } if (oy < best) { best = oy; ax = 1; sg = Math.sign(_cl.y) || 1; } if (oz < best) { best = oz; ax = 2; sg = Math.sign(_cl.z) || 1; }
         _cn.set(ax === 0 ? sg : 0, ax === 1 ? sg : 0, ax === 2 ? sg : 0).transformDirection(c.matrixWorld);
         q.m.position.addScaledVector(_cn, best * c.matrixWorld.getMaxScaleOnAxis() + 0.02);
-        const vn = q.v.dot(_cn); if (vn < 0) { q.v.addScaledVector(_cn, -1.4 * vn); q.w.x += rr(-4, 4); q.w.z += rr(-4, 4); }
-        return true;
+        const vn = q.v.dot(_cn); if (vn < 0) { q.v.addScaledVector(_cn, -1.1 * vn); q.v.multiplyScalar(0.7); }
+        return _cn.y > 0.6;
       }
     }
-    return false;
+    return null;
   };
   const _fk = { t: 0, normal: new V(0, 1, 0), inside: false, pen: 0 };
   const floorAt = (g, p) => { const run = g.endlessRun, T = run.T, d = T.project(p, run.dist), q = T.at(d, 0, 0); return q[1]; };
+  // hauteur de la surface sous un point (jusqu'a 1,6 m au-dessous) : monde physique, sinon sol visible du couloir ; null s'il n'y a rien
+  const surfBelow = (g, p) => { const W = g.world; _pv.set(p.x, p.y + 0.9, p.z); _nx.set(p.x, p.y - 0.8, p.z); const h = W.sweep(_pv, _nx, 0.04); if (h) return _pv.y + (_nx.y - _pv.y) * h.t; const fy = floorAt(g, p); return p.y - fy < 0.8 && p.y - fy > -0.3 ? fy : null; };
   EVO.groundY = (g, p) => { const W = g.world; _pv.set(p.x, p.y + 6, p.z); _nx.set(p.x, p.y - 80, p.z); const h = W.sweep(_pv, _nx, 0.05); return h ? _pv.y + (_nx.y - _pv.y) * h.t : null; };
   EVO.tumbleFrame = (g, dt) => {
     const Tm = g.evoTumble; if (!Tm) return; Tm.t += dt;
     const run = g.endlessRun, T = run && run.T, gy = T ? T.base(Math.max(0, run.dist)) : 0, W = g.world, SUB = 3, h = dt / SUB;
     for (let sub = 0; sub < SUB; sub++) for (const q of Tm.P) {
-      if (q.rest) continue;
-      const rad = q.isBody ? 0.4 : Math.max(0.07, q.r * 0.8);
-      q.v.y -= 16 * h; _pv.copy(q.m.position); _nx.copy(_pv).addScaledVector(q.v, h);
+      if (q.rest) { if (q.isBody && q.settle < 1) { q.settle = Math.min(1, q.settle + 6 * h); q.m.quaternion.slerp(q.flatQ, 0.25); } continue; }
+      const rad = q.isBody ? 0.2 : Math.max(0.07, q.r * 0.8); let ground = false;
+      q.v.y -= 16 * h; q.v.multiplyScalar(1 - 0.3 * h);
+      _pv.copy(q.m.position); _nx.copy(_pv).addScaledVector(q.v, h);
       let hit = W.sweep(_pv, _nx, rad);
-      if (!hit && T) { const fy = floorAt(g, _nx); if (_nx.y - rad < fy) { const den = _pv.y - _nx.y; _fk.t = den > 1e-6 ? Math.max(0, Math.min(1, (_pv.y - rad - fy) / den)) : 0; hit = _fk; } }   // zones sans sol dans le monde physique : sol visible du couloir
+      if (!hit && T) { const fy = floorAt(g, _nx); if (_pv.y - rad >= fy - 0.4 && _nx.y - rad < fy) { const den = _pv.y - _nx.y; _fk.t = den > 1e-6 ? Math.max(0, Math.min(1, (_pv.y - rad - fy) / den)) : 0; hit = _fk; } }
       if (!hit) q.m.position.copy(_nx);
       else {
         const n = hit.normal; q.m.position.copy(_pv).addScaledVector(_dq.subVectors(_nx, _pv), hit.t).addScaledVector(n, 0.03 + (hit.inside ? hit.pen : 0));
         const vn = q.v.dot(n);
         if (vn < 0) {
-          const e = q.isBody ? 0.4 : 0.3; q.v.addScaledVector(n, -(1 + e) * vn);
-          if (-vn > 2.5 && Math.random() < 0.5) sparks(g, q.m.position, 3, 5);
-          const vt = _dq.copy(q.v).addScaledVector(n, -q.v.dot(n)), rw = new V(n.y * vt.z - n.z * vt.y, n.z * vt.x - n.x * vt.z, n.x * vt.y - n.y * vt.x).divideScalar(rad * 1.6); q.w.lerp(rw, 0.35);   // roule sans glisser : la rotation suit la vitesse et s'eteint avec elle
-          if (n.y > 0.6) { const f = Math.max(0, 1 - (q.isBody ? 4.5 : 6) * h * 3); q.v.x *= f; q.v.z *= f; q.w.multiplyScalar(Math.max(0, 1 - 4.5 * h * 3)); if (Math.abs(vn) < 2 && q.v.lengthSq() < 4.5 && q.w.lengthSq() < 12) { q.rest = true; q.v.set(0, 0, 0); q.w.set(0, 0, 0); } }
-          else { q.v.multiplyScalar(0.9); q.w.multiplyScalar(0.92); }
+          if (-vn > 3 && Math.random() < 0.4) sparks(g, q.m.position, 3, 5);
+          if (n.y > 0.6) {   // sol : rebond faible, frottement fort, roulis lent
+            ground = true; const e = q.isBody ? 0.14 : 0.2; q.v.addScaledVector(n, -(1 + e) * vn);
+            const f = Math.max(0, 1 - (q.isBody ? 7 : 9) * h * 3); q.v.x *= f; q.v.z *= f;
+            if (q.isBody) { const rw = new V(n.y * q.v.z - n.z * q.v.y, 0, -n.y * q.v.x + n.x * q.v.y).divideScalar(0.5); if (rw.length() > 5) rw.setLength(5); q.w.lerp(rw, 0.3); q.w.multiplyScalar(Math.max(0, 1 - 5 * h * 3)); } else q.w.multiplyScalar(Math.max(0, 1 - 6 * h * 3));
+          } else {            // mur, pierre, toit incline : la vitesse s'eteint presque, on glisse et on tombe
+            q.v.addScaledVector(n, -(1 + 0.1) * vn); const vt = _dq.copy(q.v).addScaledVector(n, -q.v.dot(n)); q.v.addScaledVector(vt, -0.4); q.w.multiplyScalar(0.7);
+          }
         }
       }
-      if (dynPush(g, q, rad) && q.v.lengthSq() < 1.2 && q.w.lengthSq() < 3) { q.rest = true; q.v.set(0, 0, 0); q.w.set(0, 0, 0); }   // pose sur un objet mobile (robot, train)
-      if (q.m.position.y < gy - 60) { q.m.position.y = gy + 1; q.v.set(0, 0, 0); }   // filet : tombee hors du monde
+      if (q.isBody) {
+        // nez et queue : jamais sous la surface ; la fusee se couche a plat en roulant
+        _ax.set(0, 0, 1).applyQuaternion(q.m.quaternion);
+        for (const e of [0.5, -0.5]) {
+          _pe.copy(q.m.position).addScaledVector(_ax, e); const sy = surfBelow(g, _pe);
+          if (sy !== null && _pe.y - 0.1 < sy) { q.m.position.y += sy + 0.1 - _pe.y; if (q.v.y < 0) q.v.y = 0; ground = true; }
+        }
+        if (ground) { _fl.set(_ax.x, 0, _ax.z); if (_fl.lengthSq() < 1e-4) _fl.set(0, 0, 1); _fl.normalize(); _q2.setFromUnitVectors(_ax, _fl); q.m.quaternion.premultiply(_q2.slerp(new THREE.Quaternion(), 1 - Math.min(1, 7 * h))); }
+      }
+      const dyn = dynPush(g, q, rad); if (dyn) ground = true;
+      if (q.m.position.y < gy - 60) { q.m.position.y = gy + 1; q.v.set(0, 0, 0); }
       const wl = q.w.length(); if (wl > 0.01) { _ta.copy(q.w).divideScalar(wl); _tq.setFromAxisAngle(_ta, wl * h); q.m.quaternion.premultiply(_tq); }
+      if (ground && q.v.lengthSq() < (q.isBody ? 2.2 : 1.2) && q.w.lengthSq() < 9) { q.rest = true; q.v.set(0, 0, 0); q.w.set(0, 0, 0); if (q.isBody) { q.settle = 0; _ax.set(0, 0, 1).applyQuaternion(q.m.quaternion); _fl.set(_ax.x, 0, _ax.z); if (_fl.lengthSq() < 1e-4) _fl.set(0, 0, 1); _fl.normalize(); q.flatQ = new THREE.Quaternion().setFromUnitVectors(_ax, _fl).multiply(q.m.quaternion); q.flatQ.copy(new THREE.Quaternion().setFromUnitVectors(_ax, _fl).multiply(q.m.quaternion)); } }
+      else if (ground && Tm.t > 5.5 && q.v.lengthSq() < 12) { q.v.multiplyScalar(0.8); q.w.multiplyScalar(0.8); }
     }
-    for (const q of Tm.P) if (q.isBody && !q.rest && Math.random() < 0.4 && q.v.lengthSq() > 4) sparks(g, q.m.position, 1, 3);
-    g.rig.focus.copy(Tm.body.m.position);
-    { const bp = Tm.body.m.position, bk = Tm.back || (Tm.back = new V(-Tm.v0.x, 0, -Tm.v0.z).normalize()); const want = new V(bp.x + bk.x * 4.2, bp.y + 2.0, bp.z + bk.z * 4.2); g.rig.pos.lerp(want, 1 - Math.exp(-4 * dt)); g.camera.position.copy(g.rig.pos); }
-    if (!Tm.flag && (Tm.body.rest ? Tm.t > 0.9 : (Tm.t > 7 && (() => { const gg = EVO.groundY(g, Tm.body.m.position); return gg === null || Tm.body.m.position.y - gg < 2.5; })()) || Tm.t > 13)) {
-      const bp = Tm.body.m.position, gh = EVO.groundY(g, bp), fl = floorAt(g, bp), p = new V(bp.x, Tm.body.rest ? bp.y - 0.38 : (gh !== null && gh > bp.y - 45 ? gh : bp.y - 0.38), bp.z);   // le drapeau se pose TOUJOURS sur le sol reel sous la fusee
+    for (const q of Tm.P) if (q.isBody && !q.rest && Math.random() < 0.3 && q.v.lengthSq() > 6) sparks(g, q.m.position, 1, 3);
+    // camera : suit la fusee ou qu'elle aille (elle garde son cote actuel, se rapproche si la fusee s'eloigne, reste au-dessus du sol)
+    { const bp = Tm.body.m.position; g.rig.focus.copy(bp);
+      _dq.copy(g.rig.pos).sub(bp); const hd = Math.hypot(_dq.x, _dq.z) || 1; if (hd < 2) { _dq.set(-Tm.v0.x, 0, -Tm.v0.z); if (_dq.lengthSq() < 1e-4) _dq.set(0, 0, 1); }
+      _dq.y = 0; _dq.normalize().multiplyScalar(4.6); const want = new V(bp.x + _dq.x, bp.y + 2.0, bp.z + _dq.z);
+      g.rig.pos.lerp(want, 1 - Math.exp(-6 * dt)); g.camera.position.copy(g.rig.pos); }
+    if (!Tm.flag && (Tm.body.rest ? Tm.t > 0.9 : Tm.t > 9)) {
+      const bp = Tm.body.m.position, p = new V(bp.x, bp.y - 0.2, bp.z), gh = EVO.groundY(g, bp);
+      if (gh !== null && bp.y - gh < 1.2 && bp.y - gh > -0.5) p.y = gh; else { const sy = surfBelow(g, bp); if (sy !== null) p.y = sy; }   // le drapeau se pose TOUJOURS sur le sol reel sous la fusee
       Tm.flag = plantFlag(g, p, Math.round(Math.max(0, run.dist))); Tm.flag.scale.y = 0.01; Tm.flagT = 0;
       g.effects.ring(p.clone().setY(p.y + 0.2), new V(0, 1, 0), 0.3, 4, 0.5, '#ffffff', 0.7); g.audio.play('clunk', p); g.rig.shake = Math.max(g.rig.shake, 0.3);
       for (let i = 0; i < 14; i++) g.effects.sparks.emit({ pos: p.clone().setY(p.y + 0.2), vel: new V(rr(-3, 3), rr(0.5, 2.5), rr(-3, 3)), life: rr(0.5, 1.1), s0: 0.1, s1: 0.2, s2: 0.3, cols: g.effects.pal.ember, drag: 2, grav: 1, a: 0.5, fout: 0.5 });
-      Tm.dur = Math.max(Tm.dur, Tm.t + 1.4);
+      Tm.dur = g.impactT + 1.7;   // le rapport de vol (SUIVANT, pieces gagnees) s'ouvre juste apres la plantation du drapeau
     }
     if (Tm.flag) {
       Tm.flagT += dt; const k = Math.min(1, Tm.flagT / 0.35), e = 1 + 2.2 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2), F = Tm.flag;
       F.scale.y = Math.max(0.01, e); F.rotation.y = Math.atan2(g.camera.position.x - F.position.x, g.camera.position.z - F.position.z);
-      const pa = F.userData.cg.attributes.position, B = F.userData.base, tt = Tm.flagT * 6;   // la banderole ondule dans le vent (amplitude croissante vers le bout)
+      const pa = F.userData.cg.attributes.position, B = F.userData.base, tt = Tm.flagT * 6;
       for (let i = 0; i < pa.count; i++) { const u = (B[i * 3] + 1.2) / 2.4; pa.setZ(i, Math.sin(u * 5 - tt) * 0.16 * u + Math.sin(u * 9 - tt * 1.7) * 0.04 * u); pa.setY(i, B[i * 3 + 1] - u * u * 0.08 * Math.sin(tt * 0.5)); }
       pa.needsUpdate = true; F.userData.pen.position.z = Math.sin(2.4 / 2 * 5 - tt) * 0.16; F.userData.pen.rotation.y = Math.sin(tt) * 0.3;
     }
