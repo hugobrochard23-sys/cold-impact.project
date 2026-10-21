@@ -196,51 +196,109 @@
     const v = (r, k) => { B.pos.push(r[k * 3], r[k * 3 + 1], r[k * 3 + 2]); B.nor.push(0, 1, 0); B.col.push(r[6], r[7], r[8]); B.sway.push(r[9]); B.far.push(far || 420); };
     for (let i = 0; i < N; i++) { const a = row[i], b = row[i + 1]; v(a, 0); v(a, 1); v(b, 0); v(a, 1); v(b, 1); v(b, 0); }
   };
+  // ---------- v194 : herbe et fleurs instanciees (shaders) ----------
+  // les gabarits (un seul brin-triangle x NBL, un seul modele de fleur) sont partages par tous les meshes
+  const NBL = 13;
+  let _tt = null, _ft = null;
+  const tuftTemplate = () => _tt || (_tt = (() => {
+    const n = NBL * 3, bc = new Float32Array(n * 2), col = new Float32Array(n * 3);
+    for (let j = 0; j < NBL; j++) for (let c = 0; c < 3; c++) { const k = j * 3 + c; bc[k * 2] = j; bc[k * 2 + 1] = c; const f = c < 2 ? 0.78 : 1.0; col[k * 3] = col[k * 3 + 1] = col[k * 3 + 2] = f; }
+    return { position: new THREE.BufferAttribute(new Float32Array(n * 3), 3), aBC: new THREE.BufferAttribute(bc, 2), color: new THREE.BufferAttribute(col, 3) };
+  })());
+  const flowerTemplate = () => _ft || (_ft = (() => {
+    // parts : 0 tige (3 sommets), 1 petales (7 x 3), 2 coeur (4 x 3) ; aBC = (partie * 100 + indice, coin)
+    const rows = []; for (let c = 0; c < 3; c++) rows.push([0, c]);
+    for (let q = 0; q < 7; q++) for (let c = 0; c < 3; c++) rows.push([100 + q, c]);
+    for (let q = 0; q < 4; q++) for (let c = 0; c < 3; c++) rows.push([200 + q, c]);
+    const bc = new Float32Array(rows.length * 2); rows.forEach((r, k) => { bc[k * 2] = r[0]; bc[k * 2 + 1] = r[1]; });
+    return { position: new THREE.BufferAttribute(new Float32Array(rows.length * 3), 3), aBC: new THREE.BufferAttribute(bc, 2), color: null };
+  })());
+  const GLSL_COMMON = `uniform float uTime; uniform vec3 uCam; attribute vec2 aBC; attribute vec3 aPos; attribute vec2 aNrm;
+    float gh( float a, float b ) { return fract( sin( a * 127.1 + b * 311.7 ) * 43758.5453 ); }
+    vec3 gWind( vec3 gw, float sway, float far ) { float gf = 1.0 - smoothstep( far * 0.55, far, distance( gw, uCam ) ); float gs = sway * ( 0.6 + 0.4 * sin( gw.x * 0.11 + gw.z * 0.13 ) );
+      return vec3( ( sin( uTime * 1.9 + gw.x * 0.31 + gw.z * 0.19 ) * 0.14 + sin( uTime * 3.4 + gw.z * 0.8 ) * 0.04 ) * gs, - sway * ( 1.0 - gf ), cos( uTime * 1.5 + gw.z * 0.27 + gw.x * 0.15 ) * 0.1 * gs ); }`;
+  const mkInst = (attrs, bodyV, colV, key) => {
+    const m = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }); m.customProgramCacheKey = () => key;   // sans cle propre, les deux materiaux partageraient le meme programme (meme texte de fonction)
+    m.onBeforeCompile = (sh) => {
+      sh.uniforms.uTime = GU; sh.uniforms.uCam = GCAM;
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\n' + GLSL_COMMON + '\n' + attrs)
+        .replace('#include <beginnormal_vertex>', 'vec3 objectNormal = vec3( aNrm.x, sqrt( max( 0.0, 1.0 - dot( aNrm, aNrm ) ) ), aNrm.y );')
+        .replace('#include <begin_vertex>', bodyV).replace('#include <color_vertex>', colV);
+      // brins et petales lus des deux cotes SANS inverser la normale
+      sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>' + String.fromCharCode(10) + ' normal = normalize( vNormal );');
+    };
+    return m;
+  };
+  let _tm = null, _fm = null;
+  const tuftMat = () => _tm || (_tm = mkInst('attribute vec4 aCfg; attribute vec3 aCol;', `
+      float seed = aCfg.x, far = aCfg.y, nbF = aCfg.z, wk = aCfg.w;
+      float sz = 0.9 + 0.7 * gh( seed, 1.3 ), Lt = ( 0.9 + 1.5 * gh( seed, 2.7 ) ) * sz, yaw = gh( seed, 4.4 ) * 3.1416, kd = gh( seed, 5.9 );
+      float kh = kd < 0.22 ? 1.3 : ( kd > 0.82 ? 0.7 : 1.0 ), kw = kd < 0.22 ? 0.65 : ( kd > 0.82 ? 1.2 : 1.0 ), hv = 0.85 + 0.3 * gh( seed, 6.6 );
+      float j = aBC.x, c = aBC.y, on = step( j + 0.5, nbF );
+      float s = ( gh( j * 3.7, seed ) * 2.0 - 1.0 ) * 0.5, side = ( gh( j * 5.3, seed * 1.1 ) - 0.5 ) * 0.4 * sz;
+      float hp = 0.45 + 0.55 * cos( s * 3.1416 ), hh = ( 0.45 + 0.75 * gh( j * 5.1, seed ) ) * hp * sz * hv * 1.02 * kh * on, w = 0.075 * sz * wk * 1.3 * kw * on;
+      float lean = hh * 0.3 * ( gh( j * 7.1, seed ) - 0.4 );
+      float lu = s * Lt, lv = side, ly = 0.0;
+      if ( c < 0.5 ) { lv += w; } else if ( c < 1.5 ) { lv -= w; } else { lu += 0.5 * lean; lv += 0.6 * lean; ly = hh; }
+      float ca = cos( yaw ), sa = sin( yaw );
+      vec3 transformed = aPos + vec3( lu * ca - lv * sa, ly, lu * sa + lv * ca );
+      vec3 gw = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;
+      transformed += gWind( gw, c > 1.5 ? hh : 0.0, far );`, 'vColor = color * aCol;', 'grassTuft'));
+  const flowerMat = () => _fm || (_fm = mkInst('attribute vec4 aF1; attribute vec3 aF2; attribute vec3 aCol;', `
+      float hgt = aF1.x, R = aF1.y, daisy = aF1.z, th = aF1.w, fx = aF2.x, fz = aF2.y, far = aF2.z;
+      float part = floor( aBC.x / 100.0 + 0.001 ), q = aBC.x - part * 100.0, c = aBC.y;
+      float cx = aPos.x + fx * hgt * 0.12, cz = aPos.z + fz * hgt * 0.12, cy = aPos.y + hgt;
+      float e1x = fz, e1z = - fx, e2x = fx * 0.62, e2y = 0.78, e2z = fz * 0.62;
+      float nP = daisy > 0.5 ? 7.0 : 5.0, sw = hgt * 0.6, rcn = R * 0.46, on = 1.0, a = 0.0, rad = 0.0;
+      vec3 pt = vec3( aPos.x, aPos.y, aPos.z ); float swayV = 0.0;
+      if ( part < 0.5 ) { if ( c < 0.5 ) pt = aPos; else if ( c < 1.5 ) pt = aPos + vec3( 0.03, 0.0, 0.0 ); else { pt = vec3( cx, cy - R * 0.55, cz ); swayV = sw; } }
+      else if ( part < 1.5 ) { on = step( q + 0.5, nP ); float h2 = 3.1416 / nP; a = q / nP * 6.2832 + th; rad = R; if ( c < 0.5 ) { a -= h2; rad = R * 0.3; } else if ( c < 1.5 ) { a += h2; rad = R * 0.3; }
+        pt = vec3( cx + e1x * cos( a ) * rad + e2x * sin( a ) * rad, cy + e2y * sin( a ) * rad, cz + e1z * cos( a ) * rad + e2z * sin( a ) * rad ); pt = mix( vec3( aPos.x, aPos.y - 1.0, aPos.z ), pt, on ); swayV = sw * on; }
+      else { vec3 off = vec3( - fx * 0.03, 0.03, - fz * 0.03 ); if ( c < 0.5 ) pt = vec3( cx, cy, cz ) + off; else { a = ( q + ( c > 1.5 ? 1.0 : 0.0 ) ) / 4.0 * 6.2832; pt = vec3( cx + e1x * cos( a ) * rcn + e2x * sin( a ) * rcn, cy + e2y * sin( a ) * rcn, cz + e1z * cos( a ) * rcn + e2z * sin( a ) * rcn ) + off; } swayV = sw; }
+      vec3 transformed = pt;
+      vec3 gw = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;
+      transformed += gWind( gw, swayV, far );`,
+    `vec3 stem = vec3( 0.2705, 0.5529, 0.2392 ) * 0.9; vec3 yel = vec3( 1.0, 0.8235, 0.2275 );
+      float pr = floor( aBC.x / 100.0 + 0.001 ); vColor = pr < 0.5 ? stem : ( pr < 1.5 ? aCol : ( aF1.z > 0.5 ? yel : aCol ) );`, 'grassFlower'));
+
   Z.flushGrass = function (ctx) {
     if (ctx.swayBuf && ctx.swayBuf.pos.length) { const B = ctx.swayBuf; ctx.swayBuf = null; const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(B.pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(B.nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(B.col, 3)); g.setAttribute('aSway', new THREE.Float32BufferAttribute(B.sway, 1)); g.setAttribute('aFar', new THREE.Float32BufferAttribute(B.far, 1)); g.computeBoundingSphere(); g.boundingSphere.radius += 6;
       const m = new THREE.Mesh(g, grassMat()); m.frustumCulled = true; m.onBeforeRender = (r, sc, cam) => { GU.value = performance.now() / 1000; GCAM.value.copy(cam.position); }; ctx.b.add(m); }
     const jobs = ctx.grassJobs; if (!jobs || !jobs.length) return; ctx.grassJobs = null;
     const T = ctx.T, b = ctx.b;
-    // v185 : un mesh par tranche de 100 m et par niveau de detail : 0 = touffes de base (visibles jusqu'a 260 m), 1 = touffes de remplissage et fleurs (fondues puis masquees au-dela de 150 m).
-    // Le culling par tranche evite de traiter l'herbe hors champ ou trop lointaine (avant : un seul mesh de 200 m, tous les sommets traites jusqu'au fond).
-    const groups = new Map(); let cur = null;
-    const grp = (sk, layer) => { const k = sk * 4 + layer; let g = groups.get(k); if (!g) groups.set(k, g = { pos: [], nor: [], col: [], sway: [], far: [], tufts: [], layer, sk }); return g; };
+    // v194 : HERBE INSTANCIEE. Une touffe = UNE instance (position, graine, couleur, normale du sol : 12 nombres) ; les brins sont calcules dans le vertex shader a partir de la graine
+    // (memes formules que l'ancienne generation : longueur, inclinaison, hauteur, largeur). Meme nombre de touffes et de brins qu'avant, mais ~25 fois moins de memoire,
+    // beaucoup moins de calcul a la creation d'un troncon, et plus aucun envoi de gros tampons au GPU.
+    // Un mesh par tranche de 100 m et par niveau de detail : 0 = touffes de base (portee 260 m), 1 = remplissage et une part des fleurs (portee 150 m).
+    const groups = new Map();
+    const grp = (sk, layer) => { const k = sk * 4 + layer; let g = groups.get(k); if (!g) groups.set(k, g = { layer, sk, tp: [], tc: [], tcol: [], tn: [], fp: [], fa: [], fb: [], fcol: [], fcen: [], fn: [], tufts: [], flowers: [] }); return g; };
     for (let k = GREC.length - 1; k >= 0; k--) if (!GREC[k].b.root || !GREC[k].b.root.parent) GREC.splice(k, 1);
-    const cn = [0, 1, 0];   // v185 : normale du sol calculee une fois par touffe / fleur (avant : une fois par sommet)
-    const v = (x, y, z, c, w, f) => { cur.pos.push(x, y, z); cur.nor.push(cn[0], cn[1], cn[2]); cur.col.push(c.r, c.g, c.b); cur.sway.push(w); cur.far.push(f); };
+    const cn = [0, 1, 0];   // normale du sol, calculee une fois par touffe / fleur
     const runJob = (jb) => {
       const { d, e, wet, sc, gf } = jb, len = e - d;
-      // bandes de largeur (distance au centre) ; densite par metre : ~uniforme, un peu plus faible au loin ; nb = brins par touffe
-      const bands = [[0, 14, 31, 10, 13, 1.85, 1], [14, 34, 15, 6, 8, 2.1, 1], [34, 62, 7.5, 4, 5, 2.7, 1]];   // v184 : 2x plus de touffes, moins de brins mais plus larges
+      // bandes de largeur (distance au centre) ; densite par metre ; nb = brins par touffe
+      const bands = [[0, 14, 31, 10, 13, 1.85], [14, 34, 15, 6, 8, 2.1], [34, 62, 7.5, 4, 5, 2.7]];
       let bi = 0;
-      for (const [lo, hi, dens, nbLo, nbHi, wk, tri] of bands) {
+      for (const [lo, hi, dens, nbLo, nbHi, wk] of bands) {
         const area = 2 * (hi - lo), n = Math.max(2, Math.round(len * area * dens * 1.12 / 28)); bi++;
         for (let i = 0; i < n; i++) {
           const dd = d + len * hsh(d + i * 0.37 + lo, i * 1.9 + bi), lx = (hsh(i * 1.7 + hi, d * 0.13 + bi) < 0.5 ? -1 : 1) * (lo + (hi - lo) * hsh(i * 2.9 + bi, d * 0.7 + hi));
+          if (hsh(i * 9.7, d + bi) > 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(dd * 0.07 + lx * 0.09 + Math.sin(lx * 0.05) * 2))) continue;   // plaques un peu moins denses (test peu couteux d'abord)
           if (wet && wet(dd, lx, sc, T)) continue;
           const p = T.at(dd, lx, 0); gcol(p[0], p[2], _gc); if (gf) gf(dd, lx, _gc, sc);
           if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82)) continue;
           if (solidAt(b, p[0], p[1], p[2])) continue;
-          if (hsh(i * 9.7, d + bi) > 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(dd * 0.07 + lx * 0.09 + Math.sin(lx * 0.05) * 2))) continue;   // v187 : plaques un peu moins denses
-          const sz = 0.9 + 0.7 * hsh(i, d * 0.7 + bi), L = (0.9 + 1.5 * hsh(i * 3.3, d + bi)) * sz, th = hsh(d + i, i * 3.3 + bi) * 3.1416, ca = Math.cos(th), sa = Math.sin(th), py = p[1] - 0.04, nb = nbLo + Math.floor(hsh(i, d * 2.1 + bi) * (nbHi - nbLo + 1));
-          const kd = hsh(i * 4.1, d * 0.9 + bi * 2.3), tall = kd < 0.22 ? 1 : 0, low = kd > 0.82 ? 1 : 0, kh = tall ? 1.3 : low ? 0.7 : 1, kw = tall ? 0.65 : low ? 1.2 : 1;   // v187 : touffes hautes et fines / basses et larges / moyennes
-          const lay = (bi === 1 && hsh(i * 7.3, d + 5.1) >= 0.34) ? 1 : 0, af = bi === 1 ? (lay ? 150 : 260) : bi === 2 ? 210 : 260; cur = grp(Math.floor(dd / 100), lay); relN(p[0], p[2], cn, 0, 1, 0); const tv0 = cur.pos.length / 3; _tc.copy(_gc).multiplyScalar(0.96 + 0.1 * hsh(i * 1.3, d + bi)); _b.copy(_tc).multiplyScalar(0.78);   // base : la couleur du sol un peu plus sombre ; pointe : la couleur du sol
-          for (let j = 0; j < nb; j++) {
-            const s = (hsh(j * 3.7, i + d) * 2 - 1) * 0.5, side = (hsh(j * 5.3, i * 1.1 + d) - 0.5) * 0.4 * sz, bx = p[0] + ca * s * L - sa * side, bz = p[2] + sa * s * L + ca * side;
-            const hp = 0.45 + 0.55 * Math.cos(s * 3.1416), hh = (0.45 + 0.75 * hsh(j * 5.1, i + d)) * hp * sz * (0.85 + 0.3 * hsh(i * 2.3, d + bi)) * 1.02 * kh, w = 0.075 * sz * wk * 1.3 * kw, lean = hh * 0.3 * (hsh(j * 7.1, i) - 0.4), dx = -sa * lean * 0.6 + ca * lean * 0.5, dz = ca * lean * 0.6 + sa * lean * 0.5;
-            if (tri === 3) {
-              v(bx - ca * w * 0.4 - sa * w, py, bz - sa * w * 0.4 + ca * w, _b, 0, af); v(bx + ca * w * 0.4 + sa * w, py, bz + sa * w * 0.4 - ca * w, _b, 0, af); v(bx + dx * 0.4 - ca * w * 0.3, py + hh * 0.55, bz + dz * 0.4 - sa * w * 0.3, _tc, hh * 0.5, af);
-              v(bx + ca * w * 0.4 + sa * w, py, bz + sa * w * 0.4 - ca * w, _b, 0, af); v(bx + dx * 0.4 + ca * w * 0.3, py + hh * 0.55, bz + dz * 0.4 + sa * w * 0.3, _tc, hh * 0.5, af); v(bx + dx * 0.4 - ca * w * 0.3, py + hh * 0.55, bz + dz * 0.4 - sa * w * 0.3, _tc, hh * 0.5, af);
-              v(bx + dx * 0.4 - ca * w * 0.3, py + hh * 0.55, bz + dz * 0.4 - sa * w * 0.3, _tc, hh * 0.5, af); v(bx + dx * 0.4 + ca * w * 0.3, py + hh * 0.55, bz + dz * 0.4 + sa * w * 0.3, _tc, hh * 0.5, af); v(bx + dx, py + hh, bz + dz, _tc, hh, af);
-            } else { v(bx - sa * w, py, bz + ca * w, _b, 0, af); v(bx + sa * w, py, bz - ca * w, _b, 0, af); v(bx + dx, py + hh, bz + dz, _tc, hh, af); }
-          }
-          cur.tufts.push([p[0], p[1], p[2], tv0, cur.pos.length / 3]);
+          const nb = nbLo + Math.floor(hsh(i, d * 2.1 + bi) * (nbHi - nbLo + 1)), seed = 1 + hsh(i * 1.7 + bi, d * 0.013) * 97;
+          const lay = (bi === 1 && hsh(i * 7.3, d + 5.1) >= 0.34) ? 1 : 0, af = bi === 1 ? (lay ? 150 : 260) : bi === 2 ? 210 : 260, G = grp(Math.floor(dd / 100), lay);
+          relN(p[0], p[2], cn, 0, 1, 0); _tc.copy(_gc).multiplyScalar(0.96 + 0.1 * hsh(i * 1.3, d + bi));
+          G.tufts.push([p[0], p[1], p[2], G.tp.length, 0]);
+          G.tp.push(p[0], p[1] - 0.04, p[2]); G.tc.push(seed, af, nb, wk); G.tcol.push(_tc.r, _tc.g, _tc.b); G.tn.push(cn[0], cn[2]);
         }
       }
-      // v184 : FLEURS SAUVAGES en parterres irreguliers : marguerites (petales blancs, coeur jaune), boutons d'or, quelques bleues, violettes, roses ; inclinees vers la camera
+      // FLEURS SAUVAGES en parterres irreguliers : marguerites (petales blancs, coeur jaune), boutons d'or, quelques bleues, violettes, roses ; inclinees vers la camera
       const FW = [[0.42, '#fffdf4', 1], [0.76, '#f6d34b', 0], [0.88, '#76b5f4', 0], [0.96, '#a58ae0', 0], [1.01, '#e9a0c4', 0]];
       const pickF = (r) => { for (const f of FW) if (r < f[0]) return f; return FW[0]; };
-      const ncl = Math.max(3, Math.round(len * 0.8)), SK = 0.9, STM = new THREE.Color('#438d3d').multiplyScalar(SK), YEL = new THREE.Color('#ffd23a'), _fc = new THREE.Color();
+      const ncl = Math.max(3, Math.round(len * 0.8)), SK = 0.9, _fc = new THREE.Color();
       for (let ci = 0; ci < ncl; ci++) {
         const cd = d + len * hsh(d + ci * 0.91, ci * 1.3), cl = (hsh(ci * 5.1, d * 0.17) < 0.5 ? -1 : 1) * (3.5 + 34 * Math.pow(hsh(ci * 2.3, d * 0.31), 1.5)), main = pickF(hsh(ci * 3.7, d * 0.53)), rc = 1.4 + 2.4 * hsh(ci * 7.7, d), nfl = 9 + Math.floor(hsh(ci * 4.3, d * 0.9) * 12);
         if (Math.sin(cd * 0.021 + cl * 0.033 + 1.7) + Math.sin(cd * 0.047 - cl * 0.029) < -0.5) continue;   // zones sans fleurs : parterres separes par de l'herbe seule
@@ -248,16 +306,11 @@
         for (let k = 0; k < nfl; k++) {
           const ang = hsh(ci + k * 1.7, d * 0.3) * 6.2832, rr0 = rc * Math.sqrt(hsh(k * 2.9, ci + d * 0.11)), dd = cd + Math.cos(ang) * rr0, lx = cl + Math.sin(ang) * rr0; if (dd < d || dd >= e || wet && wet(dd, lx, sc, T)) continue;
           const p = T.at(dd, lx, 0); gcol(p[0], p[2], _gc); if (gf) gf(dd, lx, _gc, sc); if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82) || solidAt(b, p[0], p[1], p[2])) continue;
-          const flay = hsh(k * 2.1, ci + d * 0.7) < 0.4 ? 0 : 1, fa = flay ? 120 : 190; cur = grp(Math.floor(dd / 100), flay); relN(p[0], p[2], cn, 0, 1, 0); const fv0 = cur.pos.length / 3, kind = hsh(k * 6.1, ci + d) < 0.8 ? main : pickF(hsh(k * 8.3, ci * 1.9 + d)), daisy = kind[2] === 1, hgt = 0.6 + 0.5 * hsh(k * 1.3, ci + d), R = (daisy ? 0.38 : 0.29) * (0.8 + 0.5 * hsh(k * 9.1, ci)), bx = p[0], bz = p[2], py = p[1] - 0.03, cx = bx + fx * hgt * 0.12, cz = bz + fz * hgt * 0.12, cy = py + hgt;
-          _fc.set(kind[1]).multiplyScalar(SK); _b.copy(STM);
-          v(bx, py, bz, _b, 0, fa); v(bx + 0.03, py, bz, _b, 0, fa); v(cx, cy - R * 0.55, cz, STM, hgt * 0.6, fa);
-          const th = hsh(k * 3.3, ci) * 6.2832, e1x = Math.cos(th) * 0.0 + fz, e1z = -fx, e2x = fx * 0.62, e2y = 0.78, e2z = fz * 0.62;   // plan de la corolle : lateral x (haut + vers l'avant)
-          const P = (a, rad) => [cx + (e1x * Math.cos(a) * rad + e2x * Math.sin(a) * rad), cy + e2y * Math.sin(a) * rad, cz + (e1z * Math.cos(a) * rad + e2z * Math.sin(a) * rad)];
-          const nP = daisy ? 7 : 5, sw = hgt * 0.6;
-          for (let q = 0; q < nP; q++) { const a = q / nP * 6.2832 + th, h2 = 3.1416 / nP, A0 = P(a - h2, R * 0.3), A1 = P(a + h2, R * 0.3), A2 = P(a, R); v(A0[0], A0[1], A0[2], _fc, sw, fa); v(A1[0], A1[1], A1[2], _fc, sw, fa); v(A2[0], A2[1], A2[2], _fc, sw, fa); }
-          const cc = daisy ? YEL : _fc, rcn = R * 0.46, ox = -fx * 0.03, oz = -fz * 0.03;
-          for (let q = 0; q < 4; q++) { const a = q / 4 * 6.2832, a2 = (q + 1) / 4 * 6.2832, B0 = P(a, rcn), B1 = P(a2, rcn); v(cx + ox, cy + 0.03, cz + oz, cc, sw, fa); v(B0[0] + ox, B0[1] + 0.03, B0[2] + oz, cc, sw, fa); v(B1[0] + ox, B1[1] + 0.03, B1[2] + oz, cc, sw, fa); }
-          cur.tufts.push([p[0], p[1], p[2], fv0, cur.pos.length / 3]);
+          const flay = hsh(k * 2.1, ci + d * 0.7) < 0.4 ? 0 : 1, fa = flay ? 120 : 190, G = grp(Math.floor(dd / 100), flay); relN(p[0], p[2], cn, 0, 1, 0);
+          const kind = hsh(k * 6.1, ci + d) < 0.8 ? main : pickF(hsh(k * 8.3, ci * 1.9 + d)), daisy = kind[2] === 1, hgt = 0.6 + 0.5 * hsh(k * 1.3, ci + d), R = (daisy ? 0.38 : 0.29) * (0.8 + 0.5 * hsh(k * 9.1, ci)) * 1.0, th = hsh(k * 3.3, ci) * 6.2832;
+          _fc.set(kind[1]).multiplyScalar(SK);
+          G.flowers.push([p[0], p[1], p[2], G.fp.length, 0]);
+          G.fp.push(p[0], p[1] - 0.03, p[2]); G.fa.push(hgt, R, daisy ? 1 : 0, th); G.fb.push(fx, fz, fa); G.fcol.push(_fc.r, _fc.g, _fc.b); G.fn.push(cn[0], cn[2]);
         }
       }
     };
@@ -275,17 +328,31 @@
     };
     for (const jb of jobs) bushes(jb);   // les buissons rejoignent le lot du decor tout de suite
     const finish = () => {
-    // les dalles de CE troncon effacent les touffes des troncons voisins deja posees dessous
-    if (b._pave) for (const r of GREC) { const A_ = r.mesh.geometry.attributes.position; let ch = false; for (const t of r.tufts) { if (t[5]) continue; if (solidIn(b._pave, t[0], t[1], t[2])) { t[5] = 1; ch = true; for (let k = t[3]; k < t[4]; k++) A_.setXYZ(k, t[0], t[1] - 5, t[2]); } } if (ch) A_.needsUpdate = true; }
-    for (const G of groups.values()) {
-      if (!G.pos.length) continue;
-      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(G.pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(G.nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(G.col, 3)); g.setAttribute('aSway', new THREE.Float32BufferAttribute(G.sway, 1)); g.setAttribute('aFar', new THREE.Float32BufferAttribute(G.far, 1)); g.computeBoundingSphere(); g.boundingSphere.radius += 3;
-      const mesh = new THREE.Mesh(g, grassMat()); mesh.frustumCulled = true; mesh.receiveShadow = false; mesh.userData.reach = G.layer ? 150 : 260; mesh.onBeforeRender = (r, sc, cam) => { GU.value = performance.now() / 1000; GCAM.value.copy(cam.position); }; b.add(mesh);
-      GMESH.push(mesh); GREC.push({ b, mesh, tufts: G.tufts });
-    }
-    while (GREC.length > 24) GREC.shift();
+      // les dalles de CE troncon effacent les touffes et fleurs des troncons voisins deja posees dessous (seulement celles qui sont dans la zone des dalles)
+      if (b._pave && b._pave.length) {
+        let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const q of b._pave) { const r = q.hx + q.hz + 1; x0 = Math.min(x0, q.c.x - r); x1 = Math.max(x1, q.c.x + r); z0 = Math.min(z0, q.c.z - r); z1 = Math.max(z1, q.c.z + r); }
+        for (const r of GREC) for (const [list, A_] of [[r.tufts, r.aT], [r.flowers, r.aF]]) { if (!A_ || !list) continue; let ch = false; for (const t of list) { if (t[5] || t[0] < x0 || t[0] > x1 || t[2] < z0 || t[2] > z1) continue; if (solidIn(b._pave, t[0], t[1], t[2])) { t[5] = 1; ch = true; A_.array[t[3] + 1] = -9999; } } if (ch) A_.needsUpdate = true; }
+      }
+      const mk = (G, isFlower) => {
+        const n = isFlower ? G.fp.length / 3 : G.tp.length / 3; if (!n) return null;
+        const g = new THREE.InstancedBufferGeometry(), T0 = isFlower ? flowerTemplate() : tuftTemplate();
+        g.setAttribute('position', T0.position); g.setAttribute('aBC', T0.aBC); if (T0.color) g.setAttribute('color', T0.color); g.instanceCount = n;
+        const pos = isFlower ? G.fp : G.tp, aP = new THREE.InstancedBufferAttribute(new Float32Array(pos), 3); g.setAttribute('aPos', aP);
+        if (isFlower) { g.setAttribute('aF1', new THREE.InstancedBufferAttribute(new Float32Array(G.fa), 4)); g.setAttribute('aF2', new THREE.InstancedBufferAttribute(new Float32Array(G.fb), 3)); g.setAttribute('aCol', new THREE.InstancedBufferAttribute(new Float32Array(G.fcol), 3)); g.setAttribute('aNrm', new THREE.InstancedBufferAttribute(new Float32Array(G.fn), 2)); }
+        else { g.setAttribute('aCfg', new THREE.InstancedBufferAttribute(new Float32Array(G.tc), 4)); g.setAttribute('aCol', new THREE.InstancedBufferAttribute(new Float32Array(G.tcol), 3)); g.setAttribute('aNrm', new THREE.InstancedBufferAttribute(new Float32Array(G.tn), 2)); }
+        let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, z0 = 1e9, z1 = -1e9; for (let k = 0; k < pos.length; k += 3) { x0 = Math.min(x0, pos[k]); x1 = Math.max(x1, pos[k]); y0 = Math.min(y0, pos[k + 1]); y1 = Math.max(y1, pos[k + 1]); z0 = Math.min(z0, pos[k + 2]); z1 = Math.max(z1, pos[k + 2]); }
+        g.boundingSphere = new THREE.Sphere(new THREE.Vector3((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2), Math.hypot(x1 - x0, y1 - y0, z1 - z0) / 2 + 6);
+        const mesh = new THREE.Mesh(g, isFlower ? flowerMat() : tuftMat()); mesh.frustumCulled = true; mesh.receiveShadow = false; mesh.userData.reach = G.layer ? 150 : 260;
+        mesh.onBeforeRender = (r, sc, cam) => { GU.value = performance.now() / 1000; GCAM.value.copy(cam.position); }; b.add(mesh); GMESH.push(mesh); return aP;
+      };
+      for (const G of groups.values()) {
+        const aT = mk(G, false), aF = mk(G, true);
+        if (aT || aF) GREC.push({ b, aT, aF, tufts: aT ? G.tufts : null, flowers: aF ? G.flowers : null });
+        G.tp = G.tc = G.tcol = G.tn = G.fp = G.fa = G.fb = G.fcol = G.fn = null;
+      }
+      while (GREC.length > 24) GREC.shift();
     };
-    // v185 : la generation de l'herbe est repartie sur plusieurs images (3 ms par image) au lieu d'un bloc de 40 a 200 ms a chaque troncon : plus de saccade quand un nouveau troncon est construit
+    // la generation de l'herbe est repartie sur plusieurs images (3 ms par image) au lieu d'un bloc a chaque troncon
     const task = { b, step(dl) { while (ji < jobs.length) { runJob(jobs[ji++]); if (performance.now() > dl) return false; } finish(); return true; } }; let ji = 0;
     if (SYNC) { task.step(Infinity); return; }
     GQ.push(task); if (!GQ.timer) GQ.timer = setTimeout(grassDrain, 16);
