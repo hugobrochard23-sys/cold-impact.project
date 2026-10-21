@@ -71,7 +71,7 @@
     } else if (style === 'peaks') {
       peaks(60, 190, 0.22, 240); peaks(50, 150, 0.36, 180); peaks(30, 100, 0.55, 140);
     } else if (style === 'campagne') {
-      /* v201 : plus de montagnes peintes : les vraies (zones_evo.js, mountain) les remplacent */ hills(34, 100, 0.44, 0, 1.1); pines(16, 44, 0.48, 12); hills(14, 52, 0.58, 5, 0.6); pines(9, 30, 0.7, 9);
+      // v202 : rien de peint : les montagnes sont un anneau en volume (ring3d), les collines de vraies bandes de relief (zones_evo.js)
     } else if (style === 'forest') {
       hills(40, 130, 0.22, 0, 1.6); hills(30, 90, 0.36, 0, 1.0); pines(18, 50, 0.46, 12); hills(14, 46, 0.55, 5, 0.6); pines(10, 32, 0.68, 9);
     } else if (style === 'seabed') {
@@ -92,6 +92,27 @@
     return { sil: tex(cs), glow: cg ? tex(cg) : null };
   }
 
+  /* v202 : ANNEAU DE MONTAGNES EN VOLUME. Deux couronnes de sommets a facettes (neige, roche bleutee, pied fondu dans la brume) tout autour du joueur : on se sent entoure,
+   * y compris droit devant, quoi que le couloir construise. L'anneau suit la camera (comme un ciel) ; a 700-1000 m le decalage serait invisible de toute facon.
+   * La brume est appliquee APRES l'eclairage (uHaze = couleur du brouillard) : le pied de chaque montagne se confond exactement avec le fond. */
+  function ringGeometry(seed) {
+    const rng = U.makeRng(seed), rr = (a, b) => a + (b - a) * rng(), P = [], C = [], Z = [];
+    const lo = new THREE.Color('#5a7a9c'), mid = new THREE.Color('#86a2bc'), hi = new THREE.Color('#eef4f9'), col = new THREE.Color();
+    const tiers = [[-0.12, 1.0, 1], [0.28, 0.7, 0.5], [0.58, 0.44, 0.2], [0.84, 0.18, 0]];
+    const mountain = (cx, cz, H, R, haze) => {
+      const N = 10, ring = [], rot = rng() * 6.28, top = [cx + R * (rng() - 0.5) * 0.3, H, cz + R * (rng() - 0.5) * 0.3];
+      for (let t = 0; t < 4; t++) { const q = []; for (let i = 0; i < N; i++) { const a = rot + i / N * 6.2832 + t * 0.35 + rr(-0.12, 0.12), rad = R * tiers[t][1] * rr(0.75, 1.25); q.push([cx + Math.cos(a) * rad * 1.15, tiers[t][0] * H + (t ? rr(-0.04, 0.04) * H : 0), cz + Math.sin(a) * rad]); } ring.push(q); }
+      const cl = (t, y) => { if (t === 0) col.copy(lo); else if (t === 1) col.copy(lo).lerp(mid, rr(0.3, 0.9)); else if (t === 2) col.copy(mid).lerp(hi, y > 0.64 * H ? 0.38 : rr(0, 0.1)); else col.copy(hi); return [col.r, col.g, col.b]; };
+      const tri = (a, b, c, ta, tb, tc) => { for (const [v, t] of [[a, ta], [b, tb], [c, tc]]) { P.push(v[0], v[1], v[2]); C.push(...cl(t, v[1])); Z.push(Math.min(1, tiers[t][2] * 0.9 + haze)); } };
+      for (let t = 0; t < 3; t++) for (let i = 0; i < N; i++) { const j = (i + 1) % N; tri(ring[t][i], ring[t + 1][i], ring[t + 1][j], t, t + 1, t + 1); tri(ring[t][i], ring[t + 1][j], ring[t][j], t, t + 1, t); }
+      for (let i = 0; i < N; i++) tri(ring[3][i], top, ring[3][(i + 1) % N], 3, 3, 3);
+    };
+    for (const [n, rad, h0, h1, r0, r1, haze] of [[30, 1020, 260, 470, 200, 300, 0.35], [24, 760, 150, 290, 150, 230, 0.18]]) for (let i = 0; i < n; i++) { const a = (i + rr(-0.3, 0.3)) / n * 6.2832, rd = rad * rr(0.93, 1.07); mountain(Math.cos(a) * rd, Math.sin(a) * rd, rr(h0, h1), rr(r0, r1), haze); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3)); g.setAttribute('aHz', new THREE.Float32BufferAttribute(Z, 1)); g.computeVertexNormals();
+    return g;
+  }
+  const HAZE = { value: new THREE.Color('#cfdbe0') };
+
   class Horizon {
     constructor(game) {
       this.game = game; this.style = null; this.dark = 0; this.seed = 1; this.tex = null;
@@ -101,6 +122,11 @@
       this.ring = new THREE.Mesh(geo, this.matS); this.glow = new THREE.Mesh(geo, this.matG);
       for (const m of [this.ring, this.glow]) { m.frustumCulled = false; m.visible = false; m.scale.setScalar(SC); game.scene.add(m); }
       this.ring.renderOrder = -6; this.glow.renderOrder = -5; this.base = 0;
+      const mm = new THREE.MeshLambertMaterial({ vertexColors: true, fog: false, emissive: '#2c3e52' }); mm.customProgramCacheKey = () => 'mtnRing';
+      mm.onBeforeCompile = (sh) => { sh.uniforms.uHaze = HAZE;
+        sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float aHz;\nvarying float vHz;').replace('#include <color_vertex>', '#include <color_vertex>\nvHz = aHz;');
+        sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec3 uHaze;\nvarying float vHz;').replace('#include <fog_fragment>', 'gl_FragColor.rgb = mix(gl_FragColor.rgb, uHaze, vHz);\n#include <fog_fragment>'); };
+      this.mtn = new THREE.Mesh(ringGeometry(7), mm); this.mtn.scale.setScalar(0.45); this.mtn.frustumCulled = false; this.mtn.visible = false; this.mtn.renderOrder = -4; game.scene.add(this.mtn);
       this.tint = new THREE.Color(); this.fog = new THREE.Color('#aab');
     }
     // zone courante (null : pas d'horizon : métro, usine, pièce…) ; dark : ambiance sombre (fenêtres et néons allumés)
@@ -120,14 +146,17 @@
       const d = env.dark !== undefined ? env.dark : 0;
       this.tint.copy(this.fog).multiplyScalar(d > 0.4 ? 0.62 : 0.84); if (this.style === 'campagne' && d < 0.3) this.tint.set('#ffffff');   // v038e : silhouettes plus claires (brume), plus de masses noires
       this.matS.color.copy(this.tint);
+      HAZE.value.copy(this.fog);
       this.matG.opacity = this.darkOn ? 0.95 : 0;
     }
     update(game) {
       const run = game.endlessRun, on = !!run && !!this.style && game.state !== 'BOOT';
       this.ring.visible = on; this.glow.visible = on && this.darkOn;
+      this.mtn.visible = on && this.style === 'campagne';
       if (!on) return;
       const cam = game.camera.position, b = run.T.base(Math.max(0, -game.rocket.pos.z));
       this.base += (b - this.base) * 0.05; if (Math.abs(this.base - b) > 300) this.base = b;
+      this.mtn.position.set(cam.x, this.base - 6, cam.z);
       this.ring.position.set(cam.x, this.base + 220 * SC, cam.z); this.glow.position.copy(this.ring.position);   // la ligne de sol de la bande est à 90 m au-dessus de son bord bas
     }
   }

@@ -372,30 +372,37 @@
     }
   };
 
-  // v200 : vraies montagnes en volume (facettes eclairees, calotte de neige, pied fondu dans la brume), fixees dans le monde : elles defilent avec la parallaxe au lieu d'etre un dessin colle sur le fond
-  let _mm = null;
-  function mountain(S, dc, lx, r, k) {
-    const p = S.at(dc, lx, 0), N = 9, H = r.between([170, 330]) * (k || 1), R = r.between([150, 250]) * (k || 1), tiers = [[-0.1, 1.0], [0.3, 0.7], [0.62, 0.42], [0.82, 0.2]], P = [], C = [];
-    const hz = new THREE.Color('#cfdbe0'), lo = new THREE.Color('#7f9bb4'), mid = new THREE.Color('#9db4c8'), hi = new THREE.Color('#e8f0f6'), col = new THREE.Color();
-    const px = (i, t) => { const a = i / N * 6.2832 + r() * 0.25 + t * 0.4, rad = R * tiers[t][1] * (0.78 + 0.5 * r()); return [Math.cos(a) * rad * 1.15, tiers[t][0] * H + (t ? (r() - 0.5) * H * 0.06 : 0), Math.sin(a) * rad]; };
-    const ring = tiers.map((_, t) => { const q = []; for (let i = 0; i < N; i++) q.push(px(i, t)); return q; }), top = [R * (r() - 0.5) * 0.2, H, R * (r() - 0.5) * 0.2];
-    const cl = (t, y) => { if (t === 0) col.copy(hz).lerp(lo, 0.25); else if (t === 1) col.copy(lo).lerp(mid, 0.5 + 0.3 * r()); else if (t === 2) col.copy(mid).lerp(hi, y > 0.6 * H ? 0.5 : 0.12 * r()); else col.copy(hi); return [col.r, col.g, col.b]; };
-    const tri = (a, b, c, ta, tb, tc) => { for (const [v, t] of [[a, ta], [b, tb], [c, tc]]) { P.push(v[0], v[1], v[2]); C.push(...cl(t, v[1])); } };
-    for (let t = 0; t < 3; t++) for (let i = 0; i < N; i++) { const j = (i + 1) % N; tri(ring[t][i], ring[t + 1][i], ring[t + 1][j], t, t + 1, t + 1); tri(ring[t][i], ring[t + 1][j], ring[t][j], t, t + 1, t); }
-    for (let i = 0; i < N; i++) tri(ring[3][i], top, ring[3][(i + 1) % N], 3, 3, 3);
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3)); g.computeVertexNormals();
-    const m = new THREE.Mesh(g, _mm || (_mm = new THREE.MeshLambertMaterial({ vertexColors: true, fog: false, emissive: '#2c3e52' })));
-    m.position.set(p[0], p[1] - 20, p[2]); m.rotation.y = r() * 6.28; m.matrixAutoUpdate = false; m.updateMatrix(); m.frustumCulled = true; S.b.add(m);
+  // v202 : VRAIES COLLINES : une bande continue de chaque cote du couloir, hauteur et largeur definies par la distance ABSOLUE (aucune couture entre troncons, aucun cercle) ;
+  // le relief monte doucement depuis la prairie, s'etale, puis se perd dans la brume. Les montagnes du fond forment un anneau complet autour du joueur (rendering/horizon.js).
+  const hsn = (d, s) => 0.5 + 0.5 * (Math.sin(d / 173 + s * 1.7) * 0.5 + Math.sin(d / 67 + s * 3.1 + 1.3) * 0.3 + Math.sin(d / 29 + s * 5.3) * 0.2);
+  const hillH = (d, s, u) => {
+    const A = 16 + 74 * Math.pow(hsn(d, s), 1.4), W = 110 + 80 * (0.5 + 0.5 * Math.sin(d / 211 + s * 2.1)), q = u / W, t = Math.min(1, q / 0.55), rise = t * t * (3 - 2 * t), k = Math.max(0, Math.min(1, (q - 0.55) / 1.3));
+    return A * (rise - 0.35 * rise * k * k * (3 - 2 * k)) + 3.5 * Math.sin(d / 13 + u / 19) * rise;
+  };
+  const HU = [0, 10, 22, 36, 54, 76, 104, 138, 178, 224, 276, 336], HCOL = [new THREE.Color('#5c9a38'), new THREE.Color('#86bf4c'), new THREE.Color('#7fb48a')], _hc = new THREE.Color();
+  function hillStrip(S, s) {
+    const T = S.T, STEP = 8, d0 = Math.ceil(S.c0 / STEP) * STEP, P = [], N = [], C = [], pt = (d, u) => { const q = T.at(d, s * (T.vol(d) + 8 + u), 0); return [q[0], q[1] + hillH(d, s, u), q[2]]; };
+    const vert = (d, u) => {
+      const a = pt(d, u), dd = [pt(d + 3, u), pt(d - 3, u)], uu = [pt(d, u + 4), pt(d, Math.max(0, u - 4))];
+      const tx = dd[0][0] - dd[1][0], ty = dd[0][1] - dd[1][1], tz = dd[0][2] - dd[1][2], ux = uu[0][0] - uu[1][0], uy = uu[0][1] - uu[1][1], uz = uu[0][2] - uu[1][2];
+      let nx = ty * uz - tz * uy, ny = tz * ux - tx * uz, nz = tx * uy - ty * ux; if (ny < 0) { nx = -nx; ny = -ny; nz = -nz; } const l = Math.hypot(nx, ny, nz) || 1;
+      const hh = a[1] - T.at(d, s * (T.vol(d) + 8 + u), 0)[1], n = 0.5 + 0.5 * Math.sin(d * 0.21 + u * 0.13 + s), f = Math.min(1, hh / 60 * 0.6 + n * 0.35); _hc.copy(HCOL[0]).lerp(HCOL[1], f).lerp(HCOL[2], Math.min(0.4, u / 336 * 0.45));
+      return { p: a, n: [nx / l, ny / l, nz / l], c: [_hc.r, _hc.g, _hc.b] };
+    };
+    for (let d = d0; d < S.c1; d += STEP) {
+      const A = HU.map((u) => vert(d, u)), B = HU.map((u) => vert(d + STEP, u));
+      for (let k = 0; k < HU.length - 1; k++) for (const v of [A[k], B[k], B[k + 1], A[k], B[k + 1], A[k + 1]]) { P.push(v.p[0], v.p[1], v.p[2]); N.push(v.n[0], v.n[1], v.n[2]); C.push(v.c[0], v.c[1], v.c[2]); }
+    }
+    if (!P.length) return;
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(P.length / 3 * 2), 2));
+    S.b.addGeometry(g, new THREE.Vector3(), new THREE.Quaternion(), null, 'tree:#ffffff'); g.dispose();
+    const dm = (S.c0 + S.c1) / 2, hc = hillH(dm, s, 40) * 0.8; if (hc > 3) S.bx(dm, s * (T.vol(dm) + 8 + 40 + 45), hc / 2, 90, hc, S.c1 - S.c0, 'col:#5c9a38', undefined, true, { render: false });
   }
 
   const campagne = { signature: 'rampe', scenes: {}, dress(S) {
 
-    for (const s of [-1, 1]) S.rows(S.d0, S.d1, 170, 0.8, (dc) => S.item(dc, (r) => mountain(S, dc, s * r.between([430, 720]), r)));
-    for (const s of [-1, 1]) S.rows(S.d0, S.d1, 150, 0.8, (dc) => S.item(dc, (r) => mountain(S, dc, s * r.between([320, 540]), r, 0.62)));
-    S.rows(S.d0, S.d1, 230, 0.8, (dc) => S.item(dc, (r) => mountain(S, dc, (r() < 0.5 ? -1 : 1) * r.between([560, 900]), r, 1.2)));   // fond : grands sommets lointains
-    S.rows(S.d0, S.d1, 190, 0.8, (dc) => S.item(dc, (r) => mountain(S, dc, (r() < 0.5 ? -1 : 1) * r.between([300, 460]), r, 0.95)));
-    // collines rondes à l'horizon, des deux côtés (ellipsoïdes aplaties : un vrai relief doux, pas des boîtes)
-    for (const s of [-1, 1]) S.rows(S.d0, S.d1, 42, 0.7, (dc) => S.item(dc, (r) => { const v = S.vol(dc), rad = r.between([60, 190]), lx = s * (v + 14 + rad + r.between([0, 90])), sy = r.between([0.2, 0.42]); S.ball(dc, lx, -rad * sy * 0.12, rad, 'col:' + pick(r, GREENS), undefined, Math.abs(lx) < 150, sy); }));
+    // collines : bandes de relief continues de chaque cote (hillStrip)
+    for (const sd of [-1, 1]) hillStrip(S, sd);
     // petits blocs de pierre posés dans l'herbe : des reliefs à frôler
     S.rows(S.d0, S.d1, 24, 0.85, (dc) => S.item(dc, (r) => { const lx = S.lane(dc).lx + (r() < 0.5 ? -1 : 1) * r.between([16, 62]), sz = r.between([1.6, 4.6]), p = S.at(dc, lx, 0); TR.rock(S.b, p[0], p[1], p[2], sz, r, {}); S.b.box({ p: [p[0], p[1] + sz * 0.5, p[2]], s: [sz * 1.6, sz * 1.1, sz * 1.6], render: false }); }));
     // bosquets et arbres épars
