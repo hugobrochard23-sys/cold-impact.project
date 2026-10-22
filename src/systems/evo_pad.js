@@ -48,6 +48,18 @@
     for (let i = 0; i < nb; i++) { const s = i % 2 ? 1 : -1, row = Math.floor(i / 2), x = s * (0.52 + row * 0.2), z = 1.0 - row * 0.5; const b = new T3.Group(); b.position.set(x, -0.34 + row * 0.04, z); L.add(b);
       cyl(b, 0.1, 0.1, 1.05, lam(row ? '#6a7480' : '#aeb6c0'), 0, 0, 0, 14, true); cyl(b, 0.103, 0.103, 0.14, red, 0, 0, -0.18, 14, true); cyl(b, 0.0, 0.1, 0.18, lam('#3a424c'), 0, 0, -0.6, 14, true); const noz = cyl(b, 0.075, 0.095, 0.1, dark, 0, 0, 0.58, 14, true); const fl = new T3.Mesh(new T3.ConeGeometry(0.075, 0.5, 10, 1, true), bas('#ffcf40', { transparent: true, opacity: 0.0, blending: T3.AdditiveBlending, depthWrite: false, side: T3.DoubleSide, fog: false })); fl.rotation.x = -Math.PI / 2; fl.position.z = 0.88; b.add(fl); box(L, 0.2, 0.05, 0.3, steel, s * (0.4 + row * 0.1), -0.45, z); pad.boosters.push({ fl, noz }); }
     // v227 : plus de cones de chantier
+    // v232 : HANGAR de bois autour de la fusee (menu seulement) : plancher, toit a poutres, murs gauche / fond / droit avec fenetres
+    { const H = pad.hangar = new T3.Group(), wood = lam('#9A6638'), woodD = lam('#5A3A22'), woodL = lam('#B98450'), floor = lam('#B98A55');
+      box(H, 11, 0.12, 15, floor, 0, -0.7, -1.5);
+      for (let k = -5; k <= 5; k++) box(H, 0.05, 0.02, 15, lam('#8A5E36'), k, -0.635, -1.5);
+      box(H, 11.6, 0.3, 15.4, woodD, 0, 3.5, -1.5);   // toit
+      for (let z = -8; z <= 5; z += 2.6) box(H, 11.4, 0.34, 0.34, woodD, 0, 3.22, z);   // poutres
+      for (const sx of [-5.5, 5.5]) for (const z of [-8.6, -3, 2.6, 5.4]) box(H, 0.4, 4.3, 0.4, woodD, sx, 1.45, z);   // poteaux
+      box(H, 0.3, 4.1, 15, wood, -5.4, 1.4, -1.5);   // mur gauche
+      box(H, 0.3, 1.05, 15, wood, 5.4, -0.05, -1.5); box(H, 0.3, 1.2, 15, wood, 5.4, 3.0, -1.5);   // mur droit : large baie
+      box(H, 11, 1.2, 0.3, wood, 0, -0.05, 5.4); box(H, 11, 1.1, 0.3, wood, 0, 3.05, 5.4); box(H, 1.2, 1.9, 0.3, wood, -4.8, 1.55, 5.4); box(H, 1.2, 1.9, 0.3, wood, 4.8, 1.55, 5.4);   // mur du fond a baie
+      box(H, 0.6, 0.12, 4, woodL, 0, 0.0, 5.2);   // appui de fenetre
+      L.add(H); }
     // decor lointain
     pad.backdrop = backdrop(); L.add(pad.backdrop);
     pad.vents = [new V(-0.5, -0.5, 1.0), new V(0.5, -0.5, 1.0), new V(-0.7, -0.5, -0.8), new V(0.7, -0.5, -0.8)];
@@ -58,6 +70,7 @@
   EVO.pistonFrame = (g, dt) => {
     const pad = g.pad; if (!pad || !pad.evoL) return; const a = g.evoAim, now = performance.now(), A = g.audio;
     const hold = !!(a && a.hold && !a.lock), ch = a ? (a.lock ? 1 : a.ch || 0) : 0, rk = g.rocket;
+    if (pad.hangar) pad.hangar.visible = g.state === 'MENU' || g.state === 'LAUNCH' || g.state === 'AIM';
     if (pad.backdrop) pad.backdrop.visible = g.state === 'MENU' || g.state === 'LAUNCH';   // le decor lointain n'existe que dans le menu (on ne peut pas voler a travers)
     if (pad.beacon) pad.beacon.color.setRGB(0.4 + 0.6 * (Math.sin(now / 280) > 0 ? 1 : 0), 0.05, 0.05);
     if (pad.towerArm) { const open = a && (a.lock || (a.hold && ch > 0.35)) ? 1 : 0; pad.towerArm.rotation.y += (open * -1.25 - pad.towerArm.rotation.y) * Math.min(1, dt * 3); }

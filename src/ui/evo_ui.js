@@ -27,9 +27,9 @@
   // ---------- barre du haut ----------
   function topBar(ui, ctx, game, F, S0, E, o) {
     o = o || {}; const h = S(96), y = F.T0 + S(34), x0 = F.ox + S(36), now = performance.now(), fxg = game.evoGemFx;
-    const cs = U.formatInt(S0.coins), cwid = S(300);
+    const cs = U.formatInt(S0.coins), cwid = S(250);
     UI.currencyPill(ctx, ui, x0, y, cwid, h, 'coin', cs);
-    const gs = String(S0.gems || 0), gx = x0 + cwid + S(26), gwid = S(300), pulse = fxg ? U.clamp(1 - (now - fxg.t0) / 900, 0, 1) : 0;
+    const gs = String(S0.gems || 0), gx = x0 + cwid + S(30), gwid = S(220), pulse = fxg ? U.clamp(1 - (now - fxg.t0) / 900, 0, 1) : 0;
     UI.currencyPill(ctx, ui, gx, y, gwid, h, 'gem', gs, { plus: true });
     if (pulse > 0) { ctx.save(); UI.cham(ctx, gx + h * 0.3, y, gwid - h * 0.3, h, h * 0.28); ctx.lineWidth = S(5); ctx.strokeStyle = 'rgba(255,255,255,' + pulse + ')'; ctx.stroke(); UI.text(ctx, '+' + fxg.n, gx + h * 1.5, y + h * 1.5 - (1 - pulse) * h * 0.4, h * 0.6, T.yellow, { outline: true }); ctx.restore(); }
     UI.tap(ui, gx, y, gwid, h, () => { ui.overlay = 'evoShop'; });
@@ -47,19 +47,19 @@
     const shk = game.evoShake && game.evoShake.id === id && now - game.evoShake.t0 < 350 ? Math.sin((now - game.evoShake.t0) / 25) * S(10) : 0, bt = game.evoBought, bk = bt && bt.id === id ? U.clamp(1 - (now - bt.t0) / 520, 0, 1) : 0, k2 = 1 + 0.05 * Math.sin(bk * 3.1416);
     const rx = x + shk, ccx = rx + w / 2, ccy = y + h / 2;
     ctx.save(); ctx.translate(ccx, ccy); ctx.scale(k2, k2); ctx.translate(-ccx, -ccy);
-    const ink = '#F0EDE4', col = UI.CARDCOL[id], R = w * 0.1, pd = w * 0.035;
+    const ink = '#F0EDE4', col = UI.CARDCOL[id], R = w * 0.04, pd = w * 0.035;
     rr0(ctx, rx, y, w, h, R); ctx.fillStyle = '#26394B'; ctx.fill();
-    UI.outlined(ctx, name, rx + w * 0.42, y + h * 0.07, UI.fit(ctx, name, w * 0.62, h * 0.062), ink);
     const ix = rx + pd, iy = y + h * 0.125, iw = w - pd * 2, ih = h * 0.36;
-    rr0(ctx, ix, iy, iw, ih, w * 0.06); ctx.fillStyle = col; ctx.fill();
-    UI.icon(ctx, ico, ix + iw / 2, iy + ih / 2 - (id === 'cm' ? ih * 0.07 : 0), ih * 0.66);
+    UI.outlined(ctx, name, ix, y + h * 0.068, UI.fit(ctx, name, w * 0.6, h * 0.066), ink, null, { align: 'left' });
+    rr0(ctx, ix, iy, iw, ih, w * 0.025); ctx.fillStyle = col; ctx.fill();
+    ctx.save(); if (id !== 'cm') { ctx.shadowColor = 'rgba(0,0,0,0.38)'; ctx.shadowOffsetY = S(7); ctx.shadowOffsetX = S(3); ctx.shadowBlur = 0; } UI.icon(ctx, ico, ix + iw / 2, iy + ih / 2 - (id === 'cm' ? ih * 0.07 : 0), ih * 0.66); ctx.restore();
     if (id === 'cm') UI.outlined(ctx, 'X' + f1(E.mult(n)), ix + iw / 2, iy + ih * 0.86, h * 0.058, T.white);
-    { const br = w * 0.125, bcx = rx + w - br * 0.8, bcy = y + br * 0.8; ctx.beginPath(); ctx.arc(bcx, bcy, br, 0, 6.2832); ctx.fillStyle = '#3A5873'; ctx.fill(); UI.outlined(ctx, String(n + 1), bcx, bcy + br * 0.04, UI.fit(ctx, String(n + 1), br * 1.4, br * 1.05), T.white, '#26394B', { keep: true, ow: 0.28 }); }
+    { const br = w * 0.125, bcx = rx + w - br * 0.8, bcy = y + br * 0.8, ro = Math.max(2, S(4)); ctx.beginPath(); ctx.arc(bcx, bcy, br + ro, 0, 6.2832); ctx.fillStyle = '#26394B'; ctx.fill(); ctx.beginPath(); ctx.arc(bcx, bcy, br, 0, 6.2832); ctx.fillStyle = '#3A5873'; ctx.fill(); UI.outlined(ctx, String(n + 1), bcx, bcy + br * 0.04, UI.fit(ctx, String(n + 1), br * 1.4, br * 1.05), T.white); }
     UI.segments(ctx, ix, y + h * 0.53, iw, h * 0.088, done, 5, { off: '#1B2A38', on: col });
-    const bx = rx + pd, bw = w - pd * 2, bh = h * 0.29, by = y + h * 0.935 - h * 0.29, frac = cost === null ? 1 : U.clamp(S0.coins / cost, 0, 1);
+    const bx = rx + pd, bw = w - pd * 2, bh = h * 0.285, by = y + h - pd - h * 0.285, frac = cost === null ? 1 : U.clamp(S0.coins / cost, 0, 1);
     const cs = U.formatInt(cost), face = UI.greenButton(ctx, bx, by, bw, bh, { disabled: !can, cat: id });
-    UI.outlined(ctx, 'AMÉLIORER', bx + bw / 2, face.y + face.h * 0.3, UI.fit(ctx, 'AMÉLIORER', bw * 0.84, face.h * 0.3), can ? T.white : '#2C7A42');
-    { const ps = face.h * 0.3, pw = UI.tw(ctx, cs, ps) + ps * 1.3; UI.icon(ctx, 'coin', bx + bw / 2 - pw / 2 + ps * 0.5, face.y + face.h * 0.7, ps * 1.15); UI.outlined(ctx, cs, bx + bw / 2 - pw / 2 + ps * 1.25, face.y + face.h * 0.7, UI.fit(ctx, cs, bw * 0.55, ps), can ? T.white : '#2C7A42', null, { align: 'left' }); }
+    UI.outlined(ctx, 'AMÉLIORER', bx + bw / 2, face.y + face.h * 0.3, UI.fit(ctx, 'AMÉLIORER', bw * 0.94, face.h * 0.4), can ? T.white : '#2C7A42');
+    { const ps = face.h * 0.37, pw = UI.tw(ctx, cs, ps) + ps * 1.3; UI.icon(ctx, 'coin', bx + bw / 2 - pw / 2 + ps * 0.5, face.y + face.h * 0.7, ps * 1.15); UI.outlined(ctx, cs, bx + bw / 2 - pw / 2 + ps * 1.25, face.y + face.h * 0.7, UI.fit(ctx, cs, bw * 0.55, ps), can ? T.white : '#2C7A42', null, { align: 'left' }); }
     // (plus de barre de progression de l'argent)
     if (bk > 0) { ctx.fillStyle = 'rgba(255,255,255,' + bk * 0.35 + ')'; UI.cham(ctx, rx, y, w, h, S(26)); ctx.fill(); }
     ctx.restore();
@@ -72,10 +72,12 @@
     topBar(ui, ctx, game, F, S0, E);
     if (anim) { const a = U.clamp(anim.t / 0.4, 0, 1) * (1 - U.smooth(anim.dur - 0.6, anim.dur, anim.t)), name = anim.label + ' !'; ctx.save(); ctx.globalAlpha = a; UI.text(ctx, name, cx, Y(0.2), UI.fit(ctx, name, cw * 0.9, S(130)), T.yellow, { outline: true }); UI.text(ctx, 'NOUVELLE PIÈCE', cx, Y(0.27), S(52), T.white, { outline: true }); ctx.restore(); return; }
     // (v227 : plus de bande sombre derriere les cartes)
-    { const r0 = E.rocket(S0.rk), nm = TIERNAME[r0.tier], sp = nm.indexOf(' '), l1 = nm.slice(0, sp), l2 = nm.slice(sp + 1), bw = S(380), bh = S(104), bx = cx - bw / 2 + S(30), by = T0 + S(172), bd = Math.max(2, S(4));
-      UI.cham(ctx, bx - bd, by - bd, bw + bd * 2, bh + bd * 2, S(26) + bd); ctx.fillStyle = '#05080C'; ctx.fill(); UI.cham(ctx, bx, by, bw, bh, S(26)); ctx.fillStyle = '#26394B'; ctx.fill();
-      UI.icon(ctx, 'missile_ogive', bx + S(6), by + bh / 2, S(128));
-      UI.outlined(ctx, l1, bx + bw * 0.56, by + bh * 0.34, UI.fit(ctx, l1, bw * 0.5, S(40)), '#F0EDE4'); UI.outlined(ctx, l2, bx + bw * 0.56, by + bh * 0.7, UI.fit(ctx, l2, bw * 0.5, S(36)), '#F0EDE4'); }
+    { const r0 = E.rocket(S0.rk), nm = TIERNAME[r0.tier], sp = nm.indexOf(' '), l1 = nm.slice(0, sp), l2 = nm.slice(sp + 1), bw = S(380), bh = S(104), bx = cx - bw / 2 + S(30), by = T0 + S(172), bd = Math.max(2, S(4)), rd = S(12);
+      rr0(ctx, bx - bd, by - bd, bw + bd * 2, bh + bd * 2, rd + bd); ctx.fillStyle = '#05080C'; ctx.fill(); rr0(ctx, bx, by, bw, bh, rd); ctx.fillStyle = '#26394B'; ctx.fill();
+      ctx.save(); rr0(ctx, bx, by, bw, bh, rd); ctx.clip(); ctx.fillStyle = '#1B2A38'; ctx.fillRect(bx, by + bh - S(9), bw, S(9)); ctx.restore();
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowOffsetY = S(6); ctx.shadowOffsetX = S(3); ctx.shadowBlur = 0; UI.icon(ctx, 'missile_ogive', bx + S(6), by + bh / 2 - S(4), S(128)); ctx.restore();
+      UI.outlined(ctx, l1, bx + bw * 0.56, by + bh * 0.33, UI.fit(ctx, l1, bw * 0.5, S(40)), '#F0EDE4'); UI.outlined(ctx, l2, bx + bw * 0.56, by + bh * 0.64, UI.fit(ctx, l2, bw * 0.5, S(36)), '#F0EDE4');
+      UI.tap(ui, bx, by, bw, bh, () => { game.evoLvPop = !game.evoLvPop; }); }
     if (last && last.zone2) {
       const NAMES = { rk5: 'AILES', rk10: 'RÉACTEUR', rk15: 'TURBO', weak: '1ER ENNEMI TROP FORT', d300: '300 M', d1000: '1000 M', d2000: '2000 M', boss: 'BOSS VAINCU' };
       const ms = Object.keys(S0.marks || {}).filter((k) => NAMES[k]).sort((a, b) => S0.marks[a].sec - S0.marks[b].sec).slice(0, 6), ph = S(120) + ms.length * S(66);
@@ -89,14 +91,14 @@
     { const unlocked = S0.runs >= 3, ready = E.chestReady(game), wait = Math.max(0, (S0.chestAt || 0) - Date.now()), rx0 = ox + cw - S(36) - bs, y = ly, pulse = 0.5 + 0.5 * Math.sin(now / 240);
       UI.chestFrame(ctx, rx0, y, bs, ready, unlocked, now);
       // (lueur du coffre pret : voir UI.chestFrame)
-      { const lab = !unlocked ? '3 VOLS' : ready ? '' : secFmt(wait); if (lab) UI.outlined(ctx, lab, rx0 + bs / 2, y + bs + S(34), UI.fit(ctx, lab, bs * 1.2, S(36)), '#F0EDE4'); }
+      { const lab = !unlocked || ready ? '' : secFmt(wait); if (lab) UI.outlined(ctx, lab, rx0 + bs / 2, y + bs + S(34), UI.fit(ctx, lab, bs * 1.2, S(36)), '#F0EDE4'); }
       if (unlocked) UI.tap(ui, rx0, y, bs, bs + S(50), () => E.openChest(game));
-      if (E.stage) { const y2 = y + bs + S(86); UI.levelPlate(ctx, rx0, y2, bs, S(92), 'NIV ' + E.stage(game), E.stage(game)); UI.tap(ui, rx0, y2, bs, S(80), () => { game.evoLvPop = !game.evoLvPop; });
-        if (game.evoLvPop) { const stg = E.stage(game), pw = S(420), rh = S(104), px0 = rx0 + bs - pw, py0 = y2 + S(100); hit(ui, px0, py0, pw, rh * 2, () => {}); UI.panel(ctx, px0, py0 - S(10), pw, rh * 2 + S(20), { c: S(24), border: T.white });
+      if (E.stage) { const y2 = T0 + S(176) + S(104) - S(100);
+        if (game.evoLvPop) { const stg = E.stage(game), pw = S(420), rh = S(104), px0 = cx - pw / 2 + S(30), py0 = y2 + S(100); hit(ui, px0, py0, pw, rh * 2, () => {}); UI.panel(ctx, px0, py0 - S(10), pw, rh * 2 + S(20), { c: S(24), border: T.white });
           for (let nn = 1; nn <= 2; nn++) { const yy = py0 + (nn - 1) * rh, open = true, on = stg === nn; if (on) { ctx.fillStyle = 'rgba(255,230,0,0.14)'; ctx.fillRect(px0 + S(6), yy + S(4), pw - S(12), rh - S(8)); } UI.text(ctx, 'NIVEAU ' + nn, px0 + S(30), yy + rh / 2, S(44), open ? T.white : T.dim, { align: 'left', shadow: false }); if (!open) UI.glyph(ctx, 'lock', px0 + pw - S(50), yy + rh / 2, S(26), T.dim); hit(ui, px0, yy, pw, rh, () => { game.evoLvPop = false; if (open && !on) E.switchStage(game, nn); }); }
           hit(ui, 0, T0, W, HH, () => { game.evoLvPop = false; }); } } }
     { const k = 1 + 0.025 * Math.sin(now / 420), s = 'APPUYEZ POUR LANCER', yy = T0 + HH * 0.5; ctx.save(); ctx.translate(cx, yy); ctx.scale(k, k); ctx.translate(-cx, -yy);
-      UI.outlined(ctx, s, cx, yy, UI.fit(ctx, s, cw * 0.58, S(46)), '#F0EDE4', 'rgba(8,10,16,0.8)', { keep: true, ow: 0.1 }); ctx.restore(); }
+      UI.outlined(ctx, s, cx, yy, UI.fit(ctx, s, cw * 0.58, S(46)), '#F0EDE4', '#000000', { keep: true, ow: 0.16 }); ctx.restore(); }
     const gap = S(14), marg = S(26), cwd = (cw - marg * 2 - gap * 2) / 3, chh = cwd / 0.703, cy0 = T0 + HH - chh - S(28), cards = [];
     ['la', 'rk', 'cm'].forEach((id, i) => cards.push(card(ui, ctx, game, E, S0, id, ox + marg + i * (cwd + gap), cy0, cwd, chh, now)));
     // (plus d'etoile sur l'ogive)

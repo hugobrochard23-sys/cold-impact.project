@@ -34,14 +34,14 @@
   const BTN = { la: ['#43B957', '#2F9A44', '#9BE0AC', '#6FC184'], rk: ['#2C9CE8', '#1F7BC0', '#9ED3F4', '#76B6E0'], cm: ['#F2702A', '#C4531B', '#F8AC85', '#E58760'] };
   UI.CARDCOL = { la: '#43B957', rk: '#2C9CE8', cm: '#F2702A' };
   UI.greenButton = (ctx, x, y, w, h, o) => {   // bouton plat avec une tranche (relief) sous la face ; plus clair quand on ne peut pas acheter
-    o = o || {}; const r = h * 0.16, dis = !!o.disabled, lip = Math.max(S(9), h * 0.13), hh = h - lip, c = BTN[o.cat] || BTN.la;
+    o = o || {}; const r = h * 0.07, dis = !!o.disabled, lip = Math.max(S(5), h * 0.075), hh = h - lip, c = BTN[o.cat] || BTN.la;
     rr(ctx, x, y + lip, w, hh, r); ctx.fillStyle = dis ? c[3] : c[1]; ctx.fill();
     rr(ctx, x, y, w, hh, r); ctx.fillStyle = dis ? c[2] : c[0]; ctx.fill();
     return { x, y, w, h: hh };
   };
   UI.outlined = (ctx, s, x, y, px, fill, edge, o) => {   // v223 : texte SANS contour (seul « APPUYEZ POUR LANCER » garde le sien : o.keep)
     o = o || {}; ctx.save(); UI.setFont(ctx, px); ctx.textAlign = o.align || 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.miterLimit = 2;
-    if (o.keep) { ctx.lineWidth = Math.max(2, px * (o.ow || 0.2)); ctx.strokeStyle = edge || '#0b0d12'; ctx.strokeText(s, x, y + px * 0.04); }
+    if (o.keep) { ctx.lineWidth = Math.max(2, px * (o.ow || 0.2)); ctx.strokeStyle = edge || '#0b0d12'; ctx.strokeText(s, x, y); }
     ctx.fillStyle = fill || C.white; ctx.fillText(s, x, y); ctx.restore();
   };
   // --- badge a facettes (niveau, notification)
@@ -94,17 +94,17 @@
     o = o || {}; const gem = kind === 'gem', body = x + h * 0.3, bw = w - h * 0.3; h = h * 0.84; y += S(6); const ow = Math.max(2, S(4));
     ctx.save(); ctx.translate(0, S(5)); rr(ctx, body - ow, y - ow, bw + ow * 2, h + ow * 2, h * 0.3 + ow); ctx.fillStyle = 'rgba(8,12,18,0.34)'; ctx.fill(); ctx.restore();
     rr(ctx, body - ow, y - ow, bw + ow * 2, h + ow * 2, h * 0.3 + ow); ctx.fillStyle = '#FFFFFF'; ctx.fill();
-    UI.slate(ctx, body, y, bw, h, h * 0.3, gem ? '#1C86D8' : '#E8A92A');
+    UI.slate(ctx, body, y, bw, h, h * 0.3, gem ? '#1C86D8' : '#F2BD52');
     if (!UI.artOutlined(ctx, gem ? 'gem' : 'coin', x + h * 0.5, y + h / 2, h * 1.12, Math.max(2, S(3)))) UI.icon(ctx, gem ? 'gem' : 'coin', x + h * 0.5, y + h / 2, h * 1.2);
-    UI.outlined(ctx, value, x + h * 1.25, y + h * 0.5, UI.fit(ctx, value, w - h * (o.plus ? 2.8 : 1.6), h * 0.52), '#FFFFFF', null, { align: 'left' });
-    if (o.plus) { const pr = h * 0.38, pcx = x + w - h * 0.5, pcy = y + h / 2; ctx.beginPath(); ctx.arc(pcx, pcy, pr + Math.max(2, S(3)), 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); UI.plusButton(ctx, pcx, pcy, pr); }
+    UI.outlined(ctx, value, x + h * 1.2, y + h * 0.5, UI.fit(ctx, value, bw - h * (o.plus ? 1.7 : 1.1), h * 0.66), '#FFFFFF', '#000000', { align: 'left', keep: true, ow: 0.2 });
+    if (o.plus) { const pr = h * 0.38, pcx = x + w, pcy = y + h / 2; ctx.beginPath(); ctx.arc(pcx, pcy, pr + Math.max(2, S(3)), 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); UI.plusButton(ctx, pcx, pcy, pr); }
   };
-  UI.slateIconButton = (ctx, x, y, s, kind) => {   // bouton rond a relief
+  UI.slateIconButton = (ctx, x, y, s, kind) => {   // bouton rond bleu a relief
     const q = s * 0.86, cx = x + s / 2, cy = y + S(4) + q / 2, r = q / 2;
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); ctx.fillStyle = '#12202E'; ctx.fill();
-    ctx.beginPath(); ctx.arc(cx, cy - r * 0.03, r * 0.94, 0, 6.2832); const g = ctx.createLinearGradient(0, cy - r, 0, cy + r); g.addColorStop(0, '#5D86A8'); g.addColorStop(0.5, '#34607F'); g.addColorStop(1, '#25455F'); ctx.fillStyle = g; ctx.fill();
-    ctx.beginPath(); ctx.arc(cx, cy - r * 0.03, r * 0.94, Math.PI * 1.1, Math.PI * 1.9); ctx.lineWidth = Math.max(2, S(3)); ctx.strokeStyle = 'rgba(210,235,255,0.7)'; ctx.stroke();
-    ctx.beginPath(); ctx.arc(cx, cy, r * 0.68, 0, 6.2832); ctx.fillStyle = '#2A4F6C'; ctx.fill(); ctx.lineWidth = Math.max(1.5, S(2.5)); ctx.strokeStyle = 'rgba(8,16,24,0.45)'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); ctx.fillStyle = '#0B3A80'; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy - r * 0.04, r * 0.93, 0, 6.2832); const g = ctx.createLinearGradient(0, cy - r, 0, cy + r); g.addColorStop(0, '#4FA3F0'); g.addColorStop(0.5, '#2275D6'); g.addColorStop(1, '#1658AE'); ctx.fillStyle = g; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy - r * 0.04, r * 0.93, Math.PI * 1.1, Math.PI * 1.9); ctx.lineWidth = Math.max(2, S(3)); ctx.strokeStyle = 'rgba(200,230,255,0.75)'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, r * 0.68, 0, 6.2832); ctx.fillStyle = '#1A66C2'; ctx.fill(); ctx.lineWidth = Math.max(1.5, S(2.5)); ctx.strokeStyle = 'rgba(6,30,70,0.55)'; ctx.stroke();
     if (kind === 'gear' && UI.artImg(ctx, 'gear', cx, cy, q * 0.56)) return; UI.glyph(ctx, kind, cx, cy, q * 0.28, '#F0EDE4');
   };
   // bouton de la barre du haut : parametres / fermer (badge a facettes)
@@ -121,22 +121,21 @@
   // petite boutique en 3D (auvent rouge et blanc, facade de bois, porte bleue, plaque SHOP) : silhouette opaque
   UI.shopStall = (ctx, x, y, s, now) => {   // boutique : image fournie (assets/ui/shop.png) + pastille de notification
     const im = UI.art('shop'), w = s * 1.12, h = w * (im ? im.naturalHeight / im.naturalWidth : 1);
-    if (im) { ctx.save(); ctx.shadowColor = 'rgba(8,10,16,0.35)'; ctx.shadowOffsetY = S(5); ctx.shadowBlur = 0; ctx.drawImage(im, x - s * 0.04, y - s * 0.06, w, h); ctx.restore(); }
+    if (im) { if (!UI.artOutlined(ctx, 'shop', x - s * 0.04 + w / 2, y - s * 0.06 + h / 2, Math.max(w, h), Math.max(2, S(3)))) ctx.drawImage(im, x - s * 0.04, y - s * 0.06, w, h); }
     // (plus de pastille d'alerte)
   };
   // badge « NO ADS » : disque d'interdiction + plaque de bois
   UI.noAdsBadge = (ctx, x, y, s) => {   // seulement le logo : disque bleu nuit, « ADS » barre de rouge
     const cx = x + s / 2, cy = y + s / 2, r = s * 0.44;
     shadow(ctx, () => { ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); }, s * 0.04, 0.35); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); ctx.fillStyle = '#16314A'; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, r + Math.max(2, S(3)), 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); ctx.fillStyle = '#16314A'; ctx.fill();
     UI.outlined(ctx, 'ADS', cx, cy, r * 0.82, C.white);
     ctx.lineCap = 'round'; ctx.lineWidth = r * 0.24; ctx.strokeStyle = '#F04438'; ctx.beginPath(); ctx.arc(cx, cy, r * 0.84, 0, 6.2832); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx - r * 0.6, cy + r * 0.6); ctx.lineTo(cx + r * 0.6, cy - r * 0.6); ctx.stroke();
   };
   // gemmes gratuites : cadre bleu, cristal d'origine, plaque de bois « n/3 », coche verte quand tout est disponible
-  UI.freeGems = (ctx, x, y, s, free) => {   // cristal d'origine (sans rectangle derriere), « n/3 » en texte, coche verte
-    if (!UI.artImg(ctx, 'gem', x + s / 2, y + s * 0.4, s * 0.86)) UI.icon(ctx, 'gem', x + s / 2, y + s * 0.4, s * 0.86);
-    const vs = s * 0.3, vx = x + s * 0.86, vy = y + s * 0.1; ctx.beginPath(); ctx.arc(vx, vy, vs * 0.52, 0, 6.2832); ctx.fillStyle = free > 0 ? '#3FCB2B' : '#5B6A64'; ctx.fill();
-    ctx.strokeStyle = C.white; ctx.lineWidth = vs * 0.16; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(vx - vs * 0.22, vy); ctx.lineTo(vx - vs * 0.05, vy + vs * 0.17); ctx.lineTo(vx + vs * 0.25, vy - vs * 0.16); ctx.stroke();
-    UI.outlined(ctx, free + '/3', x + s / 2, y + s * 0.92, s * 0.3, free > 0 ? C.white : '#b9c2cc');
+  UI.freeGems = (ctx, x, y, s, free) => {   // cristal a contour blanc, « n/3 » a contour noir
+    if (!UI.artOutlined(ctx, 'gem', x + s / 2, y + s * 0.4, s * 0.8, Math.max(2, S(3)))) UI.icon(ctx, 'gem', x + s / 2, y + s * 0.4, s * 0.86);
+    UI.outlined(ctx, free + '/3', x + s / 2, y + s * 0.92, s * 0.3, free > 0 ? C.white : '#b9c2cc', '#000000', { keep: true, ow: 0.22 });
   };
   // coffre : cadre a facettes bleu acier, coffre d'origine, lueur doree quand il est pret
   UI.chestFrame = (ctx, x, y, s, ready, unlocked, now) => {
