@@ -31,8 +31,9 @@
     return { x, y, w, h };
   };
   // --- bouton vert en relief (AMELIORER...) : retourne { x, y, w, h } de la face
-  const BTN = { la: ['#43B957', '#2F9A44', '#9BE0AC', '#6FC184'], rk: ['#2C9CE8', '#1F7BC0', '#9ED3F4', '#76B6E0'], cm: ['#F2702A', '#C4531B', '#F8AC85', '#E58760'] };
-  UI.CARDCOL = { la: '#43B957', rk: '#2C9CE8', cm: '#F2702A' };
+  const BTN = { la: ['#2ECC71', '#1F9A52', '#8FE3B3', '#6BC495'], rk: ['#1E90FF', '#1769C2', '#8FC8FF', '#6AA6DB'], cm: ['#FF8C00', '#C46A00', '#FFC47A', '#E5A25A'] };
+  UI.CARDCOL = { la: '#2ECC71', rk: '#1E90FF', cm: '#FF8C00' };
+  UI.CARDBG = { la: ['#5CB87C', '#3A6D4B'], rk: ['#5D6D7E', '#2C3E50'], cm: ['#F39C12', '#A16E34'] };   // [haut, bas]
   UI.greenButton = (ctx, x, y, w, h, o) => {   // bouton plat avec une tranche (relief) sous la face ; plus clair quand on ne peut pas acheter
     o = o || {}; const r = h * 0.07, dis = !!o.disabled, lip = Math.max(S(5), h * 0.075), hh = h - lip, c = BTN[o.cat] || BTN.la;
     rr(ctx, x, y + lip, w, hh, r); ctx.fillStyle = dis ? c[3] : c[1]; ctx.fill();
@@ -96,7 +97,7 @@
     rr(ctx, body - ow, y - ow, bw + ow * 2, h + ow * 2, h * 0.3 + ow); ctx.fillStyle = '#FFFFFF'; ctx.fill();
     UI.slate(ctx, body, y, bw, h, h * 0.3, gem ? '#1C86D8' : '#F2BD52');
     if (!UI.artOutlined(ctx, gem ? 'gem' : 'coin', x + h * 0.5, y + h / 2, h * 1.12, Math.max(2, S(3)))) UI.icon(ctx, gem ? 'gem' : 'coin', x + h * 0.5, y + h / 2, h * 1.2);
-    UI.outlined(ctx, value, x + h * 1.2, y + h * 0.5, UI.fit(ctx, value, bw - h * (o.plus ? 1.7 : 1.1), h * 0.66), '#FFFFFF', '#000000', { align: 'left', keep: true, ow: 0.2 });
+    UI.outlined(ctx, value, x + h * 1.2, y + h * 0.5, UI.fit(ctx, value, bw - h * (o.plus ? 1.7 : 1.1), h * 0.66), '#FFFFFF', null, { align: 'left' });
     if (o.plus) { const pr = h * 0.38, pcx = x + w, pcy = y + h / 2; ctx.beginPath(); ctx.arc(pcx, pcy, pr + Math.max(2, S(3)), 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); UI.plusButton(ctx, pcx, pcy, pr); }
   };
   UI.slateIconButton = (ctx, x, y, s, kind) => {   // bouton rond bleu a relief

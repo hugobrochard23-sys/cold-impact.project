@@ -48,14 +48,14 @@
     const rx = x + shk, ccx = rx + w / 2, ccy = y + h / 2;
     ctx.save(); ctx.translate(ccx, ccy); ctx.scale(k2, k2); ctx.translate(-ccx, -ccy);
     const ink = '#F0EDE4', col = UI.CARDCOL[id], R = w * 0.04, pd = w * 0.035;
-    rr0(ctx, rx, y, w, h, R); ctx.fillStyle = '#26394B'; ctx.fill();
-    const ix = rx + pd, iy = y + h * 0.125, iw = w - pd * 2, ih = h * 0.36;
+    { const bg = UI.CARDBG[id], gr = ctx.createLinearGradient(0, y, 0, y + h); gr.addColorStop(0, bg[0]); gr.addColorStop(1, bg[1]); rr0(ctx, rx, y, w, h, R); ctx.fillStyle = gr; ctx.fill(); }
+    const ix = rx + pd, iy = y + h * 0.125, iw = w - pd * 2, ih = h * 0.405;
     UI.outlined(ctx, name, ix, y + h * 0.068, UI.fit(ctx, name, w * 0.6, h * 0.066), ink, null, { align: 'left' });
     rr0(ctx, ix, iy, iw, ih, w * 0.025); ctx.fillStyle = col; ctx.fill();
     ctx.save(); if (id !== 'cm') { ctx.shadowColor = 'rgba(0,0,0,0.38)'; ctx.shadowOffsetY = S(7); ctx.shadowOffsetX = S(3); ctx.shadowBlur = 0; } UI.icon(ctx, ico, ix + iw / 2, iy + ih / 2 - (id === 'cm' ? ih * 0.07 : 0), ih * 0.66); ctx.restore();
     if (id === 'cm') UI.outlined(ctx, 'X' + f1(E.mult(n)), ix + iw / 2, iy + ih * 0.86, h * 0.058, T.white);
-    { const br = w * 0.125, bcx = rx + w - br * 0.8, bcy = y + br * 0.8, ro = Math.max(2, S(4)); ctx.beginPath(); ctx.arc(bcx, bcy, br + ro, 0, 6.2832); ctx.fillStyle = '#26394B'; ctx.fill(); ctx.beginPath(); ctx.arc(bcx, bcy, br, 0, 6.2832); ctx.fillStyle = '#3A5873'; ctx.fill(); UI.outlined(ctx, String(n + 1), bcx, bcy + br * 0.04, UI.fit(ctx, String(n + 1), br * 1.4, br * 1.05), T.white); }
-    UI.segments(ctx, ix, y + h * 0.53, iw, h * 0.088, done, 5, { off: '#1B2A38', on: col });
+    { const br = w * 0.125, bcx = rx + w - br * 0.8, bcy = y + br * 0.8, ro = Math.max(2, S(4)); ctx.beginPath(); ctx.arc(bcx, bcy, br + ro, 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.beginPath(); ctx.arc(bcx, bcy, br, 0, 6.2832); ctx.fillStyle = '#3A5873'; ctx.fill(); UI.outlined(ctx, String(n + 1), bcx, bcy + br * 0.04, UI.fit(ctx, String(n + 1), br * 1.4, br * 1.05), T.white); }
+    UI.segments(ctx, ix, y + h * 0.555, iw, h * 0.088, done, 5, { off: 'rgba(14,24,34,0.45)', on: col });
     const bx = rx + pd, bw = w - pd * 2, bh = h * 0.285, by = y + h - pd - h * 0.285, frac = cost === null ? 1 : U.clamp(S0.coins / cost, 0, 1);
     const cs = U.formatInt(cost), face = UI.greenButton(ctx, bx, by, bw, bh, { disabled: !can, cat: id });
     UI.outlined(ctx, 'AMÉLIORER', bx + bw / 2, face.y + face.h * 0.3, UI.fit(ctx, 'AMÉLIORER', bw * 0.94, face.h * 0.4), can ? T.white : '#2C7A42');
@@ -98,8 +98,8 @@
           for (let nn = 1; nn <= 2; nn++) { const yy = py0 + (nn - 1) * rh, open = true, on = stg === nn; if (on) { ctx.fillStyle = 'rgba(255,230,0,0.14)'; ctx.fillRect(px0 + S(6), yy + S(4), pw - S(12), rh - S(8)); } UI.text(ctx, 'NIVEAU ' + nn, px0 + S(30), yy + rh / 2, S(44), open ? T.white : T.dim, { align: 'left', shadow: false }); if (!open) UI.glyph(ctx, 'lock', px0 + pw - S(50), yy + rh / 2, S(26), T.dim); hit(ui, px0, yy, pw, rh, () => { game.evoLvPop = false; if (open && !on) E.switchStage(game, nn); }); }
           hit(ui, 0, T0, W, HH, () => { game.evoLvPop = false; }); } } }
     { const k = 1 + 0.025 * Math.sin(now / 420), s = 'APPUYEZ POUR LANCER', yy = T0 + HH * 0.5; ctx.save(); ctx.translate(cx, yy); ctx.scale(k, k); ctx.translate(-cx, -yy);
-      UI.outlined(ctx, s, cx, yy, UI.fit(ctx, s, cw * 0.58, S(46)), '#F0EDE4', '#000000', { keep: true, ow: 0.16 }); ctx.restore(); }
-    const gap = S(14), marg = S(26), cwd = (cw - marg * 2 - gap * 2) / 3, chh = cwd / 0.703, cy0 = T0 + HH - chh - S(28), cards = [];
+      UI.outlined(ctx, s, cx, yy, UI.fit(ctx, s, cw * 0.58, S(46)), '#F0EDE4', '#000000', { keep: true, ow: 0.08 }); ctx.restore(); }
+    const gap = S(34), marg = S(40), cwd = (cw - marg * 2 - gap * 2) / 3, chh = ((cw - S(26) * 2 - S(14) * 2) / 3) / 0.703, cy0 = T0 + HH - chh - S(28), cards = [];
     ['la', 'rk', 'cm'].forEach((id, i) => cards.push(card(ui, ctx, game, E, S0, id, ox + marg + i * (cwd + gap), cy0, cwd, chh, now)));
     // (plus d'etoile sur l'ogive)
     for (const c of cards) if (!c.can) { const gc = E.gemCost(game, c.id), have = (S0.gems || 0) >= gc, r = S(30), gx = c.ix + r * 1.25, gy = c.iy + r * 1.25;
