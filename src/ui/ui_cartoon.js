@@ -9,7 +9,7 @@
   UI.C = C;
   // images d'habillage fournies (assets/ui/*.png) : boutique et fonds de cartes (bois, pierre, bois sombre)
   const ART = {}; UI.art = (n) => { let i = ART[n]; if (!i) { i = ART[n] = new Image(); i.src = 'assets/ui/' + n + '.png'; } return i.complete && i.naturalWidth ? i : null; };
-  ['shop', 'card_wood', 'card_stone', 'card_dark'].forEach((n) => UI.art(n));
+  ['shop', 'card_slate', 'gem', 'chest', 'gear', 'coin', 'btn_green'].forEach((n) => UI.art(n));
   const hexPath = (ctx, cx, cy, r, cut) => { const w = r * 2, c = r * (cut === undefined ? 0.5 : cut); ctx.beginPath(); ctx.moveTo(cx - r + c, cy - r); ctx.lineTo(cx + r - c, cy - r); ctx.lineTo(cx + r, cy - r + c); ctx.lineTo(cx + r, cy + r - c); ctx.lineTo(cx + r - c, cy + r); ctx.lineTo(cx - r + c, cy + r); ctx.lineTo(cx - r, cy + r - c); ctx.lineTo(cx - r, cy - r + c); ctx.closePath(); };
   const rr = (ctx, x, y, w, h, r) => { r = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r); ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath(); };
   const lg = (ctx, y0, y1, a, b, m) => { const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, a); if (m) g.addColorStop(0.5, m); g.addColorStop(1, b); return g; };
@@ -35,8 +35,8 @@
   UI.greenButton = (ctx, x, y, w, h, o) => {
     o = o || {}; const r = h * 0.26, dis = !!o.disabled, press = o.pressed ? h * 0.04 : 0;
     const lip = Math.max(S(6), h * 0.1), hh = h - lip; shadow(ctx, () => rr(ctx, x, y + lip + press, w, hh, r), S(4), 0.35);
-    rr(ctx, x, y + lip, w, hh, r); ctx.fillStyle = dis ? '#3C4843' : '#1F8F1A'; ctx.fill();   // tranche (relief)
-    rr(ctx, x, y + press, w, hh, r); ctx.fillStyle = dis ? '#5B6A64' : '#3FCB2B'; ctx.fill();
+    rr(ctx, x, y + lip, w, hh, r); ctx.fillStyle = dis ? '#3C4843' : '#23803A'; ctx.fill();   // tranche (relief)
+    rr(ctx, x, y + press, w, hh, r); ctx.fillStyle = dis ? '#5B6A64' : '#43B957'; ctx.fill();
     ctx.save(); rr(ctx, x, y + press, w, hh, r); ctx.clip(); ctx.fillStyle = dis ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)'; ctx.fillRect(x, y + press, w, hh * 0.32); ctx.restore();
     return { x, y: y + press, w, h: hh };
   };
@@ -78,13 +78,16 @@
   };
   // =====================================================================================================================================================================
   // pastille de monnaie : plaque de bois (pieces) ou panneau bleu (gemmes) ; l'icone d'origine deborde a gauche, le « + » vert a droite
+  UI.slate = (ctx, x, y, w, h, r) => { shadow(ctx, () => rr(ctx, x, y, w, h, r), Math.max(S(3), h * 0.05), 0.3); rr(ctx, x, y, w, h, r); ctx.fillStyle = '#26394B'; ctx.fill(); ctx.save(); rr(ctx, x, y, w, h, r); ctx.clip(); ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(x, y, w, h * 0.45); ctx.restore(); };
+  UI.artImg = (ctx, name, cx, cy, size) => { const im = UI.art(name); if (!im) return false; const k = size / Math.max(im.naturalWidth, im.naturalHeight); ctx.drawImage(im, cx - im.naturalWidth * k / 2, cy - im.naturalHeight * k / 2, im.naturalWidth * k, im.naturalHeight * k); return true; };
   UI.currencyPill = (ctx, ui, x, y, w, h, kind, value, o) => {
-    o = o || {}; const gem = kind === 'gem', body = x + h * 0.3, bw = w - h * 0.3;
-    if (gem) UI.bluePanel(ctx, body, y, bw, h, { r: h * 0.3 }); else UI.woodPlate(ctx, body, y, bw, h, { r: h * 0.3 });
-    UI.icon(ctx, gem ? 'gem' : 'coin', x + h * 0.55, y + h / 2, h * 1.25);
-    UI.outlined(ctx, value, x + h * 1.2, y + h * 0.5, UI.fit(ctx, value, w - h * (o.plus ? 2.9 : 1.6), h * 0.56), C.white, null, { align: 'left' });
-    if (o.plus) UI.plusButton(ctx, x + w - h * 0.5, y + h / 2, h * 0.42);
+    o = o || {}; const gem = kind === 'gem', body = x + h * 0.3, bw = w - h * 0.3; h = h * 0.84; y += S(6);
+    UI.slate(ctx, body, y, bw, h, h * 0.3);
+    if (!UI.artImg(ctx, gem ? 'gem' : 'coin', x + h * 0.5, y + h / 2, h * 1.18)) UI.icon(ctx, gem ? 'gem' : 'coin', x + h * 0.5, y + h / 2, h * 1.2);
+    UI.outlined(ctx, value, x + h * 1.1, y + h * 0.5, UI.fit(ctx, value, w - h * (o.plus ? 2.7 : 1.5), h * 0.52), '#F0EDE4', null, { align: 'left' });
+    if (o.plus) UI.plusButton(ctx, x + w - h * 0.5, y + h / 2, h * 0.38);
   };
+  UI.slateIconButton = (ctx, x, y, s, kind) => { y += S(4); const q = s * 0.86; x += (s - q) / 2; UI.slate(ctx, x, y, q, q, q * 0.26); if (kind === 'gear' && UI.artImg(ctx, 'gear', x + q / 2, y + q / 2, q * 0.66)) return; UI.glyph(ctx, kind, x + q / 2, y + q / 2, q * 0.3, '#F0EDE4'); };
   // bouton de la barre du haut : parametres / fermer (badge a facettes)
   UI.cartoonIconButton = (ctx, x, y, s, kind, o) => {
     o = o || {}; UI.facetBadge(ctx, x + s / 2, y + s / 2, s / 2, null, { fill: o.danger ? '#D83A30' : '#1D5FA6' }); UI.glyph(ctx, kind, x + s / 2, y + s / 2, s * 0.3, C.white);
@@ -111,25 +114,24 @@
   };
   // gemmes gratuites : cadre bleu, cristal d'origine, plaque de bois « n/3 », coche verte quand tout est disponible
   UI.freeGems = (ctx, x, y, s, free) => {   // cristal d'origine (sans rectangle derriere), « n/3 » en texte, coche verte
-    UI.icon(ctx, 'gem', x + s / 2, y + s * 0.4, s * 0.86);
+    if (!UI.artImg(ctx, 'gem', x + s / 2, y + s * 0.4, s * 0.86)) UI.icon(ctx, 'gem', x + s / 2, y + s * 0.4, s * 0.86);
     const vs = s * 0.3, vx = x + s * 0.86, vy = y + s * 0.1; ctx.beginPath(); ctx.arc(vx, vy, vs * 0.52, 0, 6.2832); ctx.fillStyle = free > 0 ? '#3FCB2B' : '#5B6A64'; ctx.fill();
     ctx.strokeStyle = C.white; ctx.lineWidth = vs * 0.16; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(vx - vs * 0.22, vy); ctx.lineTo(vx - vs * 0.05, vy + vs * 0.17); ctx.lineTo(vx + vs * 0.25, vy - vs * 0.16); ctx.stroke();
     UI.outlined(ctx, free + '/3', x + s / 2, y + s * 0.92, s * 0.3, free > 0 ? C.white : '#b9c2cc');
   };
   // coffre : cadre a facettes bleu acier, coffre d'origine, lueur doree quand il est pret
   UI.chestFrame = (ctx, x, y, s, ready, unlocked, now) => {
-    const cx = x + s / 2, cy = y + s / 2, r = s / 2;
-    if (ready) { const p = 0.5 + 0.5 * Math.sin(now / 240); ctx.save(); ctx.globalAlpha = 0.25 + 0.35 * p; hexPath(ctx, cx, cy, r + S(8), 0.42); ctx.fillStyle = '#FFD52A'; ctx.fill(); ctx.restore(); }
-    UI.facetBadge(ctx, cx, cy, r, null, { fill: ready ? '#2A4A68' : '#16314A' });
-    ctx.save(); if (!unlocked) ctx.globalAlpha = 0.45; UI.icon(ctx, 'chest_open', cx, cy + s * 0.02, s * 0.74); ctx.restore(); if (!unlocked) UI.glyph(ctx, 'lock', cx, cy, s * 0.2, C.white);
+    const cx = x + s / 2, cy = y + s / 2;
+    UI.slate(ctx, x + s * 0.04, y + s * 0.04, s * 0.92, s * 0.92, s * 0.24);
+    if (ready) { const p = 0.5 + 0.5 * Math.sin(now / 240); ctx.save(); ctx.globalAlpha = 0.25 + 0.3 * p; rr(ctx, x + s * 0.04, y + s * 0.04, s * 0.92, s * 0.92, s * 0.24); ctx.fillStyle = '#E4B84D'; ctx.fill(); ctx.restore(); }
+    ctx.save(); if (!unlocked) ctx.globalAlpha = 0.45; if (!UI.artImg(ctx, 'chest', cx, cy, s * 0.8)) UI.icon(ctx, 'chest_open', cx, cy, s * 0.74); ctx.restore(); if (!unlocked) UI.glyph(ctx, 'lock', cx, cy, s * 0.2, '#F0EDE4');
   };
   // petite plaque orange (OUVRIR, temps restant)
   UI.orangePlate = (ctx, x, y, w, h, hot) => { shadow(ctx, () => rr(ctx, x, y, w, h, h * 0.3), S(4), 0.35); rr(ctx, x, y, w, h, h * 0.3); ctx.fillStyle = hot ? '#FF8B19' : '#8A4A1A'; ctx.fill(); };
   // badge de niveau : plaque a facettes bleu nuit, bordure doree, rangee de pastilles de progression
   UI.levelPlate = (ctx, x, y, w, h, label, stage) => {
-    UI.cham(ctx, x - S(3), y - S(3), w + S(6), h + S(6), h * 0.28 + S(3)); ctx.fillStyle = '#FFFFFF'; ctx.fill();
-    UI.goldFrame(ctx, x, y, w, h, { r: h * 0.28, cut: true, fill: '#16314A' });
-    UI.outlined(ctx, label, x + w / 2, y + h * 0.4, UI.fit(ctx, label, w * 0.8, h * 0.4), C.white);
+    UI.slate(ctx, x, y, w, h, h * 0.26);
+    UI.outlined(ctx, label, x + w / 2, y + h * 0.4, UI.fit(ctx, label, w * 0.8, h * 0.4), '#F0EDE4');
     UI.dots(ctx, x + w / 2, y + h * 0.74, w * 0.66, 5, Math.min(5, stage || 1));
   };
 })();

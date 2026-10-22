@@ -22,7 +22,7 @@
     const rnd = (() => { let s = 7; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; })();
     for (let i = 0; i < 38; i++) { const w = 14 + rnd() * 26, h = 22 + rnd() * 90 * (0.4 + 0.6 * Math.abs(Math.sin(i * 0.7))), x = -300 + i * 16 + rnd() * 6, z = -430 - rnd() * 90; box(G, w, h, w * 0.8, rnd() < 0.5 ? dark : dark2, x, h / 2 - 8, z); if (rnd() < 0.3) box(G, w * 0.2, 14, w * 0.2, dark, x, h + 5, z); }
     const crane = (x, z, h, s) => { const k = new T3.Group(); box(k, 3, h, 3, dark, 0, h / 2, 0); box(k, 90 * s, 2.6, 2.6, dark, 24 * s, h, 0); box(k, 26 * s, 2.6, 2.6, dark, -16 * s, h, 0); box(k, 8, 10, 8, dark, -24 * s, h - 6, 0); box(k, 0.7, 40 * s, 0.7, dark, 56 * s, h - 20 * s, 0); box(k, 4, 4, 4, dark, 0, h + 5, 0); k.position.set(x, -8, z); G.add(k); };
-    crane(-120, -330, 110, 1); crane(150, -380, 140, 1.15); crane(-230, -420, 90, 0.9);
+    // v227 : plus de grues en arriere-plan
     G.add(sprite('#ffb060', 150, -70, 24, -470, 0.95)); G.add(sprite('#fff0c8', 62, -70, 24, -468, 1)); G.add(sprite('#ff9040', 420, -70, 30, -475, 0.28));
     return G;
   }
@@ -36,7 +36,7 @@
     const concrete = lam('#8a8c90'), concD = lam('#6e7074'), steel = lam('#4c5460'), dark = lam('#262a31'), light = lam('#c8ccd2'), red = lam('#c8352a'), white = lam('#eceef2');
     // v174 : un petit lanceur de roquette tout simple : dalle, rail incline, deux bras de maintien, bouclier de flamme, quelques cones
     box(L, 2.6, 0.3, 6.0, concrete, 0, -0.78, -0.2);
-    for (const s of [-1, 1]) { const b = new T3.Mesh(new T3.PlaneGeometry(0.2, 6.0), hazMat(20)); b.rotation.x = -Math.PI / 2; b.position.set(s * 1.2, -0.625, -0.2); L.add(b); }
+    for (const s of [-1, 1]) { const b = new T3.Mesh(new T3.PlaneGeometry(0.085, 6.0), hazMat(20)); b.rotation.x = -Math.PI / 2; b.position.set(s * 1.24, -0.625, -0.2); L.add(b); }
     pad.deflMat = lam('#2a2d33', '#000000'); const defl = new T3.Mesh(new T3.BoxGeometry(0.9, 0.05, 1.3), pad.deflMat); defl.position.set(0, -0.6, 1.7); L.add(defl); pad.defl = defl; defl.userData.noBake = true;
     const cradle = new T3.Group(); L.add(cradle); cradle.rotation.x = pad.pitch || 0; pad.cradle = cradle;
     for (const s of [-1, 1]) box(cradle, 0.08, 0.1, 4.6, steel, s * 0.22, -0.3, -0.4);
@@ -47,7 +47,7 @@
     pad.boosters = []; const nb = 0;
     for (let i = 0; i < nb; i++) { const s = i % 2 ? 1 : -1, row = Math.floor(i / 2), x = s * (0.52 + row * 0.2), z = 1.0 - row * 0.5; const b = new T3.Group(); b.position.set(x, -0.34 + row * 0.04, z); L.add(b);
       cyl(b, 0.1, 0.1, 1.05, lam(row ? '#6a7480' : '#aeb6c0'), 0, 0, 0, 14, true); cyl(b, 0.103, 0.103, 0.14, red, 0, 0, -0.18, 14, true); cyl(b, 0.0, 0.1, 0.18, lam('#3a424c'), 0, 0, -0.6, 14, true); const noz = cyl(b, 0.075, 0.095, 0.1, dark, 0, 0, 0.58, 14, true); const fl = new T3.Mesh(new T3.ConeGeometry(0.075, 0.5, 10, 1, true), bas('#ffcf40', { transparent: true, opacity: 0.0, blending: T3.AdditiveBlending, depthWrite: false, side: T3.DoubleSide, fog: false })); fl.rotation.x = -Math.PI / 2; fl.position.z = 0.88; b.add(fl); box(L, 0.2, 0.05, 0.3, steel, s * (0.4 + row * 0.1), -0.45, z); pad.boosters.push({ fl, noz }); }
-    for (const [x, z] of [[1.0, 1.6], [-1.0, -1.8]]) { const c = new T3.Mesh(new T3.ConeGeometry(0.1, 0.34, 10), lam('#ff7a1c')); c.position.set(x, -0.42, z); L.add(c); box(L, 0.26, 0.03, 0.26, lam('#ff7a1c'), x, -0.58, z); }
+    // v227 : plus de cones de chantier
     // decor lointain
     pad.backdrop = backdrop(); L.add(pad.backdrop);
     pad.vents = [new V(-0.5, -0.5, 1.0), new V(0.5, -0.5, 1.0), new V(-0.7, -0.5, -0.8), new V(0.7, -0.5, -0.8)];
