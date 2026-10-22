@@ -290,18 +290,20 @@
       if (!this.inClip(dc)) return null;
       { const dth = Math.abs(this.T.theta(dc + dd / 2) - this.T.theta(dc - dd / 2)); if (dth > 0.003) dd += (Math.abs(lx) + w / 2) * dth; }   // v064 : en virage, recouvrement des tranches
       // v213 : une dalle plate posee au sol (beton, asphalte, voie, quai : 0,1 a 0,7 m d'epaisseur) a TOUJOURS une collision : la fusee ne s'enfonce plus dedans
-      const slab = h >= 0.1 && h <= 0.7 && w >= 1.5 && dd >= 1.5 && yc - h / 2 < 1.0 && !(typeof mat === 'string' && /^(emis|glass|water|hazard|basic)/.test(mat)) && !(o && o.render === false);
-      return this.b.box(Object.assign({ p: this.T.at(dc, lx, yc), s: [w, h, dd], r: [0, this.yaw(dc), 0], mat, tint, collide: collide !== false || slab }, o || {}));
+      const light = typeof mat === 'string' && /^(emis|glass|water|hazard|basic|chainlink|waterSurf)/.test(mat), slab = h >= 0.1 && h <= 0.7 && w >= 1.5 && dd >= 1.5 && yc - h / 2 < 1.0 && !light && !(o && o.render === false);
+      // v225 : audit de la nuit : tout volume visible d'au moins 0,8 m dans ses trois dimensions (caisses, tuyaux, tours, couronnements...) a une collision, sauf lumieres, vitres, eau et fils
+      const solid = Math.min(w, h, dd) >= 0.8 && !light && !(o && o.render === false);
+      return this.b.box(Object.assign({ p: this.T.at(dc, lx, yc), s: [w, h, dd], r: [0, this.yaw(dc), 0], mat, tint, collide: collide !== false || slab || solid }, o || {}));
     }
     // idem avec roulis (degrés) autour de l'axe du couloir, ou cap supplémentaire
     bxr(dc, lx, yc, w, h, dd, mat, tint, roll, dyaw, collide) {
       if (!this.inClip(dc)) return null;
       { const dth = Math.abs(this.T.theta(dc + dd / 2) - this.T.theta(dc - dd / 2)); if (dth > 0.003) dd += (Math.abs(lx) + w / 2) * dth; }
-      return this.b.box({ p: this.T.at(dc, lx, yc), s: [w, h, dd], r: [0, this.yaw(dc) + (dyaw || 0), roll || 0], mat, tint, collide: collide !== false });
+      return this.b.box({ p: this.T.at(dc, lx, yc), s: [w, h, dd], r: [0, this.yaw(dc) + (dyaw || 0), roll || 0], mat, tint, collide: collide !== false || (Math.min(w, h, dd) >= 0.8 && !(typeof mat === 'string' && /^(emis|glass|water|hazard|basic|chainlink|waterSurf)/.test(mat))) });
     }
     cyl(dc, lx, y0, rad, h, mat, tint, seg, rTop, collide) {
       if (!this.inClip(dc)) return null;
-      return this.b.cylinder({ p: this.T.at(dc, lx, y0 + h / 2), rBot: rad, rTop: rTop === undefined ? rad : rTop, h, seg: seg || 10, mat, tint, collide: collide !== false, colSize: [rad * 1.7, h, rad * 1.7] });
+      return this.b.cylinder({ p: this.T.at(dc, lx, y0 + h / 2), rBot: rad, rTop: rTop === undefined ? rad : rTop, h, seg: seg || 10, mat, tint, collide: collide !== false || (rad >= 0.8 && h >= 1.2 && !(typeof mat === 'string' && /^(emis|glass|water|hazard|basic)/.test(mat))), colSize: [rad * 1.7, h, rad * 1.7] });
     }
     ball(dc, lx, yc, rad, mat, tint, collide, sy) {
       if (!this.inClip(dc)) return;
