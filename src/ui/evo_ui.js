@@ -47,16 +47,15 @@
     const shk = game.evoShake && game.evoShake.id === id && now - game.evoShake.t0 < 350 ? Math.sin((now - game.evoShake.t0) / 25) * S(10) : 0, bt = game.evoBought, bk = bt && bt.id === id ? U.clamp(1 - (now - bt.t0) / 520, 0, 1) : 0, k2 = 1 + 0.05 * Math.sin(bk * 3.1416);
     const rx = x + shk, ccx = rx + w / 2, ccy = y + h / 2;
     ctx.save(); ctx.translate(ccx, ccy); ctx.scale(k2, k2); ctx.translate(-ccx, -ccy);
-    rr0(ctx, rx - S(4), y - S(4), w + S(8), h + S(8), S(34)); ctx.fillStyle = '#FFFFFF'; ctx.fill();   // contour blanc plat
-    const fr = UI.goldFrame(ctx, rx, y, w, h, { r: S(30), fill: '#1E3550' });
-    UI.outlined(ctx, name, rx + w * 0.09, y + h * 0.085, UI.fit(ctx, name, w * 0.58, S(32)), T.white, null, { align: 'left' });
-    const ix = rx + w * 0.085, iy = y + h * 0.15, iw = w * 0.83, ih = h * 0.4;
-    UI.artFrame(ctx, ix, iy, iw, ih, id === 'cm' ? 'gold' : 'blue');
-    UI.icon(ctx, ico, ix + iw / 2, iy + ih / 2, ih * 0.82);
-    if (id === 'cm') UI.outlined(ctx, 'X' + f1(E.mult(n)), ix + iw / 2, iy + ih * 0.86, S(34), T.white);
-    UI.levelBadge(ctx, rx + w - S(30), y + S(8), S(34), n + 1);
-    UI.progressSquares(ctx, rx + w * 0.085, y + h * 0.585, w * 0.83, h * 0.05, done, 5, { full });
-    const bx = rx + w * 0.07, bw = w * 0.86, bh = h * 0.285, by = y + h - bh - h * 0.045, frac = cost === null ? 1 : U.clamp(S0.coins / cost, 0, 1);
+    const bgImg = UI.art(id === 'la' ? 'card_wood' : id === 'rk' ? 'card_stone' : 'card_dark'), ink = id === 'la' ? '#2A1606' : id === 'rk' ? '#1B2630' : '#FFFFFF';
+    if (bgImg) ctx.drawImage(bgImg, rx, y, w, h); else { rr0(ctx, rx, y, w, h, S(30)); ctx.fillStyle = '#6B4A2A'; ctx.fill(); }
+    UI.outlined(ctx, name, rx + w * 0.1, y + h * 0.085, UI.fit(ctx, name, w * 0.58, S(32)), ink, null, { align: 'left' });
+    const ix = rx + w * 0.1, iy = y + h * 0.19, iw = w * 0.8, ih = h * 0.42;
+    UI.icon(ctx, ico, ix + iw / 2, iy + ih / 2, ih * 0.84);
+    if (id === 'cm') UI.outlined(ctx, 'X' + f1(E.mult(n)), ix + iw / 2, iy + ih * 0.88, S(34), T.white);
+    UI.outlined(ctx, String(n + 1), rx + w * 0.895, y + h * 0.072, S(30), '#FFFFFF');
+    UI.segments(ctx, rx + w * 0.1, y + h * 0.628, w * 0.8, h * 0.04, done, 5, { off: id === 'rk' ? 'rgba(30,45,60,0.35)' : id === 'la' ? 'rgba(70,40,14,0.4)' : 'rgba(255,255,255,0.18)' });
+    const bx = rx + w * 0.09, bw = w * 0.82, bh = h * 0.24, by = y + h - bh - h * 0.065, frac = cost === null ? 1 : U.clamp(S0.coins / cost, 0, 1);
     const cs = U.formatInt(cost), face = UI.greenButton(ctx, bx, by, bw, bh, { disabled: !can, sheen: can });
     UI.outlined(ctx, 'AMÉLIORER', bx + bw / 2, face.y + face.h * 0.3, UI.fit(ctx, 'AMÉLIORER', bw * 0.84, face.h * 0.3), T.white);
     { const ps = face.h * 0.3, pw = UI.tw(ctx, cs, ps) + ps * 1.3; UI.icon(ctx, 'coin', bx + bw / 2 - pw / 2 + ps * 0.5, face.y + face.h * 0.7, ps * 1.15); UI.outlined(ctx, cs, bx + bw / 2 - pw / 2 + ps * 1.25, face.y + face.h * 0.7, UI.fit(ctx, cs, bw * 0.55, ps), can ? T.white : '#ffb0a0', null, { align: 'left' }); }

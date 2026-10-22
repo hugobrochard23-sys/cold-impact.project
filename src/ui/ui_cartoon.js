@@ -7,6 +7,9 @@
   const C = { night: '#172D43', night2: '#101923', navy: '#07518F', blue: '#1478C8', cyan: '#62C5FF', gold: '#FFB52E', goldL: '#FFD52A', orange: '#FF8B19', orangeD: '#C85B0A', brown: '#87431B',
     wood: '#A85E27', woodL: '#D99545', woodD: '#673819', woodX: '#432719', green: '#43D91F', greenL: '#82F52C', greenD: '#188C17', greenX: '#126516', white: '#FFFFFF', cream: '#F5F2E9', red: '#F04438', redD: '#B91C1C' };
   UI.C = C;
+  // images d'habillage fournies (assets/ui/*.png) : boutique et fonds de cartes (bois, pierre, bois sombre)
+  const ART = {}; UI.art = (n) => { let i = ART[n]; if (!i) { i = ART[n] = new Image(); i.src = 'assets/ui/' + n + '.png'; } return i.complete && i.naturalWidth ? i : null; };
+  ['shop', 'card_wood', 'card_stone', 'card_dark'].forEach((n) => UI.art(n));
   const hexPath = (ctx, cx, cy, r, cut) => { const w = r * 2, c = r * (cut === undefined ? 0.5 : cut); ctx.beginPath(); ctx.moveTo(cx - r + c, cy - r); ctx.lineTo(cx + r - c, cy - r); ctx.lineTo(cx + r, cy - r + c); ctx.lineTo(cx + r, cy + r - c); ctx.lineTo(cx + r - c, cy + r); ctx.lineTo(cx - r + c, cy + r); ctx.lineTo(cx - r, cy + r - c); ctx.lineTo(cx - r, cy - r + c); ctx.closePath(); };
   const rr = (ctx, x, y, w, h, r) => { r = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r); ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath(); };
   const lg = (ctx, y0, y1, a, b, m) => { const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, a); if (m) g.addColorStop(0.5, m); g.addColorStop(1, b); return g; };
@@ -64,7 +67,7 @@
   // --- segments de progression en relief
   UI.segments = (ctx, x, y, w, h, done, total, o) => {
     o = o || {}; total = total || 5; const gap = w * 0.025, sw = (w - gap * (total - 1)) / total, r = h * 0.4;
-    for (let i = 0; i < total; i++) { rr(ctx, x + i * (sw + gap), y, sw, h, r); ctx.fillStyle = i < done ? '#FFC21F' : '#2B4258'; ctx.fill(); }
+    for (let i = 0; i < total; i++) { rr(ctx, x + i * (sw + gap), y, sw, h, r); ctx.fillStyle = i < done ? '#FFC21F' : (o.off || '#2B4258'); ctx.fill(); }
   };
   // --- cadre d'illustration (fond bleu a rayons, ou orange pour le revenu)
   UI.artFrame = (ctx, x, y, w, h, kind) => {
@@ -94,16 +97,10 @@
 
   // =====================================================================================================================================================================
   // petite boutique en 3D (auvent rouge et blanc, facade de bois, porte bleue, plaque SHOP) : silhouette opaque
-  UI.shopStall = (ctx, x, y, s, now) => {   // boutique en 3D, sans plaque de texte
-    const w = s * 1.05, h = s * 1.05, bx = x;
-    shadow(ctx, () => rr(ctx, bx + w * 0.06, y + h * 0.36, w * 0.88, h * 0.62, s * 0.07), s * 0.04, 0.35);
-    rr(ctx, bx + w * 0.06, y + h * 0.36, w * 0.88, h * 0.62, s * 0.07); ctx.fillStyle = '#C07A34'; ctx.fill();
-    ctx.fillStyle = '#1D78C8'; rr(ctx, bx + w * 0.6, y + h * 0.56, w * 0.24, h * 0.42, s * 0.04); ctx.fill();
-    ctx.fillStyle = '#FFE9A8'; rr(ctx, bx + w * 0.14, y + h * 0.56, w * 0.38, h * 0.26, s * 0.04); ctx.fill();
-    for (let k = 0; k < 3; k++) { ctx.fillStyle = ['#F04438', '#38C5F5', '#FFC21F'][k]; ctx.fillRect(bx + w * (0.17 + k * 0.11), y + h * 0.64, w * 0.07, h * 0.12); }
-    const ay = y + h * 0.1, ah = h * 0.3, n = 6;
-    for (let k = 0; k < n; k++) { const x0 = bx + w * 0.02 + k * w * 0.96 / n, x1 = x0 + w * 0.96 / n; ctx.beginPath(); ctx.moveTo(x0 + w * 0.02, ay); ctx.lineTo(x1 - w * 0.02, ay); ctx.lineTo(x1, ay + ah); ctx.arc((x0 + x1) / 2, ay + ah, w * 0.48 / n, 0, Math.PI); ctx.lineTo(x0, ay + ah); ctx.closePath(); ctx.fillStyle = k % 2 ? C.white : '#E8382C'; ctx.fill(); }
-    ctx.beginPath(); ctx.arc(bx + w * 0.92, y + h * 0.08, s * 0.12, 0, 6.2832); ctx.fillStyle = '#E8382C'; ctx.fill(); UI.outlined(ctx, '!', bx + w * 0.92, y + h * 0.085, s * 0.17, C.white);
+  UI.shopStall = (ctx, x, y, s, now) => {   // boutique : image fournie (assets/ui/shop.png) + pastille de notification
+    const im = UI.art('shop'), w = s * 1.12, h = w * (im ? im.naturalHeight / im.naturalWidth : 1);
+    if (im) { ctx.save(); ctx.shadowColor = 'rgba(8,10,16,0.35)'; ctx.shadowOffsetY = S(5); ctx.shadowBlur = 0; ctx.drawImage(im, x - s * 0.04, y - s * 0.06, w, h); ctx.restore(); }
+    ctx.beginPath(); ctx.arc(x + s * 0.98, y + s * 0.06, s * 0.12, 0, 6.2832); ctx.fillStyle = '#E8382C'; ctx.fill(); UI.outlined(ctx, '!', x + s * 0.98, y + s * 0.065, s * 0.17, C.white);
   };
   // badge « NO ADS » : disque d'interdiction + plaque de bois
   UI.noAdsBadge = (ctx, x, y, s) => {   // seulement le logo : disque bleu nuit, « ADS » barre de rouge
