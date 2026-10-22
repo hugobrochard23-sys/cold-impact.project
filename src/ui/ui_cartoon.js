@@ -17,9 +17,8 @@
   UI.shadowOf = shadow;
 
   // --- cadre dore epais autour d'une surface (bords arrondis ou biseautes) ; renvoie la zone interieure utile
-  UI.goldFrame = (ctx, x, y, w, h, o) => {   // v223 : style a plat : UNE teinte, aucun contour, simple ombre portee
-    o = o || {}; const r = o.r !== undefined ? o.r : Math.min(w, h) * 0.16, cut = !!o.cut, path = () => { if (cut) UI.cham(ctx, x, y, w, h, r); else rr(ctx, x, y, w, h, r); };
-    shadow(ctx, path, Math.max(S(5), h * 0.045), 0.35); path(); ctx.fillStyle = o.fill || '#1E3550'; ctx.fill();
+  UI.goldFrame = (ctx, x, y, w, h, o) => {
+    o = o || {}; const r = o.r !== undefined ? o.r : Math.min(w, h) * 0.16, cut = !!o.cut; if (cut) UI.cham(ctx, x, y, w, h, r); else rr(ctx, x, y, w, h, r); ctx.fillStyle = o.fill || '#1E3550'; ctx.fill();
     return { x: x + S(6), y: y + S(6), w: w - S(12), h: h - S(12), r };
   };
   // --- panneau bleu a bordure claire (surface bleue)
@@ -32,10 +31,11 @@
     return { x, y, w, h };
   };
   // --- bouton vert en relief (AMELIORER...) : retourne { x, y, w, h } de la face
-  UI.greenButton = (ctx, x, y, w, h, o) => {   // v228 : une seule teinte, simple ombre
-    o = o || {}; const r = h * 0.26, dis = !!o.disabled, press = o.pressed ? h * 0.04 : 0;
-    shadow(ctx, () => rr(ctx, x, y + press, w, h, r), S(5), 0.34); rr(ctx, x, y + press, w, h, r); ctx.fillStyle = dis ? '#4F6272' : '#43B957'; ctx.fill();
-    return { x, y: y + press, w, h };
+  UI.greenButton = (ctx, x, y, w, h, o) => {   // bouton plat avec une tranche (relief) sous la face ; plus clair quand on ne peut pas acheter
+    o = o || {}; const r = h * 0.26, dis = !!o.disabled, lip = Math.max(S(9), h * 0.13), hh = h - lip;
+    rr(ctx, x, y + lip, w, hh, r); ctx.fillStyle = dis ? '#6FC184' : '#2F9A44'; ctx.fill();
+    rr(ctx, x, y, w, hh, r); ctx.fillStyle = dis ? '#9BE0AC' : '#43B957'; ctx.fill();
+    return { x, y, w, h: hh };
   };
   UI.outlined = (ctx, s, x, y, px, fill, edge, o) => {   // v223 : texte SANS contour (seul « APPUYEZ POUR LANCER » garde le sien : o.keep)
     o = o || {}; ctx.save(); UI.setFont(ctx, px); ctx.textAlign = o.align || 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.miterLimit = 2;
@@ -49,7 +49,7 @@
   };
   // --- bouton rond vert « + »
   UI.plusButton = (ctx, cx, cy, r) => {
-    shadow(ctx, () => { ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); }, Math.max(S(3), r * 0.12), 0.35); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); ctx.fillStyle = '#3FCB2B'; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); ctx.fillStyle = '#3FCB2B'; ctx.fill();
     ctx.strokeStyle = C.white; ctx.lineWidth = r * 0.3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(cx - r * 0.42, cy); ctx.lineTo(cx + r * 0.42, cy); ctx.moveTo(cx, cy - r * 0.42); ctx.lineTo(cx, cy + r * 0.42); ctx.stroke();
   };
   // --- fleche jaune epaisse (dir = -1 gauche, 1 droite)
@@ -75,13 +75,13 @@
   // =====================================================================================================================================================================
   // pastille de monnaie : plaque de bois (pieces) ou panneau bleu (gemmes) ; l'icone d'origine deborde a gauche, le « + » vert a droite
   { const _ic = UI.icon; UI.icon = (ctx, name, cx, cy, size, o) => { if ((name === 'coin' || name === 'gem') && UI.artImg(ctx, name, cx, cy, size)) return; _ic(ctx, name, cx, cy, size, o); }; }
-  UI.slate = (ctx, x, y, w, h, r) => { shadow(ctx, () => rr(ctx, x, y, w, h, r), Math.max(S(3), h * 0.05), 0.3); rr(ctx, x, y, w, h, r); ctx.fillStyle = '#26394B'; ctx.fill(); };
+  UI.slate = (ctx, x, y, w, h, r, fill) => { rr(ctx, x, y, w, h, r); ctx.fillStyle = fill || '#26394B'; ctx.fill(); };
   UI.artImg = (ctx, name, cx, cy, size) => { const im = UI.art(name); if (!im) return false; const k = size / Math.max(im.naturalWidth, im.naturalHeight); ctx.drawImage(im, cx - im.naturalWidth * k / 2, cy - im.naturalHeight * k / 2, im.naturalWidth * k, im.naturalHeight * k); return true; };
   UI.currencyPill = (ctx, ui, x, y, w, h, kind, value, o) => {
     o = o || {}; const gem = kind === 'gem', body = x + h * 0.3, bw = w - h * 0.3; h = h * 0.84; y += S(6);
-    UI.slate(ctx, body, y, bw, h, h * 0.3);
+    UI.slate(ctx, body, y, bw, h, h * 0.3, gem ? '#1C86D8' : '#E8A92A');
     if (!UI.artImg(ctx, gem ? 'gem' : 'coin', x + h * 0.5, y + h / 2, h * 1.18)) UI.icon(ctx, gem ? 'gem' : 'coin', x + h * 0.5, y + h / 2, h * 1.2);
-    UI.outlined(ctx, value, x + h * 1.22, y + h * 0.5, UI.fit(ctx, value, w - h * (o.plus ? 2.7 : 1.5), h * 0.52), '#F0EDE4', null, { align: 'left' });
+    UI.outlined(ctx, value, x + h * 1.22, y + h * 0.5, UI.fit(ctx, value, w - h * (o.plus ? 2.7 : 1.5), h * 0.52), '#FFFFFF', null, { align: 'left' });
     if (o.plus) UI.plusButton(ctx, x + w - h * 0.5, y + h / 2, h * 0.38);
   };
   UI.slateIconButton = (ctx, x, y, s, kind) => { y += S(4); const q = s * 0.86; x += (s - q) / 2; UI.slate(ctx, x, y, q, q, q * 0.26); if (kind === 'gear' && UI.artImg(ctx, 'gear', x + q / 2, y + q / 2, q * 0.66)) return; UI.glyph(ctx, kind, x + q / 2, y + q / 2, q * 0.3, '#F0EDE4'); };
@@ -124,7 +124,7 @@
     ctx.save(); if (!unlocked) ctx.globalAlpha = 0.45; if (!UI.artImg(ctx, 'chest', cx, cy, s * 0.8)) UI.icon(ctx, 'chest_open', cx, cy, s * 0.74); ctx.restore(); if (!unlocked) UI.glyph(ctx, 'lock', cx, cy, s * 0.2, '#F0EDE4');
   };
   // petite plaque orange (OUVRIR, temps restant)
-  UI.orangePlate = (ctx, x, y, w, h, hot) => { shadow(ctx, () => rr(ctx, x, y, w, h, h * 0.3), S(4), 0.35); rr(ctx, x, y, w, h, h * 0.3); ctx.fillStyle = hot ? '#FF8B19' : '#8A4A1A'; ctx.fill(); };
+  UI.orangePlate = (ctx, x, y, w, h, hot) => { rr(ctx, x, y, w, h, h * 0.3); ctx.fillStyle = hot ? '#FF8B19' : '#8A4A1A'; ctx.fill(); };
   // badge de niveau : plaque a facettes bleu nuit, bordure doree, rangee de pastilles de progression
   UI.levelPlate = (ctx, x, y, w, h, label, stage) => {
     UI.slate(ctx, x, y, w, h, h * 0.26);

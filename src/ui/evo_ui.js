@@ -48,20 +48,19 @@
     const rx = x + shk, ccx = rx + w / 2, ccy = y + h / 2;
     ctx.save(); ctx.translate(ccx, ccy); ctx.scale(k2, k2); ctx.translate(-ccx, -ccy);
     const ink = '#F0EDE4', acc = id === 'la' ? '#F2994A' : id === 'rk' ? '#5AC3DF' : '#E4B84D', R = w * 0.1;
-    ctx.save(); ctx.translate(0, S(7)); rr0(ctx, rx, y, w, h, R); ctx.fillStyle = 'rgba(8,12,18,0.34)'; ctx.fill(); ctx.restore();
     rr0(ctx, rx, y, w, h, R); ctx.fillStyle = '#26394B'; ctx.fill();
     UI.outlined(ctx, name, rx + w * 0.42, y + h * 0.07, UI.fit(ctx, name, w * 0.62, h * 0.062), ink);
     const ix = rx + w * 0.08, iy = y + h * 0.135, iw = w * 0.84, ih = h * 0.355;
-    rr0(ctx, ix, iy, iw, ih, w * 0.06); ctx.fillStyle = '#1B2A38'; ctx.fill();
+    rr0(ctx, ix, iy, iw, ih, w * 0.06); ctx.fillStyle = id === 'la' ? '#43B957' : id === 'rk' ? '#2C9CE8' : '#F09A2E'; ctx.fill();
     UI.icon(ctx, ico, ix + iw / 2, iy + ih / 2 - (id === 'cm' ? ih * 0.07 : 0), ih * 0.66);
     if (id === 'cm') UI.outlined(ctx, 'X' + f1(E.mult(n)), ix + iw / 2, iy + ih * 0.86, h * 0.058, T.white);
-    { const br = w * 0.095, bcx = rx + w - br * 0.95, bcy = y + br * 0.95; ctx.save(); ctx.translate(0, S(3)); ctx.beginPath(); ctx.arc(bcx, bcy, br, 0, 6.2832); ctx.fillStyle = 'rgba(8,12,18,0.34)'; ctx.fill(); ctx.restore(); ctx.beginPath(); ctx.arc(bcx, bcy, br, 0, 6.2832); ctx.fillStyle = '#3A5873'; ctx.fill(); UI.outlined(ctx, String(n + 1), bcx, bcy + br * 0.04, UI.fit(ctx, String(n + 1), br * 1.5, br * 1.1), T.white); }
-    UI.segments(ctx, rx + w * 0.08, y + h * 0.54, w * 0.84, h * 0.034, done, 5, { off: '#1B2A38', on: acc });
+    { const br = w * 0.125, bcx = rx + w - br * 0.8, bcy = y + br * 0.8; ctx.beginPath(); ctx.arc(bcx, bcy, br, 0, 6.2832); ctx.fillStyle = '#3A5873'; ctx.fill(); UI.outlined(ctx, String(n + 1), bcx, bcy + br * 0.04, UI.fit(ctx, String(n + 1), br * 1.5, br * 1.1), T.white); }
+    UI.segments(ctx, rx + w * 0.08, y + h * 0.54, w * 0.84, h * 0.034, done, 5, { off: '#1B2A38', on: id === 'la' ? '#43B957' : id === 'rk' ? '#2C9CE8' : '#F09A2E' });
     const bx = rx + w * 0.08, bw = w * 0.84, bh = h * 0.3, by = y + h * 0.62, frac = cost === null ? 1 : U.clamp(S0.coins / cost, 0, 1);
     const cs = U.formatInt(cost), face = UI.greenButton(ctx, bx, by, bw, bh, { disabled: !can, sheen: can });
-    UI.outlined(ctx, 'AMÉLIORER', bx + bw / 2, face.y + face.h * 0.3, UI.fit(ctx, 'AMÉLIORER', bw * 0.84, face.h * 0.3), T.white);
-    { const ps = face.h * 0.3, pw = UI.tw(ctx, cs, ps) + ps * 1.3; UI.icon(ctx, 'coin', bx + bw / 2 - pw / 2 + ps * 0.5, face.y + face.h * 0.7, ps * 1.15); UI.outlined(ctx, cs, bx + bw / 2 - pw / 2 + ps * 1.25, face.y + face.h * 0.7, UI.fit(ctx, cs, bw * 0.55, ps), can ? T.white : '#ffb0a0', null, { align: 'left' }); }
-    if (!can && cost !== null) { ctx.save(); rr0(ctx, bx, by, bw, bh, bh * 0.26); ctx.clip(); ctx.fillStyle = C0.goldL; ctx.fillRect(bx, by + bh - S(8), bw * frac, S(8)); ctx.restore(); }
+    UI.outlined(ctx, 'AMÉLIORER', bx + bw / 2, face.y + face.h * 0.3, UI.fit(ctx, 'AMÉLIORER', bw * 0.84, face.h * 0.3), can ? T.white : '#2C7A42');
+    { const ps = face.h * 0.3, pw = UI.tw(ctx, cs, ps) + ps * 1.3; UI.icon(ctx, 'coin', bx + bw / 2 - pw / 2 + ps * 0.5, face.y + face.h * 0.7, ps * 1.15); UI.outlined(ctx, cs, bx + bw / 2 - pw / 2 + ps * 1.25, face.y + face.h * 0.7, UI.fit(ctx, cs, bw * 0.55, ps), can ? T.white : '#2C7A42', null, { align: 'left' }); }
+    // (plus de barre de progression de l'argent)
     if (bk > 0) { ctx.fillStyle = 'rgba(255,255,255,' + bk * 0.35 + ')'; UI.cham(ctx, rx, y, w, h, S(26)); ctx.fill(); }
     ctx.restore();
     return { id, rx, y, w, h, ix, iy, iw, ih, can, cost };
@@ -100,7 +99,7 @@
       UI.outlined(ctx, s, cx, yy, UI.fit(ctx, s, cw * 0.58, S(46)), '#F0EDE4', 'rgba(8,10,16,0.8)', { keep: true, ow: 0.1 }); ctx.restore(); }
     const gap = S(14), marg = S(26), cwd = (cw - marg * 2 - gap * 2) / 3, chh = cwd / 0.703, cy0 = T0 + HH - chh - S(28), cards = [];
     ['la', 'rk', 'cm'].forEach((id, i) => cards.push(card(ui, ctx, game, E, S0, id, ox + marg + i * (cwd + gap), cy0, cwd, chh, now)));
-    for (const c of cards) if (c.id === 'rk' && S0.rk >= 20) { const r = S(30), bx = c.ix + c.iw - r * 1.3, by = c.iy + c.ih - r * 1.3; UI.panel(ctx, bx - r, by - r, r * 2, r * 2, { c: r * 0.4, fill: T.bg, border: T.white, bw: S(3) }); UI.glyph(ctx, 'star', bx, by, r * 0.55, T.yellow); UI.tap(ui, bx - r, by - r, r * 2, r * 2, () => { ui.overlay = 'evoSkins'; }); }
+    // (plus d'etoile sur l'ogive)
     for (const c of cards) if (!c.can) { const gc = E.gemCost(game, c.id), have = (S0.gems || 0) >= gc, r = S(30), gx = c.ix + r * 1.25, gy = c.iy + r * 1.25;
       UI.panel(ctx, gx - r, gy - r, r * 2, r * 2, { c: r * 0.4, fill: have ? '#3a3400' : T.bg, border: T.white, bw: S(3) }); if (have) { UI.icon(ctx, 'gem', gx - r * 0.2, gy, r * 1.1); UI.text(ctx, String(gc), gx + r * 0.55, gy + r * 0.45, r * 0.75, T.yellow, { shadow: false }); } else { UI.icon(ctx, 'gem', gx, gy, r * 1.15); const q = r * 0.8; UI.panel(ctx, gx + r * 0.2, gy + r * 0.2, q, q, { c: q * 0.25, fill: T.bg2, border: T.white, bw: S(2) }); UI.glyph(ctx, 'play', gx + r * 0.2 + q * 0.55, gy + r * 0.2 + q * 0.5, q * 0.28, T.yellow); }
       UI.tap(ui, gx - r, gy - r, r * 2, r * 2, () => E.buyGem(game, c.id)); }
