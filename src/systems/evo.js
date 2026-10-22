@@ -315,7 +315,7 @@
     if (out && !ev.preview && sp < 24 && rk.fwd.y > -0.55) g.input.addAim(0, -1.5 * U.clamp((24 - sp) / 8, 0, 1) * dt);   // v125 : décrochage : sans poussée et sans vitesse, le nez plonge (on récupère en reprenant de la vitesse)
     if (out && rk.sliding > 0 && (ev.slideT = (ev.slideT || 0) + dt) > 0.7) { ev.slideT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; }
     if (!out || rk.sliding <= 0) ev.slideT = 0;
-    if (out && sp < TU('stall') && g.flightTime > 1) { if ((ev.lowT = (ev.lowT || 0) + dt) > TU('stallT')) { ev.lowT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; } } else ev.lowT = 0;   // v125 : immobile = fini
+    if (out && sp < TU('stall') && g.flightTime > 1 && rk.pos.y - run.T.base(Math.max(0, run.dist)) < 3) { if ((ev.lowT = (ev.lowT || 0) + dt) > TU('stallT')) { ev.lowT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; } } else ev.lowT = 0;   // v125 : immobile = fini
     if (r.tier >= 2 && !ev.fuelOut && !ev.preview && rk.fuel <= 0.01 && g.flightTime > 0.6) { ev.fuelOut = true; CC.L1.msg(g, 'PLUS DE CARBURANT', 1.3, '#ff8a5a'); }
     if (rk.fuel > 0.3) ev.fuelOut = false;
     // caméra de chute : on regarde vers le sol quand on tombe

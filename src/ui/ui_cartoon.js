@@ -31,10 +31,12 @@
     return { x, y, w, h };
   };
   // --- bouton vert en relief (AMELIORER...) : retourne { x, y, w, h } de la face
+  const BTN = { la: ['#43B957', '#2F9A44', '#9BE0AC', '#6FC184'], rk: ['#2C9CE8', '#1F7BC0', '#9ED3F4', '#76B6E0'], cm: ['#F2702A', '#C4531B', '#F8AC85', '#E58760'] };
+  UI.CARDCOL = { la: '#43B957', rk: '#2C9CE8', cm: '#F2702A' };
   UI.greenButton = (ctx, x, y, w, h, o) => {   // bouton plat avec une tranche (relief) sous la face ; plus clair quand on ne peut pas acheter
-    o = o || {}; const r = h * 0.26, dis = !!o.disabled, lip = Math.max(S(9), h * 0.13), hh = h - lip;
-    rr(ctx, x, y + lip, w, hh, r); ctx.fillStyle = dis ? '#6FC184' : '#2F9A44'; ctx.fill();
-    rr(ctx, x, y, w, hh, r); ctx.fillStyle = dis ? '#9BE0AC' : '#43B957'; ctx.fill();
+    o = o || {}; const r = h * 0.16, dis = !!o.disabled, lip = Math.max(S(9), h * 0.13), hh = h - lip, c = BTN[o.cat] || BTN.la;
+    rr(ctx, x, y + lip, w, hh, r); ctx.fillStyle = dis ? c[3] : c[1]; ctx.fill();
+    rr(ctx, x, y, w, hh, r); ctx.fillStyle = dis ? c[2] : c[0]; ctx.fill();
     return { x, y, w, h: hh };
   };
   UI.outlined = (ctx, s, x, y, px, fill, edge, o) => {   // v223 : texte SANS contour (seul « APPUYEZ POUR LANCER » garde le sien : o.keep)
@@ -61,9 +63,11 @@
     ctx.restore();
   };
   // --- segments de progression en relief
-  UI.segments = (ctx, x, y, w, h, done, total, o) => {
-    o = o || {}; total = total || 5; const gap = w * 0.025, sw = (w - gap * (total - 1)) / total, r = h * 0.4;
-    for (let i = 0; i < total; i++) { rr(ctx, x + i * (sw + gap), y, sw, h, r); ctx.fillStyle = i < done ? (o.on || '#E4B84D') : (o.off || '#2B4258'); ctx.fill(); }
+  UI.segments = (ctx, x, y, w, h, done, total, o) => {   // presque carres, avec une tranche de relief
+    o = o || {}; total = total || 5; const gap = w * 0.038, sw = (w - gap * (total - 1)) / total, r = Math.min(sw, h) * 0.22, lip = h * 0.16, on0 = o.on || '#E4B84D';
+    for (let i = 0; i < total; i++) { const sx = x + i * (sw + gap), on = i < done;
+      rr(ctx, sx, y + lip, sw, h - lip, r); ctx.fillStyle = on ? UI.shade(on0, -0.28) : '#121D29'; ctx.fill();
+      rr(ctx, sx, y, sw, h - lip, r); ctx.fillStyle = on ? on0 : (o.off || '#2B4258'); ctx.fill(); }
   };
   // --- cadre d'illustration (fond bleu a rayons, ou orange pour le revenu)
   UI.artFrame = (ctx, x, y, w, h, kind) => {
@@ -75,16 +79,34 @@
   // =====================================================================================================================================================================
   // pastille de monnaie : plaque de bois (pieces) ou panneau bleu (gemmes) ; l'icone d'origine deborde a gauche, le « + » vert a droite
   { const _ic = UI.icon; UI.icon = (ctx, name, cx, cy, size, o) => { if ((name === 'coin' || name === 'gem') && UI.artImg(ctx, name, cx, cy, size)) return; _ic(ctx, name, cx, cy, size, o); }; }
+  UI.shade = (hex, k) => { const n = parseInt(hex.slice(1), 16); const f = (v) => Math.max(0, Math.min(255, Math.round(k < 0 ? v * (1 + k) : v + (255 - v) * k))); return '#' + [n >> 16, (n >> 8) & 255, n & 255].map((v) => f(v).toString(16).padStart(2, '0')).join(''); };
+  const WH = {};   // silhouette blanche d'une icone (pour son contour)
+  UI.artOutlined = (ctx, name, cx, cy, size, ow) => {
+    const im = UI.art(name); if (!im) return false; let c = WH[name];
+    if (!c) { c = WH[name] = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const x = c.getContext('2d'); x.drawImage(im, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, c.width, c.height); }
+    const k = size / Math.max(im.naturalWidth, im.naturalHeight), w = im.naturalWidth * k, h = im.naturalHeight * k;
+    for (let a = 0; a < 12; a++) ctx.drawImage(c, cx - w / 2 + Math.cos(a / 12 * 6.2832) * ow, cy - h / 2 + Math.sin(a / 12 * 6.2832) * ow, w, h);
+    ctx.drawImage(im, cx - w / 2, cy - h / 2, w, h); return true;
+  };
   UI.slate = (ctx, x, y, w, h, r, fill) => { rr(ctx, x, y, w, h, r); ctx.fillStyle = fill || '#26394B'; ctx.fill(); };
   UI.artImg = (ctx, name, cx, cy, size) => { const im = UI.art(name); if (!im) return false; const k = size / Math.max(im.naturalWidth, im.naturalHeight); ctx.drawImage(im, cx - im.naturalWidth * k / 2, cy - im.naturalHeight * k / 2, im.naturalWidth * k, im.naturalHeight * k); return true; };
-  UI.currencyPill = (ctx, ui, x, y, w, h, kind, value, o) => {
-    o = o || {}; const gem = kind === 'gem', body = x + h * 0.3, bw = w - h * 0.3; h = h * 0.84; y += S(6);
+  UI.currencyPill = (ctx, ui, x, y, w, h, kind, value, o) => {   // pastille jaune (pieces) / bleue (gemmes), contour blanc et ombre
+    o = o || {}; const gem = kind === 'gem', body = x + h * 0.3, bw = w - h * 0.3; h = h * 0.84; y += S(6); const ow = Math.max(2, S(4));
+    ctx.save(); ctx.translate(0, S(5)); rr(ctx, body - ow, y - ow, bw + ow * 2, h + ow * 2, h * 0.3 + ow); ctx.fillStyle = 'rgba(8,12,18,0.34)'; ctx.fill(); ctx.restore();
+    rr(ctx, body - ow, y - ow, bw + ow * 2, h + ow * 2, h * 0.3 + ow); ctx.fillStyle = '#FFFFFF'; ctx.fill();
     UI.slate(ctx, body, y, bw, h, h * 0.3, gem ? '#1C86D8' : '#E8A92A');
-    if (!UI.artImg(ctx, gem ? 'gem' : 'coin', x + h * 0.5, y + h / 2, h * 1.18)) UI.icon(ctx, gem ? 'gem' : 'coin', x + h * 0.5, y + h / 2, h * 1.2);
-    UI.outlined(ctx, value, x + h * 1.22, y + h * 0.5, UI.fit(ctx, value, w - h * (o.plus ? 2.7 : 1.5), h * 0.52), '#FFFFFF', null, { align: 'left' });
-    if (o.plus) UI.plusButton(ctx, x + w - h * 0.5, y + h / 2, h * 0.38);
+    if (!UI.artOutlined(ctx, gem ? 'gem' : 'coin', x + h * 0.5, y + h / 2, h * 1.12, Math.max(2, S(3)))) UI.icon(ctx, gem ? 'gem' : 'coin', x + h * 0.5, y + h / 2, h * 1.2);
+    UI.outlined(ctx, value, x + h * 1.25, y + h * 0.5, UI.fit(ctx, value, w - h * (o.plus ? 2.8 : 1.6), h * 0.52), '#FFFFFF', null, { align: 'left' });
+    if (o.plus) { const pr = h * 0.38, pcx = x + w - h * 0.5, pcy = y + h / 2; ctx.beginPath(); ctx.arc(pcx, pcy, pr + Math.max(2, S(3)), 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); UI.plusButton(ctx, pcx, pcy, pr); }
   };
-  UI.slateIconButton = (ctx, x, y, s, kind) => { y += S(4); const q = s * 0.86; x += (s - q) / 2; UI.slate(ctx, x, y, q, q, q * 0.26); if (kind === 'gear' && UI.artImg(ctx, 'gear', x + q / 2, y + q / 2, q * 0.66)) return; UI.glyph(ctx, kind, x + q / 2, y + q / 2, q * 0.3, '#F0EDE4'); };
+  UI.slateIconButton = (ctx, x, y, s, kind) => {   // bouton rond a relief
+    const q = s * 0.86, cx = x + s / 2, cy = y + S(4) + q / 2, r = q / 2;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); ctx.fillStyle = '#12202E'; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy - r * 0.03, r * 0.94, 0, 6.2832); const g = ctx.createLinearGradient(0, cy - r, 0, cy + r); g.addColorStop(0, '#5D86A8'); g.addColorStop(0.5, '#34607F'); g.addColorStop(1, '#25455F'); ctx.fillStyle = g; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy - r * 0.03, r * 0.94, Math.PI * 1.1, Math.PI * 1.9); ctx.lineWidth = Math.max(2, S(3)); ctx.strokeStyle = 'rgba(210,235,255,0.7)'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, r * 0.68, 0, 6.2832); ctx.fillStyle = '#2A4F6C'; ctx.fill(); ctx.lineWidth = Math.max(1.5, S(2.5)); ctx.strokeStyle = 'rgba(8,16,24,0.45)'; ctx.stroke();
+    if (kind === 'gear' && UI.artImg(ctx, 'gear', cx, cy, q * 0.56)) return; UI.glyph(ctx, kind, cx, cy, q * 0.28, '#F0EDE4');
+  };
   // bouton de la barre du haut : parametres / fermer (badge a facettes)
   UI.cartoonIconButton = (ctx, x, y, s, kind, o) => {
     o = o || {}; UI.facetBadge(ctx, x + s / 2, y + s / 2, s / 2, null, { fill: o.danger ? '#D83A30' : '#1D5FA6' }); UI.glyph(ctx, kind, x + s / 2, y + s / 2, s * 0.3, C.white);
@@ -100,7 +122,7 @@
   UI.shopStall = (ctx, x, y, s, now) => {   // boutique : image fournie (assets/ui/shop.png) + pastille de notification
     const im = UI.art('shop'), w = s * 1.12, h = w * (im ? im.naturalHeight / im.naturalWidth : 1);
     if (im) { ctx.save(); ctx.shadowColor = 'rgba(8,10,16,0.35)'; ctx.shadowOffsetY = S(5); ctx.shadowBlur = 0; ctx.drawImage(im, x - s * 0.04, y - s * 0.06, w, h); ctx.restore(); }
-    ctx.beginPath(); ctx.arc(x + s * 0.98, y + s * 0.06, s * 0.12, 0, 6.2832); ctx.fillStyle = '#E8382C'; ctx.fill(); UI.outlined(ctx, '!', x + s * 0.98, y + s * 0.065, s * 0.17, C.white);
+    // (plus de pastille d'alerte)
   };
   // badge « NO ADS » : disque d'interdiction + plaque de bois
   UI.noAdsBadge = (ctx, x, y, s) => {   // seulement le logo : disque bleu nuit, « ADS » barre de rouge
@@ -118,10 +140,9 @@
   };
   // coffre : cadre a facettes bleu acier, coffre d'origine, lueur doree quand il est pret
   UI.chestFrame = (ctx, x, y, s, ready, unlocked, now) => {
-    const cx = x + s / 2, cy = y + s / 2;
-    UI.slate(ctx, x + s * 0.04, y + s * 0.04, s * 0.92, s * 0.92, s * 0.24);
-    if (ready) { const p = 0.5 + 0.5 * Math.sin(now / 240); ctx.save(); ctx.globalAlpha = 0.25 + 0.3 * p; rr(ctx, x + s * 0.04, y + s * 0.04, s * 0.92, s * 0.92, s * 0.24); ctx.fillStyle = '#E4B84D'; ctx.fill(); ctx.restore(); }
-    ctx.save(); if (!unlocked) ctx.globalAlpha = 0.45; if (!UI.artImg(ctx, 'chest', cx, cy, s * 0.8)) UI.icon(ctx, 'chest_open', cx, cy, s * 0.74); ctx.restore(); if (!unlocked) UI.glyph(ctx, 'lock', cx, cy, s * 0.2, '#F0EDE4');
+    const cx = x + s / 2, cy = y + s / 2, r = s * 0.48, ow = Math.max(2, S(4));
+    ctx.beginPath(); ctx.arc(cx, cy, r + ow, 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); ctx.fillStyle = '#26394B'; ctx.fill();
+    ctx.save(); if (!unlocked) ctx.globalAlpha = 0.45; if (!UI.artImg(ctx, 'chest', cx, cy + r * 0.04, s * 0.74)) UI.icon(ctx, 'chest_open', cx, cy, s * 0.7); ctx.restore(); if (!unlocked) UI.glyph(ctx, 'lock', cx, cy, s * 0.2, '#F0EDE4');
   };
   // petite plaque orange (OUVRIR, temps restant)
   UI.orangePlate = (ctx, x, y, w, h, hot) => { rr(ctx, x, y, w, h, h * 0.3); ctx.fillStyle = hot ? '#FF8B19' : '#8A4A1A'; ctx.fill(); };

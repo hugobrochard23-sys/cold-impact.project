@@ -47,17 +47,17 @@
     const shk = game.evoShake && game.evoShake.id === id && now - game.evoShake.t0 < 350 ? Math.sin((now - game.evoShake.t0) / 25) * S(10) : 0, bt = game.evoBought, bk = bt && bt.id === id ? U.clamp(1 - (now - bt.t0) / 520, 0, 1) : 0, k2 = 1 + 0.05 * Math.sin(bk * 3.1416);
     const rx = x + shk, ccx = rx + w / 2, ccy = y + h / 2;
     ctx.save(); ctx.translate(ccx, ccy); ctx.scale(k2, k2); ctx.translate(-ccx, -ccy);
-    const ink = '#F0EDE4', acc = id === 'la' ? '#F2994A' : id === 'rk' ? '#5AC3DF' : '#E4B84D', R = w * 0.1;
+    const ink = '#F0EDE4', col = UI.CARDCOL[id], R = w * 0.1, pd = w * 0.035;
     rr0(ctx, rx, y, w, h, R); ctx.fillStyle = '#26394B'; ctx.fill();
     UI.outlined(ctx, name, rx + w * 0.42, y + h * 0.07, UI.fit(ctx, name, w * 0.62, h * 0.062), ink);
-    const ix = rx + w * 0.08, iy = y + h * 0.135, iw = w * 0.84, ih = h * 0.355;
-    rr0(ctx, ix, iy, iw, ih, w * 0.06); ctx.fillStyle = id === 'la' ? '#43B957' : id === 'rk' ? '#2C9CE8' : '#F09A2E'; ctx.fill();
+    const ix = rx + pd, iy = y + h * 0.125, iw = w - pd * 2, ih = h * 0.36;
+    rr0(ctx, ix, iy, iw, ih, w * 0.06); ctx.fillStyle = col; ctx.fill();
     UI.icon(ctx, ico, ix + iw / 2, iy + ih / 2 - (id === 'cm' ? ih * 0.07 : 0), ih * 0.66);
     if (id === 'cm') UI.outlined(ctx, 'X' + f1(E.mult(n)), ix + iw / 2, iy + ih * 0.86, h * 0.058, T.white);
-    { const br = w * 0.125, bcx = rx + w - br * 0.8, bcy = y + br * 0.8; ctx.beginPath(); ctx.arc(bcx, bcy, br, 0, 6.2832); ctx.fillStyle = '#3A5873'; ctx.fill(); UI.outlined(ctx, String(n + 1), bcx, bcy + br * 0.04, UI.fit(ctx, String(n + 1), br * 1.5, br * 1.1), T.white); }
-    UI.segments(ctx, rx + w * 0.08, y + h * 0.54, w * 0.84, h * 0.034, done, 5, { off: '#1B2A38', on: id === 'la' ? '#43B957' : id === 'rk' ? '#2C9CE8' : '#F09A2E' });
-    const bx = rx + w * 0.08, bw = w * 0.84, bh = h * 0.3, by = y + h * 0.62, frac = cost === null ? 1 : U.clamp(S0.coins / cost, 0, 1);
-    const cs = U.formatInt(cost), face = UI.greenButton(ctx, bx, by, bw, bh, { disabled: !can, sheen: can });
+    { const br = w * 0.125, bcx = rx + w - br * 0.8, bcy = y + br * 0.8; ctx.beginPath(); ctx.arc(bcx, bcy, br, 0, 6.2832); ctx.fillStyle = '#3A5873'; ctx.fill(); UI.outlined(ctx, String(n + 1), bcx, bcy + br * 0.04, UI.fit(ctx, String(n + 1), br * 1.4, br * 1.05), T.white, '#26394B', { keep: true, ow: 0.28 }); }
+    UI.segments(ctx, ix, y + h * 0.53, iw, h * 0.088, done, 5, { off: '#1B2A38', on: col });
+    const bx = rx + pd, bw = w - pd * 2, bh = h * 0.29, by = y + h * 0.935 - h * 0.29, frac = cost === null ? 1 : U.clamp(S0.coins / cost, 0, 1);
+    const cs = U.formatInt(cost), face = UI.greenButton(ctx, bx, by, bw, bh, { disabled: !can, cat: id });
     UI.outlined(ctx, 'AMÉLIORER', bx + bw / 2, face.y + face.h * 0.3, UI.fit(ctx, 'AMÉLIORER', bw * 0.84, face.h * 0.3), can ? T.white : '#2C7A42');
     { const ps = face.h * 0.3, pw = UI.tw(ctx, cs, ps) + ps * 1.3; UI.icon(ctx, 'coin', bx + bw / 2 - pw / 2 + ps * 0.5, face.y + face.h * 0.7, ps * 1.15); UI.outlined(ctx, cs, bx + bw / 2 - pw / 2 + ps * 1.25, face.y + face.h * 0.7, UI.fit(ctx, cs, bw * 0.55, ps), can ? T.white : '#2C7A42', null, { align: 'left' }); }
     // (plus de barre de progression de l'argent)
@@ -72,10 +72,10 @@
     topBar(ui, ctx, game, F, S0, E);
     if (anim) { const a = U.clamp(anim.t / 0.4, 0, 1) * (1 - U.smooth(anim.dur - 0.6, anim.dur, anim.t)), name = anim.label + ' !'; ctx.save(); ctx.globalAlpha = a; UI.text(ctx, name, cx, Y(0.2), UI.fit(ctx, name, cw * 0.9, S(130)), T.yellow, { outline: true }); UI.text(ctx, 'NOUVELLE PIÈCE', cx, Y(0.27), S(52), T.white, { outline: true }); ctx.restore(); return; }
     // (v227 : plus de bande sombre derriere les cartes)
-    { const r0 = E.rocket(S0.rk), nm = TIERNAME[r0.tier], bw = S(520), bh = S(96), bx = cx - bw / 2, by = T0 + S(176);
-      UI.slate(ctx, bx, by, bw, bh, S(26));
-      UI.icon(ctx, 'missile_ogive', bx + S(66), by + bh / 2, S(80)); UI.outlined(ctx, nm, bx + bw * 0.6, by + bh * 0.36, UI.fit(ctx, nm, bw * 0.62, S(44)), '#F0EDE4');
-      { const px = bx + S(128), pw = bw - S(160), py = by + bh * 0.66, ph = S(12), k = U.clamp((r0.s || 0) / 5, 0, 1); rr0(ctx, px, py, pw, ph, ph / 2); ctx.fillStyle = '#16222E'; ctx.fill(); if (k > 0.01) { rr0(ctx, px, py, Math.max(ph, pw * k), ph, ph / 2); ctx.fillStyle = '#E4B84D'; ctx.fill(); } } }
+    { const r0 = E.rocket(S0.rk), nm = TIERNAME[r0.tier], sp = nm.indexOf(' '), l1 = nm.slice(0, sp), l2 = nm.slice(sp + 1), bw = S(380), bh = S(104), bx = cx - bw / 2 + S(30), by = T0 + S(172), bd = Math.max(2, S(4));
+      UI.cham(ctx, bx - bd, by - bd, bw + bd * 2, bh + bd * 2, S(26) + bd); ctx.fillStyle = '#05080C'; ctx.fill(); UI.cham(ctx, bx, by, bw, bh, S(26)); ctx.fillStyle = '#26394B'; ctx.fill();
+      UI.icon(ctx, 'missile_ogive', bx + S(6), by + bh / 2, S(128));
+      UI.outlined(ctx, l1, bx + bw * 0.56, by + bh * 0.34, UI.fit(ctx, l1, bw * 0.5, S(40)), '#F0EDE4'); UI.outlined(ctx, l2, bx + bw * 0.56, by + bh * 0.7, UI.fit(ctx, l2, bw * 0.5, S(36)), '#F0EDE4'); }
     if (last && last.zone2) {
       const NAMES = { rk5: 'AILES', rk10: 'RÉACTEUR', rk15: 'TURBO', weak: '1ER ENNEMI TROP FORT', d300: '300 M', d1000: '1000 M', d2000: '2000 M', boss: 'BOSS VAINCU' };
       const ms = Object.keys(S0.marks || {}).filter((k) => NAMES[k]).sort((a, b) => S0.marks[a].sec - S0.marks[b].sec).slice(0, 6), ph = S(120) + ms.length * S(66);
@@ -89,7 +89,7 @@
     { const unlocked = S0.runs >= 3, ready = E.chestReady(game), wait = Math.max(0, (S0.chestAt || 0) - Date.now()), rx0 = ox + cw - S(36) - bs, y = ly, pulse = 0.5 + 0.5 * Math.sin(now / 240);
       UI.chestFrame(ctx, rx0, y, bs, ready, unlocked, now);
       // (lueur du coffre pret : voir UI.chestFrame)
-      { const lab = !unlocked ? '3 VOLS' : ready ? 'OUVRIR' : secFmt(wait), pw = bs * 1.08, ph = S(52), px = rx0 + bs / 2 - pw / 2, py = y + bs + S(10); UI.orangePlate(ctx, px, py, pw, ph, ready); UI.outlined(ctx, lab, px + pw / 2, py + ph * 0.46, UI.fit(ctx, lab, pw * 0.86, S(34)), T.white); }
+      { const lab = !unlocked ? '3 VOLS' : ready ? '' : secFmt(wait); if (lab) UI.outlined(ctx, lab, rx0 + bs / 2, y + bs + S(34), UI.fit(ctx, lab, bs * 1.2, S(36)), '#F0EDE4'); }
       if (unlocked) UI.tap(ui, rx0, y, bs, bs + S(50), () => E.openChest(game));
       if (E.stage) { const y2 = y + bs + S(86); UI.levelPlate(ctx, rx0, y2, bs, S(92), 'NIV ' + E.stage(game), E.stage(game)); UI.tap(ui, rx0, y2, bs, S(80), () => { game.evoLvPop = !game.evoLvPop; });
         if (game.evoLvPop) { const stg = E.stage(game), pw = S(420), rh = S(104), px0 = rx0 + bs - pw, py0 = y2 + S(100); hit(ui, px0, py0, pw, rh * 2, () => {}); UI.panel(ctx, px0, py0 - S(10), pw, rh * 2 + S(20), { c: S(24), border: T.white });
