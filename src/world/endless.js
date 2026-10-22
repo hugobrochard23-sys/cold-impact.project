@@ -157,14 +157,14 @@
     const L = {
       id: 'endless', name: 'CLASSIQUE', hud: 'C', mode: 'endless', endless: true, seed, fuel: cfg.fuelMax,
       killY: -30, lookAhead: 16, terminalRange: 20, fireDelay: 0.35, impactVariant: 'orange',
-      launcher: { type: 'shoulder', pos: [0, 1.6, 40], yaw: 0, pitch: 0 },
+      launcher: { type: 'shoulder', pos: [0, 0.78, 40], yaw: 0, pitch: 0 },
       menuView: { center: [0, 18, -60], radius: 12, height: 10 },
       env: T.env(0), track: T,
       aaThreat: cfg.threat[0], aaSalvo: false, aaMaxAlive: cfg.maxMissiles[0],
-      route: [[0, 1.6, 40], [0, cfg.cruise, 0]],
+      route: [[0, 0.78, 40], [0, cfg.cruise, 0]],
       build(b) {   // zone de départ (derrière d = 0) : socle du lanceur, mur du fond ; le reste arrive par tronçons
         // v034 : le décor du lanceur (dalle, rail, pylônes, feux) est CC.Pad ; ici seulement la collision de la dalle et son pilier
-        b.box({ p: [0, 1.1, 40], s: [2.6, 0.5, 5.2], mat: 'metal', render: false });   // v200 : lanceur pose au sol (avant : a 12 m, sans pilier visible)
+        b.box({ p: [0, 0.28, 40], s: [2.6, 0.5, 5.2], mat: 'metal', render: false });   // v200 : lanceur pose au sol (avant : a 12 m, sans pilier visible)
         const PW = [[{ side: 'facadeDark', top: 'concreteDark' }, '#c8ccd4'], [{ side: 'brick', top: 'concreteDark' }, '#d8c8c0'], [{ side: 'corrugated', top: 'metal' }, '#b8c4d0'], [{ side: 'concreteWarm', top: 'concrete' }, '#e8dcc8'], [{ side: 'rock', top: 'dirt' }, '#c8b8a0'], [{ side: 'metal', top: 'concreteDark' }, '#a8b4c0'], [{ side: 'planks', top: 'roofBrown' }, '#e0c8a0'], [{ side: 'facade', top: 'concrete' }, '#ffffff'], [{ side: 'sand', top: 'planks' }, '#f0d8a0'], [{ side: 'white', top: 'metal' }, '#c0d8f0'], [{ side: 'rock', top: 'concreteDark' }, '#8890a0'], [{ side: 'brick', top: 'roofBrown' }, '#e8b0a0'], [{ side: 'corrugated', top: 'concreteWarm' }, '#a8d0b0'], [{ side: 'concreteDark', top: 'dirt' }, '#d0a8e0']], pw = PW[(T.padStyle || 0) % PW.length];
         b.box({ p: [0, 40, 64], s: [120, 80, 4], mat: pw[0], tint: pw[1] });   // v076 : fond derrière le lanceur (change à chaque niveau)
       },

@@ -139,6 +139,7 @@
     if (!(sd && sd.seabed) && !(sd && sd.grass === false)) (ctx.grassJobs = ctx.grassJobs || []).push({ d, e, wet, sd, sc, gf });   // v177 : herbe partout ou le sol est vert (posee en fin de troncon)
   };
   // touffes d'herbe : petites, plates, d'UNE seule couleur proche du sol (un peu plus sombre) ; chaque brin est dessiné des deux côtés (même éclairage dessus et dessous) ; jamais dans l'eau
+  const nearPad = (x, z) => { const d = Math.hypot(x, z - 40); return d < 10 || (d < 15 && hsh(x * 3.1, z * 2.3) < (15 - d) / 5); };   // v228 : (presque) aucune herbe autour du lanceur, elle commence a ~10 m
   function hsh(a, b) { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); }
   const GTC = new THREE.Color('#3f8228');
   // v176 : HERBE a la maniere de la reference : touffes de longs brins fins vert olive (base sombre, pointe plus claire) qui ondulent, buissons ronds vert sauge, petites fleurs blanches et jaunes ;
@@ -288,7 +289,7 @@
           const dd = d + len * hsh(d + i * 0.37 + lo, i * 1.9 + bi), lx = (hsh(i * 1.7 + hi, d * 0.13 + bi) < 0.5 ? -1 : 1) * (lo + (hi - lo) * hsh(i * 2.9 + bi, d * 0.7 + hi));
           if (hsh(i * 9.7, d + bi) > 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(dd * 0.07 + lx * 0.09 + Math.sin(lx * 0.05) * 2))) continue;   // plaques un peu moins denses (test peu couteux d'abord)
           if (wet && wet(dd, lx, sc, T)) continue;
-          const p = T.at(dd, lx, 0); gcol(p[0], p[2], _gc); if (gf) gf(dd, lx, _gc, sc);
+          const p = T.at(dd, lx, 0); if (nearPad(p[0], p[2])) continue; gcol(p[0], p[2], _gc); if (gf) gf(dd, lx, _gc, sc);
           if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82)) continue;
           if (solidAt(b, p[0], p[1], p[2])) continue;
           const nb = nbLo + Math.floor(hsh(i, d * 2.1 + bi) * (nbHi - nbLo + 1)), seed = 1 + hsh(i * 1.7 + bi, d * 0.013) * 97;
@@ -308,7 +309,7 @@
         const t0 = T.at(cd, cl, 0), t1 = T.at(cd + 2, cl, 0), tl = Math.hypot(t1[0] - t0[0], t1[2] - t0[2]) || 1, fx = (t1[0] - t0[0]) / tl, fz = (t1[2] - t0[2]) / tl;   // sens de la piste
         for (let k = 0; k < nfl; k++) {
           const ang = hsh(ci + k * 1.7, d * 0.3) * 6.2832, rr0 = rc * Math.sqrt(hsh(k * 2.9, ci + d * 0.11)), dd = cd + Math.cos(ang) * rr0, lx = cl + Math.sin(ang) * rr0; if (dd < d || dd >= e || dd < 175 || wet && wet(dd, lx, sc, T)) continue;   // pas de fleurs pres du lanceur
-          const p = T.at(dd, lx, 0); gcol(p[0], p[2], _gc); if (gf) gf(dd, lx, _gc, sc); if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82) || solidAt(b, p[0], p[1], p[2])) continue;
+          const p = T.at(dd, lx, 0); if (nearPad(p[0], p[2])) continue; gcol(p[0], p[2], _gc); if (gf) gf(dd, lx, _gc, sc); if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82) || solidAt(b, p[0], p[1], p[2])) continue;
           const flay = hsh(k * 2.1, ci + d * 0.7) < 0.4 ? 0 : 1, fa = flay ? 100 : 170, G = grp(Math.floor(dd / 100), flay); relN(p[0], p[2], cn, 0, 1, 0);
           const kind = hsh(k * 6.1, ci + d) < 0.8 ? main : pickF(hsh(k * 8.3, ci * 1.9 + d)), daisy = kind[2] === 1, hgt = 0.6 + 0.5 * hsh(k * 1.3, ci + d), R = (daisy ? 0.38 : 0.29) * (0.8 + 0.5 * hsh(k * 9.1, ci)) * 1.0, th = hsh(k * 3.3, ci) * 6.2832;
           _fc.set(kind[1]).multiplyScalar(SK);
@@ -324,7 +325,7 @@
         const nbu = Math.max(1, Math.round(len * 0.07)); let rc_ = 0; const rnd = () => hsh(d * 0.37 + (rc_++) * 1.913, rc_ * 0.771);
         for (let i = 0; i < nbu; i++) {
           const dd = d + len * hsh(d + i * 2.17, i * 0.83), lx = (hsh(i * 3.9, d * 0.21) < 0.5 ? -1 : 1) * (7 + 38 * hsh(i * 6.1, d * 0.43)); if (wet && wet(dd, lx, sc, T)) continue;
-          const p = T.at(dd, lx, 0); gcol(p[0], p[2], _gc); if (gf) gf(dd, lx, _gc, sc); if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82) || solidAt(b, p[0], p[1], p[2])) continue;
+          const p = T.at(dd, lx, 0); if (nearPad(p[0], p[2])) continue; gcol(p[0], p[2], _gc); if (gf) gf(dd, lx, _gc, sc); if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82) || solidAt(b, p[0], p[1], p[2])) continue;
           CC.Trees.bush(b, p[0], p[1] - 0.05, p[2], 0.9 + 1.0 * hsh(i * 1.1, d), rnd);
         }
       }

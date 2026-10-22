@@ -6,8 +6,8 @@
 (function () {
   const U = CC.U;
   const THEME = {
-    bg: '#172D43', bg2: '#101923', border: '#8A6A30', border2: '#FFB52E', yellow: '#FFE600', yellowD: '#B8A400', yellowL: '#FFF56a', red: '#FF2B2B', redD: '#9a1414',
-    white: '#FFFFFF', ink: '#101216', dim: '#8d929b', grey: '#3A3E45',
+    bg: '#26394B', bg2: '#1B2A38', border: '#26394B', border2: '#3A5873', yellow: '#E4B84D', yellowD: '#B8923A', yellowL: '#F0CE72', red: '#FF2B2B', redD: '#9a1414',
+    white: '#F0EDE4', ink: '#101923', dim: '#8FA0B0', grey: '#3A5873',
     font: '"Rajdhani","Barlow Condensed","Arial Narrow",sans-serif',   // changer la police : ici seulement
   };
   const UI = CC.UI2 = { THEME, k: 1, hudPr: 1 };
@@ -51,10 +51,10 @@
   };
   // ---------- composants ----------
   // UIPanel
-  UI.panel = (ctx, x, y, w, h, o) => {
+  UI.panel = (ctx, x, y, w, h, o) => {   // v228 : panneau ardoise plat, ombre courte, aucun contour
     o = o || {}; const c = o.c === undefined ? Math.min(w, h) * 0.12 : o.c;
+    ctx.save(); ctx.translate(0, Math.max(3, h * 0.025)); UI.cham(ctx, x, y, w, h, c); ctx.fillStyle = 'rgba(8,12,18,0.32)'; ctx.fill(); ctx.restore();
     UI.cham(ctx, x, y, w, h, c); ctx.fillStyle = o.fill || THEME.bg; ctx.fill();
-    // v223 : plus aucun contour de panneau (style a plat)
   };
   const face = (ctx, x, y, w, h, c, top, bot, lip, lipCol, edge) => {   // v223 : une seule teinte, sans contour ni reflet ; simple ombre
     ctx.save(); ctx.translate(0, Math.max(3, h * 0.05)); UI.cham(ctx, x, y, w, h, c); ctx.fillStyle = 'rgba(8,10,16,0.35)'; ctx.fill(); ctx.restore(); UI.cham(ctx, x, y, w, h, c); ctx.fillStyle = top; ctx.fill();
@@ -63,24 +63,22 @@
   UI.btnPrimary = (ctx, x, y, w, h, label, o) => {
     o = o || {}; const c = Math.min(h * 0.28, S(22)), dis = o.disabled; const press = o.pressed ? h * 0.03 : 0;
     if (dis) { face(ctx, x, y, w, h, c, '#454a52', '#3a3e45', 0.08, '#2a2d33', THEME.border); }
-    else face(ctx, x, y + press, w, h - press, c, '#F2B600', null);
+    else face(ctx, x, y + press, w, h - press, c, '#43B957', null);
     const col = dis ? THEME.dim : THEME.white;
     if (o.sub) { UI.text(ctx, label, x + w / 2 + (o.icon ? h * 0.2 : 0), y + h * 0.33, UI.fit(ctx, label, w * 0.86, h * 0.34), col, { flat: !!o.flatLabel }); o.subDraw ? o.subDraw(x + w / 2, y + h * 0.7, h) : UI.text(ctx, o.sub, x + w / 2, y + h * 0.7, h * 0.32, col, { shadow: false }); }
     else UI.text(ctx, label, x + w / 2, y + h * 0.46, UI.fit(ctx, label, w * (o.maxW || 0.84), o.px || h * 0.42), col, { shadow: false });
   };
   // bouton vert (recompense) avec un reflet qui balaie en animation
   UI.btnGreen = (ctx, x, y, w, h, label, o) => {
-    o = o || {}; const c = Math.min(h * 0.28, S(22)); face(ctx, x, y, w, h, c, '#6af07a', '#2fb457', 0.1, '#1c7a3a', '#145a2a');
-    ctx.save(); UI.cham(ctx, x, y, w, h * 0.9, c); ctx.clip(); const t = (performance.now() % 2200) / 2200, sx = x - w * 0.3 + t * w * 1.6, g = ctx.createLinearGradient(sx - w * 0.12, 0, sx + w * 0.12, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.55)'); g.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.transform(1, 0, -0.35, 1, 0, 0); ctx.fillStyle = g; ctx.fillRect(sx - w * 0.12, y, w * 0.24, h); ctx.restore();
-    if (o.sub) { UI.text(ctx, label, x + w / 2, y + h * 0.33, UI.fit(ctx, label, w * 0.86, h * 0.34), THEME.white, {}); UI.text(ctx, o.sub, x + w / 2, y + h * 0.7, UI.fit(ctx, o.sub, w * 0.86, h * 0.32), THEME.white, {}); }
-    else UI.text(ctx, label, x + w / 2, y + h * 0.46, UI.fit(ctx, label, w * 0.84, o.px || h * 0.42), THEME.white, {});
+    o = o || {}; const c = Math.min(h * 0.28, S(22)); face(ctx, x, y, w, h, c, '#43B957', null);
+    if (o.sub) { UI.text(ctx, label, x + w / 2, y + h * 0.33, UI.fit(ctx, label, w * 0.86, h * 0.34), THEME.white, { flat: true }); UI.text(ctx, o.sub, x + w / 2, y + h * 0.7, UI.fit(ctx, o.sub, w * 0.86, h * 0.32), THEME.white, { flat: true }); }
+    else UI.text(ctx, label, x + w / 2, y + h * 0.46, UI.fit(ctx, label, w * 0.84, o.px || h * 0.42), THEME.white, { flat: true });
   };
   UI.btnSecondary = (ctx, x, y, w, h, label, o) => {
-    o = o || {}; const c = Math.min(h * 0.28, S(22)); UI.panel(ctx, x, y, w, h, { c, fill: THEME.bg2, border: THEME.white, bw: Math.max(2, S(3)) });
-    UI.text(ctx, label, x + w / 2, y + h * 0.48, UI.fit(ctx, label, w * 0.84, o.px || h * 0.4), o.color || THEME.white, { shadow: false });
+    o = o || {}; const c = Math.min(h * 0.28, S(22)); face(ctx, x, y, w, h, c, '#3A5873', null);
+    UI.text(ctx, label, x + w / 2, y + h * 0.48, UI.fit(ctx, label, w * 0.84, o.px || h * 0.4), o.color || THEME.white, { flat: true });
   };
-  UI.btnDanger = (ctx, x, y, w, h, label, o) => { o = o || {}; const c = Math.min(h * 0.28, S(22)); face(ctx, x, y, w, h, c, '#ff5a4a', THEME.red, 0.1, THEME.redD, '#6a0a0a'); UI.text(ctx, label, x + w / 2, y + h * 0.46, UI.fit(ctx, label, w * 0.84, o.px || h * 0.4), THEME.white, { shadow: false }); };
+  UI.btnDanger = (ctx, x, y, w, h, label, o) => { o = o || {}; const c = Math.min(h * 0.28, S(22)); face(ctx, x, y, w, h, c, '#D9453A', null); UI.text(ctx, label, x + w / 2, y + h * 0.46, UI.fit(ctx, label, w * 0.84, o.px || h * 0.42), THEME.white, { flat: true }); };
   // UIIconButton : carre sombre chanfreine avec icone vectorielle
   UI.iconButton = (ctx, x, y, s, kind, o) => {
     o = o || {}; const c = s * 0.2; UI.panel(ctx, x, y, s, s, { c, fill: o.fill || (o.danger ? '#2a1214' : THEME.bg), border: o.border || (o.danger ? THEME.red : (o.active ? THEME.white : THEME.border)), bw: Math.max(2.5, S(4)) });

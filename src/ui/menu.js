@@ -327,7 +327,7 @@
       this.dim(ctx, W, H, 0.7);
       const touch = document.body.classList.contains('cc-touch'), s = game.settings, endless = !!game.endlessRun;
       const T = -(this.offsetY || 0), HH = this.fullH || H, u = this.portrait ? W : Math.min(W, HH * 0.62);
-      this.text(ctx, 'PAUSE', W / 2, T + HH * 0.09, this.fitPx(['PAUSE'], W * 0.6, u * 0.013), '#f4f4f4', { align: 'center', skew: -0.2 });
+      if (!(CC.EVO && CC.EVO.on)) this.text(ctx, 'PAUSE', W / 2, T + HH * 0.09, this.fitPx(['PAUSE'], W * 0.6, u * 0.013), '#f4f4f4', { align: 'center', skew: -0.2 });
       const vib = ['NON', 'FAIBLE', 'MOYEN', 'FORT'], vv = s.vibration !== undefined ? s.vibration : 2;
       const rows = [['REPRENDRE', () => game.resume(), CC.CONFIG.hud.colors.yellow]];
       if (endless) {
@@ -349,6 +349,12 @@
         this.text(ctx, t, W / 2, T + HH * 0.145, this.fitPx([t], W * 0.9, HH * 0.0028), CC.CONFIG.hud.colors.yellow, { align: 'center' });
       }
       const top = T + HH * 0.2, gap = Math.min(HH * 0.085, (HH * 0.74) / rows.length), bpx = this.fitPx(rows.map((r) => r[0]), W * 0.78, gap * 0.07);
+      if (CC.EVO && CC.EVO.on && CC.UI2) {   // v228 : pause au style du menu (boutons plats, ardoise et vert)
+        const UI = CC.UI2, u2 = this.portrait ? W : Math.min(W, HH * 0.62); UI.begin(u2, 1); const bw = u2 * 0.8, bh = Math.min(gap * 0.78, u2 * 0.13);
+        UI.outlined(ctx, 'PAUSE', W / 2, T + HH * 0.09, UI.fit(ctx, 'PAUSE', W * 0.6, u2 * 0.1), '#F0EDE4');
+        rows.forEach((r, i) => { const x = W / 2 - bw / 2, y = top + i * gap - bh / 2; if (i === 0) UI.btnGreen(ctx, x, y, bw, bh, r[0]); else UI.btnSecondary(ctx, x, y, bw, bh, r[0]); UI.tap(this, x, y, bw, bh, r[1]); });
+        return;
+      }
       rows.forEach((r, i) => this.button(ctx, r[0], W / 2, top + i * gap, bpx, r[1], { hitW: W * 0.86, box: true, color: r[2], primary: i === 0 }));
     }
 

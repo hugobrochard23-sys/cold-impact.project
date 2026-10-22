@@ -139,7 +139,7 @@ CC.CONFIG = {
     popups:  { cx: 0.785, jitter: 0.045, y0: 0.52, pitch: 0.029, yMin: 0.37, px: 0.00315, skew: -0.26 },
     center:  { y: 0.575, px: 0.00300 },
     colors: {
-      white: '#f4f4f4', outline: '#1a1a1a', yellow: '#fdfd02', orange: '#ff7c1f', red: '#ff3b2e',
+      white: '#f4f4f4', outline: '#1a1a1a', yellow: '#E4B84D', orange: '#E8903A', red: '#D9453A',
       green: '#56ff5a', blue: '#4ab0ff', grey: '#8a8a8a', crosshair: 'rgba(215,215,215,0.85)',
     },
   },

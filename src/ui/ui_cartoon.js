@@ -32,15 +32,11 @@
     return { x, y, w, h };
   };
   // --- bouton vert en relief (AMELIORER...) : retourne { x, y, w, h } de la face
-  UI.greenButton = (ctx, x, y, w, h, o) => {
+  UI.greenButton = (ctx, x, y, w, h, o) => {   // v228 : une seule teinte, simple ombre
     o = o || {}; const r = h * 0.26, dis = !!o.disabled, press = o.pressed ? h * 0.04 : 0;
-    const lip = Math.max(S(6), h * 0.1), hh = h - lip; shadow(ctx, () => rr(ctx, x, y + lip + press, w, hh, r), S(4), 0.35);
-    rr(ctx, x, y + lip, w, hh, r); ctx.fillStyle = dis ? '#3C4843' : '#23803A'; ctx.fill();   // tranche (relief)
-    rr(ctx, x, y + press, w, hh, r); ctx.fillStyle = dis ? '#5B6A64' : '#43B957'; ctx.fill();
-    ctx.save(); rr(ctx, x, y + press, w, hh, r); ctx.clip(); ctx.fillStyle = dis ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)'; ctx.fillRect(x, y + press, w, hh * 0.32); ctx.restore();
-    return { x, y: y + press, w, h: hh };
+    shadow(ctx, () => rr(ctx, x, y + press, w, h, r), S(5), 0.34); rr(ctx, x, y + press, w, h, r); ctx.fillStyle = dis ? '#4F6272' : '#43B957'; ctx.fill();
+    return { x, y: y + press, w, h };
   };
-  // --- texte a contour colore (titres et boutons)
   UI.outlined = (ctx, s, x, y, px, fill, edge, o) => {   // v223 : texte SANS contour (seul « APPUYEZ POUR LANCER » garde le sien : o.keep)
     o = o || {}; ctx.save(); UI.setFont(ctx, px); ctx.textAlign = o.align || 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.miterLimit = 2;
     if (o.keep) { ctx.lineWidth = Math.max(2, px * (o.ow || 0.2)); ctx.strokeStyle = edge || '#0b0d12'; ctx.strokeText(s, x, y + px * 0.04); }
@@ -67,7 +63,7 @@
   // --- segments de progression en relief
   UI.segments = (ctx, x, y, w, h, done, total, o) => {
     o = o || {}; total = total || 5; const gap = w * 0.025, sw = (w - gap * (total - 1)) / total, r = h * 0.4;
-    for (let i = 0; i < total; i++) { rr(ctx, x + i * (sw + gap), y, sw, h, r); ctx.fillStyle = i < done ? '#FFC21F' : (o.off || '#2B4258'); ctx.fill(); }
+    for (let i = 0; i < total; i++) { rr(ctx, x + i * (sw + gap), y, sw, h, r); ctx.fillStyle = i < done ? (o.on || '#E4B84D') : (o.off || '#2B4258'); ctx.fill(); }
   };
   // --- cadre d'illustration (fond bleu a rayons, ou orange pour le revenu)
   UI.artFrame = (ctx, x, y, w, h, kind) => {
@@ -78,13 +74,14 @@
   };
   // =====================================================================================================================================================================
   // pastille de monnaie : plaque de bois (pieces) ou panneau bleu (gemmes) ; l'icone d'origine deborde a gauche, le « + » vert a droite
-  UI.slate = (ctx, x, y, w, h, r) => { shadow(ctx, () => rr(ctx, x, y, w, h, r), Math.max(S(3), h * 0.05), 0.3); rr(ctx, x, y, w, h, r); ctx.fillStyle = '#26394B'; ctx.fill(); ctx.save(); rr(ctx, x, y, w, h, r); ctx.clip(); ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(x, y, w, h * 0.45); ctx.restore(); };
+  { const _ic = UI.icon; UI.icon = (ctx, name, cx, cy, size, o) => { if ((name === 'coin' || name === 'gem') && UI.artImg(ctx, name, cx, cy, size)) return; _ic(ctx, name, cx, cy, size, o); }; }
+  UI.slate = (ctx, x, y, w, h, r) => { shadow(ctx, () => rr(ctx, x, y, w, h, r), Math.max(S(3), h * 0.05), 0.3); rr(ctx, x, y, w, h, r); ctx.fillStyle = '#26394B'; ctx.fill(); };
   UI.artImg = (ctx, name, cx, cy, size) => { const im = UI.art(name); if (!im) return false; const k = size / Math.max(im.naturalWidth, im.naturalHeight); ctx.drawImage(im, cx - im.naturalWidth * k / 2, cy - im.naturalHeight * k / 2, im.naturalWidth * k, im.naturalHeight * k); return true; };
   UI.currencyPill = (ctx, ui, x, y, w, h, kind, value, o) => {
     o = o || {}; const gem = kind === 'gem', body = x + h * 0.3, bw = w - h * 0.3; h = h * 0.84; y += S(6);
     UI.slate(ctx, body, y, bw, h, h * 0.3);
     if (!UI.artImg(ctx, gem ? 'gem' : 'coin', x + h * 0.5, y + h / 2, h * 1.18)) UI.icon(ctx, gem ? 'gem' : 'coin', x + h * 0.5, y + h / 2, h * 1.2);
-    UI.outlined(ctx, value, x + h * 1.1, y + h * 0.5, UI.fit(ctx, value, w - h * (o.plus ? 2.7 : 1.5), h * 0.52), '#F0EDE4', null, { align: 'left' });
+    UI.outlined(ctx, value, x + h * 1.22, y + h * 0.5, UI.fit(ctx, value, w - h * (o.plus ? 2.7 : 1.5), h * 0.52), '#F0EDE4', null, { align: 'left' });
     if (o.plus) UI.plusButton(ctx, x + w - h * 0.5, y + h / 2, h * 0.38);
   };
   UI.slateIconButton = (ctx, x, y, s, kind) => { y += S(4); const q = s * 0.86; x += (s - q) / 2; UI.slate(ctx, x, y, q, q, q * 0.26); if (kind === 'gear' && UI.artImg(ctx, 'gear', x + q / 2, y + q / 2, q * 0.66)) return; UI.glyph(ctx, kind, x + q / 2, y + q / 2, q * 0.3, '#F0EDE4'); };

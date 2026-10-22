@@ -47,22 +47,24 @@
     const shk = game.evoShake && game.evoShake.id === id && now - game.evoShake.t0 < 350 ? Math.sin((now - game.evoShake.t0) / 25) * S(10) : 0, bt = game.evoBought, bk = bt && bt.id === id ? U.clamp(1 - (now - bt.t0) / 520, 0, 1) : 0, k2 = 1 + 0.05 * Math.sin(bk * 3.1416);
     const rx = x + shk, ccx = rx + w / 2, ccy = y + h / 2;
     ctx.save(); ctx.translate(ccx, ccy); ctx.scale(k2, k2); ctx.translate(-ccx, -ccy);
-    const bgImg = UI.art('card_slate'), ink = '#FFFFFF';
-    if (bgImg) ctx.drawImage(bgImg, rx, y, w, h); else { rr0(ctx, rx, y, w, h, S(26)); ctx.fillStyle = '#26394B'; ctx.fill(); }
-    UI.outlined(ctx, name, rx + w * 0.47, y + h * 0.066, UI.fit(ctx, name, w * 0.66, h * 0.07), ink);
-    const ix = rx + w * 0.095, iy = y + h * 0.125, iw = w * 0.795, ih = h * 0.345;
-    UI.icon(ctx, ico, ix + iw / 2, iy + ih / 2 - (id === 'cm' ? ih * 0.06 : 0), ih * 0.7);
-    if (id === 'cm') UI.outlined(ctx, 'X' + f1(E.mult(n)), ix + iw / 2, iy + ih * 0.9, h * 0.062, T.white);
-    { const br = w * 0.092, bcx = rx + w * 0.885, bcy = y + h * 0.03; ctx.save(); ctx.shadowColor = 'rgba(8,12,18,0.4)'; ctx.shadowOffsetY = S(3); ctx.beginPath(); ctx.arc(bcx, bcy, br, 0, 6.2832); ctx.fillStyle = '#3A5873'; ctx.fill(); ctx.restore(); UI.outlined(ctx, String(n + 1), bcx, bcy + br * 0.04, UI.fit(ctx, String(n + 1), br * 1.5, br * 1.15), T.white); }
-    UI.segments(ctx, rx + w * 0.095, y + h * 0.525, w * 0.795, h * 0.036, done, 5, { off: '#1B2A38' });
-    const bx = rx + w * 0.095, bw = w * 0.795, bh = h * 0.285, by = y + h * 0.61, frac = cost === null ? 1 : U.clamp(S0.coins / cost, 0, 1);
+    const ink = '#F0EDE4', acc = id === 'la' ? '#F2994A' : id === 'rk' ? '#5AC3DF' : '#E4B84D', R = w * 0.1;
+    ctx.save(); ctx.translate(0, S(7)); rr0(ctx, rx, y, w, h, R); ctx.fillStyle = 'rgba(8,12,18,0.34)'; ctx.fill(); ctx.restore();
+    rr0(ctx, rx, y, w, h, R); ctx.fillStyle = '#26394B'; ctx.fill();
+    UI.outlined(ctx, name, rx + w * 0.42, y + h * 0.07, UI.fit(ctx, name, w * 0.62, h * 0.062), ink);
+    const ix = rx + w * 0.08, iy = y + h * 0.135, iw = w * 0.84, ih = h * 0.355;
+    rr0(ctx, ix, iy, iw, ih, w * 0.06); ctx.fillStyle = '#1B2A38'; ctx.fill();
+    UI.icon(ctx, ico, ix + iw / 2, iy + ih / 2 - (id === 'cm' ? ih * 0.07 : 0), ih * 0.66);
+    if (id === 'cm') UI.outlined(ctx, 'X' + f1(E.mult(n)), ix + iw / 2, iy + ih * 0.86, h * 0.058, T.white);
+    { const br = w * 0.095, bcx = rx + w - br * 0.95, bcy = y + br * 0.95; ctx.save(); ctx.translate(0, S(3)); ctx.beginPath(); ctx.arc(bcx, bcy, br, 0, 6.2832); ctx.fillStyle = 'rgba(8,12,18,0.34)'; ctx.fill(); ctx.restore(); ctx.beginPath(); ctx.arc(bcx, bcy, br, 0, 6.2832); ctx.fillStyle = '#3A5873'; ctx.fill(); UI.outlined(ctx, String(n + 1), bcx, bcy + br * 0.04, UI.fit(ctx, String(n + 1), br * 1.5, br * 1.1), T.white); }
+    UI.segments(ctx, rx + w * 0.08, y + h * 0.54, w * 0.84, h * 0.034, done, 5, { off: '#1B2A38', on: acc });
+    const bx = rx + w * 0.08, bw = w * 0.84, bh = h * 0.3, by = y + h * 0.62, frac = cost === null ? 1 : U.clamp(S0.coins / cost, 0, 1);
     const cs = U.formatInt(cost), face = UI.greenButton(ctx, bx, by, bw, bh, { disabled: !can, sheen: can });
     UI.outlined(ctx, 'AMÉLIORER', bx + bw / 2, face.y + face.h * 0.3, UI.fit(ctx, 'AMÉLIORER', bw * 0.84, face.h * 0.3), T.white);
     { const ps = face.h * 0.3, pw = UI.tw(ctx, cs, ps) + ps * 1.3; UI.icon(ctx, 'coin', bx + bw / 2 - pw / 2 + ps * 0.5, face.y + face.h * 0.7, ps * 1.15); UI.outlined(ctx, cs, bx + bw / 2 - pw / 2 + ps * 1.25, face.y + face.h * 0.7, UI.fit(ctx, cs, bw * 0.55, ps), can ? T.white : '#ffb0a0', null, { align: 'left' }); }
     if (!can && cost !== null) { ctx.save(); rr0(ctx, bx, by, bw, bh, bh * 0.26); ctx.clip(); ctx.fillStyle = C0.goldL; ctx.fillRect(bx, by + bh - S(8), bw * frac, S(8)); ctx.restore(); }
     if (bk > 0) { ctx.fillStyle = 'rgba(255,255,255,' + bk * 0.35 + ')'; UI.cham(ctx, rx, y, w, h, S(26)); ctx.fill(); }
     ctx.restore();
-    return { id, rx, y, w, h, ix: rx + w * 0.095, iy: y + h * 0.125, iw: w * 0.795, ih: h * 0.345, can, cost };
+    return { id, rx, y, w, h, ix, iy, iw, ih, can, cost };
   }
   // ---------- MENU ----------
   Home.drawEvo = function (ui, ctx, game, W, H) {
@@ -94,8 +96,8 @@
         if (game.evoLvPop) { const stg = E.stage(game), pw = S(420), rh = S(104), px0 = rx0 + bs - pw, py0 = y2 + S(100); hit(ui, px0, py0, pw, rh * 2, () => {}); UI.panel(ctx, px0, py0 - S(10), pw, rh * 2 + S(20), { c: S(24), border: T.white });
           for (let nn = 1; nn <= 2; nn++) { const yy = py0 + (nn - 1) * rh, open = true, on = stg === nn; if (on) { ctx.fillStyle = 'rgba(255,230,0,0.14)'; ctx.fillRect(px0 + S(6), yy + S(4), pw - S(12), rh - S(8)); } UI.text(ctx, 'NIVEAU ' + nn, px0 + S(30), yy + rh / 2, S(44), open ? T.white : T.dim, { align: 'left', shadow: false }); if (!open) UI.glyph(ctx, 'lock', px0 + pw - S(50), yy + rh / 2, S(26), T.dim); hit(ui, px0, yy, pw, rh, () => { game.evoLvPop = false; if (open && !on) E.switchStage(game, nn); }); }
           hit(ui, 0, T0, W, HH, () => { game.evoLvPop = false; }); } } }
-    { const k = 1 + 0.025 * Math.sin(now / 420), s = 'APPUYEZ POUR LANCER', yy = chTop - S(78); ctx.save(); ctx.translate(cx, yy); ctx.scale(k, k); ctx.translate(-cx, -yy);
-      UI.outlined(ctx, s, cx, yy, UI.fit(ctx, s, cw * 0.92, S(86)), C0.white, '#0b0d12', { keep: true, ow: 0.17 }); ctx.restore(); }
+    { const k = 1 + 0.025 * Math.sin(now / 420), s = 'APPUYEZ POUR LANCER', yy = T0 + HH * 0.5; ctx.save(); ctx.translate(cx, yy); ctx.scale(k, k); ctx.translate(-cx, -yy);
+      UI.outlined(ctx, s, cx, yy, UI.fit(ctx, s, cw * 0.58, S(46)), '#F0EDE4', 'rgba(8,10,16,0.8)', { keep: true, ow: 0.1 }); ctx.restore(); }
     const gap = S(14), marg = S(26), cwd = (cw - marg * 2 - gap * 2) / 3, chh = cwd / 0.703, cy0 = T0 + HH - chh - S(28), cards = [];
     ['la', 'rk', 'cm'].forEach((id, i) => cards.push(card(ui, ctx, game, E, S0, id, ox + marg + i * (cwd + gap), cy0, cwd, chh, now)));
     for (const c of cards) if (c.id === 'rk' && S0.rk >= 20) { const r = S(30), bx = c.ix + c.iw - r * 1.3, by = c.iy + c.ih - r * 1.3; UI.panel(ctx, bx - r, by - r, r * 2, r * 2, { c: r * 0.4, fill: T.bg, border: T.white, bw: S(3) }); UI.glyph(ctx, 'star', bx, by, r * 0.55, T.yellow); UI.tap(ui, bx - r, by - r, r * 2, r * 2, () => { ui.overlay = 'evoSkins'; }); }
@@ -143,7 +145,7 @@
     UI.panel(ctx, px0, py0, pw, ph, { c: S(36), border: T.border2, bw: S(4) });
     rows.forEach((r, i) => { const a = r.t ? U.clamp((now - r.t) / 350, 0, 1) : U.clamp((tt - 0.2 - i * 0.15) / 0.3, 0, 1), y = py0 + S(26) + i * (rowH + S(12)); ctx.save(); ctx.globalAlpha = a; ctx.translate(0, (1 - a) * S(24));
       const fl = r.ad && r.t ? U.clamp(1 - (now - r.t) / 900, 0, 1) : 0; UI.panel(ctx, px0 + S(24), y, pw - S(48), rowH, { c: S(22), fill: fl > 0 ? 'rgba(255,230,0,' + (0.1 + 0.25 * fl) + ')' : T.bg2, border: T.border, bw: S(2) });
-      if (r.ico === 'target') UI.glyph(ctx, 'target', px0 + S(90), y + rowH / 2, S(40), T.red); else if (r.ico === 'video') UI.icon(ctx, 'video', px0 + S(90), y + rowH / 2, S(70)); else UI.glyph(ctx, 'plus', px0 + S(90), y + rowH / 2, S(30), T.yellow);
+      if (r.ico === 'target') UI.glyph(ctx, 'target', px0 + S(90), y + rowH / 2, S(40), '#5AC3DF'); else if (r.ico === 'video') UI.icon(ctx, 'video', px0 + S(90), y + rowH / 2, S(70)); else UI.glyph(ctx, 'plus', px0 + S(90), y + rowH / 2, S(30), T.yellow);
       UI.text(ctx, r.lab, px0 + S(150), y + rowH / 2, UI.fit(ctx, r.lab, pw * (r.mult ? 0.5 : 0.45), r.small ? S(32) : S(44)), r.small ? T.dim : T.white, { align: 'left', shadow: false });
       if (r.mult) UI.text(ctx, r.mult + ' »', px0 + pw - S(60), y + rowH / 2, S(56), T.yellow, { align: 'right', shadow: false });
       else { const vs = U.formatInt(Math.round(r.val * ease(r.t ? (now - r.t) / 900 : tt / 1.0))), vp = UI.fit(ctx, vs, pw * 0.26, S(56)); UI.icon(ctx, 'coin', px0 + pw - S(76), y + rowH / 2, S(60)); UI.text(ctx, vs, px0 + pw - S(120), y + rowH / 2, vp, T.yellow, { align: 'right', shadow: false }); }

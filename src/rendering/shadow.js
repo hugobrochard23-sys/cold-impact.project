@@ -40,7 +40,7 @@
 
     update(dt) {
       const g = this.game, rk = g.rocket, C = this.cfg, R = g.renderer;
-      if (!rk || !rk.mesh || !rk.mesh.visible || (g.state !== 'FLIGHT' && g.state !== 'CRASHED' && g.state !== 'AIM' && g.state !== 'LAUNCH' && g.state !== 'MENU' && g.state !== 'IMPACT')) { this.hide(); return; }
+      if (!rk || !rk.mesh || !rk.mesh.visible || (g.state !== 'FLIGHT' && g.state !== 'CRASHED' && g.state !== 'IMPACT')) { this.hide(); return; }
       rk.mesh.getWorldPosition(_o); _p1.copy(_o).addScaledVector(DOWN, C.maxDist);
       const hit = g.world.sweep(_o, _p1, 0.02, GROUND);
       if (!hit) { this.hide(); return; }

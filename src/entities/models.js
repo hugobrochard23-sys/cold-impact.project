@@ -537,6 +537,7 @@
     }
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: alertTex, depthTest: false, transparent: true }));
     s.scale.set(0.7, 1.4, 1); s.renderOrder = 10;
+    Object.defineProperty(s, 'visible', { get: () => false, set: () => {} });   // v228 : plus aucun point ni carre rouge sur les ennemis
     return s;
   };
   M.targetDot = function () {
@@ -547,6 +548,7 @@
     }
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, depthTest: false, transparent: true, sizeAttenuation: false }));
     s.scale.set(0.012, 0.012, 1); s.renderOrder = 11;
+    Object.defineProperty(s, 'visible', { get: () => false, set: () => {} });   // v228 : plus aucun point ni carre rouge sur les ennemis
     return s;
   };
 
