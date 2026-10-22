@@ -31,8 +31,11 @@
   // --- bouton vert en relief (AMELIORER...) : retourne { x, y, w, h } de la face
   UI.greenButton = (ctx, x, y, w, h, o) => {
     o = o || {}; const r = h * 0.26, dis = !!o.disabled, press = o.pressed ? h * 0.04 : 0;
-    shadow(ctx, () => rr(ctx, x, y + press, w, h, r), S(5), 0.38); rr(ctx, x, y + press, w, h, r); ctx.fillStyle = dis ? '#5B6A64' : '#3FCB2B'; ctx.fill();
-    return { x, y: y + press, w, h };
+    const lip = Math.max(S(6), h * 0.1), hh = h - lip; shadow(ctx, () => rr(ctx, x, y + lip + press, w, hh, r), S(4), 0.35);
+    rr(ctx, x, y + lip, w, hh, r); ctx.fillStyle = dis ? '#3C4843' : '#1F8F1A'; ctx.fill();   // tranche (relief)
+    rr(ctx, x, y + press, w, hh, r); ctx.fillStyle = dis ? '#5B6A64' : '#3FCB2B'; ctx.fill();
+    ctx.save(); rr(ctx, x, y + press, w, hh, r); ctx.clip(); ctx.fillStyle = dis ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)'; ctx.fillRect(x, y + press, w, hh * 0.32); ctx.restore();
+    return { x, y: y + press, w, h: hh };
   };
   // --- texte a contour colore (titres et boutons)
   UI.outlined = (ctx, s, x, y, px, fill, edge, o) => {   // v223 : texte SANS contour (seul « APPUYEZ POUR LANCER » garde le sien : o.keep)
@@ -84,7 +87,7 @@
     o = o || {}; UI.facetBadge(ctx, x + s / 2, y + s / 2, s / 2, null, { fill: o.danger ? '#D83A30' : '#1D5FA6' }); UI.glyph(ctx, kind, x + s / 2, y + s / 2, s * 0.3, C.white);
   };
   // badge de niveau d'une carte (hexagone en relief)
-  UI.levelBadge = (ctx, cx, cy, r, n) => UI.facetBadge(ctx, cx, cy, r, n, { fill: '#16314A' });
+  UI.levelBadge = (ctx, cx, cy, r, n) => { hexPath(ctx, cx, cy, r + S(3), 0.42); ctx.fillStyle = '#FFFFFF'; ctx.fill(); UI.facetBadge(ctx, cx, cy, r, n, { fill: '#16314A' }); };
   UI.progressSquares = (ctx, x, y, w, h, done, total, o) => UI.segments(ctx, x, y, w, h, done, total, o);
   // pastilles de progression du coffre / niveau
   UI.dots = (ctx, cx, cy, w, n, on) => { const gap = w / n; for (let i = 0; i < n; i++) { ctx.beginPath(); ctx.arc(cx - w / 2 + gap * (i + 0.5), cy, gap * 0.33, 0, 6.2832); ctx.fillStyle = i < on ? '#FFC21F' : '#40566B'; ctx.fill(); } };
@@ -127,6 +130,7 @@
   UI.orangePlate = (ctx, x, y, w, h, hot) => { shadow(ctx, () => rr(ctx, x, y, w, h, h * 0.3), S(4), 0.35); rr(ctx, x, y, w, h, h * 0.3); ctx.fillStyle = hot ? '#FF8B19' : '#8A4A1A'; ctx.fill(); };
   // badge de niveau : plaque a facettes bleu nuit, bordure doree, rangee de pastilles de progression
   UI.levelPlate = (ctx, x, y, w, h, label, stage) => {
+    UI.cham(ctx, x - S(3), y - S(3), w + S(6), h + S(6), h * 0.28 + S(3)); ctx.fillStyle = '#FFFFFF'; ctx.fill();
     UI.goldFrame(ctx, x, y, w, h, { r: h * 0.28, cut: true, fill: '#16314A' });
     UI.outlined(ctx, label, x + w / 2, y + h * 0.4, UI.fit(ctx, label, w * 0.8, h * 0.4), C.white);
     UI.dots(ctx, x + w / 2, y + h * 0.74, w * 0.66, 5, Math.min(5, stage || 1));

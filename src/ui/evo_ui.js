@@ -47,6 +47,7 @@
     const shk = game.evoShake && game.evoShake.id === id && now - game.evoShake.t0 < 350 ? Math.sin((now - game.evoShake.t0) / 25) * S(10) : 0, bt = game.evoBought, bk = bt && bt.id === id ? U.clamp(1 - (now - bt.t0) / 520, 0, 1) : 0, k2 = 1 + 0.05 * Math.sin(bk * 3.1416);
     const rx = x + shk, ccx = rx + w / 2, ccy = y + h / 2;
     ctx.save(); ctx.translate(ccx, ccy); ctx.scale(k2, k2); ctx.translate(-ccx, -ccy);
+    rr0(ctx, rx - S(4), y - S(4), w + S(8), h + S(8), S(34)); ctx.fillStyle = '#FFFFFF'; ctx.fill();   // contour blanc plat
     const fr = UI.goldFrame(ctx, rx, y, w, h, { r: S(30), fill: '#1E3550' });
     UI.outlined(ctx, name, rx + w * 0.09, y + h * 0.085, UI.fit(ctx, name, w * 0.58, S(32)), T.white, null, { align: 'left' });
     const ix = rx + w * 0.085, iy = y + h * 0.15, iw = w * 0.83, ih = h * 0.4;
