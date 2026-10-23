@@ -93,11 +93,11 @@
     { c: { body: '#b8925e', nose: '#c9a46c', tip: '#e8dcc0', band: '#6e5230', fin: '#8a6a44', nozzle: '#6a5030' }, cap: true },
     { c: { body: '#b8925e', nose: '#c9a46c', tip: '#e8dcc0', band: '#6e5230', fin: '#8a6a44', nozzle: '#6a5030' }, cap: true },
     { c: { body: '#e4e6ea', nose: '#e4e6ea', tip: '#e02a1c', band: '#f3cf00', fin: '#8a8f96', nozzle: '#3d3f43' }, cap: false },
-    { c: { body: '#f2f3f5', nose: '#f2f3f5', tip: '#ffd23a', band: '#e0402c', fin: '#e0402c', nozzle: '#2b2d31' }, cap: false, flame: '#7be8ff' },
+    { c: { body: '#d9dde3', nose: '#2b2f36', tip: '#e0402c', band: '#e0402c', fin: '#2b2f36', nozzle: '#1c1f24' }, cap: false, flame: '#7be8ff' },
   ];
   for (let i = 0; i < SKIN_C.length; i++) {
     const d = SKIN_C[i], s = { id: 'evoT' + i, name: 'evoT' + i, short: 'evoT' + i, tier: 'base', price: 0, tierLabel: '', c: Object.assign({}, d.c), flame: d.flame || '#ff8a2a',
-      dims: { r: i < 2 ? 0.1 : 0.085, len: i < 2 ? 0.8 : 1.0, noseLen: i < 2 ? 0.26 : 0.38, noseR: i < 2 ? 0.07 : 0.012, fins: 0, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 },
+      dims: { r: i < 2 ? 0.1 : i === 3 ? 0.095 : 0.085, len: i < 2 ? 0.8 : i === 3 ? 1.55 : 1.0, noseLen: i < 2 ? 0.26 : i === 3 ? 0.66 : 0.38, noseR: i < 2 ? 0.07 : 0.012, fins: 0, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 },
       parts: d.cap ? [{ k: 'cyl', r: 0.108, h: 0.14, p: [0, 0, -0.42], rot: [90, 0, 0], c: '#a8844f' }, { k: 'cyl', r: 0.105, h: 0.2, p: [0, 0, 0.1], rot: [90, 0, 0], c: '#e8d8a8' }] : [] };
     CC.Skins.byId[s.id] = s;
   }
@@ -126,10 +126,11 @@
   function buildParts(tier) {
     const M = PM(), root = new THREE.Group(), P = {};
     const wm = tier >= 2 ? M.white : M.card;
-    const wings = fins(wm, M.red, 0.36, 0.14, 0.34, 0.12, -0.02, 0, false);
-    const tail = fins(wm, M.red, 0.22, 0.09, 0.2, 0.08, -0.36, Math.PI / 4, false);
-    const flaps = new THREE.Group(); { const f = fins(M.red, M.red, 0.3, 0.1, 0.075, 0.02, -0.02, 0, false, 0.034); f.children.forEach((c) => { c.children[0].position.y = 0.085 + 0.262; }); flaps.add(f); }   // v207 : volets plus epais que l'aile (meme plan = scintillement blanc/rouge)
-    const boost = new THREE.Group(); for (const s of [-1, 1]) { boost.add(cyl(0.05, 0.05, 0.62, M.red, s * 0.2, -0.092, -0.12)); boost.add(cyl(0.0, 0.05, 0.14, M.white, s * 0.2, -0.092, 0.28)); boost.add(cyl(0.04, 0.055, 0.1, M.dark, s * 0.2, -0.092, -0.47)); }   // v207 : propulseurs sous le plan des ailes (avant : l'aile les traversait)
+    const miss = tier >= 3;   // v235 : palier max = un missile imposant : pas d'ailes ni de propulseurs lateraux
+    const wings = miss ? new THREE.Group() : fins(wm, M.red, 0.36, 0.14, 0.34, 0.12, -0.02, 0, false);
+    const tail = miss ? fins(M.dark, M.dark, 0.36, 0.12, 0.3, 0.17, -0.5, Math.PI / 4, false, 0.03) : fins(wm, M.red, 0.22, 0.09, 0.2, 0.08, -0.36, Math.PI / 4, false);
+    const flaps = new THREE.Group(); if (miss) { const f = fins(M.dark, M.dark, 0.2, 0.08, 0.1, 0.05, 0.55, Math.PI / 4, false, 0.022); flaps.add(f); } else { const f = fins(M.red, M.red, 0.3, 0.1, 0.075, 0.02, -0.02, 0, false, 0.034); f.children.forEach((c) => { c.children[0].position.y = 0.085 + 0.262; }); flaps.add(f); }   // v207 : volets plus epais que l'aile (meme plan = scintillement blanc/rouge)
+    const boost = new THREE.Group(); if (!miss) for (const s of [-1, 1]) { boost.add(cyl(0.05, 0.05, 0.62, M.red, s * 0.2, -0.092, -0.12)); boost.add(cyl(0.0, 0.05, 0.14, M.white, s * 0.2, -0.092, 0.28)); boost.add(cyl(0.04, 0.055, 0.1, M.dark, s * 0.2, -0.092, -0.47)); }   // v207 : propulseurs sous le plan des ailes (avant : l'aile les traversait)
     // v214 : fusee plus vivante : feux de navigation (rouge a gauche, vert a droite) qui clignotent, anneaux de tuyere incandescents sur les propulseurs, feu stroboscopique blanc a la queue
     P.wings = wings; P.tail = tail; P.flaps = flaps; P.boost = boost;   // v216 : plus aucun feu ni anneau lumineux sur la fusee
     for (const k of Object.keys(P)) { P[k].userData.k = 0; root.add(P[k]); }
@@ -141,12 +142,12 @@
     if (rk.mesh.userData.evoParts) rk.mesh.remove(rk.mesh.userData.evoParts);
     const root = buildParts(r.tier); rk.mesh.add(root); rk.mesh.userData.evoParts = root; g.evoParts = root.userData.P;
     for (const k of Object.keys(g.evoParts)) { const on = r.tier >= PART_TIER[k]; g.evoParts[k].userData.k = on ? 1 : 0; g.evoParts[k].scale.setScalar(on ? 1 : 0.0001); g.evoParts[k].visible = on; }
-    rk.mesh.userData.finTips = r.tier >= 1 ? [new V(0.44, 0, -0.18), new V(-0.44, 0, -0.18), new V(0, 0.44, -0.18), new V(0, -0.44, -0.18)] : [];   // bouts d'ailes : traînées de condensation
+    rk.mesh.userData.finTips = r.tier >= 3 ? [new V(0.4, 0, -0.62), new V(-0.4, 0, -0.62), new V(0, 0.4, -0.62), new V(0, -0.4, -0.62)] : r.tier >= 1 ? [new V(0.44, 0, -0.18), new V(-0.44, 0, -0.18), new V(0, 0.44, -0.18), new V(0, -0.44, -0.18)] : [];   // bouts d'ailes : traînées de condensation
     rk.mesh.scale.setScalar((1 + 0.012 * r.n) * 1.28);
   };
   // v159 : LIVREES : une fois la fusee au bout de ses ameliorations (niveau 20), on peut en changer l'apparence ; une nouvelle s'ouvre tous les 5 niveaux
   EVO.LIVERIES = [
-    { id: 'classic', name: 'CLASSIQUE', at: 20, body: '#f2f3f5', nose: '#f2f3f5', tip: '#ffd23a', band: '#e0402c', fin: '#e0402c', acc: '#d8402c', wh: '#eceef2', flame: '#7be8ff' },
+    { id: 'classic', name: 'CLASSIQUE', at: 20, body: '#d9dde3', nose: '#2b2f36', tip: '#e0402c', band: '#e0402c', fin: '#2b2f36', acc: '#2b2f36', wh: '#2b2f36', flame: '#7be8ff' },
     { id: 'gold', name: 'OR', at: 25, body: '#f0c43c', nose: '#fff0a8', tip: '#ffffff', band: '#a8741a', fin: '#c8901c', acc: '#b8821a', wh: '#f5d36a', flame: '#ffe27a' },
     { id: 'stealth', name: 'FURTIVE', at: 30, body: '#2b3038', nose: '#3a414c', tip: '#ff3a3a', band: '#ff3a3a', fin: '#1c2026', acc: '#1c2026', wh: '#3a414c', flame: '#ff6a5a' },
     { id: 'neon', name: 'NEON', at: 35, body: '#141c2a', nose: '#1c2a40', tip: '#31e6ff', band: '#31e6ff', fin: '#0e8fb0', acc: '#31e6ff', wh: '#1c2a40', flame: '#31e6ff' },
@@ -196,7 +197,7 @@
   EVO.playEvolve = (g, tier, label) => {
     EVO.applySkinOnly(g);
     for (const k of Object.keys(g.evoParts || {})) if (PART_TIER[k] === tier) { g.evoParts[k].userData.k = 0; g.evoParts[k].visible = false; g.evoParts[k].scale.setScalar(0.0001); }
-    g.evoAnim = { t: 0, dur: 3.0, tier, label, popped: false };
+    g.evoAnim = { t: 0, dur: 3.6, tier, label, popped: false, ring: false };
     g.audio.play('padArm'); g.rig.shake = Math.max(g.rig.shake, 0.3);
   };
   EVO.applySkinOnly = (g) => { EVO.applySkin(g); };
@@ -206,7 +207,11 @@
     const wt = CC.Textures && CC.Textures.get && CC.Textures.get('water'); if (wt && wt.offset) wt.offset.y += dt * 0.12;   // v123 : l'eau coule (rivière, cascades)
     const A = g.evoAnim; if (!A) return;
     A.t += dt;
-    const rk = g.rocket;
+    const rk = g.rocket, fxA = g.effects;
+    // v235 : ATELIER : etincelles de soudure avant la pose, reflet qui parcourt la coque, gerbe a la tuyere a la fin
+    if (A.t < 0.55 && fxA && Math.random() < 0.7) { const q = rk.pos, ang = A.t * 9; fxA.sparks.emit({ pos: new V(q.x + Math.cos(ang) * 0.25, q.y + 0.1 + Math.random() * 0.2, q.z + Math.sin(ang) * 0.25), vel: new V(U.fx.range(-1, 1), U.fx.range(0.5, 2.5), U.fx.range(-1, 1)).multiplyScalar(U.fx.range(1.5, 4)), life: U.fx.range(0.2, 0.5), s0: 0.03, s1: 0.04, s2: 0.01, cols: fxA.pal.ember, drag: 1, grav: 4, a: 1, fout: 0.4 }); }
+    { const sh = U.clamp((A.t - 1.1) / 1.0, 0, 1), v = Math.sin(sh * Math.PI) * 0.42; rk.mesh.traverse((o) => { if (o.isMesh && o.material && o.material.emissive && !o.material.isMeshBasicMaterial && !(rk.mesh.userData.jet && rk.mesh.userData.jet.group.getObjectById(o.id))) o.material.emissive.setRGB(v, v, v * 0.95); }); }
+    if (A.t > 2.4 && !A.ring && fxA) { A.ring = true; const o = rk.pos; for (let i = 0; i < 40; i++) fxA.sparks.emit({ pos: new V(o.x, o.y, o.z + 0.9), vel: new V(U.fx.range(-1, 1), U.fx.range(-0.4, 0.8), U.fx.range(0.3, 2.2)).multiplyScalar(U.fx.range(2, 7)), life: U.fx.range(0.3, 0.8), s0: 0.04, s1: 0.04, s2: 0.01, cols: fxA.pal.ember, drag: 1, grav: 2, a: 1, fout: 0.4 }); g.audio.play('padArm'); }
     if (A.t > 0.55 && !A.popped) {
       A.popped = true;
       for (const k of Object.keys(g.evoParts || {})) if (PART_TIER[k] === A.tier) { g.evoParts[k].visible = true; }
@@ -217,7 +222,7 @@
       fx.ring(p, new V(0, 1, 0), 0.3, 5, 0.5, '#ffd23a', 0.8); fx.ring(p, new V(1, 0, 0), 0.3, 4, 0.5, '#ffffff', 0.7);
     }
     if (A.popped) for (const k of Object.keys(g.evoParts || {})) if (PART_TIER[k] === A.tier) { const e = EASE((A.t - 0.55) / 0.7); g.evoParts[k].scale.setScalar(Math.max(0.0001, e)); g.evoParts[k].userData.k = 1; }
-    if (A.t > A.dur) g.evoAnim = null;
+    if (A.t > A.dur) { g.evoAnim = null; rk.mesh.traverse((o) => { if (o.isMesh && o.material && o.material.emissive && !o.material.isMeshBasicMaterial) { const i0 = o.material.userData && o.material.userData.em0; o.material.emissive.setRGB(i0 ? i0[0] : 0, i0 ? i0[1] : 0, i0 ? i0[2] : 0); } }); }
   };
   EVO.camHook = (g, rig, o) => {
     const A = g.evoAnim;

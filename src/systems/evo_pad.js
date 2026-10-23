@@ -66,6 +66,9 @@
       for (const sx of [-2.9, 2.9]) box(H, 0.3, 4.6, 0.5, steel, sx, 1.6, 9);              // montants de la porte
       for (let k = 0; k < 3; k++) box(H, 0.9, 0.9, 0.9, lam('#3F4A3C'), -5.1, -0.2, -6 + k * 1.1);   // caisses militaires le long du mur
       box(H, 0.9, 0.9, 0.9, lam('#4A5A3C'), -5.1, 0.7, -5.45);
+      // evolution du hangar avec le palier du lanceur : 1 = portique d'atelier, 2 = ecrans de controle et feux d'alerte
+      if (la.tier >= 1) { const g0 = lam('#E0A31C'); for (const sx of [-1.7, 1.7]) box(H, 0.22, 3.4, 0.22, steel, sx, 1.05, -0.4); box(H, 3.8, 0.26, 0.3, g0, 0, 2.8, -0.4); for (let k = 0; k < 6; k++) box(H, 0.3, 0.27, 0.31, lam('#1C1F24'), -1.5 + k * 0.6, 2.8, -0.4); box(H, 0.06, 1.0, 0.06, steelL, -0.6, 2.2, -0.4); box(H, 0.34, 0.2, 0.34, steel, -0.6, 1.6, -0.4); }
+      if (la.tier >= 2) { for (let k = 0; k < 3; k++) { box(H, 0.12, 1.1, 1.8, lam('#0F1B26'), -5.78, 1.7, -7 + k * 2.1); box(H, 0.04, 0.9, 1.6, bas(k % 2 ? '#2FA8FF' : '#58D5FF'), -5.7, 1.7, -7 + k * 2.1); } for (const z of [-9, 4]) box(H, 0.3, 0.3, 0.3, bas('#FF5A3A'), 5.7, 3.5, z); box(H, 1.6, 0.9, 1.0, lam('#3F4A3C'), 5.0, -0.2, -6); box(H, 1.6, 0.9, 1.0, lam('#3F4A3C'), 5.0, -0.2, -4.6); }
       L.add(H); }
     // decor lointain
     pad.backdrop = backdrop(); L.add(pad.backdrop);
