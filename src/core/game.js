@@ -367,7 +367,7 @@
       const la = this.level.launcher;
       this.launcherEye = new V().fromArray(la.pos);
       this.shoulder.visible = false;
-      if (this.evo && CC.EVO.stage && CC.EVO.stage(this) === 2 && this.level.launcher) this.level.launcher.pos[1] = -34;   // v146 : niveau 2 : le missile part sous l'eau
+      if (this.evo && CC.EVO.stage && CC.EVO.stage(this) === 2 && this.level.launcher) this.level.launcher.pos[1] = CC.EVO.launchY ? CC.EVO.launchY() : -34;   // v146 : niveau 2 : le missile part sous l'eau
       this.pad.enter(this.level);
       this.input.setAim(0, this.pad.pitch); this.rig.setAim(0, this.pad.pitch);
       this.rocket.pos.copy(this.pad.origin);

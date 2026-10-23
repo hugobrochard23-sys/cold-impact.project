@@ -87,7 +87,7 @@
       return CC.Zones.PROFILE[tr.z0].elev + (CC.Zones.PROFILE[tr.z1].elev - CC.Zones.PROFILE[tr.z0].elev) * tr.t + this.rel(d);
     }
     // v079 : RELIEF — les scènes « relief » (collines, fosses, chutes, gradins…) font monter et descendre le sol lui-même (elles reviennent à 0 à leurs deux bouts)
-    rel(d) { this.ensureTurns(d); const L = this._rels; let h = 0; for (let i = 0; i < L.length; i++) { const q = L[i]; if (d > q.d0 && d < q.d1) h += q.fn(d); } return h; }
+    rel(d) { this.ensureTurns(d); const L = this._rels; let h = CC.EVO && CC.EVO.preRel ? CC.EVO.preRel(d) : 0; for (let i = 0; i < L.length; i++) { const q = L[i]; if (d > q.d0 && d < q.d1) h += q.fn(d); } return h; }
     cx(d) {
       const a = param(C().bend, d), fade = U.clamp(d / 120, 0, 1);   // départ en ligne droite
       return fade * (a * Math.sin(d / this.l[0] + this.p[0]) + a * 0.35 * Math.sin(d / this.l[1] + this.p[1]) - a * Math.sin(this.p[0]) - a * 0.35 * Math.sin(this.p[1]));

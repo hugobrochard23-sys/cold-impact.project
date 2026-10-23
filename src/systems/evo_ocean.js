@@ -15,8 +15,9 @@
   for (const k of ['plateforme', 'ascension']) { EVO.SCENE_MOOD[k] = 'stormEnd'; EVO.SCENE_AUDIO[k] = 'evoBoss'; }
   EVO.SCENE_AUDIO.abysses = 'evoMine';
   // --- définition du niveau 2
-  const SC2 = ['abysses', 'surface', 'tempete', 'plateforme', 'ascension'];
-  const CH2 = { abysses: 'LES ABYSSES', surface: 'LA FLOTTE', tempete: 'LA TEMPETE', plateforme: 'LA PLATEFORME', ascension: 'L INTERCEPTION' };
+  const SC2 = ['cote', 'bassin', 'abysses', 'surface', 'tempete', 'plateforme', 'ascension'];
+  EVO.SCENE_MOOD.cote = 'gold'; EVO.SCENE_AUDIO.cote = 'evoDusk'; EVO.SCENE_MOOD.bassin = 'sea'; EVO.SCENE_AUDIO.bassin = 'evoMine';
+  const CH2 = { cote: 'LA COTE', bassin: 'LE BASSIN', abysses: 'LES ABYSSES', surface: 'LA FLOTTE', tempete: 'LA TEMPETE', plateforme: 'LA PLATEFORME', ascension: 'L INTERCEPTION' };
   EVO.levelDef2 = (g) => {
     const th = CC.LM.THEMES[0], q = /[?&]evoscenes=([\w,]+)/.exec(location.search), sc = q ? q[1].split(',') : (EVO.SCENES2 || SC2), Zs = CC.Zones.defs.ocean.scenes;
     let len = 80; EVO.chapters = []; for (const n of sc) { const s = Zs[n]; if (s) { EVO.chapters.push({ d: len - 80, i: EVO.chapters.length, name: CH2[n] || n.toUpperCase(), key: n }); if (s.sub) for (const w of s.sub) if (w.u > 0) EVO.chapters.push({ d: len - 80 + w.u * s.len[0], i: EVO.chapters.length, name: w.name, key: w.key }); len += s.len[0]; } }

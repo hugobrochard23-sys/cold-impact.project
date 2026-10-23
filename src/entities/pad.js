@@ -139,7 +139,7 @@
     enter(level) {
       const la = level.launcher, C = this.cfg;
       this.origin.set(la.pos[0], la.pos[1] - 0.1, la.pos[2] + 0.4);
-      this.pitch = U.deg(C.pitchDeg);
+      { const pd = CC.EVO && CC.EVO.on && CC.EVO.padPitch ? CC.EVO.padPitch(this.game) : null; this.pitch = U.deg(pd === null || pd === undefined ? C.pitchDeg : pd); }   // v240 : niveau 2 : rampe inclinee vers le bas
       this.dir.set(0, Math.sin(this.pitch), -Math.cos(this.pitch));
       this.group.position.copy(this.origin); this.group.visible = true;
       this.cradle.rotation.x = this.pitch;
