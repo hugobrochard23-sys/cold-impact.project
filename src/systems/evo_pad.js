@@ -66,6 +66,7 @@
       box(H, 3.4, 4.6, 0.4, wall, -4.6, 1.6, 9); box(H, 3.4, 4.6, 0.4, wall, 4.6, 1.6, 9);
       for (const sx of [-2.9, 2.9]) box(H, 0.3, 4.6, 0.5, steel, sx, 1.6, 9);              // montants de la porte
       if (DK) {   // DOCK : un canal d'eau le long du quai (a droite), des bollards, et la mer visible par la grande porte
+        for (const z of [-11, -6, -1, 4]) { for (const sx of [-5.6, 5.6]) box(H, 1.1, 15, 1.1, steel, sx, -8.2, z); box(H, 11.4, 0.5, 0.7, steel, 0, -4.2, z); box(H, 11.4, 0.5, 0.7, steel, 0, -9.2, z); }   // jetee : le hangar est pose au bord de la pente, sur des pylones
         const wm = new T3.Mesh(new T3.PlaneGeometry(1.5, 18.6), new T3.MeshBasicMaterial({ color: '#2d86b4' })); wm.rotation.x = -Math.PI / 2; wm.position.set(3.35, -0.6, -2.2); H.add(wm); pad.dockWater = wm;
         for (const cx of [2.55, 4.15]) box(H, 0.18, 0.12, 18.6, lam('#9aa6b2'), cx, -0.58, -2.2);
         for (let z = -10; z <= 6; z += 4) { cyl(H, 0.14, 0.18, 0.4, lam('#2b2f36'), 4.35, -0.45, z, 10); box(H, 0.34, 0.06, 0.34, lam('#d9a441'), 4.35, -0.24, z); }

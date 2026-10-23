@@ -118,6 +118,8 @@
   const _ch = EVO.camHook;
   EVO.camHook = (g, rig, o) => {
     const A = g.evoAnim;
+    // niveau 2 : au lancement, la camera est PLUS HAUTE et regarde vers le bas, derriere la fusee : on voit la fusee, la rampe et la mer devant
+    if (!A && g.evoAim && g.pad && EVO.isS2()) { const d = g.pad.dir, up = new V(0, 1, 0), ch = g.pad.charge || 0, p = new V().copy(o).addScaledVector(d, -4.6).addScaledVector(up, 3.0), l = new V().copy(o).addScaledVector(d, 3.4).addScaledVector(up, -0.8); p.lerp(l, 0.2 * ch * ch * (3 - 2 * ch)); rig.padPos.copy(p); rig.padLook.copy(l); rig.padFov = 54 * (1 - 0.1 * ch * ch); return; }
     if (!A || !A.kind) { _ch(g, rig, o); return; }
     if (A.t > A.dur - 1.1) { g.evoAnim = null; _ch(g, rig, o); g.evoAnim = A; return; }   // fin : la camera du menu reprend en douceur (pas de balayage etrange)
     const t = A.t, dir = g.pad.dir, up = new V(0, 1, 0), right = new V().crossVectors(dir, up).normalize(), Lw = EVO.rocketLen(g);

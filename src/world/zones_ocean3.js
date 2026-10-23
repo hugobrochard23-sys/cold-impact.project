@@ -6,9 +6,9 @@
   if (!EVO || !EVO.on || !O || !Z.defs.ocean) return;
   const { yrel, wpin, pk, rr, ss, lam, basic, mb } = O, OC = Z.defs.ocean, SC = OC.scenes;
   const LC = 340, LB = 520, SEAB = -90;
-  // sol de la cote (monde) : plateau a +40 derriere la rampe (le hangar est a d = -40), puis pente DROITE a -19 degres qui commence a d = -30 (le sol est toujours sous le tir), puis plancher a -60
+  // sol de la cote (monde) : plateau a +40 derriere la rampe (le hangar est a d = -40), puis pente DROITE a -19 degres qui commence a d = -50, sous le hangar (le tir passe a plus de 4 m au-dessus du sol), puis plancher a -60
   const SL = 0.344, FLOOR = -60;
-  const gAt = (d) => { const s = 40 - SL * Math.max(0, d + 30) - FLOOR; return FLOOR + (s < 0 ? 0 : s < 6 ? s * s / 12 : s - 3); };
+  const gAt = (d) => { const s = 40 - SL * Math.max(0, d + 50) - FLOOR; return FLOOR + (s < 0 ? 0 : s < 6 ? s * s / 12 : s - 3); };
   const GW = (u) => gAt(u * LC);
   EVO.preRel = (d) => (EVO.seaLevel !== undefined && d <= 0 ? gAt(d) - SEAB : 0);   // le plateau de depart existe aussi avant la premiere scene (la rampe est a d = -40)
   // --- depart du niveau 2 : sur la falaise, rampe inclinee vers le bas
