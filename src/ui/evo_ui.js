@@ -27,8 +27,15 @@
   // ---------- barre du haut ----------
   function topBar(ui, ctx, game, F, S0, E, o) {
     o = o || {}; const h = S(96), y = F.T0 + S(34), x0 = F.ox + S(36), now = performance.now(), fxg = game.evoGemFx;
-    const cs = U.formatInt(S0.coins), cwid = S(250);
+    const cwid = S(250);
+    // v237 : le compteur de pieces defile jusqu'a la nouvelle valeur, la pastille rebondit quand on gagne, une valeur « -1 897 » tombe quand on depense
+    const tgt = S0.coins; if (game._cs === undefined) { game._cs = tgt; game._cp = tgt; }
+    { const dtc = Math.min(0.1, (now - (game._ct || now)) / 1000); game._ct = now; if (game._cp !== tgt) { game._cb = now; game._cd = tgt - game._cp; game._cp = tgt; } game._cs += (tgt - game._cs) * (1 - Math.exp(-dtc * 8)); if (Math.abs(tgt - game._cs) < 1) game._cs = tgt; }
+    const cs = U.formatInt(Math.round(game._cs)), cbk = game._cb ? (now - game._cb) / 1000 : 9, cbump = cbk < 0.45 ? Math.sin(cbk / 0.45 * 3.1416) * (game._cd > 0 ? 0.1 : -0.045) : 0;
+    ctx.save(); ctx.translate(x0 + cwid / 2, y + h / 2); ctx.scale(1 + cbump, 1 + cbump); ctx.translate(-(x0 + cwid / 2), -(y + h / 2));
     UI.currencyPill(ctx, ui, x0, y, cwid, h, 'coin', cs);
+    ctx.restore();
+    if (cbk < 1.0 && game._cd && !(game._cd > 0 && game.evoCoinFx)) { const a = U.clamp(1 - cbk / 1.0, 0, 1), neg = game._cd < 0, tx = (neg ? '-' : '+') + U.formatInt(Math.abs(Math.round(game._cd))); ctx.save(); ctx.globalAlpha = a; UI.outlined(ctx, tx, x0 + cwid * 0.52, y + h * (neg ? 1.2 + cbk * 0.5 : 1.5 - cbk * 0.5), h * 0.5, neg ? '#FF8A7A' : '#FFE16A', '#1a1208', { keep: true, ow: 0.16 }); ctx.restore(); }
     const gs = String(S0.gems || 0), gx = x0 + cwid + S(30), gwid = S(220), pulse = fxg ? U.clamp(1 - (now - fxg.t0) / 900, 0, 1) : 0;
     UI.currencyPill(ctx, ui, gx, y, gwid, h, 'gem', gs, { plus: true });
     if (pulse > 0) { ctx.save(); UI.cham(ctx, gx + h * 0.3, y, gwid - h * 0.3, h, h * 0.28); ctx.lineWidth = S(5); ctx.strokeStyle = 'rgba(255,255,255,' + pulse + ')'; ctx.stroke(); UI.text(ctx, '+' + fxg.n, gx + h * 1.5, y + h * 1.5 - (1 - pulse) * h * 0.4, h * 0.6, T.yellow, { outline: true }); ctx.restore(); }
@@ -52,27 +59,42 @@
     const ix = rx + pd, iy = y + h * 0.125, iw = w - pd * 2, ih = h * 0.405;
     UI.outlined(ctx, name, ix, y + h * 0.068, UI.fit(ctx, name, w * 0.6, h * 0.066), ink, null, { align: 'left' });
     { const bg = UI.CARDBG[id], gr = ctx.createLinearGradient(0, iy, 0, iy + ih); gr.addColorStop(0, bg[0]); gr.addColorStop(1, bg[1]); rr0(ctx, ix, iy, iw, ih, w * 0.025); ctx.fillStyle = gr; ctx.fill(); }
-    ctx.save(); if (id !== 'cm') { ctx.shadowColor = 'rgba(0,0,0,0.38)'; ctx.shadowOffsetY = S(7); ctx.shadowOffsetX = S(3); ctx.shadowBlur = 0; } UI.icon(ctx, ico, ix + iw / 2, iy + ih / 2 - (id === 'cm' ? ih * 0.07 : 0), ih * 0.66); ctx.restore();
-    if (id === 'cm') UI.outlined(ctx, 'X' + f1(E.mult(n)), ix + iw / 2, iy + ih * 0.84, h * 0.095, T.white, '#000000', { keep: true, ow: 0.16 });
+    // v237 : revenu : a chaque achat la pile de pieces rebondit et la valeur gagnee monte (+0,1) ; a un PALIER (x1,4 -> x2) c'est plus gros, avec une gerbe d'etincelles
+    const cb = id === 'cm' && game.evoBought && game.evoBought.id === 'cm' && game.evoBought.delta !== undefined ? game.evoBought : null, ct = cb ? (now - cb.t0) / 1000 : 9, big = cb && cb.palier;
+    const pul = ct < 0.55 ? Math.sin(ct / 0.55 * 3.1416) * (big ? 0.34 : 0.2) : 0;
+    ctx.save(); if (id !== 'cm') { ctx.shadowColor = 'rgba(0,0,0,0.38)'; ctx.shadowOffsetY = S(7); ctx.shadowOffsetX = S(3); ctx.shadowBlur = 0; } { const icx = ix + iw / 2, icy = iy + ih / 2 - (id === 'cm' ? ih * 0.07 : 0); ctx.translate(icx, icy - pul * ih * 0.12); ctx.scale(1 + pul, 1 + pul); ctx.translate(-icx, -icy); UI.icon(ctx, ico, icx, icy, ih * 0.66); } ctx.restore();
+    if (id === 'cm') { ctx.save(); const tcx = ix + iw / 2, tcy = iy + ih * 0.84; ctx.translate(tcx, tcy); ctx.scale(1 + pul * 0.9, 1 + pul * 0.9); ctx.translate(-tcx, -tcy); UI.outlined(ctx, 'X' + f1(E.mult(n)), tcx, tcy, h * 0.095, big && ct < 0.8 ? T.yellow : T.white, '#000000', { keep: true, ow: 0.16 }); ctx.restore();
+      if (cb && ct < 1.7) {
+        const a = U.clamp(1 - (ct - 0.9) / 0.8, 0, 1), rise = ease(ct / 1.1) * ih * 0.55, txt = '+' + f1(cb.delta), sz = h * (big ? 0.15 : 0.1);
+        ctx.save(); ctx.globalAlpha = a; UI.outlined(ctx, txt, ix + iw / 2, iy + ih * 0.5 - rise, UI.fit(ctx, txt, iw * 0.9, sz), big ? '#FFE16A' : '#FFFFFF', '#1a1208', { keep: true, ow: 0.16 }); ctx.restore();
+        if (big && ct < 1.0) { const e = ease(ct / 0.9); ctx.save(); ctx.globalAlpha = 1 - e; ctx.strokeStyle = '#FFF2B0'; ctx.lineWidth = Math.max(2, S(5) * (1 - e)); ctx.beginPath(); ctx.arc(ix + iw / 2, iy + ih * 0.45, ih * (0.2 + 0.75 * e), 0, 6.2832); ctx.stroke();
+          for (let i = 0; i < 12; i++) { const an = i * 0.5236 + 0.3, r0 = ih * (0.25 + 0.7 * e), sx = ix + iw / 2 + Math.cos(an) * r0, sy = iy + ih * 0.45 + Math.sin(an) * r0, ss = S(10) * (1 - e) + 1; ctx.fillStyle = i % 2 ? '#FFE16A' : '#FFFFFF'; ctx.beginPath(); ctx.moveTo(sx, sy - ss * 1.6); ctx.lineTo(sx + ss * 0.5, sy); ctx.lineTo(sx, sy + ss * 1.6); ctx.lineTo(sx - ss * 0.5, sy); ctx.closePath(); ctx.fill(); } ctx.restore(); }
+      } }
     { const br = w * 0.125, bcx = rx + w - br * 0.8, bcy = y + br * 0.8, ro = Math.max(2, S(4)); ctx.beginPath(); ctx.arc(bcx, bcy, br + ro, 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.beginPath(); ctx.arc(bcx, bcy, br, 0, 6.2832); ctx.fillStyle = '#3A5873'; ctx.fill(); UI.outlined(ctx, String(n + 1), bcx, bcy + br * 0.04, UI.fit(ctx, String(n + 1), br * 1.4, br * 1.05), T.white); }
     UI.segments(ctx, ix, y + h * 0.555, iw, h * 0.088, done, 5, { off: 'rgba(14,24,34,0.45)', on: col });
     const bx = rx + pd, bw = w - pd * 2, bh = h * 0.285, by = y + h - pd - h * 0.285, frac = cost === null ? 1 : U.clamp(S0.coins / cost, 0, 1);
-    const cs = U.formatInt(cost), face = UI.greenButton(ctx, bx, by, bw, bh, { disabled: !can, cat: id });
-    ctx.save(); if (!can) ctx.globalAlpha = 0.72;
+    const cs = U.formatInt(cost), gemMode = !can && cost !== null, gc = E.gemCost(game, id), haveG = (S0.gems || 0) >= gc, face = UI.greenButton(ctx, bx, by, bw, bh, { disabled: false, cat: gemMode ? 'rk' : id });
+    if (gemMode) {   // plus assez de pieces : le bouton propose une GEMME (ou une pub si on n'en a pas)
+      const gy = face.y + face.h * 0.5, gs = face.h * 0.78, tw = UI.tw(ctx, String(gc), face.h * 0.6), gx0 = bx + bw / 2 - (gs * 0.55 + tw / 2 + (haveG ? 0 : gs * 0.45)) / 2;
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowOffsetY = S(4); ctx.shadowBlur = 0; UI.icon(ctx, 'gem', gx0 + gs * 0.3, gy, gs); ctx.restore();
+      UI.outlined(ctx, String(gc), gx0 + gs * 0.85, gy + face.h * 0.03, face.h * 0.62, '#FFFFFF', null, { align: 'left' });
+      if (!haveG) UI.icon(ctx, 'video', gx0 + gs * 0.85 + tw + gs * 0.55, gy, gs * 0.6);
+    }
+    ctx.save(); if (!can) ctx.globalAlpha = 0.72; if (gemMode) ctx.globalAlpha = 0;
     UI.outlined(ctx, 'AMÉLIORER', bx + bw / 2, face.y + face.h * 0.3, UI.fit(ctx, 'AMÉLIORER', bw * 0.94, face.h * 0.4), '#FFFFFF');
     ctx.restore();
-    { const ps = face.h * 0.37, pw = UI.tw(ctx, cs, ps) + ps * 1.3; ctx.save(); if (!can) ctx.globalAlpha = 0.8; UI.icon(ctx, 'coin', bx + bw / 2 - pw / 2 + ps * 0.5, face.y + face.h * 0.73, ps * 1.15); ctx.restore(); UI.outlined(ctx, cs, bx + bw / 2 - pw / 2 + ps * 1.25, face.y + face.h * 0.73, UI.fit(ctx, cs, bw * 0.55, ps), can ? '#FFFFFF' : '#F04438', null, { align: 'left' }); }
+    if (!gemMode) { const ps = face.h * 0.37, pw = UI.tw(ctx, cs, ps) + ps * 1.3; ctx.save(); if (!can) ctx.globalAlpha = 0.8; UI.icon(ctx, 'coin', bx + bw / 2 - pw / 2 + ps * 0.5, face.y + face.h * 0.73, ps * 1.15); ctx.restore(); UI.outlined(ctx, cs, bx + bw / 2 - pw / 2 + ps * 1.25, face.y + face.h * 0.73, UI.fit(ctx, cs, bw * 0.55, ps), can ? '#FFFFFF' : '#F04438', null, { align: 'left' }); }
     // (plus de barre de progression de l'argent)
     if (bk > 0) { ctx.fillStyle = 'rgba(255,255,255,' + bk * 0.35 + ')'; UI.cham(ctx, rx, y, w, h, S(26)); ctx.fill(); }
     ctx.restore();
-    return { id, rx, y, w, h, ix, iy, iw, ih, can, cost };
+    return { id, rx, y, w, h, ix, iy, iw, ih, can, cost, bx, by, bw, bh };
   }
   // ---------- MENU ----------
   Home.drawEvo = function (ui, ctx, game, W, H) {
     const F = frame(ui, ctx, W, H), { HH, Y, T0, cw, ox, cx } = F, E = CC.EVO, S0 = E.save(game), last = game.evoLast, now = performance.now(), anim = game.evoAnim;
     const chTop = T0 + HH - ((cw - S(26) * 2 - S(14) * 2) / 3) / 0.703 - S(28);
     topBar(ui, ctx, game, F, S0, E);
-    if (anim) { const a = U.clamp(anim.t / 0.4, 0, 1) * (1 - U.smooth(anim.dur - 0.6, anim.dur, anim.t)), name = anim.label + ' !'; ctx.save(); ctx.globalAlpha = a; UI.text(ctx, name, cx, Y(0.2), UI.fit(ctx, name, cw * 0.9, S(130)), T.yellow, { outline: true }); UI.text(ctx, 'NOUVELLE PIÈCE', cx, Y(0.27), S(52), T.white, { outline: true }); ctx.restore(); return; }
+    if (anim) { const a = U.clamp(anim.t / 0.4, 0, 1) * (1 - U.smooth(anim.dur - 0.6, anim.dur, anim.t)), name = anim.label + ' !'; ctx.save(); ctx.globalAlpha = a; UI.text(ctx, name, cx, Y(0.2), UI.fit(ctx, name, cw * 0.9, S(130)), T.yellow, { outline: true }); UI.text(ctx, anim.sub || 'NOUVELLE PIÈCE', cx, Y(0.27), S(52), T.white, { outline: true }); ctx.restore(); return; }
     // (v227 : plus de bande sombre derriere les cartes)
     { const r0 = E.rocket(S0.rk), nm = TIERNAME[r0.tier], sp = nm.indexOf(' '), l1 = nm.slice(0, sp), l2 = nm.slice(sp + 1), bw = S(380), bh = S(104), bx = cx - bw / 2 + S(30), by = T0 + S(172), bd = Math.max(2, S(4)), rd = S(12);
       rr0(ctx, bx - bd, by - bd, bw + bd * 2, bh + bd * 2, rd + bd); ctx.fillStyle = '#05080C'; ctx.fill(); rr0(ctx, bx, by, bw, bh, rd); ctx.fillStyle = '#26394B'; ctx.fill();
@@ -104,9 +126,7 @@
     const gap = S(34), marg = S(40), cwd = (cw - marg * 2 - gap * 2) / 3, chh = ((cw - S(26) * 2 - S(14) * 2) / 3) / 0.703, cy0 = T0 + HH - chh - S(28), cards = [];
     ['la', 'rk', 'cm'].forEach((id, i) => cards.push(card(ui, ctx, game, E, S0, id, ox + marg + i * (cwd + gap), cy0, cwd, chh, now)));
     // (plus d'etoile sur l'ogive)
-    for (const c of cards) if (!c.can) { const gc = E.gemCost(game, c.id), have = (S0.gems || 0) >= gc, r = S(30), gx = c.ix + r * 1.25, gy = c.iy + r * 1.25;
-      UI.panel(ctx, gx - r, gy - r, r * 2, r * 2, { c: r * 0.4, fill: have ? '#3a3400' : T.bg, border: T.white, bw: S(3) }); if (have) { UI.icon(ctx, 'gem', gx - r * 0.2, gy, r * 1.1); UI.text(ctx, String(gc), gx + r * 0.55, gy + r * 0.45, r * 0.75, T.yellow, { shadow: false }); } else { UI.icon(ctx, 'gem', gx, gy, r * 1.15); const q = r * 0.8; UI.panel(ctx, gx + r * 0.2, gy + r * 0.2, q, q, { c: q * 0.25, fill: T.bg2, border: T.white, bw: S(2) }); UI.glyph(ctx, 'play', gx + r * 0.2 + q * 0.55, gy + r * 0.2 + q * 0.5, q * 0.28, T.yellow); }
-      UI.tap(ui, gx - r, gy - r, r * 2, r * 2, () => E.buyGem(game, c.id)); }
+    for (const c of cards) if (!c.can && c.cost !== null) UI.tap(ui, c.bx, c.by, c.bw, c.bh, () => E.buyGem(game, c.id));
     for (const c of cards) hit(ui, c.rx, c.y, c.w, c.h, () => E.buy(game, c.id));
     { const ch = game.evoChest; if (ch) { const k = (now - ch.t0) / 1000; if (k > 3.2) game.evoChest = null; else {
       const a = U.clamp(k / 0.25, 0, 1) * U.clamp((3.2 - k) / 0.4, 0, 1); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = 'rgba(8,9,12,0.85)'; ctx.fillRect(0, T0, W, HH); UI.icon(ctx, 'chest_open', cx, Y(0.3), S(440) * (0.9 + 0.1 * ease(k * 3)));

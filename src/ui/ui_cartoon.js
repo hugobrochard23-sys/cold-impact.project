@@ -122,8 +122,9 @@
   // petite boutique en 3D (auvent rouge et blanc, facade de bois, porte bleue, plaque SHOP) : silhouette opaque
   UI.shopStall = (ctx, x, y, s, now) => {   // boutique : image fournie (assets/ui/shop.png) + pastille de notification
     const im = UI.art('shop'), w = s * 1.12, h = w * (im ? im.naturalHeight / im.naturalWidth : 1);
+    ctx.save(); { const ph = (((now || 0) + 1700) % 6200) / 6200, k = ph < 0.14 ? ph / 0.14 : 1; if (k < 1) { const a = Math.sin(k * Math.PI * 5) * (1 - k) * 0.13, jy = -Math.abs(Math.sin(k * Math.PI * 2)) * s * 0.06; ctx.translate(x + s / 2, y + s * 0.95); ctx.rotate(a); ctx.translate(-(x + s / 2), -(y + s * 0.95) + jy); } }
     if (im) { if (!UI.artOutlined(ctx, 'shop', x - s * 0.04 + w / 2, y - s * 0.06 + h / 2, Math.max(w, h), Math.max(2, S(3)))) ctx.drawImage(im, x - s * 0.04, y - s * 0.06, w, h); }
-    // (plus de pastille d'alerte)
+    ctx.restore();
   };
   // badge « NO ADS » : disque d'interdiction + plaque de bois
   UI.noAdsBadge = (ctx, x, y, s) => {   // seulement le logo : disque bleu nuit, « ADS » barre de rouge
@@ -141,8 +142,10 @@
   // coffre : cadre a facettes bleu acier, coffre d'origine, lueur doree quand il est pret
   UI.chestFrame = (ctx, x, y, s, ready, unlocked, now) => {
     const cx = x + s / 2, cy = y + s / 2, r = s * 0.48, ow = Math.max(2, S(4));
+    ctx.save(); if (ready && unlocked) { const ph = ((now || 0) % 2600) / 2600, k = ph < 0.3 ? ph / 0.3 : 1; if (k < 1) { const a = Math.sin(k * Math.PI * 7) * (1 - k) * 0.2, sc = 1 + 0.06 * Math.sin(k * Math.PI); ctx.translate(cx, cy + r * 0.6); ctx.rotate(a); ctx.scale(sc, sc); ctx.translate(-cx, -(cy + r * 0.6)); } }
     ctx.beginPath(); ctx.arc(cx, cy, r + ow, 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); ctx.fillStyle = '#F39C12'; ctx.fill();
     ctx.save(); if (!unlocked) ctx.globalAlpha = 0.6; ctx.shadowColor = 'rgba(60,30,0,0.4)'; ctx.shadowOffsetY = S(5); ctx.shadowBlur = 0; if (!UI.artImg(ctx, 'chest', cx, cy - r * 0.06, s * 1.08)) UI.icon(ctx, 'chest_open', cx, cy, s * 0.9); ctx.restore(); if (!unlocked) UI.glyph(ctx, 'lock', cx, cy + r * 0.1, s * 0.2, '#F0EDE4');
+    ctx.restore();
   };
   // petite plaque orange (OUVRIR, temps restant)
   UI.orangePlate = (ctx, x, y, w, h, hot) => { rr(ctx, x, y, w, h, h * 0.3); ctx.fillStyle = hot ? '#FF8B19' : '#8A4A1A'; ctx.fill(); };

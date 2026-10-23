@@ -136,7 +136,7 @@
     for (const k of Object.keys(P)) { P[k].userData.k = 0; root.add(P[k]); }
     root.userData.P = P; return root;
   }
-  const PART_TIER = { wings: 1, tail: 1, flaps: 3, boost: 3 };
+  const PART_TIER = { wings: 1, tail: 1, flaps: 3, boost: 3 };  EVO.PART_TIER = PART_TIER;
   EVO.attachParts = (g) => {
     const rk = g.rocket, r = EVO.rocket(EVO.save(g).rk);
     if (rk.mesh.userData.evoParts) rk.mesh.remove(rk.mesh.userData.evoParts);
@@ -205,7 +205,7 @@
     if (g.evoTumble) EVO.tumbleFrame(g, dt);
     EVO.kbFrame(g); EVO.pistonFrame(g, dt);
     const wt = CC.Textures && CC.Textures.get && CC.Textures.get('water'); if (wt && wt.offset) wt.offset.y += dt * 0.12;   // v123 : l'eau coule (rivière, cascades)
-    const A = g.evoAnim; if (!A) return;
+    const A = g.evoAnim; if (!A || A.kind) return;   // v237 : les animations « tier » et « build » sont dans evo_atelier.js
     A.t += dt;
     const rk = g.rocket, fxA = g.effects;
     // v235 : ATELIER : etincelles de soudure avant la pose, reflet qui parcourt la coque, gerbe a la tuyere a la fin
@@ -224,12 +224,20 @@
     if (A.popped) for (const k of Object.keys(g.evoParts || {})) if (PART_TIER[k] === A.tier) { const e = EASE((A.t - 0.55) / 0.7); g.evoParts[k].scale.setScalar(Math.max(0.0001, e)); g.evoParts[k].userData.k = 1; }
     if (A.t > A.dur) { g.evoAnim = null; rk.mesh.traverse((o) => { if (o.isMesh && o.material && o.material.emissive && !o.material.isMeshBasicMaterial) { const i0 = o.material.userData && o.material.userData.em0; o.material.emissive.setRGB(i0 ? i0[0] : 0, i0 ? i0[1] : 0, i0 ? i0[2] : 0); } }); }
   };
+  // longueur reelle de la fusee (m), mesuree hors rotation et mise en cache par apparence
+  EVO.rocketLen = (g) => {
+    const rk = g.rocket, key = rk ? rk.mesh.children.length + ':' + EVO.save(g).rk + ':' + rk.mesh.scale.x.toFixed(3) : '';
+    if (!rk) return 2.2; if (g._rkLenKey === key && g._rkLen) return g._rkLen;
+    const m = rk.mesh, q = m.quaternion.clone(), pp = m.position.clone(); m.quaternion.identity(); m.position.set(0, 0, 0); m.updateMatrixWorld(true);
+    const bx = new THREE.Box3().setFromObject(m), sz = bx.getSize(new V()); m.quaternion.copy(q); m.position.copy(pp); m.updateMatrixWorld(true);
+    g._rkLenKey = key; g._rkLen = U.clamp(Math.max(sz.x, sz.y, sz.z), 1.2, 6); return g._rkLen;
+  };
   EVO.camHook = (g, rig, o) => {
     const A = g.evoAnim;
     // v152 : menu : la fusee est vue de trois quarts avant, en haut de l'ecran (les cartes sont dessous) ; la vue de dessus du tir revient pendant la visee
     { const now = performance.now(), dtm = Math.min(0.1, (now - (g._mk0 || now)) / 1000); g._mk0 = now; const want = (g.ui && g.ui.overlay === 'evo' && !g.evoAim && !A) ? 1 : 0; g._mk = (g._mk || 0) + (want - (g._mk || 0)) * Math.min(1, dtm * 2.6);
       if (g._mk > 0.003 && g.pad) { const e = g._mk * g._mk * (3 - 2 * g._mk), kf = 1 + 0.02 * Math.min(40, EVO.save(g).rk), dir = g.pad.dir, up = new V(0, 1, 0), right = new V().crossVectors(dir, up).normalize(), sw = Math.sin(now / 2600) * 0.45;
-        const p = new V().copy(o).addScaledVector(dir, (2.9 + sw * 0.12) * kf).addScaledVector(right, (3.1 + sw * 0.12) * kf).addScaledVector(up, 1.25 * kf), look = new V().copy(o).addScaledVector(dir, -0.1).addScaledVector(up, 0.42 * kf);   // v232 : menu : vue de trois quarts avant, de haut, sur la fusee dans son hangar
+        const Lw = EVO.rocketLen(g), Dd = U.clamp(2.75 * Lw, 3.3, 8), rt = Math.min(0.8 * Dd, 4.4) + sw * 0.1, fw = Math.sqrt(Math.max(0.25 * Dd * Dd, Dd * Dd - rt * rt - 0.1 * Dd * Dd)) + sw * 0.1, p = new V().copy(o).addScaledVector(dir, fw).addScaledVector(right, rt).addScaledVector(up, 0.32 * Dd), look = new V().copy(o).addScaledVector(dir, 0.05 * Lw).addScaledVector(up, -0.02 * Lw);   // v237 : menu : trois quarts avant ; la distance suit la LONGUEUR de la fusee (on voit toujours son bout), elle est au milieu de l'ecran, sous « APPUYEZ POUR LANCER 
         rig.padPos.lerp(p, e); rig.padLook.lerp(look, e); rig.padFov += (50 - rig.padFov) * e; } }
     if (!A) return;
     const k = U.smooth(0, 0.5, A.t) * (1 - U.smooth(A.dur - 0.7, A.dur, A.t)), ang = 0.6 + A.t * 0.55;

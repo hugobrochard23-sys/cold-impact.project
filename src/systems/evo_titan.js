@@ -45,7 +45,7 @@
   }
 
   let TT = null;
-  const reset = (g) => { if (TT) { if (TT.far0 && g.camera.far > TT.far0) { g.camera.far = TT.far0; g.camera.updateProjectionMatrix(); } g.scene.remove(TT.W); for (const q of TT.towers) g.scene.remove(q.g); for (const s of TT.shells) g.scene.remove(s.o); } TT = null; EVO.titan = null; };
+  const reset = (g) => { if (TT) { if (TT.far0 && g.camera.far > TT.far0) { g.camera.far = TT.far0; g.camera.updateProjectionMatrix(); } g.scene.remove(TT.W); for (const q of TT.towers) g.scene.remove(q.g); for (const s of TT.shells) g.scene.remove(s.o); for (const q of TT.debris) g.scene.remove(q.o); } TT = null; EVO.titan = null; };
   const _br = EVO.beginRun; EVO.beginRun = (g) => { _br(g); reset(g); };
 
   function create(g, T, P) {
@@ -56,7 +56,7 @@
     const beams = []; for (let i = 0; i < 2; i++) { const cone = new T3.Mesh(new T3.CylinderGeometry(16, 1.5, 320, 12, 1, true), new T3.MeshBasicMaterial({ color: '#cfe4ff', transparent: true, opacity: 0.2, depthWrite: false, blending: T3.AdditiveBlending, side: T3.DoubleSide, fog: false })); cone.position.y = 160; const b = new T3.Group(); b.add(cone); b.position.set(i ? 26 : -26, 48, 6); b.userData.ph = i * 2.1; W.add(b); beams.push(b); }
     const col = EVO.colBox(W, 11.6 * SC, 7.4 * SC, 15.4 * SC, 0, 3.7 * SC, -0.5 * SC);
     const dB = P.d0 - 10;
-    TT = EVO.titan = { W, M, tur, gun, slide, muz, radar, beams, d: dB, d0: dB, lx: T.laneX(dB), hp: HP, mode: 'sleep', cool: 0, recoil: 0, shells: [], towers: [], ev: {}, fireT: 2, podT: 4, t: 0, dash: null, dying: 0, aim: 0, el: 0, smokeT: 0 };
+    TT = EVO.titan = { debris: [], ball: null, burst: 0, disp: 1, W, M, tur, gun, slide, muz, radar, beams, d: dB, d0: dB, lx: T.laneX(dB), hp: HP, mode: 'sleep', cool: 0, recoil: 0, shells: [], towers: [], ev: {}, fireT: 2, podT: 4, t: 0, dash: null, dying: 0, aim: 0, el: 0, smokeT: 0 };
     for (const [k, off, side] of [['A', 330, -1], ['B', 235, 1]]) { const tg = buildTower(); tg.rotation.order = 'YXZ'; TT.towers.push({ k, g: tg, d: dB - off, side, state: 'up', t: 0, ang: 0 }); }
     g.scene.add(W); W.visible = false;
     EVO.addDyn(W, (t, dt, gg) => upd(gg, dt), [col], { near: 1e7, span: 1e7, hit: (gg) => hit(gg) });
@@ -101,8 +101,21 @@
     boom(g, p, true); g.rig.shake = Math.max(g.rig.shake, 1.6); g.flash = 0.35; g.flashColor = '#ffe9b0'; g.hitStop = 0.14; g.hitScale = 0.15; g.chromaBurst = 0.02;
     g.audio.play('clunk', p); g.audio.play('robotRoar', p);
     if (TT.hp > 0) { TT.mode = 'dash'; TT.dash = { t: 0, dur: 1.3, from: TT.d, to: Math.min(Math.max(TT.d, g.endlessRun.dist) + REACH, TT.d0 + CAP) }; if (CC.L1) CC.L1.msg(g, TT.hp === 2 ? 'TOUCHE !  2 / 3' : 'ENCORE UN !  1 / 3', 1.6, '#ffe9a0'); }
-    else { TT.mode = 'dying'; TT.dying = 0; g.hitStop = 0.3; g.flash = 0.5; g.flashColor = '#ffffff'; g.chromaBurst = 0.03; if (CC.L1) CC.L1.msg(g, 'TITAN DETRUIT !', 2.4, '#ffe9a0'); }
+    else { TT.mode = 'dying'; TT.dying = 0; { const bl = glowSprite(1); bl.material.opacity = 0.95; bl.position.set(0, 26, 0); TT.W.add(bl); TT.ball = bl; } g.hitStop = 0.3; g.flash = 0.5; g.flashColor = '#ffffff'; g.chromaBurst = 0.03; if (CC.L1) CC.L1.msg(g, 'TITAN DETRUIT !', 2.4, '#ffe9a0'); }
     return true;
+  }
+
+  // l'explosion finale : la coque disparait, la tourelle et des blocs de blindage sont projetes
+  function blast(g) {
+    TT.M.visible = false; for (const b of TT.beams) b.visible = false; TT.W.updateWorldMatrix(true, true);
+    const wp = TT.W.position, mk = (geo, mat, lx, ly, lz, sp, up) => { const o = new T3.Mesh(geo, mat); _c.set(lx, ly, lz); TT.W.localToWorld(_c); o.position.copy(_c); o.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3); g.scene.add(o); const d = _a.set(lx, 0, lz).normalize().applyQuaternion(TT.W.quaternion); TT.debris.push({ o, v: new V(d.x * sp + U.fx.range(-12, 12), up, d.z * sp + U.fx.range(-12, 12)), s: U.fx.range(-4, 4), t: 0 }); return o; };
+    const turret = TT.tur.clone(); turret.scale.setScalar(SC); { const o = new T3.Group(); o.add(turret); TT.W.localToWorld(_c.set(0, 34, -2)); o.position.copy(_c); o.quaternion.copy(TT.W.quaternion); turret.position.set(0, 0, 0); turret.rotation.set(0, TT.aim, 0); g.scene.add(o); TT.debris.push({ o, v: new V(U.fx.range(-14, 14), 95, U.fx.range(-14, 14)), s: 1.4, t: 0 }); }
+    const dark = new T3.MeshLambertMaterial({ color: '#2b2f36' }), hot = new T3.MeshBasicMaterial({ color: '#ff8a2a' }), mid = new T3.MeshLambertMaterial({ color: '#4a515c' });
+    for (let i = 0; i < 18; i++) { const sz = U.fx.range(4, 13); mk(new T3.BoxGeometry(sz, sz * U.fx.range(0.4, 0.9), sz * U.fx.range(0.7, 1.4)), i % 5 === 0 ? hot : i % 2 ? dark : mid, U.fx.range(-32, 32), U.fx.range(6, 36), U.fx.range(-40, 36), U.fx.range(25, 85), U.fx.range(45, 115)); }
+    // la carcasse calcinee qui reste au sol
+    const ash = new T3.Mesh(new T3.CircleGeometry(46, 20), new T3.MeshBasicMaterial({ color: '#15110e', transparent: true, opacity: 0.85, depthWrite: false })); ash.rotation.x = -Math.PI / 2; ash.position.y = 0.4; TT.W.add(ash);
+    const hull = new T3.Mesh(new T3.BoxGeometry(60, 6, 74), new T3.MeshLambertMaterial({ color: '#16171a' })); hull.position.set(0, 3, 0); TT.W.add(hull);
+    for (const sx of [-1, 1]) { const tr = new T3.Mesh(new T3.BoxGeometry(14, 9, 70), new T3.MeshLambertMaterial({ color: '#101113' })); tr.position.set(sx * 30, 4.5, 0); TT.W.add(tr); }
   }
 
   // ---------- boucle ----------
@@ -140,15 +153,22 @@
       if (rd < TT.d + 700 && rd > TT.d - 700) g.rig.shake = Math.max(g.rig.shake, 0.4 * Math.sin(Math.min(1, D.t / D.dur) * 3.14));
       if (D.t >= D.dur) { TT.mode = 'live'; TT.dash = null; TT.fireT = 1.1; TT.podT = 3.2; }
     }
-    // ----- mort : explosions en chaine, la tourelle saute -----
+    // ----- mort : boule de feu, la coque disparait dans l'explosion, des debris retombent, il reste une epave calcinee -----
     if (TT.mode === 'dying') {
       TT.dying += dt; const t = TT.dying; TT.smokeT -= dt;
-      if (TT.smokeT <= 0) { TT.smokeT = 0.11; _c.set(U.fx.range(-30, 30), U.fx.range(4, 44), U.fx.range(-40, 36)); TT.W.localToWorld(_c); fx.explosion(_c.clone(), null, true, Math.random() < 0.5 ? 'cyan' : 'orange'); fx.smokePuff(_c.clone(), new V(0, 12, 0), 30, 2.4); if (Math.random() < 0.5) g.audio.play('boom', _c); }
+      if (t > 0.28 && !TT.burst) { TT.burst = 1; blast(g); }
+      if (TT.smokeT <= 0 && t < 2.4) { TT.smokeT = 0.1; _c.set(U.fx.range(-34, 34), U.fx.range(2, 40), U.fx.range(-44, 40)); TT.W.localToWorld(_c); fx.explosion(_c.clone(), null, true, Math.random() < 0.5 ? 'cyan' : 'orange'); fx.smokePuff(_c.clone(), new V(0, 12, 0), 34, 2.6); if (Math.random() < 0.5) g.audio.play('boom', _c); }
       g.rig.shake = Math.max(g.rig.shake, 1.2 * (1 - t / 3));
-      if (t > 0.9) { const k = U.clamp((t - 0.9) / 1.6, 0, 1); TT.tur.position.set(1.2 * k, 4.0 + 7 * Math.sin(k * Math.PI) + 0.2 * k, -0.2 + 1.0 * k); TT.tur.rotation.z = 0.5 * k; TT.tur.rotation.x = -0.22 * k; TT.tur.rotation.y = TT.aim + 0.8 * k; }   // la tourelle saute puis retombe de travers sur la coque
-      if (t > 3.0) { TT.mode = 'wreck'; TT.M.traverse((o) => { if (!o.isMesh) return; for (const q of (Array.isArray(o.material) ? o.material : [o.material])) { if (q.userData.dead) continue; q.userData.dead = 1; q.color.multiplyScalar(0.35); if (q.emissive) q.emissive.setRGB(0.04, 0.02, 0.01); } }); }
+      if (TT.ball) { const k = U.clamp(t / 1.4, 0, 1); TT.ball.scale.setScalar(60 + 260 * (1 - Math.pow(1 - k, 3))); TT.ball.material.opacity = (1 - k) * 0.95; TT.ball.visible = k < 1; }
+      if (t > 3.0) TT.mode = 'wreck';
     }
-    if (TT.mode === 'wreck') { TT.smokeT -= dt; if (TT.smokeT <= 0 && near) { TT.smokeT = 0.25; _c.set(U.fx.range(-20, 20), 40, U.fx.range(-20, 20)); TT.W.localToWorld(_c); fx.smokePuff(_c.clone(), new V(0, 9, 0), 36, 3.2); } }
+    for (let i = TT.debris.length - 1; i >= 0; i--) {
+      const q = TT.debris[i]; q.t += dt; q.v.y -= 70 * dt; q.o.position.addScaledVector(q.v, dt); const gy = TT.W.position.y + 1;
+      if (q.o.position.y < gy) { q.o.position.y = gy; q.v.multiplyScalar(0.2); q.v.y = Math.abs(q.v.y) * 0.3; q.s *= 0.3; if (!q.hit) { q.hit = 1; fx.dustKick(q.o.position.clone(), new V(0, 1, 0), 2); } }
+      q.o.rotation.x += q.s * dt; q.o.rotation.z += q.s * 0.7 * dt; if (q.t > 0.4 && Math.random() < 0.25) fx.smokePuff(q.o.position.clone(), new V(0, 6, 0), 12, 1.4);
+      if (q.t > 5) { g.scene.remove(q.o); TT.debris.splice(i, 1); }
+    }
+    if (TT.mode === 'wreck') { TT.smokeT -= dt; if (TT.smokeT <= 0 && near) { TT.smokeT = 0.18; _c.set(U.fx.range(-22, 22), 3, U.fx.range(-26, 26)); TT.W.localToWorld(_c); fx.smokePuff(_c.clone(), new V(0, 9, 0), 36, 3.2); if (Math.random() < 0.3) fx.flash(_c.clone(), '#ff8a30', 3, 40, 0.3, '#ff5020'); } }
     // ----- projectiles -----
     for (let i = TT.shells.length - 1; i >= 0; i--) {
       const s = TT.shells[i]; s.t += dt; const k = Math.min(1, s.t / s.T); s.o.position.lerpVectors(s.from, s.to, k); fx.trailPuff(s.o.position.clone(), _b.copy(s.to).sub(s.from).normalize());
@@ -174,12 +194,18 @@
   };
 
   // ---------- jauge de vie du boss ----------
+  const rrect = (ctx, x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
   EVO.titanHud = (ctx, g, ox, u, H, UI, S) => {
-    if (!TT || TT.mode === 'sleep' || TT.mode === 'wreck' || !g.endlessRun) return
-    const w = u * 0.5, h = S(30), x = ox + (u - w) / 2, y = H * 0.33, a = TT.mode === 'dying' ? 0.5 : 1;
-    ctx.save(); ctx.globalAlpha = a; UI.text(ctx, 'TITAN', x + w / 2, y - S(12), S(36), '#ffffff', { outline: true, ow: 0.2 });
-    ctx.fillStyle = 'rgba(8,12,18,0.6)'; ctx.fillRect(x - S(4), y - S(4), w + S(8), h + S(8));
-    for (let i = 0; i < HP; i++) { const sw = (w - S(8)) / HP; ctx.fillStyle = i < TT.hp ? '#ff4a3a' : 'rgba(255,255,255,0.14)'; ctx.fillRect(x + i * (sw + S(4)), y, sw, h); }
-    ctx.restore();
+    if (!TT || TT.mode === 'sleep' || !g.endlessRun || (TT.mode === 'wreck' && TT.disp < 0.01)) return;
+    const w = u * 0.5, h = S(26), x = ox + (u - w) / 2, y = H * 0.33, f = TT.hp / HP; TT.disp += (f - TT.disp) * 0.12; TT.lag = TT.lag === undefined ? 1 : TT.lag + (f - TT.lag) * 0.03;   // la barre descend doucement ; on ne devine pas le nombre de coups
+    const a = TT.mode === 'wreck' ? U.clamp(TT.disp * 10, 0, 1) : 1, r = h / 2;
+    ctx.save(); ctx.globalAlpha = a; UI.text(ctx, 'TITAN', x + w / 2, y - S(14), S(36), '#ffffff', { outline: true, ow: 0.2 });
+    ctx.fillStyle = 'rgba(8,12,18,0.7)'; rrect(ctx, x - S(4), y - S(4), w + S(8), h + S(8), r + S(4)); ctx.fill();
+    ctx.save(); rrect(ctx, x, y, w, h, r); ctx.clip();
+    ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = '#ffd9a0'; ctx.fillRect(x, y, w * Math.max(0, TT.lag), h);
+    ctx.fillStyle = '#ff4a3a'; ctx.fillRect(x, y, w * Math.max(0, TT.disp), h);
+    ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(x, y, w * Math.max(0, TT.disp), h * 0.38);
+    ctx.restore(); ctx.restore();
   };
 })();
