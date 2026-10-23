@@ -224,8 +224,8 @@
     // v152 : menu : la fusee est vue de trois quarts avant, en haut de l'ecran (les cartes sont dessous) ; la vue de dessus du tir revient pendant la visee
     { const now = performance.now(), dtm = Math.min(0.1, (now - (g._mk0 || now)) / 1000); g._mk0 = now; const want = (g.ui && g.ui.overlay === 'evo' && !g.evoAim && !A) ? 1 : 0; g._mk = (g._mk || 0) + (want - (g._mk || 0)) * Math.min(1, dtm * 2.6);
       if (g._mk > 0.003 && g.pad) { const e = g._mk * g._mk * (3 - 2 * g._mk), kf = 1 + 0.02 * Math.min(40, EVO.save(g).rk), dir = g.pad.dir, up = new V(0, 1, 0), right = new V().crossVectors(dir, up).normalize(), sw = Math.sin(now / 2600) * 0.45;
-        const p = new V().copy(o).addScaledVector(dir, (3.6 + sw * 0.15) * kf).addScaledVector(right, (3.7 + sw * 0.15) * kf).addScaledVector(up, 1.55 * kf), look = new V().copy(o).addScaledVector(dir, -0.4).addScaledVector(up, 0.25 * kf);   // v232 : menu : vue de trois quarts avant, de haut, sur la fusee dans son hangar
-        rig.padPos.lerp(p, e); rig.padLook.lerp(look, e); rig.padFov += (58 - rig.padFov) * e; } }
+        const p = new V().copy(o).addScaledVector(dir, (2.9 + sw * 0.12) * kf).addScaledVector(right, (3.1 + sw * 0.12) * kf).addScaledVector(up, 1.25 * kf), look = new V().copy(o).addScaledVector(dir, -0.1).addScaledVector(up, 0.42 * kf);   // v232 : menu : vue de trois quarts avant, de haut, sur la fusee dans son hangar
+        rig.padPos.lerp(p, e); rig.padLook.lerp(look, e); rig.padFov += (50 - rig.padFov) * e; } }
     if (!A) return;
     const k = U.smooth(0, 0.5, A.t) * (1 - U.smooth(A.dur - 0.7, A.dur, A.t)), ang = 0.6 + A.t * 0.55;
     const p = new V(o.x + Math.sin(ang) * 2.1, o.y + 0.55, o.z + Math.cos(ang) * 2.1), look = new V(o.x, o.y + 0.02, o.z - 0.05);

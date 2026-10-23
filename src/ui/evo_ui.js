@@ -48,18 +48,20 @@
     const rx = x + shk, ccx = rx + w / 2, ccy = y + h / 2;
     ctx.save(); ctx.translate(ccx, ccy); ctx.scale(k2, k2); ctx.translate(-ccx, -ccy);
     const ink = '#F0EDE4', col = UI.CARDCOL[id], R = w * 0.04, pd = w * 0.035;
-    { const bg = UI.CARDBG[id], gr = ctx.createLinearGradient(0, y, 0, y + h); gr.addColorStop(0, bg[0]); gr.addColorStop(1, bg[1]); rr0(ctx, rx, y, w, h, R); ctx.fillStyle = gr; ctx.fill(); }
+    rr0(ctx, rx, y, w, h, R); ctx.fillStyle = '#26394B'; ctx.fill();
     const ix = rx + pd, iy = y + h * 0.125, iw = w - pd * 2, ih = h * 0.405;
     UI.outlined(ctx, name, ix, y + h * 0.068, UI.fit(ctx, name, w * 0.6, h * 0.066), ink, null, { align: 'left' });
-    rr0(ctx, ix, iy, iw, ih, w * 0.025); ctx.fillStyle = col; ctx.fill();
+    { const bg = UI.CARDBG[id], gr = ctx.createLinearGradient(0, iy, 0, iy + ih); gr.addColorStop(0, bg[0]); gr.addColorStop(1, bg[1]); rr0(ctx, ix, iy, iw, ih, w * 0.025); ctx.fillStyle = gr; ctx.fill(); }
     ctx.save(); if (id !== 'cm') { ctx.shadowColor = 'rgba(0,0,0,0.38)'; ctx.shadowOffsetY = S(7); ctx.shadowOffsetX = S(3); ctx.shadowBlur = 0; } UI.icon(ctx, ico, ix + iw / 2, iy + ih / 2 - (id === 'cm' ? ih * 0.07 : 0), ih * 0.66); ctx.restore();
-    if (id === 'cm') UI.outlined(ctx, 'X' + f1(E.mult(n)), ix + iw / 2, iy + ih * 0.86, h * 0.058, T.white);
+    if (id === 'cm') UI.outlined(ctx, 'X' + f1(E.mult(n)), ix + iw / 2, iy + ih * 0.84, h * 0.095, T.white, '#000000', { keep: true, ow: 0.16 });
     { const br = w * 0.125, bcx = rx + w - br * 0.8, bcy = y + br * 0.8, ro = Math.max(2, S(4)); ctx.beginPath(); ctx.arc(bcx, bcy, br + ro, 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.beginPath(); ctx.arc(bcx, bcy, br, 0, 6.2832); ctx.fillStyle = '#3A5873'; ctx.fill(); UI.outlined(ctx, String(n + 1), bcx, bcy + br * 0.04, UI.fit(ctx, String(n + 1), br * 1.4, br * 1.05), T.white); }
     UI.segments(ctx, ix, y + h * 0.555, iw, h * 0.088, done, 5, { off: 'rgba(14,24,34,0.45)', on: col });
     const bx = rx + pd, bw = w - pd * 2, bh = h * 0.285, by = y + h - pd - h * 0.285, frac = cost === null ? 1 : U.clamp(S0.coins / cost, 0, 1);
     const cs = U.formatInt(cost), face = UI.greenButton(ctx, bx, by, bw, bh, { disabled: !can, cat: id });
-    UI.outlined(ctx, 'AMÉLIORER', bx + bw / 2, face.y + face.h * 0.3, UI.fit(ctx, 'AMÉLIORER', bw * 0.94, face.h * 0.4), can ? T.white : '#2C7A42');
-    { const ps = face.h * 0.37, pw = UI.tw(ctx, cs, ps) + ps * 1.3; UI.icon(ctx, 'coin', bx + bw / 2 - pw / 2 + ps * 0.5, face.y + face.h * 0.7, ps * 1.15); UI.outlined(ctx, cs, bx + bw / 2 - pw / 2 + ps * 1.25, face.y + face.h * 0.7, UI.fit(ctx, cs, bw * 0.55, ps), can ? T.white : '#2C7A42', null, { align: 'left' }); }
+    ctx.save(); if (!can) ctx.globalAlpha = 0.72;
+    UI.outlined(ctx, 'AMÉLIORER', bx + bw / 2, face.y + face.h * 0.3, UI.fit(ctx, 'AMÉLIORER', bw * 0.94, face.h * 0.4), '#FFFFFF');
+    ctx.restore();
+    { const ps = face.h * 0.37, pw = UI.tw(ctx, cs, ps) + ps * 1.3; ctx.save(); if (!can) ctx.globalAlpha = 0.8; UI.icon(ctx, 'coin', bx + bw / 2 - pw / 2 + ps * 0.5, face.y + face.h * 0.73, ps * 1.15); ctx.restore(); UI.outlined(ctx, cs, bx + bw / 2 - pw / 2 + ps * 1.25, face.y + face.h * 0.73, UI.fit(ctx, cs, bw * 0.55, ps), can ? '#FFFFFF' : '#F04438', null, { align: 'left' }); }
     // (plus de barre de progression de l'argent)
     if (bk > 0) { ctx.fillStyle = 'rgba(255,255,255,' + bk * 0.35 + ')'; UI.cham(ctx, rx, y, w, h, S(26)); ctx.fill(); }
     ctx.restore();
@@ -97,8 +99,8 @@
         if (game.evoLvPop) { const stg = E.stage(game), pw = S(420), rh = S(104), px0 = cx - pw / 2 + S(30), py0 = y2 + S(100); hit(ui, px0, py0, pw, rh * 2, () => {}); UI.panel(ctx, px0, py0 - S(10), pw, rh * 2 + S(20), { c: S(24), border: T.white });
           for (let nn = 1; nn <= 2; nn++) { const yy = py0 + (nn - 1) * rh, open = true, on = stg === nn; if (on) { ctx.fillStyle = 'rgba(255,230,0,0.14)'; ctx.fillRect(px0 + S(6), yy + S(4), pw - S(12), rh - S(8)); } UI.text(ctx, 'NIVEAU ' + nn, px0 + S(30), yy + rh / 2, S(44), open ? T.white : T.dim, { align: 'left', shadow: false }); if (!open) UI.glyph(ctx, 'lock', px0 + pw - S(50), yy + rh / 2, S(26), T.dim); hit(ui, px0, yy, pw, rh, () => { game.evoLvPop = false; if (open && !on) E.switchStage(game, nn); }); }
           hit(ui, 0, T0, W, HH, () => { game.evoLvPop = false; }); } } }
-    { const k = 1 + 0.025 * Math.sin(now / 420), s = 'APPUYEZ POUR LANCER', yy = T0 + HH * 0.5; ctx.save(); ctx.translate(cx, yy); ctx.scale(k, k); ctx.translate(-cx, -yy);
-      UI.outlined(ctx, s, cx, yy, UI.fit(ctx, s, cw * 0.58, S(46)), '#F0EDE4', '#000000', { keep: true, ow: 0.08 }); ctx.restore(); }
+    { const k = 1 + 0.025 * Math.sin(now / 420), s = 'APPUYEZ POUR LANCER', yy = T0 + HH * 0.4; ctx.save(); ctx.translate(cx, yy); ctx.scale(k, k); ctx.translate(-cx, -yy);
+      { const px = UI.fit(ctx, s, cw * 0.7, S(58)); UI.outlined(ctx, s, cx, yy, px, 'rgba(0,0,0,0)', 'rgba(0,0,0,0.22)', { keep: true, ow: 0.2 }); UI.outlined(ctx, s, cx, yy, px, 'rgba(0,0,0,0)', 'rgba(0,0,0,0.4)', { keep: true, ow: 0.13 }); UI.outlined(ctx, s, cx, yy, px, '#F0EDE4', '#000000', { keep: true, ow: 0.07 }); } ctx.restore(); }
     const gap = S(34), marg = S(40), cwd = (cw - marg * 2 - gap * 2) / 3, chh = ((cw - S(26) * 2 - S(14) * 2) / 3) / 0.703, cy0 = T0 + HH - chh - S(28), cards = [];
     ['la', 'rk', 'cm'].forEach((id, i) => cards.push(card(ui, ctx, game, E, S0, id, ox + marg + i * (cwd + gap), cy0, cwd, chh, now)));
     // (plus d'etoile sur l'ogive)

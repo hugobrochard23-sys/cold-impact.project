@@ -96,7 +96,7 @@
     ctx.save(); ctx.translate(0, S(5)); rr(ctx, body - ow, y - ow, bw + ow * 2, h + ow * 2, h * 0.3 + ow); ctx.fillStyle = 'rgba(8,12,18,0.34)'; ctx.fill(); ctx.restore();
     rr(ctx, body - ow, y - ow, bw + ow * 2, h + ow * 2, h * 0.3 + ow); ctx.fillStyle = '#FFFFFF'; ctx.fill();
     UI.slate(ctx, body, y, bw, h, h * 0.3, gem ? '#1C86D8' : '#F2BD52');
-    if (!UI.artOutlined(ctx, gem ? 'gem' : 'coin', x + h * 0.5, y + h / 2, h * 1.12, Math.max(2, S(3)))) UI.icon(ctx, gem ? 'gem' : 'coin', x + h * 0.5, y + h / 2, h * 1.2);
+    ctx.save(); ctx.shadowColor = 'rgba(8,12,18,0.45)'; ctx.shadowOffsetY = S(6); ctx.shadowOffsetX = S(2); ctx.shadowBlur = 0; if (!UI.artOutlined(ctx, gem ? 'gem' : 'coin', x + h * 0.5, y + h / 2, h * 1.12, Math.max(2, S(3)))) UI.icon(ctx, gem ? 'gem' : 'coin', x + h * 0.5, y + h / 2, h * 1.2); ctx.restore();
     UI.outlined(ctx, value, x + h * 1.2, y + h * 0.5, UI.fit(ctx, value, bw - h * (o.plus ? 1.7 : 1.1), h * 0.66), '#FFFFFF', null, { align: 'left' });
     if (o.plus) { const pr = h * 0.38, pcx = x + w, pcy = y + h / 2; ctx.beginPath(); ctx.arc(pcx, pcy, pr + Math.max(2, S(3)), 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); UI.plusButton(ctx, pcx, pcy, pr); }
   };
@@ -141,8 +141,8 @@
   // coffre : cadre a facettes bleu acier, coffre d'origine, lueur doree quand il est pret
   UI.chestFrame = (ctx, x, y, s, ready, unlocked, now) => {
     const cx = x + s / 2, cy = y + s / 2, r = s * 0.48, ow = Math.max(2, S(4));
-    ctx.beginPath(); ctx.arc(cx, cy, r + ow, 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); ctx.fillStyle = '#26394B'; ctx.fill();
-    ctx.save(); if (!unlocked) ctx.globalAlpha = 0.45; if (!UI.artImg(ctx, 'chest', cx, cy + r * 0.04, s * 0.74)) UI.icon(ctx, 'chest_open', cx, cy, s * 0.7); ctx.restore(); if (!unlocked) UI.glyph(ctx, 'lock', cx, cy, s * 0.2, '#F0EDE4');
+    ctx.beginPath(); ctx.arc(cx, cy, r + ow, 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); ctx.fillStyle = '#F39C12'; ctx.fill();
+    ctx.save(); if (!unlocked) ctx.globalAlpha = 0.6; ctx.shadowColor = 'rgba(60,30,0,0.4)'; ctx.shadowOffsetY = S(5); ctx.shadowBlur = 0; if (!UI.artImg(ctx, 'chest', cx, cy - r * 0.06, s * 1.08)) UI.icon(ctx, 'chest_open', cx, cy, s * 0.9); ctx.restore(); if (!unlocked) UI.glyph(ctx, 'lock', cx, cy + r * 0.1, s * 0.2, '#F0EDE4');
   };
   // petite plaque orange (OUVRIR, temps restant)
   UI.orangePlate = (ctx, x, y, w, h, hot) => { rr(ctx, x, y, w, h, h * 0.3); ctx.fillStyle = hot ? '#FF8B19' : '#8A4A1A'; ctx.fill(); };
