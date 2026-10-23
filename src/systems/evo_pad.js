@@ -42,6 +42,7 @@
     const cradle = new T3.Group(); L.add(cradle); cradle.rotation.x = pad.pitch || 0; pad.cradle = cradle;
     for (const s of [-1, 1]) box(cradle, 0.08, 0.1, 4.6, steel, s * 0.22, -0.3, -0.4);
     for (const z of [-2.1, -0.6, 0.9, 1.9]) box(cradle, 0.56, 0.06, 0.1, dark, 0, -0.34, z);
+    if (EVO.isS2()) { box(cradle, 2.8, 0.3, 17, concrete, 0, -0.78, -8.2); for (const sx of [-1.3, 1.3]) box(cradle, 0.12, 0.04, 17, bas('#FFB347'), sx, -0.6, -8.2); for (let k = 0; k < 7; k++) box(cradle, 0.5, 0.04, 0.35, bas('#FFE08A'), 0, -0.6, -2.5 - k * 2); }   // niveau 2 : une rampe de beton dans le prolongement du rail
     for (const z of [-1.4, 0.6]) for (const s of [-1, 1]) box(L, 0.07, 0.42, 0.07, steel, s * 0.22, -0.52, z);
     box(cradle, 0.46, 0.3, 0.14, dark, 0, -0.2, 2.2);   // butee arriere
     pad.clamps = []; for (const z of [-0.2]) for (const s of [-1, 1]) { const arm = new T3.Group(); arm.position.set(s * 0.2, -0.22, z); cradle.add(arm); box(arm, 0.045, 0.34, 0.1, steel, 0, 0.15, 0); box(arm, 0.1, 0.05, 0.1, lam('#e8eaee'), -s * 0.04, 0.33, 0); pad.clamps.push({ arm, s }); }
@@ -56,7 +57,8 @@
       const beton = tex(64, 64, (x, w, h) => { x.fillStyle = DK ? '#7b8a98' : '#8A8E94'; x.fillRect(0, 0, w, h); for (let i = 0; i < 160; i++) { x.fillStyle = 'rgba(' + (i % 2 ? '255,255,255' : '0,0,0') + ',0.06)'; x.fillRect(Math.random() * w | 0, Math.random() * h | 0, 2, 2); } x.fillStyle = 'rgba(0,0,0,0.28)'; x.fillRect(0, 0, w, 1); x.fillRect(0, 0, 1, h); }, 6, 8);
       const hz = hazMat(14);
       const wall = new T3.MeshLambertMaterial({ map: tole }), floor = new T3.MeshLambertMaterial({ map: beton }), steel = lam('#2F3A42'), steelL = lam('#4A5862'), lampM = bas('#FFF2C8');
-      box(H, 12, 0.12, 20, floor, 0, -0.7, -2);                                   // dalle du hangar (le lanceur reste un peu plus haut)
+      if (DK) { box(H, 3.1, 0.12, 20, floor, -4.45, -0.7, -2); box(H, 3.1, 0.12, 20, floor, 4.45, -0.7, -2); box(H, 6, 0.12, 8.2, floor, 0, -0.7, 4.1); }   // niveau 2 : pas de sol sous la trajectoire de la fusee : on voit la pente en dessous
+      else box(H, 12, 0.12, 20, floor, 0, -0.7, -2);                                   // dalle du hangar (le lanceur reste un peu plus haut)
       for (const sx of [-5.6, 5.6]) { const b = new T3.Mesh(new T3.PlaneGeometry(0.5, 20), hz); b.rotation.x = -Math.PI / 2; b.position.set(sx, -0.63, -2); H.add(b); }   // bandes de securite le long des murs
       box(H, 0.3, 4.6, 20, wall, -6, 1.6, -2); box(H, 0.3, 4.6, 20, wall, 6, 1.6, -2);       // murs lateraux
       box(RF, 12.6, 0.4, 20.6, wall, 0, 4.1, -2);                                           // toit
@@ -83,14 +85,14 @@
       const olive = lam(DK ? '#3b5a70' : '#4A5A3C'), crate = lam(DK ? '#2f4a5e' : '#3F4A3C'), amber = lam('#E0A31C'), blk = lam('#1C1F24'), scr = lam('#0F1B26'), pipe = lam('#7A8590');
       item(1, 'drop', 4.4, -5.2, 1, (o) => { box(o, 1.2, 1.0, 1.2, crate, 0, 0.5, 0); box(o, 1.2, 1.0, 1.2, olive, 1.3, 0.5, 0.2); box(o, 1.0, 0.9, 1.0, olive, 0.6, 1.45, 0.1); cyl(o, 0.38, 0.38, 1.0, lam('#B8452A'), -1.2, 0.5, 0.1, 12); cyl(o, 0.38, 0.38, 1.0, lam('#B8452A'), -1.2, 0.5, 1.0, 12); cyl(o, 0.4, 0.4, 0.08, blk, -1.2, 1.02, 0.1, 12); });
       item(2, 'glowline', 5.5, -2, 1, (o) => { for (const y of [0.7, 2.4]) { const q = cyl(o, 0.09, 0.09, 12, pipe, 0, y, 0, 8, true); } for (let k = 0; k < 4; k++) { box(o, 0.2, 2.0, 0.2, steel, 0, 1.2, -5.5 + k * 3.4); cyl(o, 0.17, 0.17, 0.16, amber, 0, 1.55, -5.5 + k * 3.4, 10); } });
-      item(3, 'rise', 0, -0.4, 1, (o) => { for (const sx of [-1.7, 1.7]) box(o, 0.22, 3.4, 0.22, steel, sx, 1.7, 0); box(o, 3.8, 0.26, 0.3, amber, 0, 3.5, 0); for (let k = 0; k < 6; k++) box(o, 0.3, 0.27, 0.31, blk, -1.5 + k * 0.6, 3.5, 0); box(o, 0.06, 1.0, 0.06, steelL, -0.6, 2.9, 0); box(o, 0.34, 0.2, 0.34, steel, -0.6, 2.3, 0); });
+      item(3, 'rise', 0, -0.4, 1, (o) => { const PX = DK ? 3.1 : 1.7; for (const sx of [-PX, PX]) box(o, 0.22, 3.4, 0.22, steel, sx, 1.7, 0); box(o, PX * 2 + 0.4, 0.26, 0.3, amber, 0, 3.5, 0); for (let k = 0; k < 6; k++) box(o, 0.3, 0.27, 0.31, blk, -1.5 + k * 0.6, 3.5, 0); box(o, 0.06, 1.0, 0.06, steelL, -0.6, 2.9, 0); box(o, 0.34, 0.2, 0.34, steel, -0.6, 2.3, 0); });
       item(4, 'power', -5.74, -4.9, -1, (o) => { for (let k = 0; k < 3; k++) { box(o, 0.12, 1.1, 1.8, scr, 0, 2.4, k * 2.1); box(o, 0.04, 0.9, 1.6, bas(k % 2 ? '#2FA8FF' : '#58D5FF'), 0.08, 2.4, k * 2.1); } });
-      item(5, 'glowline', 0, -2, 1, (o) => { for (const sx of [-2.2, 2.2]) for (let k = 0; k < 9; k++) box(o, 0.14, 0.04, 0.5, bas(k % 2 ? '#FFB347' : '#FFE08A'), sx, 0.08, -9 + k * 1.9); });
+      item(5, 'glowline', 0, -2, 1, (o) => { for (const sx of DK ? [-3.3, 3.3] : [-2.2, 2.2]) for (let k = 0; k < 9; k++) box(o, 0.14, 0.04, 0.5, bas(k % 2 ? '#FFB347' : '#FFE08A'), sx, 0.08, -9 + k * 1.9); });
       item(6, 'slide', 5.2, -7.8, 1, (o) => { box(o, 0.5, 1.8, 3.6, steel, 0, 0.9, 0); for (let k = 0; k < 3; k++) { cyl(o, 0.17, 0.17, 3.0, lam(k % 2 ? '#C9CED4' : '#B7BDC4'), 0, 0.5 + k * 0.55, 0, 10, true); box(o, 0.4, 0.4, 0.4, lam('#2B2F36'), 0, 0.5 + k * 0.55, -1.6); } });
       item(7, 'drop', -3.9, 1.4, -1, (o) => { box(o, 2.2, 0.9, 1.0, steel, 0, 0.45, 0); for (let k = 0; k < 3; k++) { box(o, 0.62, 0.45, 0.06, scr, -0.7 + k * 0.7, 1.35, -0.05); box(o, 0.5, 0.35, 0.05, bas(k === 1 ? '#7DF0A0' : '#58D5FF'), -0.7 + k * 0.7, 1.35, -0.1); } box(o, 0.5, 0.5, 0.5, blk, 1.4, 0.25, 0.1); });
       item(8, 'slide', 0, 2.2, -1, (o) => { box(o, 11.6, 0.3, 0.45, amber, 0, 3.15, 0); for (const sx of [-5.5, 5.5]) box(o, 0.4, 0.5, 0.7, steel, sx, 3.15, 0); box(o, 1.4, 0.5, 0.9, blk, 1.5, 2.8, 0); box(o, 0.06, 1.1, 0.06, steelL, 1.5, 2.1, 0); box(o, 0.3, 0.3, 0.3, amber, 1.5, 1.45, 0); });
       item(9, 'rise', 0, 4.4, 1, (o) => { const sh = box(o, 5.4, 2.6, 0.3, lam('#3A424C'), 0, 1.3, 0); sh.rotation.x = -0.2; for (let k = 0; k < 4; k++) box(o, 5.4, 0.06, 0.34, amber, 0, 0.35 + k * 0.6, 0.0).rotation.x = -0.2; for (const sx of [-2.4, 2.4]) { cyl(o, 0.2, 0.2, 0.5, lam('#8A2A20'), sx, 2.9, 0.1, 10); box(o, 0.2, 0.2, 0.2, bas('#FF5A3A'), sx, 3.3, 0.1); } });
-      item(10, 'pop', 0, 1.0, 1, (o) => { const ring = cyl(o, 2.1, 2.1, 0.03, lam('#E0A31C'), 0, 0.03, 0, 28); cyl(o, 1.8, 1.8, 0.05, lam('#2C323A'), 0, 0.04, 0, 28); for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { box(o, 0.3, 0.9, 0.3, steel, x * 2.5, 0.45, z * 2.4); box(o, 0.46, 0.2, 0.46, bas('#FFF2C8'), x * 2.5, 1.0, z * 2.4); } });
+      item(10, 'pop', 0, DK ? 5.2 : 1.0, 1, (o) => { const ring = cyl(o, 2.1, 2.1, 0.03, lam('#E0A31C'), 0, 0.03, 0, 28); cyl(o, 1.8, 1.8, 0.05, lam('#2C323A'), 0, 0.04, 0, 28); for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { box(o, 0.3, 0.9, 0.3, steel, x * 2.5, 0.45, z * 2.4); box(o, 0.46, 0.2, 0.46, bas('#FFF2C8'), x * 2.5, 1.0, z * 2.4); } });
       L.add(H); }
     // decor lointain
     pad.backdrop = backdrop(); L.add(pad.backdrop);
