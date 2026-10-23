@@ -23,7 +23,7 @@
   EVO.playEvolve = (g, tier, label) => {
     EVO.applySkin(g);
     const parts = []; let i = 0;
-    for (const k of Object.keys(g.evoParts || {})) if (EVO.PART_TIER[k] === tier) { const p = g.evoParts[k]; p.userData.k = 0; p.visible = false; p.scale.setScalar(1); const f = FLY[k] || [0, 2, 0]; parts.push({ k, p, from: new V(f[0], f[1], f[2]), t0: 0.9 + i * 0.5, arr: false, glow: glowSprite(1.4, '#ffd9a0') }); i++; }
+    for (const k of Object.keys(g.evoParts || {})) if (EVO.partTier()[k] === tier) { const p = g.evoParts[k]; p.userData.k = 0; p.visible = false; p.scale.setScalar(1); const f = FLY[k] || [0, 2, 0]; parts.push({ k, p, from: new V(f[0], f[1], f[2]), t0: 0.9 + i * 0.5, arr: false, glow: glowSprite(1.4, '#ffd9a0') }); i++; }
     const stretch = skinLen(Math.max(0, tier - 1)) / skinLen(tier);
     const last = parts.length ? parts[parts.length - 1].t0 + 0.8 : 1.6;
     g.evoAnim = { kind: 'tier', t: 0, dur: last + 1.9, tier, label, sub: 'NOUVELLE PIÈCE', parts, stretch, lift: 0, ring: false, sheen: last + 0.1, base: g.rocket.mesh.scale.x };

@@ -19,15 +19,18 @@
 
   const RK_TIERS = ['TUBE DE CARTON', 'AVION A AILES', 'REACTEUR', 'TURBO'], LA_TIERS = ['RAMPE EN BOIS', 'RAIL', 'CATAPULTE'];
   const RK_NEXT = ['AILES', 'REACTEUR', 'TURBO', 'MAX'], LA_NEXT = ['RAIL', 'CATAPULTE', 'MAX'];
+  const RK_NEXT2 = ['HYDROFOILS', 'HYDROJET', 'AMPHIBIE', 'MAX'];
+  EVO.isS2 = () => !!(EVO.stage && CC.game && EVO.stage(CC.game) === 2);
+  EVO.rkNext = () => (EVO.isS2() ? RK_NEXT2 : RK_NEXT);
   const COIN_COST = [150, 250, 420, 700, 1100];
   const MAXN = { rk: 99999, la: 99999, cm: 99999 };   // v158 : plus de maximum : le carburant grandit avec chaque amelioration, a l'infini
   const BOSS_HP = 16;
   const CH_NAME = { rampe: 'LE DEPART', camp: 'LE CAMP', riviere: 'LA RIVIERE', foret: 'LA FORET', vallee: 'LA VALLEE', grotte: 'LA GROTTE', falaise: 'LA FALAISE', entrepots: 'LES ENTREPOTS', base: 'LA BASE', descente: 'LA DESCENTE', ville: 'LA VILLE', approche: 'LE SIEGE', porte: 'LE GARDIEN', noyau: 'LE NOYAU', fuite: 'LA FUITE' };
   const SCENES = ['rampe', 'camp', 'riviere', 'foret', 'descente', 'ville', 'approche', 'porte', 'noyau', 'fuite'];
-  EVO.RK_TIERS = RK_TIERS; EVO.LA_TIERS = LA_TIERS; EVO.RK_NEXT = RK_NEXT; EVO.LA_NEXT = LA_NEXT; EVO.MAXN = MAXN;
+  EVO.RK_TIERS2 = ['TORPILLE', 'TORPILLE A AILERONS', 'HYDROJET', 'AMPHIBIE']; EVO.RK_TIERS = RK_TIERS; EVO.LA_TIERS = LA_TIERS; EVO.RK_NEXT = RK_NEXT; EVO.LA_NEXT = LA_NEXT; EVO.MAXN = MAXN;
 
   // ---------- sauvegarde ----------
-  EVO.save = (g) => {
+  EVO.saveBase = (g) => {
     const S = g.save.evo = g.save.evo || { coins: 0, rk: 0, la: 0, cm: 0, best: 0, runs: 0, kills: 0, cleared: 0 };
     if (S.t0 === undefined) { S.t0 = 0; S.marks = {}; }
     if (S.gems === undefined) { S.gems = 0; S.chestAt = 0; }
@@ -35,9 +38,20 @@
     if (S.eco !== 194) { S.eco = 194; if (S.runs > 0 || S.rk > 0 || S.la > 0 || S.cm > 0) { S.rk = 0; S.la = 0; S.cm = 0; S.coins = 0; S.best = 0; S.runs = 0; S.t0 = 0; S.marks = {}; S.clr1 = 0; } }   // v194 : nouvelle economie (calquee sur la reference) : la progression des anciens prix est remise a zero une seule fois (gemmes, apparences et reglages sont conserves)
     if (!EVO._cheat) {
       EVO._cheat = 1; const q = (k) => { const m = new RegExp('[?&]' + k + '=(\\d+)').exec(location.search); return m ? parseInt(m[1], 10) : null; };
-      const a = q('evocoins'); if (a !== null) S.coins = a; const b = q('evork'); if (b !== null) S.rk = b; const c = q('evola'); if (c !== null) S.la = c; const d = q('evocm'); if (d !== null) S.cm = d;
+      const T = (/[?&]lv=2/.test(location.search) || S.stage === 2) ? EVO.stage2(S) : S;   // les triches de test visent le niveau en cours
+      const a = q('evocoins'); if (a !== null) T.coins = a; const b = q('evork'); if (b !== null) T.rk = b; const c = q('evola'); if (c !== null) T.la = c; const d = q('evocm'); if (d !== null) T.cm = d;
     }
     return S;
+  };
+  // v239 : NIVEAU 2 : progression separee. EVO.save(g) renvoie la sauvegarde de base au niveau 1 et une VUE au niveau 2 : ces champs vont dans save.evo.s2, le reste (gemmes, coffre, apparences, reglages) reste commun.
+  const S2K = { coins: 1, rk: 1, la: 1, cm: 1, best: 1, runs: 1, kills: 1, cleared: 1, t0: 1, marks: 1, seen: 1 };
+  EVO.stage2 = (B) => (B.s2 = B.s2 || { coins: 0, rk: 0, la: 0, cm: 0, best: 0, runs: 0, kills: 0, cleared: 0, t0: 0, marks: {}, seen: {} });
+  EVO.save = (g) => {
+    const B = EVO.saveBase(g), m = /[?&]lv=(\d)/.exec(location.search), st = m ? +m[1] : (B.stage || 1);
+    if (st !== 2) return B;
+    const s2 = EVO.stage2(B); if (EVO._px && EVO._px.B === B && EVO._px.s2 === s2) return EVO._px.p;
+    const p = new Proxy({}, { get: (t, k) => (S2K[k] ? s2[k] : B[k]), set: (t, k, v) => { if (S2K[k]) s2[k] = v; else B[k] = v; return true; }, has: (t, k) => (S2K[k] ? k in s2 : k in B) });
+    EVO._px = { B, s2, p }; return p;
   };
   EVO.mark = (g, key) => { const S = EVO.save(g); if (S.marks[key]) return; S.marks[key] = { run: S.runs + 1, sec: S.t0 ? Math.round((Date.now() - S.t0) / 1000) : 0 }; };
   EVO.elapsed = (g) => { const S = EVO.save(g); return S.t0 ? Math.round((Date.now() - S.t0) / 1000) : 0; };
@@ -71,7 +85,8 @@
     if (L <= 10) return Math.round(996 * Math.pow(1.33, L - 7));
     return Math.round(3619 * Math.pow(1.35, L - 11)); };
   EVO.SCORE_K = (g) => (EVO.stage && EVO.stage(g) === 2 ? 1 : 8450 / 6910);   // la reference compte 1 piece par metre sur une carte de 8 450 m ; la notre mesure 6 910 m : meme total de pieces sur la carte
-  EVO.nextCost = (g, id) => { const S = EVO.save(g), n = S[id]; return n >= MAXN[id] ? null : EVO.cost(id, n); };
+  EVO.COST2 = 1.4;   // le niveau 2 est plus long : ses ameliorations coutent un peu plus (reglage a affiner en jeu)
+  EVO.nextCost = (g, id) => { const S = EVO.save(g), n = S[id]; return n >= MAXN[id] ? null : Math.round(EVO.cost(id, n) * (EVO.isS2() ? EVO.COST2 : 1)); };
   EVO.dmgNow = (g) => { const r = EVO.rocket(EVO.save(g).rk), sp = g.rocket && g.rocket.active ? g.rocket.vel.length() : 38; return r.dmg * U.clamp(sp / 38, 0.9, 1.5); };
   EVO.canKill = (g, t) => !!(g.evo && g.evo.preview) || !t.evoHp || EVO.dmgNow(g) + 0.001 >= t.evoHp;
 
@@ -101,6 +116,14 @@
       parts: d.cap ? [{ k: 'cyl', r: 0.108, h: 0.14, p: [0, 0, -0.42], rot: [90, 0, 0], c: '#a8844f' }, { k: 'cyl', r: 0.105, h: 0.2, p: [0, 0, 0.1], rot: [90, 0, 0], c: '#e8d8a8' }] : [] };
     CC.Skins.byId[s.id] = s;
   }
+  // v239 : LIGNEE AQUATIQUE (niveau 2) : torpille (helice), hydrofoils, hydrojet, amphibie ; acier bleu, laiton, lueur cyan
+  const SKIN_W = [
+    { c: { body: '#6f8498', nose: '#3c4c5a', tip: '#d9a441', band: '#d9a441', fin: '#3c4c5a', nozzle: '#252c33' }, d: { r: 0.115, len: 0.85, noseLen: 0.2, noseR: 0.055 }, flame: '#ffcf7a' },
+    { c: { body: '#5a7fa6', nose: '#33465a', tip: '#d9a441', band: '#d9a441', fin: '#33465a', nozzle: '#252c33' }, d: { r: 0.105, len: 0.95, noseLen: 0.28, noseR: 0.035 }, flame: '#9fe8ff' },
+    { c: { body: '#3c6a98', nose: '#243649', tip: '#5ff0ff', band: '#5ff0ff', fin: '#243649', nozzle: '#1a2128' }, d: { r: 0.095, len: 1.2, noseLen: 0.42, noseR: 0.018 }, flame: '#5ff0ff' },
+    { c: { body: '#2a4258', nose: '#1b2b3a', tip: '#5ff0ff', band: '#d9a441', fin: '#1b2b3a', nozzle: '#12181e' }, d: { r: 0.092, len: 1.5, noseLen: 0.6, noseR: 0.01 }, flame: '#5ff0ff' },
+  ];
+  SKIN_W.forEach((d, i) => { CC.Skins.byId['evoW' + i] = { id: 'evoW' + i, name: 'evoW' + i, short: 'evoW' + i, tier: 'base', price: 0, tierLabel: '', c: Object.assign({}, d.c), flame: d.flame, dims: Object.assign({ fins: 0, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 }, d.d), parts: [] }; });
   let _pm = null;
   const PM = () => _pm || (_pm = { card: new THREE.MeshLambertMaterial({ color: '#c8a46e' }), cardD: new THREE.MeshLambertMaterial({ color: '#8a6a44' }), white: new THREE.MeshLambertMaterial({ color: '#eceef2' }), red: new THREE.MeshLambertMaterial({ color: '#d8402c' }),
     blue: new THREE.MeshLambertMaterial({ color: '#2a7ad0' }), dark: new THREE.MeshLambertMaterial({ color: '#2b2d31' }), steel: new THREE.MeshLambertMaterial({ color: '#9aa0a8' }) });
@@ -136,12 +159,23 @@
     for (const k of Object.keys(P)) { P[k].userData.k = 0; root.add(P[k]); }
     root.userData.P = P; return root;
   }
-  const PART_TIER = { wings: 1, tail: 1, flaps: 3, boost: 3 };  EVO.PART_TIER = PART_TIER;
+  // pieces aquatiques : hydrofoils (croix d'ailettes courtes), helice carenee (puis ailettes de queue a l'amphibie), pods d'hydrojet lateraux, petits canards
+  function buildPartsW(tier) {
+    const root = new THREE.Group(), P = {}, st = new THREE.MeshLambertMaterial({ color: '#8fa6ba' }), nv = new THREE.MeshLambertMaterial({ color: '#26384a' }), br = new THREE.MeshLambertMaterial({ color: '#d9a441' }), cy = new THREE.MeshBasicMaterial({ color: '#5ff0ff' });
+    P.wings = fins(tier >= 2 ? nv : st, br, 0.3, 0.12, 0.24, 0.1, 0.02, 0, false, 0.026);
+    if (tier >= 3) P.tail = fins(nv, nv, 0.34, 0.12, 0.26, 0.15, -0.5, Math.PI / 4, false, 0.03);
+    else { const t = new THREE.Group(); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.108, 0.013, 8, 20), nv); ring.position.z = -0.5; t.add(ring); t.add(cyl(0.025, 0.025, 0.07, br, 0, 0, -0.5)); for (let k = 0; k < 4; k++) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.1, 0.05), st); b.position.set(0, 0.06, -0.5); b.rotation.x = 0.4; const f = new THREE.Group(); f.rotation.z = k * Math.PI / 2; f.add(b); t.add(f); } P.tail = t; }
+    const boost = new THREE.Group(); for (const s of [-1, 1]) { boost.add(cyl(0.045, 0.045, 0.5, nv, s * 0.18, -0.06, -0.12)); boost.add(cyl(0.0, 0.045, 0.12, st, s * 0.18, -0.06, 0.18)); boost.add(cyl(0.046, 0.046, 0.04, cy, s * 0.18, -0.06, -0.38)); } P.boost = boost;
+    const flaps = new THREE.Group(); flaps.add(fins(nv, nv, 0.2, 0.08, 0.1, 0.05, 0.55, Math.PI / 4, false, 0.022)); P.flaps = flaps;
+    for (const k of Object.keys(P)) { P[k].userData.k = 0; root.add(P[k]); }
+    root.userData.P = P; return root;
+  }
+  const PART_TIER = { wings: 1, tail: 1, flaps: 3, boost: 3 }, PART_TIER2 = { wings: 1, tail: 1, boost: 2, flaps: 3 };  EVO.PART_TIER = PART_TIER; EVO.partTier = () => (EVO.isS2() ? PART_TIER2 : PART_TIER);
   EVO.attachParts = (g) => {
     const rk = g.rocket, r = EVO.rocket(EVO.save(g).rk);
     if (rk.mesh.userData.evoParts) rk.mesh.remove(rk.mesh.userData.evoParts);
-    const root = buildParts(r.tier); rk.mesh.add(root); rk.mesh.userData.evoParts = root; g.evoParts = root.userData.P;
-    for (const k of Object.keys(g.evoParts)) { const on = r.tier >= PART_TIER[k]; g.evoParts[k].userData.k = on ? 1 : 0; g.evoParts[k].scale.setScalar(on ? 1 : 0.0001); g.evoParts[k].visible = on; }
+    const PT = EVO.partTier(), root = EVO.isS2() ? buildPartsW(r.tier) : buildParts(r.tier); rk.mesh.add(root); rk.mesh.userData.evoParts = root; g.evoParts = root.userData.P;
+    for (const k of Object.keys(g.evoParts)) { const on = r.tier >= PT[k]; g.evoParts[k].userData.k = on ? 1 : 0; g.evoParts[k].scale.setScalar(on ? 1 : 0.0001); g.evoParts[k].visible = on; }
     rk.mesh.userData.finTips = r.tier >= 3 ? [new V(0.4, 0, -0.62), new V(-0.4, 0, -0.62), new V(0, 0.4, -0.62), new V(0, -0.4, -0.62)] : r.tier >= 1 ? [new V(0.44, 0, -0.18), new V(-0.44, 0, -0.18), new V(0, 0.44, -0.18), new V(0, -0.44, -0.18)] : [];   // bouts d'ailes : traînées de condensation
     rk.mesh.scale.setScalar((1 + 0.012 * r.n) * 1.28);
   };
@@ -161,7 +195,7 @@
   const dimRocket = (g) => { g.rocket.mesh.traverse((o) => { const ms = Array.isArray(o.material) ? o.material : (o.material ? [o.material] : []); for (const m of ms) { if (m.userData.dimmed || m.isMeshBasicMaterial) continue; m.userData.dimmed = 1; if (m.emissive) m.emissiveIntensity = (m.emissiveIntensity === undefined ? 1 : m.emissiveIntensity) * 0.3; if (m.specular) m.specular.multiplyScalar(0.4); if (m.shininess !== undefined) m.shininess *= 0.6; if (m.color && m.color.r > 0.85 && m.color.g > 0.85 && m.color.b > 0.85) m.color.multiplyScalar(0.84); } }); };
   EVO.applySkin = (g) => {
     const r = EVO.rocket(EVO.save(g).rk), L = EVO.livery(g), M = PM(); M.red.color.set(r.tier >= 2 ? L.acc : '#d8402c'); M.white.color.set(r.tier >= 2 ? L.wh : '#eceef2');
-    g.rocket.setSkin(CC.Skins.get('evoT' + r.tier + (r.tier >= 2 && L.id !== 'classic' ? L.id : ''))); EVO.attachParts(g); dimRocket(g);
+    g.rocket.setSkin(CC.Skins.get(EVO.isS2() ? 'evoW' + r.tier : 'evoT' + r.tier + (r.tier >= 2 && L.id !== 'classic' ? L.id : ''))); EVO.attachParts(g); dimRocket(g);
   };
   // lanceur : anneaux d'accélération le long du rail, de plus en plus nombreux et lumineux
   EVO.dressPad = (pad) => {
@@ -593,7 +627,7 @@
     if (!free) S.coins -= c; S[id]++; if (S[id] % 5 === 0) EVO.mark(g, id + S[id]); g.writeSave(); g.audio.play('levelUp'); if (CC.Haptics) CC.Haptics.tick('warn');
     const after = id === 'rk' ? EVO.rocket(S[id]).tier : id === 'la' ? EVO.launcher(S[id]).tier : 0;
     g.evoBought = { id, t0: performance.now() };
-    if (id === 'rk') { if (after > before) EVO.playEvolve(g, after, RK_NEXT[before]); else { g.rocket.mesh.scale.setScalar(1 + 0.012 * EVO.rocket(S.rk).n); } }
+    if (id === 'rk') { if (after > before) EVO.playEvolve(g, after, EVO.rkNext()[before]); else { g.rocket.mesh.scale.setScalar(1 + 0.012 * EVO.rocket(S.rk).n); } }
     if (id === 'la' && g.pad) EVO.dressPad(g.pad);
     g.telemetry.event('evoBuy', { id, lvl: S[id] }); return true;
   };

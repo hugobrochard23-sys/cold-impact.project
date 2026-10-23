@@ -3,7 +3,7 @@
 (function () {
   const U = CC.U, EVO = CC.EVO;
   if (!EVO || !EVO.on) return;
-  EVO.stage = (g) => { const m = /[?&]lv=(\d)/.exec(location.search); return m ? +m[1] : (EVO.save(g).stage || 1); };
+  EVO.stage = (g) => { const m = /[?&]lv=(\d)/.exec(location.search); return m ? +m[1] : (EVO.saveBase(g).stage || 1); };
   EVO.setStage = (g, n) => { const S = EVO.save(g), old = S.stage || 1; if (old === n) return; S['best' + old] = S.best || 0; S.best = S['best' + n] || 0; S.stage = n; g.writeSave(); };
   // --- écran d'accueil : cinématique d'intro la toute première fois, ou la suite programmée (victoire, niveau suivant)
   EVO.showHome = (g) => {

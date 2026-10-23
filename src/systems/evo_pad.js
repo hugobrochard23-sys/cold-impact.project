@@ -20,7 +20,8 @@
   function backdrop() {
     const G = new T3.Group(), dark = bas('#2a2128', { fog: false }), dark2 = bas('#3a2c30', { fog: false });
     const rnd = (() => { let s = 7; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; })();
-    for (let i = 0; i < 38; i++) { const w = 14 + rnd() * 26, h = 22 + rnd() * 90 * (0.4 + 0.6 * Math.abs(Math.sin(i * 0.7))), x = -300 + i * 16 + rnd() * 6, z = -430 - rnd() * 90; box(G, w, h, w * 0.8, rnd() < 0.5 ? dark : dark2, x, h / 2 - 8, z); if (rnd() < 0.3) box(G, w * 0.2, 14, w * 0.2, dark, x, h + 5, z); }
+    if (EVO.isS2()) { const sea = new T3.Mesh(new T3.PlaneGeometry(1400, 600), bas('#2a7aa6', { fog: false })); sea.rotation.x = -Math.PI / 2; sea.position.set(0, -1.2, -700); G.add(sea); for (const [x, z, l] of [[-160, -520, 90], [60, -600, 120], [220, -480, 80]]) { box(G, 16, 8, l, dark, x, 3, z); box(G, 10, 8, l * 0.25, dark2, x, 10, z + l * 0.1); box(G, 3, 10, 3, dark, x, 17, z + l * 0.1); } }
+    else for (let i = 0; i < 38; i++) { const w = 14 + rnd() * 26, h = 22 + rnd() * 90 * (0.4 + 0.6 * Math.abs(Math.sin(i * 0.7))), x = -300 + i * 16 + rnd() * 6, z = -430 - rnd() * 90; box(G, w, h, w * 0.8, rnd() < 0.5 ? dark : dark2, x, h / 2 - 8, z); if (rnd() < 0.3) box(G, w * 0.2, 14, w * 0.2, dark, x, h + 5, z); }
     const crane = (x, z, h, s) => { const k = new T3.Group(); box(k, 3, h, 3, dark, 0, h / 2, 0); box(k, 90 * s, 2.6, 2.6, dark, 24 * s, h, 0); box(k, 26 * s, 2.6, 2.6, dark, -16 * s, h, 0); box(k, 8, 10, 8, dark, -24 * s, h - 6, 0); box(k, 0.7, 40 * s, 0.7, dark, 56 * s, h - 20 * s, 0); box(k, 4, 4, 4, dark, 0, h + 5, 0); k.position.set(x, -8, z); G.add(k); };
     // v227 : plus de grues en arriere-plan
     G.add(sprite('#ffb060', 150, -70, 24, -470, 0.95)); G.add(sprite('#fff0c8', 62, -70, 24, -468, 1)); G.add(sprite('#ff9040', 420, -70, 30, -475, 0.28));
@@ -49,10 +50,10 @@
       cyl(b, 0.1, 0.1, 1.05, lam(row ? '#6a7480' : '#aeb6c0'), 0, 0, 0, 14, true); cyl(b, 0.103, 0.103, 0.14, red, 0, 0, -0.18, 14, true); cyl(b, 0.0, 0.1, 0.18, lam('#3a424c'), 0, 0, -0.6, 14, true); const noz = cyl(b, 0.075, 0.095, 0.1, dark, 0, 0, 0.58, 14, true); const fl = new T3.Mesh(new T3.ConeGeometry(0.075, 0.5, 10, 1, true), bas('#ffcf40', { transparent: true, opacity: 0.0, blending: T3.AdditiveBlending, depthWrite: false, side: T3.DoubleSide, fog: false })); fl.rotation.x = -Math.PI / 2; fl.position.z = 0.88; b.add(fl); box(L, 0.2, 0.05, 0.3, steel, s * (0.4 + row * 0.1), -0.45, z); pad.boosters.push({ fl, noz }); }
     // v227 : plus de cones de chantier
     // v234 : HANGAR MILITAIRE (menu seulement) : dalle de beton a bandes de securite, murs de tole ondulee vert-de-gris, fermes metalliques, plafonniers, grande porte ouverte au fond
-    { const H = pad.hangar = new T3.Group();
+    { const DK = EVO.isS2(), H = pad.hangar = new T3.Group();
       const tex = (w, h, draw, rx, ry) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const q = new T3.CanvasTexture(c); q.wrapS = q.wrapT = T3.RepeatWrapping; q.magFilter = T3.NearestFilter; q.minFilter = T3.NearestFilter; q.repeat.set(rx, ry); return q; };
-      const tole = tex(32, 32, (x, w, h) => { x.fillStyle = '#6F7C70'; x.fillRect(0, 0, w, h); for (let i = 0; i < 8; i++) { x.fillStyle = i % 2 ? '#5E6A5F' : '#7C8A7D'; x.fillRect(i * 4, 0, 4, h); } x.fillStyle = 'rgba(0,0,0,0.12)'; x.fillRect(0, h - 2, w, 2); }, 12, 3);
-      const beton = tex(64, 64, (x, w, h) => { x.fillStyle = '#8A8E94'; x.fillRect(0, 0, w, h); for (let i = 0; i < 160; i++) { x.fillStyle = 'rgba(' + (i % 2 ? '255,255,255' : '0,0,0') + ',0.06)'; x.fillRect(Math.random() * w | 0, Math.random() * h | 0, 2, 2); } x.fillStyle = 'rgba(0,0,0,0.28)'; x.fillRect(0, 0, w, 1); x.fillRect(0, 0, 1, h); }, 6, 8);
+      const tole = tex(32, 32, (x, w, h) => { x.fillStyle = DK ? '#38546e' : '#6F7C70'; x.fillRect(0, 0, w, h); for (let i = 0; i < 8; i++) { x.fillStyle = i % 2 ? (DK ? '#2c445a' : '#5E6A5F') : (DK ? '#44627f' : '#7C8A7D'); x.fillRect(i * 4, 0, 4, h); } x.fillStyle = 'rgba(0,0,0,0.12)'; x.fillRect(0, h - 2, w, 2); }, 12, 3);
+      const beton = tex(64, 64, (x, w, h) => { x.fillStyle = DK ? '#7b8a98' : '#8A8E94'; x.fillRect(0, 0, w, h); for (let i = 0; i < 160; i++) { x.fillStyle = 'rgba(' + (i % 2 ? '255,255,255' : '0,0,0') + ',0.06)'; x.fillRect(Math.random() * w | 0, Math.random() * h | 0, 2, 2); } x.fillStyle = 'rgba(0,0,0,0.28)'; x.fillRect(0, 0, w, 1); x.fillRect(0, 0, 1, h); }, 6, 8);
       const hz = hazMat(14);
       const wall = new T3.MeshLambertMaterial({ map: tole }), floor = new T3.MeshLambertMaterial({ map: beton }), steel = lam('#2F3A42'), steelL = lam('#4A5862'), lampM = bas('#FFF2C8');
       box(H, 12, 0.12, 20, floor, 0, -0.7, -2);                                   // dalle du hangar (le lanceur reste un peu plus haut)
@@ -64,13 +65,21 @@
       box(H, 12.6, 1.4, 0.4, wall, 0, 3.4, 9);                                              // linteau du fond ; la grande porte reste OUVERTE : on voit dehors
       box(H, 3.4, 4.6, 0.4, wall, -4.6, 1.6, 9); box(H, 3.4, 4.6, 0.4, wall, 4.6, 1.6, 9);
       for (const sx of [-2.9, 2.9]) box(H, 0.3, 4.6, 0.5, steel, sx, 1.6, 9);              // montants de la porte
-      for (let k = 0; k < 3; k++) box(H, 0.9, 0.9, 0.9, lam('#3F4A3C'), -5.1, -0.2, -6 + k * 1.1);   // caisses militaires le long du mur
-      box(H, 0.9, 0.9, 0.9, lam('#4A5A3C'), -5.1, 0.7, -5.45);
+      if (DK) {   // DOCK : un canal d'eau le long du quai (a droite), des bollards, et la mer visible par la grande porte
+        const wm = new T3.Mesh(new T3.PlaneGeometry(1.5, 18.6), new T3.MeshBasicMaterial({ color: '#2d86b4' })); wm.rotation.x = -Math.PI / 2; wm.position.set(3.35, -0.6, -2.2); H.add(wm); pad.dockWater = wm;
+        for (const cx of [2.55, 4.15]) box(H, 0.18, 0.12, 18.6, lam('#9aa6b2'), cx, -0.58, -2.2);
+        for (let z = -10; z <= 6; z += 4) { cyl(H, 0.14, 0.18, 0.4, lam('#2b2f36'), 4.35, -0.45, z, 10); box(H, 0.34, 0.06, 0.34, lam('#d9a441'), 4.35, -0.24, z); }
+        const sea = new T3.Mesh(new T3.PlaneGeometry(900, 700), new T3.MeshBasicMaterial({ color: '#2a7aa6', fog: false })); sea.rotation.x = -Math.PI / 2; sea.position.set(0, -0.9, 9 + 340); H.add(sea);
+        const ship = (x, z, l, c) => { const g = new T3.Group(); box(g, 14, 7, l, lam(c), 0, 3, 0); box(g, 10, 6, l * 0.22, lam('#5a6672'), 0, 9, -l * 0.15); box(g, 3, 8, 3, lam('#3a424c'), 0, 14, -l * 0.15); g.position.set(x, -0.6, z); H.add(g); };
+        ship(-150, 9 + 220, 90, '#46525e'); ship(120, 9 + 300, 120, '#3c4650'); ship(-30, 9 + 380, 70, '#4a5662');
+      }
+      for (let k = 0; k < 3; k++) box(H, 0.9, 0.9, 0.9, lam(DK ? '#2f4a5e' : '#3F4A3C'), -5.1, -0.2, -6 + k * 1.1);   // caisses militaires le long du mur
+      box(H, 0.9, 0.9, 0.9, lam(DK ? '#3b5a70' : '#4A5A3C'), -5.1, 0.7, -5.45);
       // v237 : le HANGAR GRANDIT a chaque amelioration du propulseur (niveaux 1 a 10) : chaque niveau ajoute un equipement, qui se construit en direct (EVO.playBuild)
       // chaque equipement est un groupe pose au sol (y = -0.7) : userData = { lv, kind (drop / rise / slide / power / glowline / pop), side }
       pad.hItems = [];
       const item = (lv, kind, x, z, side, fn) => { const o = new T3.Group(); o.position.set(x, -0.7, z); o.userData = { lv, kind, side: side || 1, bx: x, bz: z }; fn(o); o.visible = la.n >= lv; H.add(o); pad.hItems.push(o); return o; };
-      const olive = lam('#4A5A3C'), crate = lam('#3F4A3C'), amber = lam('#E0A31C'), blk = lam('#1C1F24'), scr = lam('#0F1B26'), pipe = lam('#7A8590');
+      const olive = lam(DK ? '#3b5a70' : '#4A5A3C'), crate = lam(DK ? '#2f4a5e' : '#3F4A3C'), amber = lam('#E0A31C'), blk = lam('#1C1F24'), scr = lam('#0F1B26'), pipe = lam('#7A8590');
       item(1, 'drop', 4.4, -5.2, 1, (o) => { box(o, 1.2, 1.0, 1.2, crate, 0, 0.5, 0); box(o, 1.2, 1.0, 1.2, olive, 1.3, 0.5, 0.2); box(o, 1.0, 0.9, 1.0, olive, 0.6, 1.45, 0.1); cyl(o, 0.38, 0.38, 1.0, lam('#B8452A'), -1.2, 0.5, 0.1, 12); cyl(o, 0.38, 0.38, 1.0, lam('#B8452A'), -1.2, 0.5, 1.0, 12); cyl(o, 0.4, 0.4, 0.08, blk, -1.2, 1.02, 0.1, 12); });
       item(2, 'glowline', 5.5, -2, 1, (o) => { for (const y of [0.7, 2.4]) { const q = cyl(o, 0.09, 0.09, 12, pipe, 0, y, 0, 8, true); } for (let k = 0; k < 4; k++) { box(o, 0.2, 2.0, 0.2, steel, 0, 1.2, -5.5 + k * 3.4); cyl(o, 0.17, 0.17, 0.16, amber, 0, 1.55, -5.5 + k * 3.4, 10); } });
       item(3, 'rise', 0, -0.4, 1, (o) => { for (const sx of [-1.7, 1.7]) box(o, 0.22, 3.4, 0.22, steel, sx, 1.7, 0); box(o, 3.8, 0.26, 0.3, amber, 0, 3.5, 0); for (let k = 0; k < 6; k++) box(o, 0.3, 0.27, 0.31, blk, -1.5 + k * 0.6, 3.5, 0); box(o, 0.06, 1.0, 0.06, steelL, -0.6, 2.9, 0); box(o, 0.34, 0.2, 0.34, steel, -0.6, 2.3, 0); });

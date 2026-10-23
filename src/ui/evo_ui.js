@@ -9,7 +9,7 @@
   const ease = (k) => 1 - Math.pow(1 - U.clamp(k, 0, 1), 3);
   const secFmt = (ms) => { const t = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60; return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0'); };
   const f1 = (v) => (Math.round(v * 10) / 10).toFixed(1).replace('.', ',');
-  const TIERNAME = ['MISSILE DE BASE', 'MISSILE À AILERONS', 'MISSILE RÉACTEUR', 'MISSILE TURBO'];
+  const TIERNAME = ['MISSILE DE BASE', 'MISSILE À AILERONS', 'MISSILE RÉACTEUR', 'MISSILE TURBO'], TIERNAME2 = ['MISSILE TORPILLE', 'TORPILLE À AILERONS', 'MISSILE HYDROJET', 'MISSILE AMPHIBIE'];
   // cadre commun : largeur de contenu (portrait telephone, ou colonne centrale sur grand ecran)
   const C0 = UI.C, rr0 = (ctx, x, y, w, h, r) => { r = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
   const frame = (ui, ctx, W, H) => { const L = Home.layout(ui, W, H); UI.begin(L.u, ui.pixelRatio ? ui.pixelRatio() : 1); return { L, HH: L.HH, Y: L.Y, T0: L.Y(0), cw: L.u, ox: (W - L.u) / 2, cx: W / 2 }; };
@@ -106,7 +106,7 @@
     topBar(ui, ctx, game, F, S0, E);
     if (anim) { const a = U.clamp(anim.t / 0.4, 0, 1) * (1 - U.smooth(anim.dur - 0.6, anim.dur, anim.t)), name = anim.label + ' !'; ctx.save(); ctx.globalAlpha = a; UI.text(ctx, name, cx, Y(0.2), UI.fit(ctx, name, cw * 0.9, S(130)), T.yellow, { outline: true }); UI.text(ctx, anim.sub || 'NOUVELLE PIÈCE', cx, Y(0.27), S(52), T.white, { outline: true }); ctx.restore(); return; }
     // (v227 : plus de bande sombre derriere les cartes)
-    { const r0 = E.rocket(S0.rk), nm = TIERNAME[r0.tier], sp = nm.indexOf(' '), l1 = nm.slice(0, sp), l2 = nm.slice(sp + 1), bw = S(380), bh = S(104), bx = cx - bw / 2 + S(30), by = T0 + S(172), bd = Math.max(2, S(4)), rd = S(12);
+    { const r0 = E.rocket(S0.rk), nm = (E.isS2() ? TIERNAME2 : TIERNAME)[r0.tier], sp = nm.indexOf(' '), l1 = nm.slice(0, sp), l2 = nm.slice(sp + 1), bw = S(380), bh = S(104), bx = cx - bw / 2 + S(30), by = T0 + S(172), bd = Math.max(2, S(4)), rd = S(12);
       rr0(ctx, bx - bd, by - bd, bw + bd * 2, bh + bd * 2, rd + bd); ctx.fillStyle = '#05080C'; ctx.fill(); rr0(ctx, bx, by, bw, bh, rd); ctx.fillStyle = '#26394B'; ctx.fill();
       ctx.save(); rr0(ctx, bx, by, bw, bh, rd); ctx.clip(); ctx.fillStyle = '#1B2A38'; ctx.fillRect(bx, by + bh - S(9), bw, S(9)); ctx.restore();
       ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowOffsetY = S(6); ctx.shadowOffsetX = S(3); ctx.shadowBlur = 0; UI.icon(ctx, 'missile_ogive', bx + S(6), by + bh / 2 - S(4), S(128)); ctx.restore();

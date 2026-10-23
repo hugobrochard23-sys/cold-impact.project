@@ -87,8 +87,8 @@
   let tube = null;
   const padTick = (g, dt) => {
     if (!g.pad || !g.pad.group) return;
-    const st2 = EVO.seaLevel !== undefined && g.evo, show = st2 && (g.state === 'MENU' || g.state === 'LAUNCH' || g.state === 'RESPAWN' || (g.state === 'FLIGHT' && g.flightTime < 1.2));
-    if (st2) g.pad.group.visible = false;
+    const st2 = EVO.seaLevel !== undefined && g.evo, menu = g.state === 'MENU' && !g.evoAim, show = st2 && !menu && (g.state === 'LAUNCH' || g.state === 'RESPAWN' || g.state === 'MENU' || (g.state === 'FLIGHT' && g.flightTime < 1.2));
+    if (st2) g.pad.group.visible = menu;   // v239 : au menu du niveau 2, le dock naval (hangar) est visible ; le tube a anneaux ne sert qu'au lancement
     if (!tube) { tube = new T3.Group(); const m = new T3.MeshLambertMaterial({ color: '#4a5866' }), m2 = new T3.MeshLambertMaterial({ color: '#c8a028' }); for (let k = 0; k < 6; k++) { const r = new T3.Mesh(new T3.TorusGeometry(1.9, 0.09, 6, 20), k % 3 === 0 ? m2 : m); r.position.z = -1.8 - k * 1.5; tube.add(r); } for (let k = 0; k < 8; k++) { const a = k * 0.785, b = new T3.Mesh(new T3.BoxGeometry(0.07, 0.07, 8), m); b.position.set(Math.cos(a) * 1.9, Math.sin(a) * 1.9, -5.4); tube.add(b); } }
     if (tube.parent !== g.scene) g.scene.add(tube);
     tube.visible = !!show; if (!show) return;
