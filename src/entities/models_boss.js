@@ -338,6 +338,65 @@
     return bake(g, [prop]);
   };
 
+  // ================================================================= LE TITAN (boss final) : char de siege geant, forteresse roulante a un seul oeil rouge
+  // Echelle : ~7 x plus grand que le char ; avant = -Z. Se pose sur le sol (y = 0 sous les chenilles).
+  M.titan = () => {
+    const P = { hull: '#6d7683', dark: '#3b414b', light: '#98a2b0', camo: '#505865', acc: '#d1281c' };
+    const m = mats(P), g = new THREE.Group(), body = new THREE.Group(); g.add(body);
+    const red = lam('#2a2e36'), redD = lam('#4a525e'), steel = lam('#3a3e46');   // v236 : plus d'yeux rouges, teintes sourdes
+    // quatre trains de chenilles (deux par cote) : la machine est large et basse devant
+    tracked(body, m, 5.4, 3.1, 11); tracked(body, m, 5.4, 4.5, 11);
+    // coque basse + jupes blindees
+    box(9.6, 1.0, 12.6, m.dark, 0, 1.0, 0, body);
+    for (const sx of [-1, 1]) { box(0.3, 1.5, 12.2, m.hull, sx * 5.35, 1.15, 0, body); for (let i = 0; i < 6; i++) box(0.34, 1.3, 1.5, m.light, sx * 5.4, 1.15, -5 + i * 2, body); for (let i = 0; i < 6; i++) box(0.08, 1.4, 0.06, redD, sx * 5.58, 1.15, -4.1 + i * 2, body); }
+    // glacis avant etage, soc de proue
+    box(9.2, 1.1, 10.4, m.hull, 0, 2.05, 0.6, body);
+    const gl = box(9.2, 0.35, 3.0, m.hull, 0, 1.55, -6.1, body); gl.rotation.x = -0.55;
+    const gl2 = box(8.2, 0.3, 2.4, m.light, 0, 2.55, -5.2, body); gl2.rotation.x = -0.4;
+    box(9.6, 1.6, 0.4, m.dark, 0, 1.0, -7.1, body);
+    for (let i = 0; i < 7; i++) { const sp = box(0.3, 0.9, 0.9, m.metal, -4.2 + i * 1.4, 0.9, -7.5, body); sp.rotation.x = 0.35; }   // dents du soc
+    box(6.8, 0.9, 7.6, m.hull, 0, 3.0, 1.0, body); box(5.0, 0.6, 5.0, m.light, 0, 3.7, 1.8, body);
+    // bandeaux rouges : liseres lumineux le long du glacis
+    box(8.6, 0.07, 0.12, red, 0, 2.62, -6.45, body); box(0.07, 0.07, 9.4, red, -4.4, 2.64, 0.6, body); box(0.07, 0.07, 9.4, red, 4.4, 2.64, 0.6, body);
+    // phares-fentes
+    for (const sx of [-1, 1]) { box(1.1, 0.16, 0.12, basic('#ffe9b8'), sx * 3.4, 1.9, -7.18, body); box(1.6, 0.3, 0.1, m.black, sx * 3.4, 1.9, -7.12, body); }
+    // tourelles secondaires d'epaule (mitrailleuses lourdes) + lance-roquettes arriere
+    for (const sx of [-1, 1]) {
+      cyl(0.95, 1.0, 0.25, m.metal, 12, body).position.set(sx * 3.4, 2.65, -2.8);
+      plateY([[-0.6, -0.9], [0.6, -0.9], [0.95, -0.2], [0.95, 0.5], [0.6, 0.9], [-0.6, 0.9], [-0.95, 0.5], [-0.95, -0.2]], 0.75, m.light, 0.06, body).position.set(sx * 3.4, 2.75, -2.8);
+      cylZ(0.13, 0.13, 3.4, m.metal, 8, sx * 3.15, 3.2, -4.7, body); cylZ(0.13, 0.13, 3.4, m.metal, 8, sx * 3.65, 3.2, -4.7, body);
+      box(1.9, 1.2, 1.2, m.dark, sx * 3.3, 4.0, 4.0, body); for (let a = 0; a < 3; a++) for (let b = 0; b < 2; b++) cylZ(0.17, 0.17, 1.25, m.black, 8, sx * 3.3 + (a - 1) * 0.5, 3.8 + b * 0.5, 3.3, body);
+    }
+    // groupes de ventilation / echappements arriere
+    for (const sx of [-1, 1]) { box(1.6, 0.5, 2.2, m.metal, sx * 2.2, 4.1, 5.6, body); for (let i = 0; i < 5; i++) box(1.5, 0.04, 0.1, m.black, sx * 2.2, 4.38, 4.8 + i * 0.35, body); cyl(0.4, 0.5, 1.5, m.metal, 10, body).position.set(sx * 3.6, 4.6, 6.0); }
+    // ---- tourelle principale : tres large, a pans, avec le CAPTEUR rouge
+    const turret = new THREE.Group(); turret.name = 'turret'; turret.position.set(0, 4.0, -0.2); body.add(turret);
+    cyl(3.6, 3.8, 0.3, m.metal, 20, turret).position.y = 0.15;
+    plateY([[-1.8, -3.7], [1.8, -3.7], [3.4, -2.1], [3.9, 0.2], [3.4, 3.2], [2.0, 4.1], [-2.0, 4.1], [-3.4, 3.2], [-3.9, 0.2], [-3.4, -2.1]], 1.7, m.hull, 0.14, turret).position.y = 0.3;
+    plateY([[-1.4, -3.0], [1.4, -3.0], [2.7, -1.6], [3.0, 1.6], [1.6, 3.4], [-1.6, 3.4], [-3.0, 1.6], [-2.7, -1.6]], 0.5, m.light, 0.08, turret).position.y = 2.0;
+    box(5.6, 0.04, 5.4, m.camo, 0, 2.52, 0.6, turret);
+    box(1.9, 1.2, 0.3, m.dark, 0, 1.2, -3.85, turret).rotation.x = -0.12;      // mantelet
+    // le capteur : fente rouge qui court sur le front + lentille
+    box(4.6, 0.46, 0.16, m.black, 0, 1.75, -3.7, turret);
+    cyl(0.5, 0.5, 0.3, m.metal, 14, turret).position.set(0, 2.5, -2.6);
+    for (const sx of [-1, 1]) { box(0.1, 1.2, 4.0, redD, sx * 3.88, 1.1, 0.4, turret); for (let i = 0; i < 4; i++) box(0.2, 1.0, 0.5, m.dark, sx * 3.95, 1.1, -1.2 + i * 1.3, turret); }
+    // mat radar tournant (grande antenne) + fouets
+    const mast = cyl(0.14, 0.2, 3.6, m.metal, 6, turret); mast.position.set(-2.2, 4.2, 2.2);
+    const dish = new THREE.Group(); dish.position.set(-2.2, 6.1, 2.2); dish.name = 'radar'; turret.add(dish);
+    box(3.6, 0.26, 0.26, m.metal, 0, 0, 0, dish); box(3.2, 0.9, 0.12, m.dark, 0, 0.5, 0, dish);  box(0.5, 0.5, 0.5, m.metal, 0, -0.1, 0, dish);
+    for (const [x, z, h] of [[2.4, 2.8, 4.5], [1.6, 3.4, 3.2]]) { const an = cyl(0.03, 0.05, h, m.metal, 4, turret); an.position.set(x, 2.5 + h / 2, z); an.rotation.x = 0.06; }
+    // fumigenes
+    for (const sx of [-1, 1]) for (let i = 0; i < 5; i++) { const tb = cyl(0.14, 0.14, 0.6, m.metal, 6, turret); tb.position.set(sx * (3.6 + i * 0.01), 1.8, -2.2 + i * 0.32); tb.rotation.z = -sx * 0.6; }
+    // deux canons de siege jumeles, longs, avec freins de bouche et manchons
+    const gunPivot = new THREE.Group(); gunPivot.position.set(0, 1.25, -3.9); turret.add(gunPivot); const slide = new THREE.Group(); gunPivot.add(slide);
+    { cylZ(0.85, 0.9, 2.6, m.dark, 16, 0, 0, -0.8, slide); cylZ(0.52, 0.56, 6.0, m.hull, 16, 0, 0, -4.3, slide); cylZ(0.74, 0.74, 2.2, m.dark, 16, 0, 0, -4.2, slide);
+      cylZ(0.68, 0.68, 1.4, m.metal, 16, 0, 0, -7.6, slide); box(1.5, 0.9, 0.3, m.black, 0, 0, -8.4, slide);
+      for (let k = 0; k < 2; k++) cylZ(0.6, 0.6, 0.16, redD, 16, 0, 0, -3.2 - k * 2.0, slide); }
+    box(2.2, 1.5, 1.4, m.dark, 0, 0.1, -1.0, slide);
+    const muzzle = new THREE.Object3D(); muzzle.position.set(0, 0, -8.7); slide.add(muzzle);
+    return finishTL(g, body, turret, gunPivot, slide, muzzle, [11.4, 8.2, 28], [0, 3.5, -3], [new V(-2.4, 3.2, 6.4), new V(2.4, 3.2, 6.4)], { elev: [-0.05, 0.6], keep: [dish] });
+  };
+
   CC.BossModels = M;
   CC.BossFlying = { heli: true, gunship: true, jet: true, bomber: true, sub: true };
 })();

@@ -488,6 +488,7 @@
       try { game.renderer.compile(game.scene, game.camera); } catch (err) { /* sans effet */ }
       ms.forEach((m, i) => { m.visible = was[i]; }); if (ch) { game.scene.remove(ch); ch.geometry.dispose(); }
     }
+    if (E && E.titanPrewarm) E.titanPrewarm(game);   // v236 : le Titan (boss) est compile ici, pas en plein vol
     T.spawned = spawned; if (E) { if (E.dyn) E.dyn.length = Math.min(E.dyn.length, dynN); E.robot = rob; }
     st.p = 1;
   }

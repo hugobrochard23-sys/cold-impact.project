@@ -282,6 +282,7 @@
       ctx.fillStyle = '#ff5a3a'; ctx.beginPath(); ctx.moveTo(R * 0.12, -R * 0.075); ctx.lineTo(R * 0.02, -R * 0.2); ctx.lineTo(R * 0.24, -R * 0.075); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(R * 0.12, R * 0.075); ctx.lineTo(R * 0.02, R * 0.2); ctx.lineTo(R * 0.24, R * 0.075); ctx.closePath(); ctx.fill();
       ctx.restore(); ctx.save(); ctx.fillStyle = '#12304f'; ctx.beginPath(); ctx.arc(cx, cy, R * 0.09, 0, 6.2832); ctx.fill(); ctx.restore();
       UI.text(ctx, String(Math.round(kmh)), cx, cy + R * 0.38, R * 0.5, '#ffffff', { stroke: true }); UI.text(ctx, 'KM/H', cx, cy + R * 0.66, R * 0.22, '#ffffff', { stroke: true }); }
+    if (E.titanHud) E.titanHud(ctx, g, ox, u, H, UI, S);
   };
   // petit compteur de pieces de la partie, sous la vitesse
   Home.evoUI.coinCounter = function (ctx, g, W, H, tot, bump) {
