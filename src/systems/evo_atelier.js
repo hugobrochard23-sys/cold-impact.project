@@ -108,11 +108,13 @@
   const _buy = EVO.buy;
   EVO.buy = (g, id, free) => {
     const S0 = EVO.save(g), before = S0[id], ok = _buy(g, id, free); if (!ok) return ok;
-    const n = EVO.save(g)[id];
+    const n = EVO.save(g)[id]; g.evoGemOffer = id;   // l'offre « gemme / pub » ne s'affiche que sur la carte qu'on vient d'acheter, quand il n'y a plus assez de pieces
     if (id === 'la' && g.pad && n <= 10) { EVO.playBuild(g, n); } else if ((id === 'rk' && !g.evoAnim) || id === 'la') EVO.playUp(g, id);
     if (id === 'cm') { const d = EVO.mult(n) - EVO.mult(before); g.evoBought = { id, t0: performance.now(), delta: d, palier: Math.floor(EVO.mult(n)) > Math.floor(EVO.mult(before)) || d >= 0.5, mult: EVO.mult(n) }; if (CC.Haptics && g.evoBought.palier) CC.Haptics.pattern('levelUp'); if (g.evoBought.palier) g.audio.play('coinPing'); }
     return ok;
   };
+  const _br = EVO.beginRun; EVO.beginRun = (g) => { g.evoGemOffer = null; _br(g); };
+  const _st = EVO.start; EVO.start = (g) => { g.evoGemOffer = null; return _st(g); };
   const _ch = EVO.camHook;
   EVO.camHook = (g, rig, o) => {
     const A = g.evoAnim;

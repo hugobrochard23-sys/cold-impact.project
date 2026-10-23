@@ -197,15 +197,9 @@
   const rrect = (ctx, x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
   EVO.titanHud = (ctx, g, ox, u, H, UI, S) => {
     if (!TT || TT.mode === 'sleep' || !g.endlessRun || (TT.mode === 'wreck' && TT.disp < 0.01)) return;
-    const w = u * 0.5, h = S(26), x = ox + (u - w) / 2, y = H * 0.33, f = TT.hp / HP; TT.disp += (f - TT.disp) * 0.12; TT.lag = TT.lag === undefined ? 1 : TT.lag + (f - TT.lag) * 0.03;   // la barre descend doucement ; on ne devine pas le nombre de coups
-    const a = TT.mode === 'wreck' ? U.clamp(TT.disp * 10, 0, 1) : 1, r = h / 2;
-    ctx.save(); ctx.globalAlpha = a; UI.text(ctx, 'TITAN', x + w / 2, y - S(14), S(36), '#ffffff', { outline: true, ow: 0.2 });
-    ctx.fillStyle = 'rgba(8,12,18,0.7)'; rrect(ctx, x - S(4), y - S(4), w + S(8), h + S(8), r + S(4)); ctx.fill();
-    ctx.save(); rrect(ctx, x, y, w, h, r); ctx.clip();
-    ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = '#ffd9a0'; ctx.fillRect(x, y, w * Math.max(0, TT.lag), h);
-    ctx.fillStyle = '#ff4a3a'; ctx.fillRect(x, y, w * Math.max(0, TT.disp), h);
-    ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(x, y, w * Math.max(0, TT.disp), h * 0.38);
-    ctx.restore(); ctx.restore();
+    const w = u * 0.5, h = S(24), x = ox + (u - w) / 2, y = H * 0.1, f = TT.hp / HP; TT.disp += (f - TT.disp) * 0.12;   // une simple barre qui descend : on ne devine pas le nombre de coups
+    ctx.save(); ctx.globalAlpha = TT.mode === 'wreck' ? U.clamp(TT.disp * 10, 0, 1) : 1; rrect(ctx, x, y, w, h, h / 2); ctx.clip();
+    ctx.fillStyle = 'rgba(8,12,18,0.5)'; ctx.fillRect(x, y, w, h); ctx.fillStyle = '#E8433A'; ctx.fillRect(x, y, w * Math.max(0, TT.disp), h);
+    ctx.restore();
   };
 })();

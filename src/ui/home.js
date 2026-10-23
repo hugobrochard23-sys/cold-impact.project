@@ -531,6 +531,20 @@
   Home.drawRevive = function (ui, ctx, game, W, H) {
     const L = Home.layout(ui, W, H), { HH, u, Y } = L, run = game.endlessRun, RC = CC.CONFIG.revive;
     ui.dim(ctx, W, H, 0.55);
+    if (CC.EVO && CC.EVO.on && CC.UI2) {   // v238 : au style du menu
+      const UI2 = CC.UI2, u2 = H > W ? W : Math.min(W, H * 0.62), ox = (W - u2) / 2; UI2.begin(u2, 1); const S2 = UI2.S, k2 = U.clamp(game.reviveT / RC.window, 0, 1), cx2 = W / 2, cy2 = H * 0.3, r2 = u2 * 0.2;
+      ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(255,255,255,0.16)'; ctx.lineWidth = S2(26); ctx.beginPath(); ctx.arc(cx2, cy2, r2, 0, 6.2832); ctx.stroke();
+      ctx.strokeStyle = k2 < 0.3 ? '#FF5A4A' : '#2ECC71'; ctx.beginPath(); ctx.arc(cx2, cy2, r2, -Math.PI / 2, -Math.PI / 2 + 6.2832 * k2); ctx.stroke();
+      UI2.outlined(ctx, String(Math.ceil(game.reviveT)), cx2, cy2, S2(190), '#F0EDE4');
+      UI2.outlined(ctx, 'CONTINUER ?', cx2, H * 0.52, UI2.fit(ctx, 'CONTINUER ?', u2 * 0.86, S2(110)), '#F0EDE4');
+      UI2.outlined(ctx, 'REPARS ' + Math.max(0, Math.round(RC.back)) + ' M AVANT, PROTEGE', cx2, H * 0.575, S2(40), '#C8D0DC');
+      UI2.outlined(ctx, 'SCORE ' + U.formatInt(run.score), cx2, H * 0.62, S2(58), '#E4B84D');
+      const bw2 = u2 * 0.84, bh2 = S2(160), bx2 = ox + (u2 - bw2) / 2, by2 = H * 0.68;
+      UI2.btnPrimary(ctx, bx2, by2, bw2, bh2, 'REGARDER UNE PUB', { px: S2(62) }); UI2.icon(ctx, 'video', bx2 + bh2 * 0.62, by2 + bh2 * 0.46, bh2 * 0.5);
+      hit(ui, bx2, by2, bw2, bh2, () => game.ads.rewarded(() => game.revive(), null, 'revive'));
+      const nw2 = u2 * 0.6, nh2 = S2(110), nx2 = cx2 - nw2 / 2, ny2 = H * 0.86; UI2.outlined(ctx, 'NON MERCI', cx2, ny2 + nh2 / 2, S2(46), '#9FB0C8'); hit(ui, nx2, ny2, nw2, nh2, () => { ui.overlay = null; game.finishEndless(); });
+      return;
+    }
     const k = U.clamp(game.reviveT / RC.window, 0, 1), cx = W / 2, cy = Y(0.33), r = u * 0.2;
     ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = u * 0.03; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.283); ctx.stroke();
     ctx.strokeStyle = k < 0.3 ? RED : CY; ctx.lineCap = 'butt'; ctx.beginPath(); ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + 6.283 * k); ctx.stroke();

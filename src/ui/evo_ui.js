@@ -46,6 +46,16 @@
     else if (!o.noGear) { UI.slateIconButton(ctx, bx, y - S(8), bs, 'gear'); UI.tap(ui, bx, y - S(8), bs, bs, () => { ui.overlay = 'msettings'; }); }
     return y + h;
   }
+  // petite icone de carburant (bidon + bec), pour les gains de l'ogive
+  function fuelIcon(ctx, cx, cy, s) {
+    ctx.save(); ctx.translate(cx, cy); const w = s * 0.72, h = s * 0.9; ctx.lineJoin = 'round';
+    ctx.fillStyle = '#06121c'; rr0(ctx, -w / 2 - s * 0.07, -h / 2 - s * 0.07, w + s * 0.14, h + s * 0.14, s * 0.18); ctx.fill();
+    ctx.fillStyle = '#FF5A3A'; rr0(ctx, -w / 2, -h / 2, w, h, s * 0.14); ctx.fill();
+    ctx.fillStyle = '#C93C22'; ctx.fillRect(-w / 2, h * 0.12, w, h * 0.38 - s * 0.05);
+    ctx.fillStyle = '#FFE16A'; ctx.beginPath(); ctx.moveTo(0, -h * 0.34); ctx.quadraticCurveTo(w * 0.3, -h * 0.02, 0, h * 0.06); ctx.quadraticCurveTo(-w * 0.3, -h * 0.02, 0, -h * 0.34); ctx.fill();
+    ctx.fillStyle = '#06121c'; ctx.fillRect(-w * 0.1, -h / 2 - s * 0.2, w * 0.5, s * 0.16); ctx.fillStyle = '#9aa5b1'; ctx.fillRect(-w * 0.04, -h / 2 - s * 0.16, w * 0.38, s * 0.1);
+    ctx.restore();
+  }
   // ---------- carte d'amelioration ----------
   function card(ui, ctx, game, E, S0, id, x, y, w, h, now) {
     const n = S0[id], cost = E.nextCost(game, id), can = cost !== null && S0.coins >= cost;
@@ -60,25 +70,25 @@
     UI.outlined(ctx, name, ix, y + h * 0.068, UI.fit(ctx, name, w * 0.6, h * 0.066), ink, null, { align: 'left' });
     { const bg = UI.CARDBG[id], gr = ctx.createLinearGradient(0, iy, 0, iy + ih); gr.addColorStop(0, bg[0]); gr.addColorStop(1, bg[1]); rr0(ctx, ix, iy, iw, ih, w * 0.025); ctx.fillStyle = gr; ctx.fill(); }
     // v237 : revenu : a chaque achat la pile de pieces rebondit et la valeur gagnee monte (+0,1) ; a un PALIER (x1,4 -> x2) c'est plus gros, avec une gerbe d'etincelles
-    const cb = id === 'cm' && game.evoBought && game.evoBought.id === 'cm' && game.evoBought.delta !== undefined ? game.evoBought : null, ct = cb ? (now - cb.t0) / 1000 : 9, big = cb && cb.palier;
+    const cb = (id === 'cm' || id === 'rk') && game.evoBought && game.evoBought.id === id && (id === 'rk' || game.evoBought.delta !== undefined) ? game.evoBought : null, ct = cb ? (now - cb.t0) / 1000 : 9, big = cb && cb.palier;
     const pul = ct < 0.55 ? Math.sin(ct / 0.55 * 3.1416) * (big ? 0.34 : 0.2) : 0;
     ctx.save(); if (id !== 'cm') { ctx.shadowColor = 'rgba(0,0,0,0.38)'; ctx.shadowOffsetY = S(7); ctx.shadowOffsetX = S(3); ctx.shadowBlur = 0; } { const icx = ix + iw / 2, icy = iy + ih / 2 - (id === 'cm' ? ih * 0.07 : 0); ctx.translate(icx, icy - pul * ih * 0.12); ctx.scale(1 + pul, 1 + pul); ctx.translate(-icx, -icy); UI.icon(ctx, ico, icx, icy, ih * 0.66); } ctx.restore();
-    if (id === 'cm') { ctx.save(); const tcx = ix + iw / 2, tcy = iy + ih * 0.84; ctx.translate(tcx, tcy); ctx.scale(1 + pul * 0.9, 1 + pul * 0.9); ctx.translate(-tcx, -tcy); UI.outlined(ctx, 'X' + f1(E.mult(n)), tcx, tcy, h * 0.095, big && ct < 0.8 ? T.yellow : T.white, '#000000', { keep: true, ow: 0.16 }); ctx.restore();
+    if (id === 'cm') { ctx.save(); const tcx = ix + iw / 2, tcy = iy + ih * 0.84; ctx.translate(tcx, tcy); ctx.scale(1 + pul * 0.9, 1 + pul * 0.9); ctx.translate(-tcx, -tcy); UI.outlined(ctx, 'X' + f1(E.mult(n)), tcx, tcy, h * 0.095, big && ct < 0.8 ? T.yellow : T.white, '#000000', { keep: true, ow: 0.16 }); ctx.restore(); }
+    {
       if (cb && ct < 1.7) {
-        const a = U.clamp(1 - (ct - 0.9) / 0.8, 0, 1), rise = ease(ct / 1.1) * ih * 0.55, txt = '+' + f1(cb.delta), sz = h * (big ? 0.15 : 0.1);
-        ctx.save(); ctx.globalAlpha = a; UI.outlined(ctx, txt, ix + iw / 2, iy + ih * 0.5 - rise, UI.fit(ctx, txt, iw * 0.9, sz), big ? '#FFE16A' : '#FFFFFF', '#1a1208', { keep: true, ow: 0.16 }); ctx.restore();
+        const a = U.clamp(1 - (ct - 0.9) / 0.8, 0, 1), rise = ease(ct / 1.1) * ih * 0.55, txt = id === 'rk' ? '+' : '+' + f1(cb.delta), sz = h * (big ? 0.15 : 0.1);
+        ctx.save(); ctx.globalAlpha = a; if (id === 'rk') { const fs = h * 0.11, tw0 = UI.tw(ctx, '+', fs * 1.1), x0 = ix + iw / 2 - (tw0 + fs * 1.1) / 2; UI.outlined(ctx, '+', x0, iy + ih * 0.5 - rise, fs * 1.1, '#FFFFFF', '#06121c', { keep: true, ow: 0.16, align: 'left' }); fuelIcon(ctx, x0 + tw0 + fs * 0.62, iy + ih * 0.5 - rise, fs * 1.25); } else UI.outlined(ctx, txt, ix + iw / 2, iy + ih * 0.5 - rise, UI.fit(ctx, txt, iw * 0.9, sz), big ? '#FFE16A' : '#FFFFFF', '#1a1208', { keep: true, ow: 0.16 }); ctx.restore();
         if (big && ct < 1.0) { const e = ease(ct / 0.9); ctx.save(); ctx.globalAlpha = 1 - e; ctx.strokeStyle = '#FFF2B0'; ctx.lineWidth = Math.max(2, S(5) * (1 - e)); ctx.beginPath(); ctx.arc(ix + iw / 2, iy + ih * 0.45, ih * (0.2 + 0.75 * e), 0, 6.2832); ctx.stroke();
           for (let i = 0; i < 12; i++) { const an = i * 0.5236 + 0.3, r0 = ih * (0.25 + 0.7 * e), sx = ix + iw / 2 + Math.cos(an) * r0, sy = iy + ih * 0.45 + Math.sin(an) * r0, ss = S(10) * (1 - e) + 1; ctx.fillStyle = i % 2 ? '#FFE16A' : '#FFFFFF'; ctx.beginPath(); ctx.moveTo(sx, sy - ss * 1.6); ctx.lineTo(sx + ss * 0.5, sy); ctx.lineTo(sx, sy + ss * 1.6); ctx.lineTo(sx - ss * 0.5, sy); ctx.closePath(); ctx.fill(); } ctx.restore(); }
       } }
     { const br = w * 0.125, bcx = rx + w - br * 0.8, bcy = y + br * 0.8, ro = Math.max(2, S(4)); ctx.beginPath(); ctx.arc(bcx, bcy, br + ro, 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.beginPath(); ctx.arc(bcx, bcy, br, 0, 6.2832); ctx.fillStyle = '#3A5873'; ctx.fill(); UI.outlined(ctx, String(n + 1), bcx, bcy + br * 0.04, UI.fit(ctx, String(n + 1), br * 1.4, br * 1.05), T.white); }
     UI.segments(ctx, ix, y + h * 0.555, iw, h * 0.088, done, 5, { off: 'rgba(14,24,34,0.45)', on: col });
     const bx = rx + pd, bw = w - pd * 2, bh = h * 0.285, by = y + h - pd - h * 0.285, frac = cost === null ? 1 : U.clamp(S0.coins / cost, 0, 1);
-    const cs = U.formatInt(cost), gemMode = !can && cost !== null, gc = E.gemCost(game, id), haveG = (S0.gems || 0) >= gc, face = UI.greenButton(ctx, bx, by, bw, bh, { disabled: false, cat: gemMode ? 'rk' : id });
+    const cs = U.formatInt(cost), gemMode = !can && cost !== null && game.evoGemOffer === id, gc = E.gemCost(game, id), haveG = (S0.gems || 0) >= gc, face = UI.greenButton(ctx, bx, by, bw, bh, { disabled: false, cat: gemMode ? 'rk' : id });
     if (gemMode) {   // plus assez de pieces : le bouton propose une GEMME (ou une pub si on n'en a pas)
-      const gy = face.y + face.h * 0.5, gs = face.h * 0.78, tw = UI.tw(ctx, String(gc), face.h * 0.6), gx0 = bx + bw / 2 - (gs * 0.55 + tw / 2 + (haveG ? 0 : gs * 0.45)) / 2;
-      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowOffsetY = S(4); ctx.shadowBlur = 0; UI.icon(ctx, 'gem', gx0 + gs * 0.3, gy, gs); ctx.restore();
-      UI.outlined(ctx, String(gc), gx0 + gs * 0.85, gy + face.h * 0.03, face.h * 0.62, '#FFFFFF', null, { align: 'left' });
-      if (!haveG) UI.icon(ctx, 'video', gx0 + gs * 0.85 + tw + gs * 0.55, gy, gs * 0.6);
+      const gy = face.y + face.h * 0.5, gs = face.h * 0.52, px = face.h * 0.4, tw = UI.tw(ctx, String(gc), px), tot = gs + face.h * 0.12 + tw, gx0 = bx + bw / 2 - tot / 2;   // meme taille de texte que « AMELIORER »
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowOffsetY = S(3); ctx.shadowBlur = 0; UI.icon(ctx, 'gem', gx0 + gs / 2, gy, gs); ctx.restore();
+      UI.outlined(ctx, String(gc), gx0 + gs + face.h * 0.12, gy + face.h * 0.02, px, '#FFFFFF', null, { align: 'left' });
     }
     ctx.save(); if (!can) ctx.globalAlpha = 0.72; if (gemMode) ctx.globalAlpha = 0;
     UI.outlined(ctx, 'AMÉLIORER', bx + bw / 2, face.y + face.h * 0.3, UI.fit(ctx, 'AMÉLIORER', bw * 0.94, face.h * 0.4), '#FFFFFF');
@@ -111,7 +121,6 @@
     const bs = S(128), lx = ox + S(36), ly = T0 + S(330), free = Math.max(0, 3 - (E.freeGemsUsed ? E.freeGemsUsed(game) : 0));
     UI.shopStall(ctx, lx, ly - S(6), bs, now); UI.tap(ui, lx, ly, bs, bs, () => { ui.overlay = 'evoShop'; });
     if (!(game.meta && game.meta.noAds)) { const y = ly + bs + S(28); UI.noAdsBadge(ctx, lx, y, bs); UI.tap(ui, lx, y, bs, bs, () => { ui.overlay = 'evoShop'; }); }
-    { const y = ly + (bs + S(28)) * 2; UI.freeGems(ctx, lx, y, bs, free); UI.tap(ui, lx, y, bs, bs, () => { if (free > 0) E.gemAd(game, true); else ui.overlay = 'evoShop'; }); }
     { const unlocked = S0.runs >= 3, ready = E.chestReady(game), wait = Math.max(0, (S0.chestAt || 0) - Date.now()), rx0 = ox + cw - S(36) - bs, y = ly, pulse = 0.5 + 0.5 * Math.sin(now / 240);
       UI.chestFrame(ctx, rx0, y, bs, ready, unlocked, now);
       // (lueur du coffre pret : voir UI.chestFrame)
@@ -126,7 +135,7 @@
     const gap = S(34), marg = S(40), cwd = (cw - marg * 2 - gap * 2) / 3, chh = ((cw - S(26) * 2 - S(14) * 2) / 3) / 0.703, cy0 = T0 + HH - chh - S(28), cards = [];
     ['la', 'rk', 'cm'].forEach((id, i) => cards.push(card(ui, ctx, game, E, S0, id, ox + marg + i * (cwd + gap), cy0, cwd, chh, now)));
     // (plus d'etoile sur l'ogive)
-    for (const c of cards) if (!c.can && c.cost !== null) UI.tap(ui, c.bx, c.by, c.bw, c.bh, () => E.buyGem(game, c.id));
+    for (const c of cards) if (!c.can && c.cost !== null && game.evoGemOffer === c.id) UI.tap(ui, c.bx, c.by, c.bw, c.bh, () => E.buyGem(game, c.id));
     for (const c of cards) hit(ui, c.rx, c.y, c.w, c.h, () => E.buy(game, c.id));
     { const ch = game.evoChest; if (ch) { const k = (now - ch.t0) / 1000; if (k > 3.2) game.evoChest = null; else {
       const a = U.clamp(k / 0.25, 0, 1) * U.clamp((3.2 - k) / 0.4, 0, 1); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = 'rgba(8,9,12,0.85)'; ctx.fillRect(0, T0, W, HH); UI.icon(ctx, 'chest_open', cx, Y(0.3), S(440) * (0.9 + 0.1 * ease(k * 3)));
@@ -227,7 +236,7 @@
   Home.drawEvoSkins = function (ui, ctx, game, W, H) {
     const F = frame(ui, ctx, W, H), { HH, Y, T0, cw, ox, cx } = F, E = CC.EVO, S0 = E.save(game);
     bgPattern(ctx, W, T0, HH); topBar(ui, ctx, game, F, S0, E, { close: () => { ui.overlay = 'evo'; } });
-    UI.text(ctx, 'APPARENCES', cx, Y(0.16), S(100), T.yellow, { outline: true });
+    UI.outlined(ctx, 'APPARENCES', cx, Y(0.16), S(100), T.white);
     const cur = E.livery(game), tw0 = (cw - S(108)) / 2, th = S(260), gx = ox + S(36), gy = Y(0.22);
     E.LIVERIES.forEach((Lv, i) => { const x = gx + (i % 2) * (tw0 + S(36)), y = gy + Math.floor(i / 2) * (th + S(26)), open = S0.rk >= Lv.at, on = cur.id === Lv.id;
       UI.panel(ctx, x, y, tw0, th, { c: S(26), border: on ? T.yellow : T.border, bw: S(on ? 6 : 3) }); ctx.save(); if (!open) ctx.globalAlpha = 0.35; UI.icon(ctx, 'missile_ogive', x + tw0 / 2, y + th * 0.4, th * 0.55); ctx.restore();
@@ -244,7 +253,7 @@
     const F = frame(ui, ctx, W, H), { HH, Y, T0, cw, ox, cx } = F, s = game.settings, now = performance.now();
     const vib = ['NON', 'FAIBLE', 'MOYEN', 'FORT'], vibV = s.vibration !== undefined ? s.vibration : 2;
     bgPattern(ctx, W, T0, HH);
-    UI.text(ctx, 'RÉGLAGES', cx, Y(0.075), S(104), T.yellow, { outline: true });
+    UI.outlined(ctx, 'RÉGLAGES', cx, Y(0.075), S(104), T.white);
     const rows = [
       ['SON', 'sound', s.sfx > 0, s.sfx > 0 ? 'OUI' : 'NON', () => ui.toggleVolume(game, 'sfx')],
       ['MUSIQUE', 'sound', s.music > 0, s.music > 0 ? 'OUI' : 'NON', () => ui.toggleVolume(game, 'music')],
