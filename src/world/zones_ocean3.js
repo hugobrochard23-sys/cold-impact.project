@@ -4,7 +4,7 @@
 (function () {
   const U = CC.U, Z = CC.Zones, EVO = CC.EVO, T3 = THREE, V = T3.Vector3, foe = Z.evoFoe, O = EVO && EVO.oc;
   if (!EVO || !EVO.on || !O || !Z.defs.ocean) return;
-  const { yrel, wpin, pk, rr, ss, lam, basic, mb } = O, OC = Z.defs.ocean, SC = OC.scenes;
+  const { yrel, wpin, pk, rr, ss, lam, basic, mb } = O, TR = CC.Trees, OC = Z.defs.ocean, SC = OC.scenes;
   const LC = 340, LB = 520, SEAB = -90;
   // sol de la cote (monde) : plateau a +40 derriere la rampe (le hangar est a d = -40), puis pente DROITE a -19 degres qui commence a d = -50, sous le hangar (le tir passe a plus de 4 m au-dessus du sol), puis plancher a -60
   const SL = 0.344, FLOOR = -60;
@@ -124,5 +124,84 @@
         S.glow(dc, lx, yrel(S, dc, -34), '#9fe8ff', 120);
       });
       for (let k = 0; k < 8; k++) S.item(d(0.93 + k * 0.007), () => { const dc = d(0.93 + k * 0.007), lx = (k % 2 ? 1 : -1) * 22; S.bx(dc, lx, yrel(S, dc, -34), 1, 22, 1, 'emis:#9fe8ff', undefined, false); });
+    } };
+
+  // ============================================ LE VOLCAN (640 m) : on entre par une grotte au ras de l'eau, on remonte la CHEMINEE de lave, on jaillit du cratere ============================================
+  const LV = 640, GV = (u) => -8 + 128 * ss(0.08, 0.75, u);
+  const basalt = ['#2b2522', '#332b27', '#3a302b', '#262020'];
+  const lavaBomb = (S, dc, lx, ph, period) => {   // bombe volcanique : une boule incandescente qui monte puis retombe dans la cheminee
+    const g = new T3.Group(), core = new T3.Mesh(new T3.SphereGeometry(3, 10, 8), basic('#ff7a2a')), halo = new T3.Mesh(new T3.SphereGeometry(4.6, 10, 8), basic('#ff4a1a', { transparent: true, opacity: 0.35, depthWrite: false }));
+    g.add(core); g.add(halo); const col = EVO.colBox(g, 5.4, 5.4, 5.4, 0, 0, 0); EVO.placeGroup(S, g, dc, lx, 3, 0); S.glow(dc, lx, 8, '#ff7a2a', 26);
+    const base = g.position.y;
+    EVO.addDyn(g, (t) => { const k = ((t / period + ph) % 1), h = 4 * k * (1 - k) * 30; g.position.y = base + h; halo.scale.setScalar(1 + 0.15 * Math.sin(t * 9)); }, [col], { near: 300 });
+  };
+  SC.volcan = { len: [LV, LV], noDoor: true, noChaos: true, gw: 125, grass: false,
+    sub: [{ u: 0, key: 'volcan', name: 'LE VOLCAN' }, { u: 0.3, key: 'laveche', name: 'LA CHEMINEE' }, { u: 0.8, key: 'cratere', name: 'LE CRATERE' }],
+    pin: wpin((d, sc) => { const u = (d - sc.d0) / (sc.d1 - sc.d0); return Math.max(15 + 6 * Math.sin(d / 60) * (1 - ss(0.1, 0.3, u)), GV(u) + 10); }),
+    relief(T, sc) { const fn = (d) => GV(U.clamp((d - sc.d0) / (sc.d1 - sc.d0), 0, 1)) - SEAB; sc.rlo = 0; sc.rhi = 210; return { fn, max: 210 }; },
+    ground: (d, lx, c, sc) => { const u = (d - sc.d0) / (sc.d1 - sc.d0), a = new T3.Color('#2a2522'), b = new T3.Color('#7a2a14'); c.copy(a).lerp(b, 0.25 * ss(0.3, 0.8, u) * (0.5 + 0.5 * Math.sin(lx * 0.2 + d * 0.15))); c.multiplyScalar(0.9 + 0.1 * Math.sin(lx * 0.31 + d * 0.17)); },
+    build(S) {
+      const L = S.len, d = (u) => S.d0 + u * L, T = S.T;
+      Z.oceanSurface(S, S.d0, d(0.5), 140, 0.9);
+      // le rivage : rochers noirs, fumerolles, lueur rouge du cratere au fond
+      for (const sg of [-1, 1]) S.rows(d(0.0), d(0.2), 9, 0.7, (dc) => S.item(dc, (r) => { const lx = S.lane(dc).lx + sg * r.between([26, 90]); const p = S.at(dc, lx, 0); TR.rock(S.b, p[0], p[1], p[2], r.between([5, 16]), r, { gray: pk(r, basalt), noMoss: true }); }));
+      S.item(d(0.04), () => { for (let k = 0; k < 6; k++) S.glow(d(0.04 + k * 0.03), (k % 2 ? 1 : -1) * 30, 14, '#ff6a2a', 40); });
+      // l'entree de la grotte : une arche de basalte, lave qui coule vers la mer, vapeur
+      S.item(d(0.2), () => { const dc = d(0.2), lx = S.lane(dc).lx; for (const sg of [-1, 1]) slab(S, dc, lx + sg * 30, 22, 14, 46, 10, 'col:#2b2522', undefined, true); slab(S, dc, lx, 44, 74, 12, 10, 'col:#2b2522', undefined, true); slab(S, dc - 5.4, lx, 36.5, 46, 1.2, 0.8, 'emis:#ff6a1a', undefined, false); S.glow(dc, lx, 20, '#ff6a2a', 140); });
+      // la cheminee : tube de basalte qui monte, rivieres et plafonds de lave
+      const U0 = 0.22, U1 = 0.82, N = Math.floor((U1 - U0) * L / 8);
+      for (let k = 0; k <= N; k++) {
+        const dc = d(U0) + k * 8, u = (dc - S.d0) / L;
+        S.item(dc, (r) => {
+          const lx = S.lane(dc).lx, half = 19.5 + 2.5 * Math.sin(dc / 31), top = 24, hot = 0.5 + 0.5 * Math.sin(dc / 17);
+          for (const sg of [-1, 1]) { slab(S, dc, lx + sg * half, 12, 4 + hot * 2, 30, 8.6, 'col:' + pk(r, basalt), undefined, true); if (k % 3 === 0) slab(S, dc, lx + sg * (half - 2.3), 8 + hot * 5, 0.8, 2.2, 8.2, 'emis:#d8400f', undefined, false); }
+          slab(S, dc, lx, top, 46, 4, 8.6, 'col:' + pk(r, basalt), undefined, true);
+          slab(S, dc, lx, 0.22, 9, 0.3, 9.4, 'emis:#c8380c', undefined, false);   // la riviere de lave au plancher
+          if (k % 4 === 0) { S.glow(dc, lx, 6, '#ff7a2a', 44); slab(S, dc, lx - 6 + hot * 12, top - 2.4, 5, 3.2, 2, 'col:#4a3a32', undefined, false); }   // stalactites
+        });
+      }
+      // bombes de lave : 7 boules qui montent et retombent, decalees sur la largeur
+      for (let i = 0; i < 7; i++) { const dc = d(0.3 + i * 0.07); S.item(dc, () => lavaBomb(S, dc, (i % 2 ? 1 : -1) * 9, (i * 0.37) % 1, 2.3 + (i % 3) * 0.3)); }
+      foe(S, 'aaturret', d(0.38), -14, 0, { name: 'TOURELLE', armed: true, fixed: true, keep: true }); foe(S, 'aaturret', d(0.5), 15, 0, { name: 'TOURELLE', armed: true, fixed: true, keep: true }); foe(S, 'aaturret', d(0.64), -13, 0, { name: 'TOURELLE', armed: true, fixed: true, keep: true });
+      // le cratere : l'ouverture, un panache de cendres, des rochers incandescents autour
+      for (let k = 0; k < 14; k++) S.item(d(0.84 + k * 0.011), (r) => { const dc = d(0.84 + k * 0.011), sg = k % 2 ? 1 : -1, lx = S.lane(dc).lx + sg * r.between([20, 44]); const p = S.at(dc, lx, 0); TR.rock(S.b, p[0], p[1], p[2], r.between([8, 18]), r, { gray: pk(r, basalt), noMoss: true }); S.b.box({ p: [p[0], p[1] + 5, p[2]], s: [14, 10, 14], render: false }); S.glow(dc, lx, 12, '#ff5a1a', 60); });
+      S.item(d(0.9), () => { const dc = d(0.9), lx = S.lane(dc).lx, y = 70, m = new T3.Mesh(new T3.CylinderGeometry(26, 14, 240, 10, 1, true), basic('#5a4a44', { transparent: true, opacity: 0.35, depthWrite: false, side: T3.DoubleSide, fog: false })); const p = S.at(dc, lx, y); m.position.set(p[0], p[1], p[2]); if (S.inClip(dc)) S.b.root.add(m); S.glow(dc, lx, 40, '#ff6a2a', 220); });
+    } };
+
+  // ============================================ L'ERUPTION (820 m) : le ciel de cendres ; bataille aerienne ; DEUX VOIES SUPERPOSEES (au-dessus des nuages / sous la couche de nuages) ============================================
+  const LE = 820, GE = (u) => 120 - 210 * ss(0.02, 0.2, u), LANE = (u) => 160 - 142 * ss(0.05, 0.92, u);
+  const ashCloud = (S, dc, lx, yw, s) => {   // nuage de cendres : des boules grises qui derivent (decor sans collision)
+    const g = new T3.Group(), m = basic('#6a5a56', { transparent: true, opacity: 0.55, depthWrite: false, fog: false });
+    for (let k = 0; k < 5; k++) { const b = new T3.Mesh(new T3.SphereGeometry(s * rr(0.5, 1), 8, 6), m); b.position.set(rr(-s, s), rr(-s * 0.4, s * 0.4), rr(-s, s)); b.scale.y = 0.6; g.add(b); }
+    EVO.placeGroup(S, g, dc, lx, yrel(S, dc, yw), 0); EVO.addDyn(g, (t) => { g.position.x += Math.sin(t * 0.2 + dc) * 0.02; }, [], { near: 600 });
+  };
+  const flak = (S, dc, lx, yw) => {   // tir de DCA : un eclair orange suivi d'une boule de fumee noire
+    const g = new T3.Group(), puff = new T3.Mesh(new T3.SphereGeometry(4, 8, 6), basic('#201a18', { transparent: true, opacity: 0.8, fog: false })), fl = new T3.Mesh(new T3.SphereGeometry(5, 8, 6), basic('#ffb04a', { transparent: true, opacity: 0.9, fog: false })); g.add(puff); g.add(fl);
+    EVO.placeGroup(S, g, dc, lx, yrel(S, dc, yw), 0); const ph = rr(0, 4);
+    EVO.addDyn(g, (t) => { const k = ((t * 0.5 + ph) % 1); puff.scale.setScalar(0.3 + k * 1.4); puff.material.opacity = 0.8 * (1 - k); fl.visible = k < 0.12; fl.scale.setScalar(0.7 + k * 3); }, [], { near: 420 });
+  };
+  SC.eruption = { len: [LE, LE], noDoor: true, noChaos: true, gw: 125, grass: false, turns: [[0.2, 0.5, 10], [0.6, 0.9, -12]],
+    sub: [{ u: 0, key: 'eruption', name: "L'ERUPTION" }, { u: 0.22, key: 'ciel', name: 'LA BATAILLE' }, { u: 0.7, key: 'plongee', name: 'LA PLONGEE' }],
+    pin: wpin((d, sc) => LANE((d - sc.d0) / (sc.d1 - sc.d0))),
+    relief(T, sc) { const fn = (d) => GE(U.clamp((d - sc.d0) / (sc.d1 - sc.d0), 0, 1)) - SEAB; sc.rlo = 0; sc.rhi = 210; return { fn, max: 210 }; },
+    ground: (d, lx, c) => { c.set('#243c46'); },
+    build(S) {
+      const L = S.len, d = (u) => S.d0 + u * L, T = S.T;
+      Z.oceanSurface(S, d(0.15), S.d1, 140, 1.0);
+      // rochers du flanc du volcan qui retombent derriere nous, lueur rouge de l'eruption
+      for (let k = 0; k < 6; k++) S.item(d(0.0 + k * 0.025), (r) => { const dc = d(0.0 + k * 0.025), sg = k % 2 ? 1 : -1, lx = sg * r.between([26, 60]); const p = S.at(dc, lx, 0); TR.rock(S.b, p[0], p[1], p[2], r.between([8, 18]), r, { gray: pk(r, basalt), noMoss: true }); S.glow(dc, lx, 10, '#ff5a1a', 60); });
+      for (let i = 0; i < 22; i++) { const u = 0.02 + i * 0.043, dc = d(u); S.item(dc, (r) => ashCloud(S, dc, r.between([-70, 70]), LANE(u) + r.between([-50, 60]), r.between([14, 26]))); }
+      for (let i = 0; i < 16; i++) { const u = 0.2 + i * 0.045, dc = d(u); S.item(dc, (r) => flak(S, dc, r.between([-40, 40]), LANE(u) + r.between([-30, 40]))); }
+      // la couche de nuages : une grosse bande de nuages qui separe deux couloirs (haut / bas), de u = 0.34 a 0.64
+      for (let k = 0; k < 16; k++) { const u = 0.34 + k * 0.02, dc = d(u); S.item(dc, (r) => { for (let j = -2; j <= 2; j++) S.ball(dc, j * 26, yrel(S, dc, LANE(u)), r.between([15, 20]), 'col:#c9ced6', undefined, true, 0.6); }); }
+      // panneaux d'aiguillage : en haut les chasseurs, en bas les mines et l'orage
+      S.item(d(0.3), () => { const dc = d(0.3), y = yrel(S, dc, LANE(0.3)); S.bx(dc, -22, y + 26, 16, 1.4, 1, 'emis:#7be8ff', undefined, false); S.bx(dc, 22, y - 26, 16, 1.4, 1, 'emis:#ff9a3a', undefined, false); S.glow(dc, -22, y + 26, '#7be8ff', 60); S.glow(dc, 22, y - 26, '#ff9a3a', 60); });
+      // voie du HAUT : chasseurs d'escorte ennemis, helicos
+      for (let i = 0; i < 4; i++) { const u = 0.38 + i * 0.07, dc = d(u); foe(S, i % 2 ? 'jet' : 'heli', dc, (i % 2 ? 1 : -1) * 16, yrel(S, dc, LANE(u) + 30), { name: i % 2 ? 'CHASSEUR' : 'HELICO', armed: true, keep: true, patrol: i % 2 ? undefined : (SS, dc2, lx2, y2) => [SS.at(dc2, -30, y2), SS.at(dc2 + 24, 0, y2 + 5), SS.at(dc2, 30, y2), SS.at(dc2 - 24, 0, y2 + 5)], speed: 13 }); }
+      // voie du BAS : mines flottantes et eclairs
+      for (let i = 0; i < 8; i++) { const u = 0.36 + i * 0.04, dc = d(u); foe(S, 'mine', dc, (i % 2 ? 1 : -1) * 15, yrel(S, dc, LANE(u) - 28), { name: 'MINE', keep: i < 4 }); }
+      // avant et apres la couche : l'escadre
+      for (let i = 0; i < 5; i++) { const u = 0.1 + i * 0.045, dc = d(u); foe(S, 'heli', dc, (i % 2 ? 1 : -1) * 20, yrel(S, dc, LANE(u) + 8), { name: 'HELICO', armed: true, keep: i < 2, patrol: (SS, dc2, lx2, y2) => [SS.at(dc2, -30, y2), SS.at(dc2 + 24, 0, y2 + 5), SS.at(dc2, 30, y2), SS.at(dc2 - 24, 0, y2 + 5)], speed: 13 }); }
+      for (let i = 0; i < 3; i++) { const u = 0.72 + i * 0.07, dc = d(u); foe(S, 'jet', dc, (i % 2 ? 1 : -1) * 14, yrel(S, dc, LANE(u) + 6), { name: 'CHASSEUR', armed: true, keep: true }); }
     } };
 })();
