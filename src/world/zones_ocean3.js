@@ -6,7 +6,11 @@
   if (!EVO || !EVO.on || !O || !Z.defs.ocean) return;
   const { yrel, wpin, pk, rr, ss, lam, basic, mb } = O, OC = Z.defs.ocean, SC = OC.scenes;
   const LC = 340, LB = 520, SEAB = -90;
-  const GW = (u) => { const t = (u - 0.129) / 0.871, tt = t < 0 ? 0 : t < 0.06 ? t * t / 0.12 : t - 0.03; return 40 - 103.1 * tt; };   // sol de la cote (monde) : plateau a +40 jusqu'a la rampe (d = 44), puis pente droite a -19 degres jusqu'a -60
+  // sol de la cote (monde) : plateau a +40 derriere la rampe (le hangar est a d = -40), puis pente DROITE a -19 degres qui commence a d = -30 (le sol est toujours sous le tir), puis plancher a -60
+  const SL = 0.344, FLOOR = -60;
+  const gAt = (d) => { const s = 40 - SL * Math.max(0, d + 30) - FLOOR; return FLOOR + (s < 0 ? 0 : s < 6 ? s * s / 12 : s - 3); };
+  const GW = (u) => gAt(u * LC);
+  EVO.preRel = (d) => (EVO.seaLevel !== undefined && d <= 0 ? gAt(d) - SEAB : 0);   // le plateau de depart existe aussi avant la premiere scene (la rampe est a d = -40)
   // --- depart du niveau 2 : sur la falaise, rampe inclinee vers le bas
   EVO.launchY = () => 40.9;
   EVO.padPitch = () => (EVO.isS2() ? -19 : null);
@@ -21,14 +25,14 @@
   // ============================================ LA COTE (340 m) ============================================
   SC.cote = { len: [LC, LC], noDoor: true, noChaos: true, gw: 125, grass: false,
     sub: [{ u: 0, key: 'cote', name: 'LA COTE' }, { u: 0.3, key: 'conduit', name: 'LE CONDUIT' }],
-    pin: wpin((d, sc) => { const u = (d - sc.d0) / (sc.d1 - sc.d0); return GW(u) + (u < 0.13 ? 6 : 8); }),
+    pin: wpin((d, sc) => { const u = (d - sc.d0) / (sc.d1 - sc.d0); return GW(u) + 8; }),
     relief(T, sc) { let lo = 1e9, hi = -1e9; const fn = (d) => { const u = U.clamp((d - sc.d0) / (sc.d1 - sc.d0), 0, 1); return GW(u) - SEAB; }; for (let d = sc.d0; d <= sc.d1; d += 4) { const v = fn(d); lo = Math.min(lo, v); hi = Math.max(hi, v); } sc.rlo = lo; sc.rhi = hi; return { fn, max: Math.max(Math.abs(lo), Math.abs(hi)) }; },
-    ground: (d, lx, c, sc) => { const u = (d - sc.d0) / (sc.d1 - sc.d0), base = new T3.Color('#8c9a8e'), rock = new T3.Color('#566470'), wet = new T3.Color('#2f4a58'); c.copy(base).lerp(rock, ss(0.1, 0.35, u)).lerp(wet, ss(0.55, 0.95, u)); c.multiplyScalar(0.95 + 0.06 * Math.sin(lx * 0.3 + d * 0.11) * Math.sin(d * 0.21 - lx * 0.09)); },
+    ground: (d, lx, c, sc) => { const u = (d - sc.d0) / (sc.d1 - sc.d0), base = new T3.Color('#5f6a74'), rock = new T3.Color('#4a5560'), wet = new T3.Color('#2a4452'); c.copy(base).lerp(rock, ss(0.1, 0.35, u)).lerp(wet, ss(0.55, 0.95, u)); c.multiplyScalar(0.95 + 0.06 * Math.sin(lx * 0.3 + d * 0.11) * Math.sin(d * 0.21 - lx * 0.09)); },
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L, T = S.T;
       Z.oceanSurface(S, S.d0, S.d1, 140, 0.8);
       // --- plateau : dalle de beton, hangars, reservoirs, mat radar qui tourne, projecteurs
-      for (let k = 0; k < 3; k++) S.item(d(0.16 + k * 0.045), () => { const dc = d(0.16 + k * 0.045); S.bx(dc, 0, 0.3, 64, 0.6, 15.5, 'col:#848d96', undefined, true); for (const sg of [-1, 1]) S.bx(dc, sg * 31, 0.65, 1.4, 0.12, 15, 'hazard', undefined, false); });
+      
       for (const [u, sg] of [[0.03, -1], [0.09, 1], [0.14, -1]]) S.item(d(u), (r) => { const dc = d(u), lx = sg * r.between([46, 52]); S.bx(dc, lx, 8, 26, 16, 34, 'col:#6f7c70', undefined, true); S.bx(dc, lx - sg * 13.2, 6, 0.8, 11, 20, 'col:#2a2e34', undefined, false); S.bx(dc, lx, 16.4, 27, 1.2, 35, 'col:#5a6660', undefined, false); lampS(S, dc, lx - sg * 13.4, 13.5, '#ffd9a0', 22); });
       for (const [u, sg] of [[0.0, 1], [0.05, 1], [0.1, 1]]) S.item(d(u), () => { const dc = d(u), lx = sg * 40; S.cyl(dc, lx, 0, 5.5, 11, 'col:#9aa3ab', undefined, 12, 5.5, true); S.cyl(dc, lx, 11, 5.8, 1.2, 'col:#6c747c', undefined, 12, 4, false); });
       S.item(d(0.16), () => {   // radar : mat + antenne tournante
@@ -38,7 +42,7 @@
       foe(S, 'aaturret', d(0.17), 20, 0, { name: 'TOURELLE', armed: true, fixed: true, keep: true });
       foe(S, 'heli', d(0.15), 0, 22, { name: 'HELICO', armed: true, keep: true, patrol: (SS, dc, lx, y) => [SS.at(dc, -26, y), SS.at(dc + 24, 0, y + 4), SS.at(dc, 26, y), SS.at(dc - 24, 0, y + 4)], speed: 13 });
       // --- le CONDUIT : un tunnel de lancement incline, qui descend vers la mer ; il est PAR DESSUS le sol (le sol est son plancher)
-      const U0 = 0.2, N = Math.floor((1 - U0) * L / 8);
+      const U0 = 0.15, N = Math.floor((1 - U0) * L / 8);
       for (let k = 0; k <= N; k++) {
         const dc = d(U0) + k * 8, u = (dc - S.d0) / L;
         S.item(dc, () => {
@@ -50,8 +54,15 @@
           if (u > 0.55) { slab(S, dc, lx, 0.25, 28, 0.4, 7, 'col:#3a5a70', undefined, false, { render: u > 0.62 }); }
         });
       }
+      for (let dc = d(0.04); dc < d(0.15); dc += 8) S.item(dc, () => {
+        const lx = S.lane(dc).lx, k = Math.round((dc - d(0.04)) / 8);
+        slab(S, dc, lx, 0.12, 26, 0.24, 8.6, 'col:#707882', undefined, false);
+        for (const sg of [-1, 1]) slab(S, dc, lx + sg * 12.4, 0.3, 1.2, 0.1, 8.6, 'emis:#ffd23a', undefined, false);
+        slab(S, dc, lx, 0.3, 8, 0.1, 1.4, 'emis:#ff9a3a', undefined, false, { render: k % 2 === 0 });
+        if (k > 0) { slab(S, dc, lx - 3, 0.3, 6, 0.1, 0.9, 'emis:#ff9a3a', undefined, false); slab(S, dc, lx + 3, 0.3, 6, 0.1, 0.9, 'emis:#ff9a3a', undefined, false); }
+      });
       // portail d'entree du conduit : deux piliers, un linteau marque de bandes de danger
-      S.item(d(U0), () => { const dc = d(U0) - 4, lx = S.lane(dc).lx; for (const sg of [-1, 1]) slab(S, dc, lx + sg * 25, 15, 6, 34, 6, 'col:#6f7c88', undefined, true); slab(S, dc, lx, 31, 56, 6, 6, 'hazard', undefined, true); S.glow(dc, lx, 26, '#ffb060', 70); });
+      S.item(d(U0), () => { const dc = d(U0) - 4, lx = S.lane(dc).lx; for (const sg of [-1, 1]) slab(S, dc, lx + sg * 25, 15, 6, 34, 6, 'col:#6f7c88', undefined, true); slab(S, dc, lx, 31, 56, 6, 6, 'col:#59656f', undefined, true); slab(S, dc - 3.2, lx, 27.6, 50, 1.2, 0.8, 'emis:#ff9a3a', undefined, false); S.glow(dc, lx, 24, '#ffb060', 90); });
       foe(S, 'aaturret', d(0.4), -16, 0, { name: 'TOURELLE', armed: true, fixed: true, keep: true }); foe(S, 'aaturret', d(0.62), 16, 0, { name: 'TOURELLE', armed: true, fixed: true, keep: true });
     } };
 

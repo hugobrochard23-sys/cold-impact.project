@@ -50,7 +50,7 @@
       cyl(b, 0.1, 0.1, 1.05, lam(row ? '#6a7480' : '#aeb6c0'), 0, 0, 0, 14, true); cyl(b, 0.103, 0.103, 0.14, red, 0, 0, -0.18, 14, true); cyl(b, 0.0, 0.1, 0.18, lam('#3a424c'), 0, 0, -0.6, 14, true); const noz = cyl(b, 0.075, 0.095, 0.1, dark, 0, 0, 0.58, 14, true); const fl = new T3.Mesh(new T3.ConeGeometry(0.075, 0.5, 10, 1, true), bas('#ffcf40', { transparent: true, opacity: 0.0, blending: T3.AdditiveBlending, depthWrite: false, side: T3.DoubleSide, fog: false })); fl.rotation.x = -Math.PI / 2; fl.position.z = 0.88; b.add(fl); box(L, 0.2, 0.05, 0.3, steel, s * (0.4 + row * 0.1), -0.45, z); pad.boosters.push({ fl, noz }); }
     // v227 : plus de cones de chantier
     // v234 : HANGAR MILITAIRE (menu seulement) : dalle de beton a bandes de securite, murs de tole ondulee vert-de-gris, fermes metalliques, plafonniers, grande porte ouverte au fond
-    { const DK = EVO.isS2(), H = pad.hangar = new T3.Group();
+    { const DK = EVO.isS2(), H = pad.hangar = new T3.Group(), RF = H.userData.roof = new T3.Group(); H.add(RF);   // RF : le toit (masque au lancement du niveau 2 : la fusee sort du hangar)
       const tex = (w, h, draw, rx, ry) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const q = new T3.CanvasTexture(c); q.wrapS = q.wrapT = T3.RepeatWrapping; q.magFilter = T3.NearestFilter; q.minFilter = T3.NearestFilter; q.repeat.set(rx, ry); return q; };
       const tole = tex(32, 32, (x, w, h) => { x.fillStyle = DK ? '#38546e' : '#6F7C70'; x.fillRect(0, 0, w, h); for (let i = 0; i < 8; i++) { x.fillStyle = i % 2 ? (DK ? '#2c445a' : '#5E6A5F') : (DK ? '#44627f' : '#7C8A7D'); x.fillRect(i * 4, 0, 4, h); } x.fillStyle = 'rgba(0,0,0,0.12)'; x.fillRect(0, h - 2, w, 2); }, 12, 3);
       const beton = tex(64, 64, (x, w, h) => { x.fillStyle = DK ? '#7b8a98' : '#8A8E94'; x.fillRect(0, 0, w, h); for (let i = 0; i < 160; i++) { x.fillStyle = 'rgba(' + (i % 2 ? '255,255,255' : '0,0,0') + ',0.06)'; x.fillRect(Math.random() * w | 0, Math.random() * h | 0, 2, 2); } x.fillStyle = 'rgba(0,0,0,0.28)'; x.fillRect(0, 0, w, 1); x.fillRect(0, 0, 1, h); }, 6, 8);
@@ -59,9 +59,9 @@
       box(H, 12, 0.12, 20, floor, 0, -0.7, -2);                                   // dalle du hangar (le lanceur reste un peu plus haut)
       for (const sx of [-5.6, 5.6]) { const b = new T3.Mesh(new T3.PlaneGeometry(0.5, 20), hz); b.rotation.x = -Math.PI / 2; b.position.set(sx, -0.63, -2); H.add(b); }   // bandes de securite le long des murs
       box(H, 0.3, 4.6, 20, wall, -6, 1.6, -2); box(H, 0.3, 4.6, 20, wall, 6, 1.6, -2);       // murs lateraux
-      box(H, 12.6, 0.4, 20.6, wall, 0, 4.1, -2);                                           // toit
-      for (let z = -11; z <= 7; z += 3) { box(H, 12, 0.35, 0.35, steel, 0, 3.8, z); box(H, 0.35, 4.4, 0.35, steel, -5.8, 1.5, z); box(H, 0.35, 4.4, 0.35, steel, 5.8, 1.5, z); box(H, 11.8, 0.18, 0.18, steelL, 0, 3.4, z); }   // fermes et poteaux
-      for (const z of [-8, -3, 2]) for (const sx of [-2.5, 2.5]) { box(H, 0.5, 0.08, 3.2, lampM, sx, 3.55, z); }   // plafonniers (emissifs)
+      box(RF, 12.6, 0.4, 20.6, wall, 0, 4.1, -2);                                           // toit
+      for (let z = -11; z <= 7; z += 3) { box(RF, 12, 0.35, 0.35, steel, 0, 3.8, z); box(H, 0.35, 4.4, 0.35, steel, -5.8, 1.5, z); box(H, 0.35, 4.4, 0.35, steel, 5.8, 1.5, z); box(RF, 11.8, 0.18, 0.18, steelL, 0, 3.4, z); }   // fermes et poteaux
+      for (const z of [-8, -3, 2]) for (const sx of [-2.5, 2.5]) { box(RF, 0.5, 0.08, 3.2, lampM, sx, 3.55, z); }   // plafonniers (emissifs)
       box(H, 12.6, 1.4, 0.4, wall, 0, 3.4, 9);                                              // linteau du fond ; la grande porte reste OUVERTE : on voit dehors
       box(H, 3.4, 4.6, 0.4, wall, -4.6, 1.6, 9); box(H, 3.4, 4.6, 0.4, wall, 4.6, 1.6, 9);
       for (const sx of [-2.9, 2.9]) box(H, 0.3, 4.6, 0.5, steel, sx, 1.6, 9);              // montants de la porte
@@ -101,7 +101,7 @@
   EVO.pistonFrame = (g, dt) => {
     const pad = g.pad; if (!pad || !pad.evoL) return; const a = g.evoAim, now = performance.now(), A = g.audio;
     const hold = !!(a && a.hold && !a.lock), ch = a ? (a.lock ? 1 : a.ch || 0) : 0, rk = g.rocket;
-    if (pad.hangar) pad.hangar.visible = g.state === 'MENU' && !g.evoAim;   // le hangar disparait des qu'on vise / lance : plus de toit devant la vue
+    if (pad.hangar) { if (EVO.isS2()) { pad.hangar.visible = g.state === 'MENU' || g.state === 'LAUNCH' || g.state === 'AIM'; if (pad.hangar.userData.roof) pad.hangar.userData.roof.visible = g.state === 'MENU' && !g.evoAim; } else pad.hangar.visible = g.state === 'MENU' && !g.evoAim; }   // niveau 2 : le hangar reste, seul le toit disparait au lancement   // le hangar disparait des qu'on vise / lance : plus de toit devant la vue
     if (pad.backdrop) pad.backdrop.visible = g.state === 'MENU' || g.state === 'LAUNCH';   // le decor lointain n'existe que dans le menu (on ne peut pas voler a travers)
     if (pad.beacon) pad.beacon.color.setRGB(0.4 + 0.6 * (Math.sin(now / 280) > 0 ? 1 : 0), 0.05, 0.05);
     if (pad.towerArm) { const open = a && (a.lock || (a.hold && ch > 0.35)) ? 1 : 0; pad.towerArm.rotation.y += (open * -1.25 - pad.towerArm.rotation.y) * Math.min(1, dt * 3); }

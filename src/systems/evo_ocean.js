@@ -16,7 +16,7 @@
   EVO.SCENE_AUDIO.abysses = 'evoMine';
   // --- définition du niveau 2
   const SC2 = ['cote', 'bassin', 'abysses', 'surface', 'tempete', 'plateforme', 'ascension'];
-  EVO.SCENE_MOOD.cote = 'gold'; EVO.SCENE_AUDIO.cote = 'evoDusk'; EVO.SCENE_MOOD.bassin = 'sea'; EVO.SCENE_AUDIO.bassin = 'evoMine';
+  EVO.SCENE_MOOD.cote = 'day'; EVO.SCENE_AUDIO.cote = 'evoDusk'; EVO.SCENE_MOOD.bassin = 'sea'; EVO.SCENE_AUDIO.bassin = 'evoMine';
   const CH2 = { cote: 'LA COTE', bassin: 'LE BASSIN', abysses: 'LES ABYSSES', surface: 'LA FLOTTE', tempete: 'LA TEMPETE', plateforme: 'LA PLATEFORME', ascension: 'L INTERCEPTION' };
   EVO.levelDef2 = (g) => {
     const th = CC.LM.THEMES[0], q = /[?&]evoscenes=([\w,]+)/.exec(location.search), sc = q ? q[1].split(',') : (EVO.SCENES2 || SC2), Zs = CC.Zones.defs.ocean.scenes;
@@ -88,6 +88,7 @@
   let tube = null;
   const padTick = (g, dt) => {
     if (!g.pad || !g.pad.group) return;
+    if (tube) tube.visible = false; return;   // v241 : plus de tube a anneaux : la fusee part de la rampe du hangar
     const st2 = EVO.seaLevel !== undefined && g.evo, menu = g.state === 'MENU' && !g.evoAim, show = st2 && !menu && (g.state === 'LAUNCH' || g.state === 'RESPAWN' || g.state === 'MENU' || (g.state === 'FLIGHT' && g.flightTime < 1.2));
     if (st2) g.pad.group.visible = menu;   // v239 : au menu du niveau 2, le dock naval (hangar) est visible ; le tube a anneaux ne sert qu'au lancement
     if (!tube) { tube = new T3.Group(); const m = new T3.MeshLambertMaterial({ color: '#4a5866' }), m2 = new T3.MeshLambertMaterial({ color: '#c8a028' }); for (let k = 0; k < 6; k++) { const r = new T3.Mesh(new T3.TorusGeometry(1.9, 0.09, 6, 20), k % 3 === 0 ? m2 : m); r.position.z = -1.8 - k * 1.5; tube.add(r); } for (let k = 0; k < 8; k++) { const a = k * 0.785, b = new T3.Mesh(new T3.BoxGeometry(0.07, 0.07, 8), m); b.position.set(Math.cos(a) * 1.9, Math.sin(a) * 1.9, -5.4); tube.add(b); } }

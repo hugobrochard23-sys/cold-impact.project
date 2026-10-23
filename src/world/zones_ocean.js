@@ -8,7 +8,7 @@
   const pk = (r, a) => a[Math.floor(r() * a.length)];
   const rr = (a, b) => a + Math.random() * (b - a);
   Z.PROFILE.ocean = { elev: -90, vol: 130, y: [-90, 520], amp: 0.5 };
-  Z.meta.ocean = { label: 'OCEAN', envs: ['campagneDay'], ground: 'sand', groundTint: '#b8ab86', wall: () => ({ mat: 'sand', tint: '#8a8a7a' }), obstacle: 'rock', obstacleTint: '#8a8a7a' };
+  Z.meta.ocean = { label: 'OCEAN', envs: ['campagneDay'], ground: 'sand', groundTint: '#6a737d', wall: () => ({ mat: 'sand', tint: '#8a8a7a' }), obstacle: 'rock', obstacleTint: '#8a8a7a' };
   const OC = Z.defs.ocean = { signature: 'abysses', scenes: {}, dress() {} };
   if (CC.Roster && CC.Roster.ZONE) CC.Roster.ZONE.ocean = { ground: ['boat'], air: ['mine', 'sub'] };
   const lam = (c, e) => new T3.MeshLambertMaterial(e ? { color: c, emissive: e } : { color: c });
