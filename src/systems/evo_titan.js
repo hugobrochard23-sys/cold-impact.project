@@ -196,6 +196,7 @@
   // ---------- jauge de vie du boss ----------
   const rrect = (ctx, x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
   EVO.titanHud = (ctx, g, ox, u, H, UI, S) => {
+    if (EVO.boss2Hud && EVO.boss2Hud(ctx, g, ox, u, H, UI, S)) return;
     if (!TT || TT.mode === 'sleep' || !g.endlessRun || (TT.mode === 'wreck' && TT.disp < 0.01)) return;
     const w = u * 0.5, h = S(24), x = ox + (u - w) / 2, y = H * 0.1, f = TT.hp / HP; TT.disp += (f - TT.disp) * 0.12;   // une simple barre qui descend : on ne devine pas le nombre de coups
     ctx.save(); ctx.globalAlpha = TT.mode === 'wreck' ? U.clamp(TT.disp * 10, 0, 1) : 1; rrect(ctx, x, y, w, h, h / 2); ctx.clip();

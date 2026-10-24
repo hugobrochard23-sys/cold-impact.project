@@ -157,7 +157,7 @@
       return /^(rampe|camp|riviere|foret|route)$/.test(this._sc.name || '') && d < this._sc.d1 - 90;
     }
     update(game) {
-      const run = game.endlessRun, on = !!run && !!this.style && game.state !== 'BOOT';
+      const run = game.endlessRun, on = !!run && !!this.style && game.state !== 'BOOT' && !(CC.EVO && CC.EVO.noHorizon);   // v246 : pas d'anneau d'horizon dans l'espace
       this.ring.visible = on; this.glow.visible = on && this.darkOn;
       this.wantMtn = on && this.style === 'campagne' && this.openAir(run);
       FADE.value += ((this.wantMtn ? 0.12 : 1) - FADE.value) * 0.06; this.mtn.visible = false;   // v205 : plus de montagnes du tout (le fond est uniquement le brouillard et le ciel)

@@ -15,9 +15,11 @@
   for (const k of ['plateforme', 'ascension']) { EVO.SCENE_MOOD[k] = 'stormEnd'; EVO.SCENE_AUDIO[k] = 'evoBoss'; }
   EVO.SCENE_AUDIO.abysses = 'evoMine';
   // --- définition du niveau 2
-  const SC2 = ['cote', 'bassin', 'abysses', 'surface', 'volcan', 'eruption', 'tempete', 'plateforme', 'ascension'];
-  EVO.SCENE_MOOD.cote = 'day'; EVO.SCENE_AUDIO.cote = 'evoDusk'; EVO.SCENE_MOOD.bassin = 'sea'; EVO.SCENE_MOOD.volcan = 'stormEnd'; EVO.SCENE_AUDIO.volcan = 'evoSiege'; EVO.SCENE_MOOD.eruption = 'stormEnd'; EVO.SCENE_AUDIO.eruption = 'evoSiege'; EVO.SCENE_AUDIO.bassin = 'evoMine';
-  const CH2 = { volcan: 'LE VOLCAN', eruption: "L'ERUPTION", cote: 'LA COTE', bassin: 'LE BASSIN', abysses: 'LES ABYSSES', surface: 'LA FLOTTE', tempete: 'LA TEMPETE', plateforme: 'LA PLATEFORME', ascension: 'L INTERCEPTION' };
+  const SC2 = ['cote', 'bassin', 'fosse', 'volcan', 'eruption', 'behemoth', 'strato', 'orbite'];   // v246 : le niveau 2 est refait (les scenes plates sont retirees) ; les arenes de boss et l'espace sont ajoutes ensuite
+  EVO.SCENES2 = SC2;
+  EVO.SCENE_MOOD.cote = 'day'; EVO.SCENE_AUDIO.cote = 'evoDusk'; EVO.SCENE_MOOD.bassin = 'sea'; EVO.SCENE_MOOD.fosse = 'sea'; EVO.SCENE_AUDIO.fosse = 'evoMine'; EVO.SCENE_MOOD.volcan = 'magma'; EVO.SCENE_AUDIO.volcan = 'evoSiege'; EVO.SCENE_MOOD.eruption = 'stormEnd'; EVO.SCENE_AUDIO.eruption = 'evoSiege';
+  EVO.addMood('magma', { top: '#2a0a06', hor: '#8a3414', fog: '#4a180c', near: 70, far: 560, hemiS: '#ff9a6a', hemiG: '#5a1a0e', hemiI: 0.95, amb: 0.3, sunC: '#ff8a4a', sunI: 0.55, night: 0.25 }); EVO.SCENE_AUDIO.bassin = 'evoMine';
+  const CH2 = { behemoth: 'BEHEMOTH', strato: 'LA STRATOSPHERE', orbite: "L'ORBITE", fosse: 'LA FOSSE', volcan: 'LE VOLCAN', eruption: "L'ERUPTION", cote: 'LA COTE', bassin: 'LE BASSIN', abysses: 'LES ABYSSES', surface: 'LA FLOTTE', tempete: 'LA TEMPETE', plateforme: 'LA PLATEFORME', ascension: 'L INTERCEPTION' };
   EVO.levelDef2 = (g) => {
     const th = CC.LM.THEMES[0], q = /[?&]evoscenes=([\w,]+)/.exec(location.search), sc = q ? q[1].split(',') : (EVO.SCENES2 || SC2), Zs = CC.Zones.defs.ocean.scenes;
     let len = 80; EVO.chapters = []; for (const n of sc) { const s = Zs[n]; if (s) { EVO.chapters.push({ d: len - 80, i: EVO.chapters.length, name: CH2[n] || n.toUpperCase(), key: n }); if (s.sub) for (const w of s.sub) if (w.u > 0) EVO.chapters.push({ d: len - 80 + w.u * s.len[0], i: EVO.chapters.length, name: w.name, key: w.key }); len += s.len[0]; } }
