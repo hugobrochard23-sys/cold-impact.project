@@ -80,14 +80,15 @@
       const uv = []; for (let r = 0; r < SEA_R.length; r++) for (let k = 0; k < SEA_N; k++) { const a = k / SEA_N * 6.2832; pos.push(Math.cos(a) * SEA_R[r], 0, Math.sin(a) * SEA_R[r]); col.push(1, 1, 1); uv.push(Math.cos(a) * SEA_R[r] / 60, Math.sin(a) * SEA_R[r] / 60); }
       for (let r = 0; r < SEA_R.length - 1; r++) for (let k = 0; k < SEA_N; k++) { const a = r * SEA_N + k, b = r * SEA_N + (k + 1) % SEA_N, c = (r + 1) * SEA_N + k, d = (r + 1) * SEA_N + (k + 1) % SEA_N; idx.push(a, c, b, b, c, d); }
       geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(col, 3)); geo.setAttribute('uv', new T3.Float32BufferAttribute(uv, 2)); geo.setIndex(idx);
-      sea = new T3.Mesh(geo, new T3.MeshBasicMaterial({ vertexColors: true, map: waveTexture(), fog: false, depthWrite: true, side: T3.DoubleSide })); sea.renderOrder = -5; sea.frustumCulled = false;
+      sea = new T3.Mesh(geo, new T3.MeshBasicMaterial({ vertexColors: true, map: waveTexture(), fog: false, transparent: true, opacity: 0.74, depthWrite: false, side: T3.DoubleSide })); sea.renderOrder = 1; sea.frustumCulled = false;
     }
     const st2 = EVO.seaLevel !== undefined && g.evo && !g.cine3d && g.rocket && (g.uwK || 0) < 0.5 && !(g.endlessRun && g.endlessRun.dist < 340);   // sur la falaise de depart et dans le conduit, pas de mer devant la fusee
     if (sea.parent !== g.scene) g.scene.add(sea);
     sea.visible = !!st2;
     { const hi = !!st2 && g.rocket.pos.y > 25 && !(CC.EVO.boss2); if (hi && g.camera.far < 1800) { EVO._farBase = EVO._farBase || g.camera.far; g.camera.far = 1800; g.camera.updateProjectionMatrix(); } else if (!hi && EVO._farBase && g.camera.far === 1800) { g.camera.far = EVO._farBase; g.camera.updateProjectionMatrix(); } }   // v253 : en altitude, on voit la mer jusqu'a l'horizon (avant : coupee a 400 m)
     if (!st2) return;
-    sea.position.set(g.rocket.pos.x, EVO.seaLevel - 1.2, g.rocket.pos.z); seaTex.offset.set(g.rocket.pos.x / 60, -g.rocket.pos.z / 60 + (EVO.clock || 0) * 0.02);   // la texture est fixe dans le monde (on la voit defiler) et bouge doucement
+    { const vo = EVO.s2d0 && EVO.s2d0('volcan'), sc = CC.Zones.defs.ocean.scenes.volcan, dist = g.endlessRun ? g.endlessRun.dist : 0; let k = 1; if (vo !== undefined && sc) k = U.clamp((dist - (vo + 0.8 * sc.len[0])) / 220, 0, 1); k = k * k * (3 - 2 * k) || (dist > (vo || 0) + 1e4 ? 1 : k); sea.material.opacity = 0.74 * (vo !== undefined && dist < vo ? 1 : k); sea.visible = sea.material.opacity > 0.01; }   // la mer arrive en fondu apres le volcan
+    sea.position.set(g.rocket.pos.x, EVO.seaLevel - 1.2, g.rocket.pos.z); seaTex.offset.set(g.rocket.pos.x / 60, g.rocket.pos.z / 60 + (EVO.clock || 0) * 0.01);   // la texture est fixe dans le monde (on la voit defiler) et bouge doucement
     const fc = g.scene.fog ? g.scene.fog.color : null, hx = fc ? fc.getHexString() : '';
     if (hx !== seaFog) { seaFog = hx; const a = sea.geometry.attributes.color, c = new T3.Color(); for (let r = 0; r < SEA_R.length; r++) { c.copy(NEAR); if (fc) c.lerp(fc, SEA_K[r]); for (let k = 0; k < SEA_N; k++) a.setXYZ(r * SEA_N + k, c.r, c.g, c.b); } a.needsUpdate = true; }
   };
