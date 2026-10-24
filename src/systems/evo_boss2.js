@@ -41,12 +41,12 @@
     }
     const core = new T3.Group(); root.add(core); const sph = new T3.Mesh(new T3.SphereGeometry(30, 18, 12), lam('#a8b4c0')); core.add(sph); const band = new T3.Mesh(new T3.TorusGeometry(31, 3, 8, 24), bas('#7be8ff')); core.add(band);
     const cg = glow(160, '#7be8ff'); cg.visible = false; core.add(cg); cy(core, 7, 9, 70, dark, 0, 0, -50, 12, true); cy(core, 11, 8, 6, bas('#ff6a3a'), 0, 0, -86, 12, true);
-    for (const sx of [-1, 1]) { bx(root, 150, 2, 54, lam('#2a4a7a'), sx * 190, 0, 46); bx(root, 60, 4, 6, dark, sx * 80, 0, 46); for (let k = 0; k < 6; k++) bx(root, 1, 2.4, 54, lam('#5a8ac8'), sx * (130 + k * 24), 1.4, 46); }
+    for (const sx of [-1, 1]) { bx(root, 80, 2, 34, lam('#2a4a7a'), sx * 170, 0, 56); bx(root, 54, 4, 5, dark, sx * 104, 0, 56); for (let k = 0; k < 5; k++) bx(root, 1, 2.4, 34, lam('#6a9ad8'), sx * (140 + k * 15), 1.4, 56); }
     zones.push({ id: 'CORE', pos: new V(0, 0, 0), r: 30, node: core, gl: cg, core: true });
     return { root, zones, hulls: [], ring };
   }
   const DEFS = {
-    behemoth: { scene: 'behemoth', at: 0.0, ahead: 520, speed: 36, name: 'BEHEMOTH', hp: 4, model: behemothModel, yOff: -30, surge: 140, fire: 2.6 },
+    behemoth: { scene: 'behemoth', at: 0.0, ahead: 280, speed: 30, name: 'BEHEMOTH', hp: 4, model: behemothModel, yOff: -30, surge: 120, fire: 2.6 },
     aegis: { scene: 'orbite', at: 0.62, ahead: 0, speed: 0, name: 'AEGIS', hp: 4, model: aegisModel, yOff: 0, surge: 0, fire: 2.4, aegis: true },
   };
 
@@ -104,11 +104,11 @@
   function upd(g, dt) {
     if (!B || !g.endlessRun) return; const run = g.endlessRun, T = run.T, rk = g.rocket, rd = run.dist, def = B.def, fx = g.effects, live = g.state === 'FLIGHT' && rk && rk.active;
     B.t += dt; B.cool = Math.max(0, B.cool - dt);
-    const near = rd > B.d - SEE - 200 && rd < B.d + 700 + (def.speed ? 800 : 0); B.W.visible = near;
+    const near = rd > B.d - SEE - 200 && rd < B.d + 700 + (def.speed ? 800 : 0); B.W.visible = near; if (!B.awake && def.aegis && rd > B.d - 800) { B.awake = true; if (live) { g.audio.play('robotAlarm'); g.rig.shake = Math.max(g.rig.shake, 0.6); if (CC.L1) CC.L1.msg(g, def.name + ' !', 2, '#ff6a50'); } }
     if (near && g.camera.far < 1700) { B.far0 = B.far0 || g.camera.far; g.camera.far = 1700; g.camera.updateProjectionMatrix(); } else if (!near && B.far0 && g.camera.far > B.far0) { g.camera.far = B.far0; g.camera.updateProjectionMatrix(); }
     if (B.mode === 'live' || B.mode === 'dying') {
       let v = def.speed; if (B.surge) { const S = B.surge; S.t += dt; const k0 = U.smooth(0, 1, (S.t - dt) / S.dur), k1 = U.smooth(0, 1, S.t / S.dur); B.d += S.dist * (k1 - k0); if (S.t >= S.dur) B.surge = null; }
-      if (B.mode === 'live') B.d += v * dt;
+      if (B.mode === 'live' && (B.awake || rd > B.d - 520)) { if (!B.awake) { B.awake = true; if (live) { g.audio.play('robotRoar'); g.audio.play('robotAlarm'); g.rig.shake = Math.max(g.rig.shake, 0.8); if (CC.L1) CC.L1.msg(g, def.name + ' !', 2, '#ff6a50'); } } B.d += v * dt; }
     }
     B.lx = def.aegis ? 0 : Math.sin(B.t * 0.22) * 14; B.yy = def.yOff + Math.sin(B.t * 0.3) * 6;
     place(g, T);

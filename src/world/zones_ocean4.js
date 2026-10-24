@@ -40,7 +40,7 @@
       foe(S, 'sub', d(0.08), 24, yrel(S, d(0.08), lanes(0.08)), { name: 'SOUS-MARIN', hp: 2, armed: true, keep: true }); foe(S, 'sub', d(0.14), -24, yrel(S, d(0.14), lanes(0.14)), { name: 'SOUS-MARIN', hp: 2, armed: true, keep: true });
       for (const sg of [-1, 1]) S.rows(d(0.0), d(0.2), 10, 0.7, (dc) => S.item(dc, (r) => { rockAt(S, dc, S.lane(dc).lx + sg * r.between([34, 110]), 0, r.between([4, 14]), r); }));
       // --- la FALAISE (0.15 a 0.46) : on plonge le long d'une paroi percee de baies, de passerelles et de projecteurs : une base engloutie
-      for (let k = 0; k < 30; k++) { const u = 0.15 + k * 0.0105, dc = d(u); S.item(dc, (r) => { const lx = S.lane(dc).lx - 38, h = yrel(S, dc, lanes(u)) + 30; for (let y = 0; y < h; y += 26) rockAt(S, dc, lx - r.between([0, 8]), y, r.between([18, 26]), r, pk(r, DEEP)); if (k % 3 === 0) { const y = yrel(S, dc, lanes(u)) - 4; S.bx(dc, lx + 20, y, 26, 2.2, 10, 'col:#6a7a87', undefined, true); S.bx(dc, lx + 8, y + 2, 1, 6, 10, 'col:#6a7a87', undefined, false); lampS(S, dc, lx + 12, y + 3, '#ffd9a0', 36); } if (k % 5 === 2) { const y = yrel(S, dc, lanes(u)); S.bx(dc, lx + 14, y + 12, 22, 0.9, 1.6, 'emis:#7be8ff', undefined, false); S.glow(dc, lx + 14, y + 12, '#7be8ff', 34); } }); }
+      for (let k = 0; k < 30; k++) { const u = 0.15 + k * 0.0105, dc = d(u); S.item(dc, (r) => { const lx = S.lane(dc).lx - 38, h = yrel(S, dc, lanes(u)) + 30; for (let y = 0; y < h; y += 26) rockAt(S, dc, lx - r.between([0, 8]), y, r.between([18, 26]), r, pk(r, DEEP)); if (k % 3 === 0) { const y = yrel(S, dc, lanes(u)) - 4; S.bx(dc, lx + 8, y, 18, 2.2, 10, 'col:#6a7a87', undefined, true); S.bx(dc, lx + 2, y + 2, 1, 6, 10, 'col:#6a7a87', undefined, false); lampS(S, dc, lx + 4, y + 3, '#ffd9a0', 36); } if (k % 5 === 2) { const y = yrel(S, dc, lanes(u)); S.bx(dc, lx + 6, y + 12, 16, 0.9, 1.6, 'emis:#7be8ff', undefined, false); S.glow(dc, lx + 6, y + 12, '#7be8ff', 34); } }); }
       for (const sg of [1]) S.rows(d(0.16), d(0.46), 14, 0.7, (dc) => S.item(dc, (r) => { if (r() < 0.6) rockAt(S, dc, S.lane(dc).lx + sg * r.between([50, 100]), 0, r.between([8, 20]), r); }));
       for (let i = 0; i < 5; i++) { const u = 0.2 + i * 0.05, dc = d(u); foe(S, 'mine', dc, (i % 2 ? 1 : -1) * 13, yrel(S, dc, lanes(u)), { name: 'MINE', keep: i < 2 }); }
       foe(S, 'sub', d(0.3), -8, yrel(S, d(0.3), lanes(0.3)), { name: 'SOUS-MARIN', hp: 3, armed: true, keep: true });
@@ -188,7 +188,7 @@
   };
   const laserWheel = (S, dc, yw, i) => {   // roue de lasers : deux bras opposes qui tournent autour de l'axe ; le centre (rayon < 7 m) est libre
     const g = new T3.Group(), cols = [], m = basic('#ff3a3a', { transparent: true, opacity: 0.9 });
-    for (const s of [-1, 1]) { const b = mb(g, 2.6, 58, 2.6, m, 0, s * 41, 0); const h = mb(g, 6, 58, 6, basic('#ff3a3a', { transparent: true, opacity: 0.25, depthWrite: false }), 0, s * 41, 0); cols.push(EVO.colBox(g, 3, 58, 3, 0, s * 41, 0)); }
+    for (const s of [-1, 1]) { const b = mb(g, 2.6, 54, 2.6, m, 0, s * 43, 0); const h = mb(g, 6, 54, 6, basic('#ff3a3a', { transparent: true, opacity: 0.25, depthWrite: false }), 0, s * 43, 0); cols.push(EVO.colBox(g, 3, 54, 3, 0, s * 43, 0)); }
     mb(g, 9, 9, 9, lam('#2a313a'), 0, 0, 0); EVO.placeGroup(S, g, dc, S.lane(dc).lx, yrel(S, dc, yw), 0); S.glow(dc, S.lane(dc).lx, yrel(S, dc, yw), '#ff3a3a', 90);
     EVO.addDyn(g, (t) => { g.rotation.z = t * (0.9 + i * 0.12) * (i % 2 ? 1 : -1) + i; }, cols, { near: 600 });
   };
