@@ -1,0 +1,19 @@
+﻿essai_appareil2;video;temps_rapport_s_video;duree_essai_approx_s;distance_pieces;total_apres_mult;mult_revenu;pub_recompensee;solde_debut_hangar;depenses_hangar;solde_fin_hangar;cause_fin;boosts;remarque
+1;v1;33;9;224;1792;8;pub 43 s sans multiplication visible (jeu relance apres);1933;0;1933;inconnu;inconnu;premier vol apres achats massifs (A21->33, F15->16 ~47,7K)
+2;v2;98;10;224;1792;8;non;3725;3287;438;inconnu;inconnu;achats F16->19 (824+1071+1392)
+3;v2;126;11;214;1712;8;pub 30 s sans multiplication;2150;0;2150;inconnu;inconnu;solde fin de v2
+4;v3;12;12;223;1784;8;oui x3 (5352) pub 44 s;7502;4163;3339;inconnu;inconnu;F19->21
+5;v3;88;12;216;1728;8;non;5067;3059;2008;inconnu;inconnu;2 pubs hangar 35 s + 29 s avant achat F21->22
+6;v3;185;13;307;2456;8;non;4464;3977;487;inconnu;inconnu;F22->23, distance +42 %
+7;v3;208;12;327;2616;8;non;3103;0;3103;inconnu;inconnu;
+8;v3;231;13;317;2536;8;non;5639;0;5639;inconnu;inconnu;
+9;v3;272;13;339;2712;8;oui x3 (8136) pub 44 s;13775;0;13775;inconnu;inconnu;rien achete malgre 13,7K
+10;v3;342;13;339;2712;8;non;16487;14765;1722;inconnu;inconnu;A33->34
+11;v3;363;12;335;2680;8;oui x3 (8040) pub 64 s;9762;0;9762;inconnu;inconnu;
+12;v3;460;12;338;2704;8;non;12466;0;12466;inconnu;inconnu;
+13;v3;481;13;334;2672;8;oui x3 (8016) pub 53 s;20482;19195;1287;inconnu;inconnu;A34->35 ; boutique ouverte ~t=556 sans achat
+14;v3;595;19;576;4608;8;oui x4 (18432) pub 94 s;19719;17658;2061;inconnu;inconnu;distance +72 % apres A35->36 obtenu sans baisse de solde (inconnu)
+15;v3;741;23;677;5957;8.8;non;8018;0;8018;inconnu;inconnu;mult x8,8 apres R11->12 ; boutique ouverte ~t=765
+16;v3;795;22;545;4796;8.8;non;12814;8738;4076;inconnu;inconnu;F25->26 ; pub courte ~3 s apres rapport
+17;v3;850;20;484;4259;8.8;non;8336;0;8336;inconnu;inconnu;R12->13 (8650) hors de portee
+18;v3;877;20;381;~3353 (deduit);8.8;inconnu (video finie);inconnu;inconnu;inconnu;inconnu;inconnu;rapport incomplet

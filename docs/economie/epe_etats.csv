@@ -1,0 +1,41 @@
+﻿essai;niveau_A;niveau_B;niveau_C;distance;mult;carte_fuel_visible;remarque
+N1-1;1;1;1;348;1;non;depart
+N1-2;1;2;2;346;1.1;non;
+N1-3;1;4;2;359;1.1;non;
+N1-4;2;5;2;346;1.1;non;
+N1-5;2;6;2;668;1.1;non;ailes visibles a partir de B6
+N1-6;4;7;3;863;1.3*;non;* carte revenu affichait x1.2
+N1-7;4;8;4;932;1.3;non;
+N1-8;6;8;4;1406;1.3;non;A4->A6 a B egal : +50 %
+N1-9;6;9;5;1401;1.4;non;
+N1-10;6;10;5;1276;1.4;non;
+N1-11;6;10;6;1428;2;non;seul C change : distance ~ +12 %
+N1-12;7;11;6;3077;2;oui (barre apparait);x2.2 par rapport a l'essai 11
+N1-13;8;12;7;3311;2.2;oui;
+N1-14;9;13;7;3530;2.2;oui;helice visible au lancement
+N1-15;10;14;7;3506;2.2;oui;
+N1-16;10;16;8;5839;2.4;oui;dernier essai sans jauge de lancement
+N1-17;12;18;10;3317;2.8;oui;arc de lancement apparait ; plus court que l'essai 16
+N1-18;12;18;11;5990;4;oui;meme A/B que l'essai 17 : +80 %
+N1-19;14;19;11;7242;4;oui;
+N1-20;14;20;11;7438;4;oui;fin carburant a 88 % de l'objectif
+N1-21;15;21;11;896;4;oui;apres deblocage d'un apparence ; collision a ~840 m
+N1-22;15;21;11;~8450 (objectif atteint, deduit de 88 %=7434 m);4.0;oui;niveau termine ; solde 13,5K -> 47,8K
+N2-1;16;33;11;224;8;non visible;
+N2-2;16;33;11;224;8;non visible;
+N2-3;19;33;11;214;8;non visible;
+N2-4;19;33;11;223;8;non visible;
+N2-5;21;33;11;216;8;non visible;
+N2-6;22;33;11;307;8;non visible;bouton fusee visible 3-6 s au debut des vols des essais 6 a 18
+N2-7;23;33;11;327;8;non visible;
+N2-8;23;33;11;317;8;non visible;
+N2-9;23;33;11;339;8;non visible;
+N2-10;23;33;11;339;8;non visible;
+N2-11;23;34;11;335;8;non visible;
+N2-12;23;34;11;338;8;non visible;
+N2-13;23;34;11;334;8;non visible;
+N2-14;23;36;11;576;8;non visible;B35->36 sans baisse de solde ; +72 %
+N2-15;25;36;12;677;8.8;non visible;
+N2-16;25;36;12;545;8.8;non visible;
+N2-17;26;36;12;484;8.8;non visible;
+N2-18;26;36;12;381;8.8;non visible;rapport coupe

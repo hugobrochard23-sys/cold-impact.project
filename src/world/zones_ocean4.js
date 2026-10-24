@@ -9,6 +9,30 @@
   const BAS = ['#2b2522', '#332b27', '#3a302b', '#262020'], DEEP = ['#2d516d', '#3d6a85', '#558199', '#1f3a51'], HOT = ['#4a2a22', '#5a2e24', '#3c2420'];
   const _tc = new T3.Color(), _t2 = new T3.Color();
   const tone = (t, hot) => { _tc.set(hot ? '#34201a' : '#1b3550'); _t2.set(hot ? '#74402f' : '#55859f'); _tc.lerp(_t2, U.clamp(t, 0, 1)).multiplyScalar(0.94 + Math.random() * 0.1); return 'col:#' + _tc.getHexString(); };   // roches : une teinte qui s'eclaircit vers le haut, sans damier
+  // CRAG : un pic de roche UNIQUE (polyedre irregulier a facettes plates) : anneau de base a rayons et angles irreguliers, un ou deux anneaux intermediaires decales,
+  // sommet incline et aigu ; chaque appel tire ses propres sommets (jamais deux roches identiques), orientation libre. La collision est une boite plus petite que la roche.
+  const _cq = new T3.Quaternion(), _cs = new V(), _cp = new V(), _ce = new T3.Euler();
+  const crag = (S, dc, lx, y, w, h, r, tint, o) => {
+    if (!S.inClip(dc)) return; o = o || {};
+    const N = 5 + Math.floor(r() * 3), rings = 2 + Math.floor(r() * 2), P = [], tri = [];
+    const lean = (o.lean === undefined ? 0.25 : o.lean) * w * (r() - 0.5) * 2;
+    for (let k = 0; k <= rings; k++) {
+      const t = k / (rings + 1), taper = 1 - 0.78 * Math.pow(t, 1.1) + (r() - 0.5) * 0.18, ox = lean * t * t + (r() - 0.5) * w * 0.18, oz = (r() - 0.5) * w * 0.18, ring = [];
+      for (let i = 0; i < N; i++) { const a = (i + (r() - 0.5) * 0.55) / N * 6.2832, rad = (w / 2) * taper * (0.62 + r() * 0.55); ring.push(P.length); P.push([Math.cos(a) * rad + ox, h * t * (0.92 + r() * 0.16) - (k === 0 ? h * 0.15 : 0), Math.sin(a) * rad + oz]); }
+      P.rings = (P.rings || []).concat([ring]);
+    }
+    const apex = P.length; P.push([lean * 1.3, h * (1 + r() * 0.12), (r() - 0.5) * w * 0.14]); const base = P.length; P.push([0, -h * 0.2, 0]);
+    const R0 = P.rings; for (let k = 0; k < R0.length - 1; k++) for (let i = 0; i < N; i++) { const a = R0[k][i], b = R0[k][(i + 1) % N], c2 = R0[k + 1][i], d2 = R0[k + 1][(i + 1) % N]; tri.push(a, c2, b, b, c2, d2); }
+    const top = R0[R0.length - 1]; for (let i = 0; i < N; i++) tri.push(top[i], apex, top[(i + 1) % N]);
+    for (let i = 0; i < N; i++) tri.push(R0[0][(i + 1) % N], base, R0[0][i]);
+    const pos = []; for (const i of tri) pos.push(P[i][0], P[i][1], P[i][2]);
+    const g = new T3.BufferGeometry(); g.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); g.computeVertexNormals();
+    const pp = S.at(dc, lx, y); _cp.set(pp[0], pp[1], pp[2]); _ce.set((r() - 0.5) * (o.tilt === undefined ? 0.22 : o.tilt), r() * 6.283, (r() - 0.5) * (o.tilt === undefined ? 0.22 : o.tilt), 'YXZ'); _cq.setFromEuler(_ce);
+    S.b.addGeometry(g, _cp.clone(), _cq.clone(), null, tint, undefined); g.dispose();
+    if (o.collide !== false) S.b.box({ p: [pp[0], pp[1] + h * 0.42, pp[2]], s: [w * 0.5, h * 0.8, w * 0.5], render: false });
+  };
+  // couleur d'une paroi : sombre en bas, claire en haut, avec un grain par roche (jamais deux roches de la meme teinte)
+  const rtint = (t, hot, r) => { _tc.set(hot ? '#2c1a14' : '#1a3048'); _t2.set(hot ? '#7a4632' : '#5f8fa8'); _tc.lerp(_t2, U.clamp(t + (r() - 0.5) * 0.25, 0, 1)); _tc.multiplyScalar(0.9 + r() * 0.2); return 'col:#' + _tc.getHexString(); };
   const rockAt = (S, dc, lx, y, s, r, col) => { const p = S.at(dc, lx, y); TR.rock(S.b, p[0], p[1], p[2], s, r, { gray: col || pk(r, DEEP), noMoss: true, shade: '#3f5a5a' }); S.b.box({ p: [p[0], p[1] + s * 0.5, p[2]], s: [s * 1.6, s * 1.1, s * 1.6], render: false }); };
   const jelly = (S, dc, lx, yw, col) => {
     const g = new T3.Group(), body = new T3.Mesh(new T3.SphereGeometry(2.6, 12, 8, 0, 6.283, 0, Math.PI / 2), basic(col, { transparent: true, opacity: 0.8, fog: false }));
@@ -55,22 +79,22 @@
       for (const [u, ph] of [[0.035, 0], [0.07, 0.33], [0.105, 0.66], [0.14, 0.15]]) S.item(d(u), () => sonar(S, d(u), 0, lanes(u), ph));
       for (const u of [0.06, 0.1, 0.13]) S.item(d(u), (r) => { const dc = d(u), y = yrel(S, dc, lanes(u)); for (let k = -3; k <= 3; k++) if (Math.abs(k) > 0) S.bx(dc, k * 14, y, 12, 70, 0.6, 'col:#4a5a62', undefined, false); });
       foe(S, 'sub', d(0.08), 24, yrel(S, d(0.08), lanes(0.08)), { name: 'SOUS-MARIN', hp: 2, armed: true, keep: true }); foe(S, 'sub', d(0.14), -24, yrel(S, d(0.14), lanes(0.14)), { name: 'SOUS-MARIN', hp: 2, armed: true, keep: true });
-      for (const sg of [-1, 1]) S.rows(d(0.0), d(0.2), 10, 0.7, (dc) => S.item(dc, (r) => { S.ball(dc, S.lane(dc).lx + sg * r.between([34, 110]), 0, r.between([5, 14]), tone(0.25, 0), undefined, true, 0.8); }));
+      for (const sg of [-1, 1]) S.rows(d(0.0), d(0.2), 10, 0.7, (dc) => S.item(dc, (r) => { crag(S, dc, S.lane(dc).lx + sg * r.between([34, 110]), 0, r.between([8, 22]), r.between([10, 34]), r, rtint(0.3, 0, r)); }));
       // --- la FALAISE (0.15 a 0.46) : on plonge le long d'une paroi percee de baies, de passerelles et de projecteurs : une base engloutie
-      for (let k = 0; k < 30; k++) { const u = 0.15 + k * 0.0105, dc = d(u); S.item(dc, (r) => { const lx = S.lane(dc).lx - 38, h = yrel(S, dc, lanes(u)) + 30; for (let y = -10; y < h; y += 22) S.ball(dc, lx - r.between([0, 6]), y, r.between([22, 28]), tone((y + 10) / h, 0), undefined, true, 1.25); if (k % 3 === 0) { const y = yrel(S, dc, lanes(u)) - 4; S.bx(dc, lx + 8, y, 18, 2.2, 10, 'col:#6a7a87', undefined, true); S.bx(dc, lx + 2, y + 2, 1, 6, 10, 'col:#6a7a87', undefined, false); lampS(S, dc, lx + 4, y + 3, '#ffd9a0', 36); } if (k % 5 === 2) { const y = yrel(S, dc, lanes(u)); S.bx(dc, lx + 6, y + 12, 16, 0.9, 1.6, 'emis:#7be8ff', undefined, false); S.glow(dc, lx + 6, y + 12, '#7be8ff', 34); } }); }
-      for (const sg of [1]) S.rows(d(0.16), d(0.46), 14, 0.7, (dc) => S.item(dc, (r) => { if (r() < 0.6) S.ball(dc, S.lane(dc).lx + sg * r.between([50, 100]), 0, r.between([9, 20]), tone(0.3, 0), undefined, true, 0.9); }));
+      for (let k = 0; k < 30; k++) { const u = 0.15 + k * 0.0105, dc = d(u); S.item(dc, (r) => { const lx = S.lane(dc).lx - 62, h = yrel(S, dc, lanes(u)) + 30; for (let y = -14; y < h; y += r.between([14, 30])) { const wd = r.between([18, 40]); crag(S, dc + r.between([-5, 5]), lx - r.between([0, 12]), y, wd, r.between([24, 58]), r, rtint((y + 14) / h, 0, r), { lean: 0.5 }); if (r() < 0.4) crag(S, dc + r.between([-4, 4]), lx + r.between([-4, 5]), y + r.between([4, 14]), wd * 0.5, r.between([14, 30]), r, rtint((y + 14) / h, 0, r), { lean: 0.6 }); } if (k % 3 === 0) { const y = yrel(S, dc, lanes(u)) - 4; S.bx(dc, lx + 12, y, 18, 2.2, 10, 'col:#6a7a87', undefined, true); S.bx(dc, lx + 6, y + 2, 1, 6, 10, 'col:#6a7a87', undefined, false); lampS(S, dc, lx + 8, y + 3, '#ffd9a0', 36); } if (k % 5 === 2) { const y = yrel(S, dc, lanes(u)); S.bx(dc, lx + 10, y + 12, 16, 0.9, 1.6, 'emis:#7be8ff', undefined, false); S.glow(dc, lx + 10, y + 12, '#7be8ff', 34); } }); }
+      for (const sg of [1]) S.rows(d(0.16), d(0.46), 14, 0.7, (dc) => S.item(dc, (r) => { if (r() < 0.6) crag(S, dc, S.lane(dc).lx + sg * r.between([50, 100]), 0, r.between([10, 26]), r.between([14, 44]), r, rtint(0.3, 0, r)); }));
       for (let i = 0; i < 5; i++) { const u = 0.2 + i * 0.05, dc = d(u); foe(S, 'mine', dc, (i % 2 ? 1 : -1) * 13, yrel(S, dc, lanes(u)), { name: 'MINE', keep: i < 2 }); }
       foe(S, 'sub', d(0.3), -8, yrel(S, d(0.3), lanes(0.3)), { name: 'SOUS-MARIN', hp: 3, armed: true, keep: true });
       // --- la FOSSE (0.46 a 0.8) : canyon etroit a virages, parois de roche, piliers a slalomer, meduses, sources chaudes, la baleine
-      for (const sg of [-1, 1]) S.rows(d(0.46), d(0.82), 11, 0.5, (dc) => S.item(dc, (r) => { const lx = S.lane(dc).lx + sg * r.between([32, 50]), top = yrel(S, dc, lanes((dc - S.d0) / L)) + 38; for (let y = -8; y < top; y += 22) S.ball(dc, lx + sg * (y / top) * r.between([0, 8]), y, r.between([21, 27]), tone((y + 8) / top, 0), undefined, true, 1.2); }));
-      for (const [u, sg] of [[0.52, 1], [0.545, -1], [0.58, 1], [0.64, -1], [0.7, 1], [0.735, -1]]) S.item(d(u), (r) => { const dc = d(u), top = yrel(S, dc, lanes(u)) + 40; for (let y = -6; y < top; y += 15) S.ball(dc, S.lane(dc).lx + sg * 15, y, r.between([7, 8.5]), tone(y / top, 0), undefined, true, 1.6); });
+      for (const sg of [-1, 1]) S.rows(d(0.46), d(0.82), 11, 0.5, (dc) => S.item(dc, (r) => { const lx = S.lane(dc).lx + sg * r.between([58, 74]), top = yrel(S, dc, lanes((dc - S.d0) / L)) + 38; for (let y = -10; y < top; y += r.between([14, 30])) { crag(S, dc + r.between([-5, 5]), lx + sg * r.between([0, 14]) - sg * (y / top) * r.between([0, 8]), y, r.between([18, 38]), r.between([26, 56]), r, rtint((y + 10) / top, 0, r), { lean: 0.5 }); } }));
+      for (const [u, sg] of [[0.52, 1], [0.545, -1], [0.58, 1], [0.64, -1], [0.7, 1], [0.735, -1]]) S.item(d(u), (r) => { const dc = d(u), top = yrel(S, dc, lanes(u)) + 40; for (let y = -6; y < top; y += r.between([14, 22])) crag(S, dc, S.lane(dc).lx + sg * r.between([26, 34]), y, r.between([10, 16]), r.between([22, 40]), r, rtint(y / top, 0, r), { lean: 0.4 }); });
       for (let i = 0; i < 16; i++) { const u = 0.47 + i * 0.02, dc = d(u); S.item(dc, (r) => jelly(S, dc, r.between([-26, 26]), lanes(u) + r.between([-14, 18]), pk(r, ['#7affff', '#ff8aff', '#8affa8']))); }
       for (let i = 0; i < 6; i++) { const u = 0.5 + i * 0.05, dc = d(u); S.item(dc, () => ventCone(S, dc, (i % 2 ? 1 : -1) * 28, Math.max(10, yrel(S, dc, lanes(u)) + 30), i % 2 ? '#ff8a4a' : '#7affc8')); }
       EVO.oc.whale(S, d(0.62), 0, lanes(0.62) + 8, 7);
       foe(S, 'sub', d(0.56), 14, yrel(S, d(0.56), lanes(0.56)), { name: 'SOUS-MARIN', hp: 3, armed: true, keep: true }); foe(S, 'sub', d(0.75), -14, yrel(S, d(0.75), lanes(0.75)), { name: 'SOUS-MARIN', hp: 3, armed: true, keep: true });
       for (let i = 0; i < 6; i++) { const u = 0.5 + i * 0.05, dc = d(u); foe(S, 'mine', dc, (i % 2 ? 1 : -1) * 16, yrel(S, dc, lanes(u)), { name: 'MINE', keep: i < 2 }); }
       // --- le CONDUIT MAGMATIQUE (0.8 a 1) : la roche vire au rouge, des failles incandescentes, la lueur de la chambre devant
-      for (const sg of [-1, 1]) S.rows(d(0.8), d(1), 9, 0.4, (dc) => S.item(dc, (r) => { const u = (dc - S.d0) / L, lx = S.lane(dc).lx + sg * r.between([38, 50]), top = yrel(S, dc, lanes(u)) + 36; for (let y = -8; y < top; y += 22) S.ball(dc, lx, y, r.between([19, 25]), tone(y / top, 1), undefined, true, 1.2); if (r() < 0.5) { S.bx(dc, lx - sg * 8, yrel(S, dc, lanes(u)) + r.between([-24, 24]), 0.8, r.between([16, 40]), 6, 'emis:#ff5a14', undefined, false); } }));
+      for (const sg of [-1, 1]) S.rows(d(0.8), d(1), 9, 0.4, (dc) => S.item(dc, (r) => { const u = (dc - S.d0) / L, lx = S.lane(dc).lx + sg * r.between([56, 70]), top = yrel(S, dc, lanes(u)) + 36; for (let y = -10; y < top; y += r.between([14, 30])) crag(S, dc + r.between([-5, 5]), lx + sg * r.between([0, 12]), y, r.between([18, 38]), r.between([26, 56]), r, rtint((y + 10) / top, 1, r), { lean: 0.5 }); if (r() < 0.5) { S.bx(dc, lx - sg * 8, yrel(S, dc, lanes(u)) + r.between([-24, 24]), 0.8, r.between([16, 40]), 6, 'emis:#ff5a14', undefined, false); } }));
       for (let k = 0; k < 8; k++) S.item(d(0.82 + k * 0.022), () => { const dc = d(0.82 + k * 0.022); S.glow(dc, 0, yrel(S, dc, lanes(0.82 + k * 0.022)), '#ff6a2a', 70 + k * 12); });
       S.item(d(0.995), () => { const dc = d(0.995), y = yrel(S, dc, lanes(1)); S.glow(dc, 0, y, '#ffb060', 260); });
       // le SAS : une porte blindee dont les deux battants s'ecartent quand la fusee approche (on voit toujours la lumiere de la chambre derriere)
@@ -113,8 +137,8 @@
       for (let dc = S.d0 + 6; dc < d(0.95); dc += 12) S.item(dc, (r) => {
         const u = (dc - S.d0) / L, R = RW(dc, u), L0 = S.lane(dc), lx = L0.lx, ly = L0.y;
         for (const sg of [-1, 1]) {
-          S.cyl(dc, lx + sg * (R + 6 + r.between([-3, 3])), ly - 100, r.between([12, 16]), 200, 'col:' + pk(r, BAS), undefined, 11, r.between([8, 12]), true);
-          if (r() < 0.5) S.ball(dc, lx + sg * (R - 3), ly + r.between([-70, 70]), r.between([9, 14]), 'col:' + pk(r, BAS), undefined, true, 1.3);
+          S.bx(dc, lx + sg * (R + 14), ly, 14, 200, 13, 'col:#1d1512', undefined, true);   // fond de paroi (cache l'arriere)
+          for (let y = -95; y < 95; y += r.between([20, 40])) crag(S, dc + r.between([-4, 4]), lx + sg * (R + r.between([12, 24])), ly + y - r.between([0, 10]), r.between([18, 36]), r.between([30, 60]), r, rtint((y + 95) / 190, 1, r), { lean: 0.5, tilt: 0.3 });
           if (r() < 0.5) S.bx(dc, lx + sg * (R - 0.6), ly + r.between([-70, 70]), 0.7, r.between([20, 60]), 6, 'emis:#ff5a14', undefined, false);
           if (r() < 0.14) lavaFall(S, dc, lx + sg * (R - 0.8), ly - 10, 150);
           if (dc % 36 < 12 && r() < 0.7) { S.bx(dc, lx + sg * (R - 6), ly - 24 - r.between([0, 20]), 12, 2.4, 11, 'col:#4a3a32', undefined, true); }
@@ -128,7 +152,7 @@
       for (let i = 0; i < 12; i++) { const u = 0.26 + i * 0.05, dc = d(u); S.item(dc, () => magmaOrb(S, dc, (i % 2 ? 1 : -1) * (12 + (i % 3) * 4), LVO(u), i * 0.7, 3 + (i % 3) * 0.6)); }
       for (let i = 0; i < 6; i++) { const u = 0.3 + i * 0.1, dc = d(u); foe(S, 'mine', dc, (i % 2 ? 1 : -1) * 18, yrel(S, dc, LVO(u) + 4), { name: 'MINE', keep: i < 3 }); }
       // le cratere : la bouche s'ouvre, rochers incandescents, geysers de lave, panache de cendres
-      for (let k = 0; k < 16; k++) S.item(d(0.9 + k * 0.0065), (r) => { const dc = d(0.9 + k * 0.0065), sg = k % 2 ? 1 : -1, ly = S.lane(dc).y, lx = S.lane(dc).lx + sg * r.between([36, 70]); S.ball(dc, lx, ly - r.between([20, 50]), r.between([16, 28]), 'col:' + pk(r, BAS), undefined, true, 0.9); S.glow(dc, lx, ly - 20, '#ff5a1a', 90); });
+      for (let k = 0; k < 16; k++) S.item(d(0.9 + k * 0.0065), (r) => { const dc = d(0.9 + k * 0.0065), sg = k % 2 ? 1 : -1, ly = S.lane(dc).y, lx = S.lane(dc).lx + sg * r.between([36, 70]); crag(S, dc, lx, ly - r.between([40, 70]), r.between([24, 44]), r.between([40, 80]), r, rtint(0.5, 1, r)); S.glow(dc, lx, ly - 20, '#ff5a1a', 90); });
       for (let k = 0; k < 4; k++) S.item(d(0.9 + k * 0.025), () => { const dc = d(0.9 + k * 0.025), sg = k % 2 ? 1 : -1, ly = S.lane(dc).y, p = S.at(dc, S.lane(dc).lx + sg * 40, ly - 30), g = new T3.Group(), m = new T3.Mesh(new T3.CylinderGeometry(5, 12, 90, 8, 1, true), basic('#ff7a2a', { transparent: true, opacity: 0.4, blending: T3.AdditiveBlending, depthWrite: false, side: T3.DoubleSide, fog: false })); g.add(m); g.position.set(p[0], p[1] + 30, p[2]); if (S.inClip(dc)) S.b.root.add(g); EVO.addDyn(g, (t) => { m.scale.y = 0.6 + 0.4 * Math.abs(Math.sin(t * 1.4 + k)); }, [], { near: 600 }); });
       S.item(d(0.88), () => { const dc = d(0.88), g = new T3.Group(); EVO.placeGroup(S, g, dc, 0, 0, 0); let fired = false; EVO.addDyn(g, (t, dt, game) => { const run = game.endlessRun; if (!fired && game.state === 'FLIGHT' && run && run.dist > dc - 10) { fired = true; EVO.lavaBurst(game, true); } }, [], { near: 99999, span: 99999 }); });
     } };
@@ -161,7 +185,7 @@
       for (let i = 0; i < 26; i++) { const u = 0.02 + i * 0.037, dc = d(u); S.item(dc, (r) => ashCloud(S, dc, r.between([-80, 80]), LANE(u) + r.between([-60, 70]), r.between([14, 28]), i < 6 ? '#8a4a30' : undefined)); }
       for (let i = 0; i < 18; i++) { const u = 0.18 + i * 0.04, dc = d(u); S.item(dc, (r) => flak(S, dc, r.between([-40, 40]), LANE(u) + r.between([-30, 40]))); }
       // la couche de nuages : de u = 0.34 a 0.62 elle separe un couloir HAUT et un couloir BAS
-      for (let k = 0; k < 15; k++) { const u = 0.34 + k * 0.02, dc = d(u); S.item(dc, (r) => { for (let j = -2; j <= 2; j++) S.ball(dc, j * 26, yrel(S, dc, LANE(u)), r.between([15, 20]), 'col:#c9ced6', undefined, true, 0.6); }); }
+      for (let k = 0; k < 15; k++) { const u = 0.34 + k * 0.02, dc = d(u); S.item(dc, (r) => { for (let j = -2; j <= 2; j++) S.ball(dc, j * 26, yrel(S, dc, LANE(u)), r.between([15, 20]), 'col:#c9ced6', undefined, false, 0.6); }); }
       S.item(d(0.3), () => { const dc = d(0.3), y = yrel(S, dc, LANE(0.3)); S.bx(dc, -22, y + 30, 16, 1.4, 1, 'emis:#7be8ff', undefined, false); S.bx(dc, 22, y - 30, 16, 1.4, 1, 'emis:#ff9a3a', undefined, false); S.glow(dc, -22, y + 30, '#7be8ff', 60); S.glow(dc, 22, y - 30, '#ff9a3a', 60); });
       for (let i = 0; i < 4; i++) { const u = 0.38 + i * 0.06, dc = d(u); foe(S, i % 2 ? 'jet' : 'heli', dc, (i % 2 ? 1 : -1) * 16, yrel(S, dc, LANE(u) + 34), { name: i % 2 ? 'CHASSEUR' : 'HELICO', armed: true, keep: true, patrol: i % 2 ? undefined : patrol, speed: 13 }); }
       for (let i = 0; i < 8; i++) { const u = 0.36 + i * 0.035, dc = d(u); foe(S, 'mine', dc, (i % 2 ? 1 : -1) * 15, yrel(S, dc, LANE(u) - 30), { name: 'MINE', keep: i < 4 }); }
@@ -189,8 +213,7 @@
     const g = new T3.Group(), lx = S.T.laneX(dc);
     for (let k = 0; k < 14; k++) { const a = k / 14 * 6.283, o = new T3.Mesh(new T3.SphereGeometry(rr(9, 15), 8, 6), new T3.MeshBasicMaterial({ color: i % 2 ? '#4a5260' : '#6a7480', transparent: true, opacity: 0.8, fog: true })); o.position.set(Math.cos(a) * 46, Math.sin(a) * 46, rr(-6, 6)); g.add(o); }
     const p = S.at(dc, lx, yrel(S, dc, yw)); g.position.set(p[0], p[1], p[2]); const q = S.T.at(dc - 6, lx, yrel(S, dc - 6, yw)); g.rotation.y = Math.atan2(q[0] - p[0], q[2] - p[2]); if (S.inClip(dc)) S.b.root.add(g);
-    const cols = []; for (let k = 0; k < 8; k++) { const a = k / 8 * 6.283; cols.push(EVO.colBox(g, 16, 16, 14, Math.cos(a) * 46, Math.sin(a) * 46, 0)); }
-    EVO.addDyn(g, (t) => { g.rotation.z = t * 0.12 * (i % 2 ? 1 : -1); }, cols, { near: 500 });
+    const cols = []; EVO.addDyn(g, (t) => { g.rotation.z = t * 0.12 * (i % 2 ? 1 : -1); }, [], { near: 500 });   // nuages : traversables, jamais mortels
   };
   const streak = (S, dc, lx, yw) => {   // un missile qui monte vers l'orbite (decor : traînee blanche)
     const g = new T3.Group(), body = new T3.Mesh(new T3.CylinderGeometry(2, 2, 22, 8), basic('#eef0f4')), tr = new T3.Mesh(new T3.CylinderGeometry(1, 3.4, 140, 8, 1, true), basic('#ffffff', { transparent: true, opacity: 0.4, depthWrite: false, side: T3.DoubleSide, fog: false })); tr.position.y = -80; g.add(body); g.add(tr); g.add(glow ? glow(30) : new T3.Object3D());

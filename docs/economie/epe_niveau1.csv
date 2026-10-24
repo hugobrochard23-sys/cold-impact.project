@@ -1,0 +1,21 @@
+﻿essai;temps_rapport_s;duree_essai_approx_s;distance_pieces;total_apres_mult;mult_revenu;pub_recompensee;pub_courte_apres_suivant;solde_debut_hangar;depenses_hangar;solde_fin_hangar;cause_fin;boosts;remarque
+1;24;9;348;348;1;non;oui;348;280;68;inconnu;inconnu;1er vol sans amelioration, ~9 s
+2;53;9;346;380;1.1;non;non;448;416;32;inconnu;inconnu;
+3;75;8;359;394;1.1;non;non;426;420;6;inconnu;inconnu;
+4;94;8;346;380;1.1;non;oui;386;264;122;inconnu;inconnu;
+5;131;18;668;734;1.1;non;non;856(+540 coffre);1060;336;inconnu;inconnu;
+6;178;23;863;1121;1.3*;non;oui;1457;1268;189;inconnu;inconnu;* total/distance=1.30 alors que la carte affichait x1.2 : ecart inexplique
+7;218;24;932;1211;1.3;non;non;1400;1186;214;inconnu;inconnu;
+8;267;33;1406;1827;1.3;non;oui;2042;1774;268;inconnu;inconnu;
+9;317;33;1401;1961;1.4;non;non;2229;1762;467;inconnu;inconnu;
+10;356;30;1276;1786;1.4;non;oui;2253;741;1512;inconnu;inconnu;
+11;404;31;1428;2856;2;non;non;4368;3312;1056;inconnu;inconnu;
+12;472;49;3077;6154;2;non;oui;7210;6197;1013;inconnu;inconnu;
+13;538;48;3311;7284;2.2;non;oui;8297;6783;1514;inconnu;inconnu;
+14;607;52;3530;7766;2.2;non;oui;9280;9252;28;inconnu;inconnu;
+15;672;48;3506;7713;2.2;oui (x3 -> 23139);non;23167;22943;224;inconnu;inconnu;
+16;770;61;5839;14K (~14014);2.4;oui (x4 -> ~56K);non;~56200;~55850;387;inconnu;inconnu;
+17;846;33;3317;9287;2.8;non;non;9674;9065;609;inconnu;inconnu;
+18;910;55;5990;23.9K (~23960);4;oui (x2 -> ~47.9K);non;~48500;~47000;1459;inconnu;inconnu;
+19;1018;76;7242;28.9K (~28968);4;oui (multiplicateur inconnu);non;~48400;~39900+;inconnu;inconnu;inconnu;
+20;1123;71;7438;29.7K;4;non;oui;inconnu;inconnu;inconnu;inconnu;inconnu;

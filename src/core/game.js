@@ -872,6 +872,7 @@
       this.audio.play('boom', pos); }
       this.style.dropCombos();
       this.rig.startImpact(pos); this.rig.shake = 0.8;
+      if (this.evo && CC.EVO.isS2 && CC.EVO.isS2()) { this.hitStop = 0; this.hitScale = 0; }   // niveau 2 : pas de ralenti a la mort
       this.state = 'CRASHED'; this.impactT = 0;
       this.telemetry.event('crash', { kind, pos: pos.toArray().map((v) => +v.toFixed(2)), runTime: +this.runTime.toFixed(3) });
     }

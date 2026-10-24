@@ -1,0 +1,61 @@
+﻿carte;niveau_avant;niveau_apres;prix_pieces;effet_visible;visite_hangar_apres_essai;fiabilite
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);1;2;180;multiplicateur de revenu (si carte C) sinon distance : inconnu;1;deduit
+carte C (revenu, prix x1.65/niv exact);1;2;100;x1.1;1;lu
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);2;3;198;multiplicateur de revenu (si carte C) sinon distance : inconnu;2;lu
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);3;4;218;multiplicateur de revenu (si carte C) sinon distance : inconnu;2;lu
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);4;5;240;multiplicateur de revenu (si carte C) sinon distance : inconnu;3;lu
+carte A (lanceur, prix x1.40/niv exact);1;2;180;multiplicateur de revenu (si carte C) sinon distance : inconnu;3;lu
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);5;6;264;multiplicateur de revenu (si carte C) sinon distance : inconnu;4;lu
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);6;7;290;multiplicateur de revenu (si carte C) sinon distance : inconnu;5;lu
+carte A (lanceur, prix x1.40/niv exact);2;3;252;multiplicateur de revenu (si carte C) sinon distance : inconnu;5;lu
+carte C (revenu, prix x1.65/niv exact);2;3;165;x1.2;5;lu
+carte A (lanceur, prix x1.40/niv exact);3;4;353;multiplicateur de revenu (si carte C) sinon distance : inconnu;5;lu
+carte C (revenu, prix x1.65/niv exact);3;4;272;x1.3;6;lu
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);7;8;996;multiplicateur de revenu (si carte C) sinon distance : inconnu;6;lu
+carte A (lanceur, prix x1.40/niv exact);4;5;494;multiplicateur de revenu (si carte C) sinon distance : inconnu;7;lu
+carte A (lanceur, prix x1.40/niv exact);5;6;692;multiplicateur de revenu (si carte C) sinon distance : inconnu;7;deduit
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);8;9;1325;multiplicateur de revenu (si carte C) sinon distance : inconnu;8;lu
+carte C (revenu, prix x1.65/niv exact);4;5;449;x1.4;8;lu
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);9;10;1762;multiplicateur de revenu (si carte C) sinon distance : inconnu;9;deduit
+carte C (revenu, prix x1.65/niv exact);5;6;741;x2;10;lu
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);10;11;2344;multiplicateur de revenu (si carte C) sinon distance : inconnu;11;lu
+carte A (lanceur, prix x1.40/niv exact);6;7;968;multiplicateur de revenu (si carte C) sinon distance : inconnu;11;lu
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);11;12;3619;multiplicateur de revenu (si carte C) sinon distance : inconnu;12;lu
+carte A (lanceur, prix x1.40/niv exact);7;8;1355;multiplicateur de revenu (si carte C) sinon distance : inconnu;12;lu
+carte C (revenu, prix x1.65/niv exact);6;7;1223;x2.2;12;lu
+carte A (lanceur, prix x1.40/niv exact);8;9;1897;multiplicateur de revenu (si carte C) sinon distance : inconnu;13;lu
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);12;13;4886;multiplicateur de revenu (si carte C) sinon distance : inconnu;13;lu
+carte A (lanceur, prix x1.40/niv exact);9;10;2656;multiplicateur de revenu (si carte C) sinon distance : inconnu;14;lu
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);13;14;6596;multiplicateur de revenu (si carte C) sinon distance : inconnu;14;lu
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);14;15;8905;multiplicateur de revenu (si carte C) sinon distance : inconnu;15;lu
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);15;16;12020;multiplicateur de revenu (si carte C) sinon distance : inconnu;15;deduit
+carte C (revenu, prix x1.65/niv exact);7;8;2018;x2.4;15;lu
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);16;17;16200;multiplicateur de revenu (si carte C) sinon distance : inconnu;16;deduit
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);17;18;21900;multiplicateur de revenu (si carte C) sinon distance : inconnu;16;lu
+carte A (lanceur, prix x1.40/niv exact);10;11;3719;multiplicateur de revenu (si carte C) sinon distance : inconnu;16;lu
+carte C (revenu, prix x1.65/niv exact);8;9;3330;multiplicateur de revenu (si carte C) sinon distance : inconnu;16;lu
+carte A (lanceur, prix x1.40/niv exact);11;12;5207;multiplicateur de revenu (si carte C) sinon distance : inconnu;16;deduit
+carte C (revenu, prix x1.65/niv exact);9;10;5494;x2.8;16;lu
+carte C (revenu, prix x1.65/niv exact);10;11;9065;x4;17;lu
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);18;19;29500;multiplicateur de revenu (si carte C) sinon distance : inconnu;18;lu
+carte A (lanceur, prix x1.40/niv exact);12;13;7289;multiplicateur de revenu (si carte C) sinon distance : inconnu;18;lu
+carte A (lanceur, prix x1.40/niv exact);13;14;10200;multiplicateur de revenu (si carte C) sinon distance : inconnu;18;deduit
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);19;20;39900;multiplicateur de revenu (si carte C) sinon distance : inconnu;19;lu
+carte A (lanceur, prix x1.40/niv exact);14;15;20000;multiplicateur de revenu (si carte C) sinon distance : inconnu;20;lu
+carte B (appareil, prix ~x1.10 puis ~x1.33-1.35);20;21;53900;multiplicateur de revenu (si carte C) sinon distance : inconnu;20;deduit (carte lue a 72.7K au niveau 21)
+carte B (appareil) [appareil 2, prix x1.30/niv ; revenu x1.50/niv];21;33;634 x1.30^(n-21): 634..11,4K (12 achats, ~47,1K);inconnu;N2-hangar0;deduit (somme coherente avec solde 47,8K -> 775)
+carte A (lanceur) [appareil 2, prix x1.30/niv ; revenu x1.50/niv];15;16;634;inconnu;N2-hangar0;lu
+carte A (lanceur) [appareil 2, prix x1.30/niv ; revenu x1.50/niv];16;17;824;inconnu;N2-p2;lu
+carte A (lanceur) [appareil 2, prix x1.30/niv ; revenu x1.50/niv];17;18;1071;inconnu;N2-p2;lu
+carte A (lanceur) [appareil 2, prix x1.30/niv ; revenu x1.50/niv];18;19;1392;inconnu;N2-p2;lu
+carte A (lanceur) [appareil 2, prix x1.30/niv ; revenu x1.50/niv];19;20;1810;inconnu;N2-p4;lu
+carte A (lanceur) [appareil 2, prix x1.30/niv ; revenu x1.50/niv];20;21;2353;inconnu;N2-p4;deduit
+carte A (lanceur) [appareil 2, prix x1.30/niv ; revenu x1.50/niv];21;22;3059;inconnu;N2-p5;lu
+carte A (lanceur) [appareil 2, prix x1.30/niv ; revenu x1.50/niv];22;23;3977;inconnu;N2-p6;deduit
+carte B (appareil) [appareil 2, prix x1.30/niv ; revenu x1.50/niv];33;34;14765;inconnu;N2-p10;lu
+carte B (appareil) [appareil 2, prix x1.30/niv ; revenu x1.50/niv];34;35;19195;inconnu;N2-p13;deduit
+carte B (appareil) [appareil 2, prix x1.30/niv ; revenu x1.50/niv];35;36;sans baisse de solde;inconnu;N2-p14;inconnu (prix de reference 24,9K non payes)
+carte A (lanceur) [appareil 2, prix x1.30/niv ; revenu x1.50/niv];23;24;5170;inconnu;N2-p14;lu
+carte A (lanceur) [appareil 2, prix x1.30/niv ; revenu x1.50/niv];24;25;6721;inconnu;N2-p14;deduit
+carte C (revenu) [appareil 2, prix x1.30/niv ; revenu x1.50/niv];11;12;5767;x8 -> x8.8;N2-p14;lu
+carte A (lanceur) [appareil 2, prix x1.30/niv ; revenu x1.50/niv];25;26;8738;inconnu;N2-p16;deduit

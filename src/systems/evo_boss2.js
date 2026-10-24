@@ -15,6 +15,16 @@
   const glow = (size, col) => { const s = new T3.Sprite(new T3.SpriteMaterial({ map: glowTex(), color: col || '#ffffff', transparent: true, blending: T3.AdditiveBlending, depthWrite: false, fog: false })); s.scale.set(size, size, 1); return s; };
   const heading = (T, d) => { const a = T.at(d, 0, 0), b = T.at(d + 6, 0, 0); return Math.atan2(b[0] - a[0], b[2] - a[2]); };   // local +Z = sens des distances croissantes
   const CHAR = new T3.MeshLambertMaterial({ color: '#15110e', fog: false });
+  // marquage d'une cible : un anneau lumineux qui pulse autour (axe -Z, face a la fusee) et trois chevrons qui defilent vers elle
+  function marker(node, radius, col, dirZ) {
+    const g = new T3.Group(), ring = new T3.Mesh(new T3.TorusGeometry(radius, radius * 0.07, 8, 32), new T3.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.9, blending: T3.AdditiveBlending, depthWrite: false, fog: false })); g.add(ring);
+    const ch = []; for (let k = 0; k < 3; k++) { const c = new T3.Mesh(new T3.ConeGeometry(radius * 0.32, radius * 0.7, 4), new T3.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.9, blending: T3.AdditiveBlending, depthWrite: false, fog: false })); c.rotation.x = -Math.PI / 2 * dirZ; g.add(c); ch.push(c); }
+    g.userData = { ring, ch, radius, dirZ }; node.add(g); return g;
+  }
+  function animMarker(m, t, ph) {
+    const u = m.userData; u.ring.scale.setScalar(1 + 0.12 * Math.sin(t * 6 + ph)); u.ring.material.opacity = 0.55 + 0.4 * Math.sin(t * 6 + ph);
+    for (let k = 0; k < 3; k++) { const f = ((t * 1.1 + k / 3) % 1); u.ch[k].position.z = -u.dirZ * (u.radius * (4.6 - 3.2 * f)); u.ch[k].material.opacity = 0.9 * Math.sin(f * Math.PI); }
+  }
 
   // ---------------- BEHEMOTH : la forteresse volante (+Z = l'avant ; les quatre moteurs sont a l'arriere, face a nous) ----------------
   function behemothModel() {
@@ -29,7 +39,7 @@
       cy(eng, 17, 19, 56, dark, 0, 0, -26, 14, true); cy(eng, 21, 17, 10, amber, 0, 0, -56, 14, true); cy(eng, 12, 14, 4, bas('#bff4ff'), 0, 0, -61, 14, true);
       const fl = new T3.Mesh(new T3.ConeGeometry(15, 80, 12, 1, true), new T3.MeshBasicMaterial({ color: '#6adcff', transparent: true, opacity: 0.32, blending: T3.AdditiveBlending, depthWrite: false, side: T3.DoubleSide, fog: false })); fl.rotation.x = -Math.PI / 2; fl.position.z = -100; eng.add(fl);
       const gl = glow(64, '#8ee8ff'); gl.position.z = -64; eng.add(gl);
-      zones.push({ id: 'E' + k, pos: new V(x, 30, -296), r: 32, node: eng, fl, gl, burn: true }); }
+      const mk = marker(eng, 30, '#ffd040', 1); mk.position.z = -66; zones.push({ id: 'E' + k, pos: new V(x, 30, -296), r: 32, node: eng, fl, gl, burn: true, mk }); }
     return { root, zones, hulls: [{ pos: new V(0, 30, 20), size: [150, 38, 500] }, { pos: new V(0, 90, 120), size: [44, 50, 70] }] };
   }
   // ---------------- AEGIS : le satellite-canon (le canon est a -Z, face a nous) ; trois BOUCLIERS autour d'un coeur orange : un coup = un bouclier, puis le coeur ----------------
@@ -42,7 +52,7 @@
     cy(core, 7, 9, 70, dark, 0, 0, -50, 12, true); cy(core, 11, 8, 6, bas('#ff6a3a'), 0, 0, -86, 12, true);
     const shields = [44, 58, 72].map((r, i) => { const m = new T3.Mesh(new T3.SphereGeometry(r, 24, 16), new T3.MeshBasicMaterial({ color: ['#7be8ff', '#9ad0ff', '#c0b4ff'][i], transparent: true, opacity: 0.2, blending: T3.AdditiveBlending, depthWrite: false, side: T3.DoubleSide, fog: false })); core.add(m); return m; });
     for (const sx of [-1, 1]) { bx(root, 80, 2, 34, lam('#2a4a7a'), sx * 170, 0, 56); bx(root, 54, 4, 5, dark, sx * 104, 0, 56); for (let k = 0; k < 5; k++) bx(root, 1, 2.4, 34, lam('#6a9ad8'), sx * (140 + k * 15), 1.4, 56); }
-    zones.push({ id: 'CORE', pos: new V(0, 0, 0), r: 38, node: core, gl: cg, multi: true, shields });
+    const mk = marker(core, 92, '#ffd040', 1); mk.position.z = -40; zones.push({ id: 'CORE', pos: new V(0, 0, 0), r: 38, node: core, gl: cg, multi: true, shields, mk });
     return { root, zones, hulls: [], ring };
   }
   const DEFS = {
@@ -79,7 +89,7 @@
     if (!B) return; const lx = T.laneX(B.d) + B.lx, y = T.laneY(B.d) + B.yy - B.drop, p = T.at(B.d, lx, y); B.W.position.set(p[0], p[1], p[2]); B.W.rotation.y = heading(T, B.d);
   }
   function snuff(z) {   // le moteur s'eteint : plus de flamme, carcasse noircie, il fume et brule
-    if (z.fl) z.fl.visible = false; if (z.gl) z.gl.visible = false;
+    if (z.fl) z.fl.visible = false; if (z.gl) z.gl.visible = false; if (z.mk) z.mk.visible = false;
     if (z.node && z.burn) z.node.traverse((o) => { if (o.isMesh && o !== z.fl) o.material = CHAR; });
     z.fire = true;
   }
@@ -118,9 +128,10 @@
     B.lx = def.aegis ? 0 : Math.sin(B.t * 0.22) * 14; B.yy = def.yOff + Math.sin(B.t * 0.3) * 6;
     if (B.mode === 'dying' && !def.aegis) B.drop += (18 + B.dying * 34) * dt;
     place(g, T); if (B.mode === 'dying' && !def.aegis) B.W.rotation.z = Math.min(0.5, B.dying * 0.16);
-    if (def.aegis) { B.M.ring.rotation.z += dt * B.spin * (B.mode === 'dying' ? 3 : 1); const z = B.M.zones[0]; if (z.gl && B.mode !== 'dying') z.gl.scale.setScalar(170 + 24 * Math.sin(B.t * 5 + B.hp)); const left = z.shields.filter((m) => m.visible); for (let i = 0; i < left.length; i++) left[i].material.opacity = 0.16 + 0.07 * Math.sin(B.t * 3 + i); }
+    if (def.aegis) { B.M.ring.rotation.z += dt * B.spin * (B.mode === 'dying' ? 3 : 1); const z = B.M.zones[0]; if (z.mk) { z.mk.visible = B.mode === 'live'; animMarker(z.mk, B.t, 0); } if (z.gl && B.mode !== 'dying') z.gl.scale.setScalar(170 + 24 * Math.sin(B.t * 5 + B.hp)); const left = z.shields.filter((m) => m.visible); for (let i = 0; i < left.length; i++) left[i].material.opacity = 0.16 + 0.07 * Math.sin(B.t * 3 + i); }
     else for (const z of B.M.zones) {
       if (z.fl && !z.dead) z.fl.scale.set(1, 1, 0.8 + 0.3 * Math.sin(B.t * 18 + z.pos.x));
+      if (z.mk && !z.dead) animMarker(z.mk, B.t, z.pos.x);
       if (z.fire && near && Math.random() < dt * 14) { z.node.getWorldPosition(_a); _a.add(_b.set(rr(-8, 8), rr(-6, 10), rr(-8, 8))); fx.smokePuff(_a.clone(), new V(rr(-2, 2), rr(6, 14), rr(-2, 2)), rr(26, 44), 2.4); if (Math.random() < 0.35) fx.flash(_a.clone(), '#ff8a30', 3, 70, 0.3, '#ff5020'); }
     }
     if (B.mode === 'live' && live && B.awake) {

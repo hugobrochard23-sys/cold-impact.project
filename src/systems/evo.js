@@ -359,6 +359,7 @@
     { const gyy = run.T.base(Math.max(0, run.dist)) + 0.32; if (rk.pos.y < gyy) { rk.pos.y = gyy; if (rk.vel.y < 0) rk.vel.y = 0; rk.sliding = Math.max(rk.sliding || 0, 0.03); } }
     // sans réacteur ou sans carburant : la fusée tombe ; au sol, le vol est fini
     const out = (r.tier < 2 || rk.fuel <= 0.01) && !ev.preview;
+    if (out && EVO.isS2() && g.flightTime > 1) { ev.outT = (ev.outT || 0) + dt; rk.vel.y -= 38 * Math.min(1, ev.outT / 0.8) * dt; if (rk.fwd.y > -0.6) g.input.addAim(0, -2.2 * dt); } else ev.outT = 0;   // v249 : niveau 2 : sans carburant on pique et on accelere vers le bas (plus de longue glissade)
     if (out && !ev.preview && sp < 24 && rk.fwd.y > -0.55) g.input.addAim(0, -1.5 * U.clamp((24 - sp) / 8, 0, 1) * dt);   // v125 : décrochage : sans poussée et sans vitesse, le nez plonge (on récupère en reprenant de la vitesse)
     if (out && rk.sliding > 0 && (ev.slideT = (ev.slideT || 0) + dt) > 0.7) { ev.slideT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; }
     if (!out || rk.sliding <= 0) ev.slideT = 0;
@@ -453,7 +454,7 @@
     { const cols = ['#b8925e', '#c9a46c', '#8a6a44', '#e8dcc0', '#6e5230'], bp = rk.pos.clone();
       for (let i = 0; i < 12; i++) { const sz = rr(0.06, 0.2), ch = new THREE.Mesh(new THREE.BoxGeometry(sz, sz * rr(0.3, 0.8), sz * rr(1, 2.2)), new THREE.MeshLambertMaterial({ color: cols[i % cols.length] })); ch.position.copy(bp).add(new V(rr(-0.2, 0.2), rr(0, 0.3), rr(-0.3, 0.3))); ch.quaternion.setFromEuler(new THREE.Euler(rr(0, 6), rr(0, 6), rr(0, 6))); sc.add(ch);
         add(ch, v0.clone().multiplyScalar(rr(0.2, 0.6)).add(new V(rr(-4, 4), rr(2, 8), rr(-4, 4))), new V(rr(-14, 14), rr(-14, 14), rr(-14, 14)), sz * 0.6); } }
-    g.evoTumble = { P, t: 0, dur: 12, flag: null, kind, body, v0: v0.clone() };
+    g.evoTumble = { P, t: 0, dur: EVO.isS2() ? 5 : 12, flag: null, kind, body, v0: v0.clone() };
     g.audio.play('clunk', pos); g.rig.shake = 0.5; g.style.dropCombos();
     sparks(g, pos, 26, 10);
   };
@@ -511,7 +512,7 @@
     for (let sub = 0; sub < SUB; sub++) for (const q of Tm.P) {
       if (q.rest) { if (q.isBody && q.settle < 1) { q.settle = Math.min(1, q.settle + 6 * h); q.m.quaternion.slerp(q.flatQ, 0.25); } continue; }
       const rad = q.isBody ? 0.2 : Math.max(0.07, q.r * 0.8); let ground = false;
-      q.v.y -= 16 * h; q.v.multiplyScalar(1 - 0.3 * h);
+      q.v.y -= (EVO.isS2() ? 90 : 16) * h; q.v.multiplyScalar(1 - 0.3 * h);   // niveau 2 : de haut, on tombe vite
       _pv.copy(q.m.position); _nx.copy(_pv).addScaledVector(q.v, h);
       let hit = W.sweep(_pv, _nx, rad);
       if (!hit && T) { const fy = floorAt(g, _nx); if (_pv.y - rad >= fy - 0.4 && _nx.y - rad < fy) { const den = _pv.y - _nx.y; _fk.t = den > 1e-6 ? Math.max(0, Math.min(1, (_pv.y - rad - fy) / den)) : 0; hit = _fk; } }
