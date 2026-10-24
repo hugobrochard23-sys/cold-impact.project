@@ -64,6 +64,7 @@
     });
   };
 
+  const guideRing = (S, dc, y, rad, col) => { const lx = S.lane(dc).lx; for (let k = 0; k < 10; k++) { const a = k / 10 * 6.2832; S.bx(dc, lx + Math.cos(a) * rad, y + Math.sin(a) * rad, 2.2, 2.2, 1.2, 'emis:' + col, undefined, false); } S.glow(dc, lx, y, col, 46); };
   // ============================================ LA FOSSE (1100 m) : sous l'eau, du sas a la bouche du conduit magmatique ============================================
   const LF = 1100, GF = (u) => SEAB - 170 * ss(0.15, 0.46, u) + 45 * ss(0.78, 1, u), LNF = (u) => GF(u) + 60 + 10 * ss(0.15, 0.46, u);
   SC.fosse = { len: [LF, LF], noDoor: true, noChaos: true, seabed: true, gw: 125, turns: [[0.02, 0.15, 22], [0.5, 0.63, -46], [0.66, 0.79, 40]],
@@ -74,6 +75,7 @@
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L, T = S.T, lanes = (u) => LNF(u);
       Z.oceanSurface(S, S.d0, d(0.3), 140, 0.4);
+      for (let u = 0.17; u < 0.97; u += 0.04) { const dc = d(u); S.item(dc, () => guideRing(S, dc, yrel(S, dc, lanes(u)), 20, u < 0.46 ? '#9fe8ff' : u < 0.8 ? '#7affc8' : '#ffb060')); }   // anneaux de guidage (decor)
       // --- les MINES (0 a 0.15) : chaines de mines en quinconce, filets, anneaux de sonar, deux sous-marins de garde
       for (let i = 0; i < 12; i++) { const u = 0.02 + i * 0.011, dc = d(u), sg = i % 2 ? 1 : -1, lx0 = sg * (11 + (i % 3) * 5); foe(S, 'mine', dc, lx0, yrel(S, dc, lanes(u)), { name: 'MINE', keep: i < 4 }); S.item(dc, () => { const h = Math.max(2, yrel(S, dc, lanes(u))); S.cyl(dc, lx0, 0, 0.14, h, 'col:#34342e', undefined, 5, 0.14, false); }); }
       for (const [u, ph] of [[0.035, 0], [0.07, 0.33], [0.105, 0.66], [0.14, 0.15]]) S.item(d(u), () => sonar(S, d(u), 0, lanes(u), ph));
@@ -185,7 +187,7 @@
       for (let i = 0; i < 26; i++) { const u = 0.02 + i * 0.037, dc = d(u); S.item(dc, (r) => ashCloud(S, dc, r.between([-80, 80]), LANE(u) + r.between([-60, 70]), r.between([14, 28]), i < 6 ? '#8a4a30' : undefined)); }
       for (let i = 0; i < 18; i++) { const u = 0.18 + i * 0.04, dc = d(u); S.item(dc, (r) => flak(S, dc, r.between([-40, 40]), LANE(u) + r.between([-30, 40]))); }
       // la couche de nuages : de u = 0.34 a 0.62 elle separe un couloir HAUT et un couloir BAS
-      for (let k = 0; k < 15; k++) { const u = 0.34 + k * 0.02, dc = d(u); S.item(dc, (r) => { for (let j = -2; j <= 2; j++) S.ball(dc, j * 26, yrel(S, dc, LANE(u)), r.between([15, 20]), 'col:#c9ced6', undefined, false, 0.6); }); }
+      for (let k = 0; k < 15; k++) { const u = 0.34 + k * 0.02, dc = d(u); S.item(dc, (r) => { for (let j = -3; j <= 3; j++) ashCloud(S, dc, j * 30, LANE(u) + r.between([-6, 6]), r.between([22, 32]), '#f2f5fa'); }); }
       S.item(d(0.3), () => { const dc = d(0.3), y = yrel(S, dc, LANE(0.3)); S.bx(dc, -22, y + 30, 16, 1.4, 1, 'emis:#7be8ff', undefined, false); S.bx(dc, 22, y - 30, 16, 1.4, 1, 'emis:#ff9a3a', undefined, false); S.glow(dc, -22, y + 30, '#7be8ff', 60); S.glow(dc, 22, y - 30, '#ff9a3a', 60); });
       for (let i = 0; i < 4; i++) { const u = 0.38 + i * 0.06, dc = d(u); foe(S, i % 2 ? 'jet' : 'heli', dc, (i % 2 ? 1 : -1) * 16, yrel(S, dc, LANE(u) + 34), { name: i % 2 ? 'CHASSEUR' : 'HELICO', armed: true, keep: true, patrol: i % 2 ? undefined : patrol, speed: 13 }); }
       for (let i = 0; i < 8; i++) { const u = 0.36 + i * 0.035, dc = d(u); foe(S, 'mine', dc, (i % 2 ? 1 : -1) * 15, yrel(S, dc, LANE(u) - 30), { name: 'MINE', keep: i < 4 }); }

@@ -110,6 +110,7 @@
       });
       // panneaux d'entree des deux voies : chevrons orange a gauche, cyan a droite
       S.item(d(0.3), () => { const dc = d(0.3), lx = S.lane(dc).lx, c = cy(dc); for (let k = 0; k < 3; k++) { S.bx(dc + k * 4, lx - 18, c - 10, 12, 1.4, 1, 'emis:#ff9a3a', undefined, false); S.bx(dc + k * 4, lx + 22, c - 10, 12, 1.4, 1, 'emis:#7be8ff', undefined, false); } S.glow(dc, lx - 18, c - 10, '#ff9a3a', 60); S.glow(dc, lx + 22, c - 10, '#7be8ff', 60); });
+      for (let u = 0.36; u < 0.82; u += 0.02) { const dc = d(u); S.item(dc, () => { const lx0 = S.lane(dc).lx; S.bx(dc, lx0 - 17, 0.3, 3.4, 0.3, 9, 'emis:#ff9a3a', undefined, false); S.bx(dc, lx0 + 22, 0.3, 3.4, 0.3, 9, 'emis:#7be8ff', undefined, false); }); }
       // voie de gauche : tourelles et mines rapprochees (plus de combats, plus de pieces)
       for (let i = 0; i < 4; i++) { const dc = d(0.42 + i * 0.09); foe(S, 'mine', dc, -17, yrel(S, dc, -44 - (i % 2) * 6), { name: 'MINE', keep: true }); }
       foe(S, 'sub', d(0.5), -17, yrel(S, d(0.5), -52), { name: 'SOUS-MARIN', hp: 2, armed: true, keep: true }); foe(S, 'sub', d(0.68), -17, yrel(S, d(0.68), -48), { name: 'SOUS-MARIN', hp: 2, armed: true, keep: true });

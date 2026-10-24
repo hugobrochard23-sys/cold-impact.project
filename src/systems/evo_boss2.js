@@ -121,6 +121,7 @@
     const near = rd > B.d - SEE - 200 && rd < B.d + 700 + (def.speed || def.aegis ? 900 : 0); B.W.visible = near;
     if (near && g.camera.far < 1700) { B.far0 = B.far0 || g.camera.far; g.camera.far = 1700; g.camera.updateProjectionMatrix(); } else if (!near && B.far0 && g.camera.far > B.far0) { g.camera.far = B.far0; g.camera.updateProjectionMatrix(); }
     if (!B.awake && rd > B.d - (def.aegis ? 800 : 520)) { B.awake = true; if (live) { g.audio.play('robotRoar'); g.audio.play('robotAlarm'); g.rig.shake = Math.max(g.rig.shake, 0.8); if (CC.L1) CC.L1.msg(g, def.name + ' !', 2, '#ff6a50'); } }
+    if (B.mode === 'live' && B.awake && rd > B.d + 80) { B.d = rd + 380; B.surge = null; B.lx = 0; if (live) { g.audio.play('robotAlarm'); g.rig.shake = Math.max(g.rig.shake, 0.7); if (CC.L1) CC.L1.msg(g, def.name + ' REVIENT !', 1.6, '#ff6a50'); } }   // anti-contournement : on ne peut pas depasser un boss vivant, il se replace devant la fusee
     if (B.mode === 'live' || B.mode === 'dying') {
       if (B.surge) { const S = B.surge; S.t += dt; const k0 = U.smooth(0, 1, (S.t - dt) / S.dur), k1 = U.smooth(0, 1, S.t / S.dur); B.d += S.dist * (k1 - k0); if (S.t >= S.dur) B.surge = null; }
       if (B.mode === 'live' && B.awake) B.d += def.speed * dt;

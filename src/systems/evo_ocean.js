@@ -33,7 +33,7 @@
   EVO.applyMood = (g, m) => {
     _am(g, m);
     if (EVO.seaLevel === undefined || !g.uwK || g.uwK < 0.01) { if (EVO.seaLevel !== undefined) g.fogBase = null; return; }
-    const k = g.uwK, rk = g.rocket, depth = U.clamp(-(rk && rk.active ? rk.pos.y : -20) / 110, 0, 1), f = g.scene.fog, u = g.skyMat.uniforms;
+    const k = g.uwK, rk = g.rocket, depth = U.clamp(-(rk && rk.active ? rk.pos.y : -20) / 260, 0, 1), f = g.scene.fog, u = g.skyMat.uniforms;
     _c.copy(UW_TOP).lerp(UW_DEEP, depth * 0.85);
     _c.lerp(UW_FAR, 0.3); f.color.lerp(_c, k); _c.copy(UW_TOP).lerp(UW_DEEP, depth * 0.85); f.near = U.lerp(f.near, 8, k); f.far = U.lerp(f.far, 380 - 190 * depth, k); g.renderer.setClearColor(f.color); g.fogBase = null;
     u.cloud.value *= (1 - k); u.top.value.lerp(_c, k); u.horizon.value.lerp(_c, k); u.bottom.value.lerp(UW_DEEP, k * 0.7);
