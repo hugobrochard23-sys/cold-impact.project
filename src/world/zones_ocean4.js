@@ -7,6 +7,8 @@
   if (!EVO || !EVO.on || !O || !Z.defs.ocean || !O.slab) return;
   const { yrel, wpin, pk, rr, ss, lam, basic, mb, slab, lampS } = O, OC = Z.defs.ocean, SC = OC.scenes, SEAB = -90;
   const BAS = ['#2b2522', '#332b27', '#3a302b', '#262020'], DEEP = ['#2d516d', '#3d6a85', '#558199', '#1f3a51'], HOT = ['#4a2a22', '#5a2e24', '#3c2420'];
+  const _tc = new T3.Color(), _t2 = new T3.Color();
+  const tone = (t, hot) => { _tc.set(hot ? '#34201a' : '#1b3550'); _t2.set(hot ? '#74402f' : '#55859f'); _tc.lerp(_t2, U.clamp(t, 0, 1)).multiplyScalar(0.94 + Math.random() * 0.1); return 'col:#' + _tc.getHexString(); };   // roches : une teinte qui s'eclaircit vers le haut, sans damier
   const rockAt = (S, dc, lx, y, s, r, col) => { const p = S.at(dc, lx, y); TR.rock(S.b, p[0], p[1], p[2], s, r, { gray: col || pk(r, DEEP), noMoss: true, shade: '#3f5a5a' }); S.b.box({ p: [p[0], p[1] + s * 0.5, p[2]], s: [s * 1.6, s * 1.1, s * 1.6], render: false }); };
   const jelly = (S, dc, lx, yw, col) => {
     const g = new T3.Group(), body = new T3.Mesh(new T3.SphereGeometry(2.6, 12, 8, 0, 6.283, 0, Math.PI / 2), basic(col, { transparent: true, opacity: 0.8, fog: false }));
@@ -21,6 +23,21 @@
   const sonar = (S, dc, lx, yw, ph) => {   // anneau de sonar : un tore qui grandit et s'efface (decor sans collision)
     const g = new T3.Group(), m = new T3.MeshBasicMaterial({ color: '#7be8ff', transparent: true, opacity: 0.5, depthWrite: false, fog: false }), t = new T3.Mesh(new T3.TorusGeometry(10, 0.5, 6, 32), m); g.add(t);
     EVO.placeGroup(S, g, dc, lx, yrel(S, dc, yw), 0); EVO.addDyn(g, (tt) => { const k = ((tt * 0.35 + ph) % 1); t.scale.setScalar(0.5 + k * 7); m.opacity = 0.55 * (1 - k); }, [], { near: 420 });
+  };
+
+  // ---- la mer s'etend a l'infini : en plus de la bande ondulee (largeur 2 x hw), un tablier plat de 1 600 m de chaque cote, de la meme couleur et de la meme matiere
+  const ZERO = new V(), QI = new T3.Quaternion(), _os = Z.oceanSurface;
+  Z.oceanSurface = (S, d0, d1, hw, amp) => {
+    _os(S, d0, d1, hw, amp);
+    const X = [-1700, -hw, hw, 1700], step = 48;
+    for (let dc = d0; dc < d1; dc += step) S.item(dc + step / 2, () => {
+      const pos = [], uv = [], ix = [];
+      for (let r = 0; r <= 1; r++) { const dd = Math.min(d1, dc + step * r), fl = S.T.rel(dd); for (let c = 0; c < 4; c++) { const p = S.at(dd, X[c], -Z.PROFILE.ocean.elev - fl); pos.push(p[0], p[1], p[2]); uv.push(X[c], dd); } }
+      for (const c of [0, 2]) { const a = c, b = c + 1, q = c + 4, e = c + 5; ix.push(a, q, b, b, q, e); }
+      const A = new V(pos[0], pos[1], pos[2]), B2 = new V(pos[12], pos[13], pos[14]), C2 = new V(pos[3], pos[4], pos[5]); if (B2.sub(A).cross(C2.sub(A)).y < 0) for (let i = 0; i < ix.length; i += 3) { const t = ix[i + 1]; ix[i + 1] = ix[i + 2]; ix[i + 2] = t; }
+      let g = new T3.BufferGeometry(); g.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new T3.Float32BufferAttribute(uv, 2)); g.setIndex(ix);
+      const g2 = g.toNonIndexed(); g.dispose(); g2.computeVertexNormals(); S.b.addGeometry(g2, ZERO, QI, null, 'waterSurf', '#7fd0ee', [1 / 15, 1 / 15]); g2.dispose();
+    });
   };
 
   // ============================================ LA FOSSE (1100 m) : sous l'eau, du sas a la bouche du conduit magmatique ============================================
@@ -38,24 +55,36 @@
       for (const [u, ph] of [[0.035, 0], [0.07, 0.33], [0.105, 0.66], [0.14, 0.15]]) S.item(d(u), () => sonar(S, d(u), 0, lanes(u), ph));
       for (const u of [0.06, 0.1, 0.13]) S.item(d(u), (r) => { const dc = d(u), y = yrel(S, dc, lanes(u)); for (let k = -3; k <= 3; k++) if (Math.abs(k) > 0) S.bx(dc, k * 14, y, 12, 70, 0.6, 'col:#4a5a62', undefined, false); });
       foe(S, 'sub', d(0.08), 24, yrel(S, d(0.08), lanes(0.08)), { name: 'SOUS-MARIN', hp: 2, armed: true, keep: true }); foe(S, 'sub', d(0.14), -24, yrel(S, d(0.14), lanes(0.14)), { name: 'SOUS-MARIN', hp: 2, armed: true, keep: true });
-      for (const sg of [-1, 1]) S.rows(d(0.0), d(0.2), 10, 0.7, (dc) => S.item(dc, (r) => { rockAt(S, dc, S.lane(dc).lx + sg * r.between([34, 110]), 0, r.between([4, 14]), r); }));
+      for (const sg of [-1, 1]) S.rows(d(0.0), d(0.2), 10, 0.7, (dc) => S.item(dc, (r) => { S.ball(dc, S.lane(dc).lx + sg * r.between([34, 110]), 0, r.between([5, 14]), tone(0.25, 0), undefined, true, 0.8); }));
       // --- la FALAISE (0.15 a 0.46) : on plonge le long d'une paroi percee de baies, de passerelles et de projecteurs : une base engloutie
-      for (let k = 0; k < 30; k++) { const u = 0.15 + k * 0.0105, dc = d(u); S.item(dc, (r) => { const lx = S.lane(dc).lx - 38, h = yrel(S, dc, lanes(u)) + 30; for (let y = 0; y < h; y += 26) rockAt(S, dc, lx - r.between([0, 8]), y, r.between([18, 26]), r, pk(r, DEEP)); if (k % 3 === 0) { const y = yrel(S, dc, lanes(u)) - 4; S.bx(dc, lx + 8, y, 18, 2.2, 10, 'col:#6a7a87', undefined, true); S.bx(dc, lx + 2, y + 2, 1, 6, 10, 'col:#6a7a87', undefined, false); lampS(S, dc, lx + 4, y + 3, '#ffd9a0', 36); } if (k % 5 === 2) { const y = yrel(S, dc, lanes(u)); S.bx(dc, lx + 6, y + 12, 16, 0.9, 1.6, 'emis:#7be8ff', undefined, false); S.glow(dc, lx + 6, y + 12, '#7be8ff', 34); } }); }
-      for (const sg of [1]) S.rows(d(0.16), d(0.46), 14, 0.7, (dc) => S.item(dc, (r) => { if (r() < 0.6) rockAt(S, dc, S.lane(dc).lx + sg * r.between([50, 100]), 0, r.between([8, 20]), r); }));
+      for (let k = 0; k < 30; k++) { const u = 0.15 + k * 0.0105, dc = d(u); S.item(dc, (r) => { const lx = S.lane(dc).lx - 38, h = yrel(S, dc, lanes(u)) + 30; for (let y = -10; y < h; y += 22) S.ball(dc, lx - r.between([0, 6]), y, r.between([22, 28]), tone((y + 10) / h, 0), undefined, true, 1.25); if (k % 3 === 0) { const y = yrel(S, dc, lanes(u)) - 4; S.bx(dc, lx + 8, y, 18, 2.2, 10, 'col:#6a7a87', undefined, true); S.bx(dc, lx + 2, y + 2, 1, 6, 10, 'col:#6a7a87', undefined, false); lampS(S, dc, lx + 4, y + 3, '#ffd9a0', 36); } if (k % 5 === 2) { const y = yrel(S, dc, lanes(u)); S.bx(dc, lx + 6, y + 12, 16, 0.9, 1.6, 'emis:#7be8ff', undefined, false); S.glow(dc, lx + 6, y + 12, '#7be8ff', 34); } }); }
+      for (const sg of [1]) S.rows(d(0.16), d(0.46), 14, 0.7, (dc) => S.item(dc, (r) => { if (r() < 0.6) S.ball(dc, S.lane(dc).lx + sg * r.between([50, 100]), 0, r.between([9, 20]), tone(0.3, 0), undefined, true, 0.9); }));
       for (let i = 0; i < 5; i++) { const u = 0.2 + i * 0.05, dc = d(u); foe(S, 'mine', dc, (i % 2 ? 1 : -1) * 13, yrel(S, dc, lanes(u)), { name: 'MINE', keep: i < 2 }); }
       foe(S, 'sub', d(0.3), -8, yrel(S, d(0.3), lanes(0.3)), { name: 'SOUS-MARIN', hp: 3, armed: true, keep: true });
       // --- la FOSSE (0.46 a 0.8) : canyon etroit a virages, parois de roche, piliers a slalomer, meduses, sources chaudes, la baleine
-      for (const sg of [-1, 1]) S.rows(d(0.46), d(0.82), 11, 0.5, (dc) => S.item(dc, (r) => { const lx = S.lane(dc).lx + sg * r.between([32, 50]), top = yrel(S, dc, lanes((dc - S.d0) / L)) + 38; for (let y = 0; y < top; y += 27) rockAt(S, dc, lx + sg * (y / top) * r.between([0, 8]), y, r.between([16, 24]), r, pk(r, DEEP)); }));
-      for (const [u, sg] of [[0.52, 1], [0.545, -1], [0.58, 1], [0.64, -1], [0.7, 1], [0.735, -1]]) S.item(d(u), (r) => { const dc = d(u), top = yrel(S, dc, lanes(u)) + 40; for (let y = 0; y < top; y += 20) rockAt(S, dc, S.lane(dc).lx + sg * 15, y, r.between([5.5, 7.5]), r, pk(r, DEEP)); });
+      for (const sg of [-1, 1]) S.rows(d(0.46), d(0.82), 11, 0.5, (dc) => S.item(dc, (r) => { const lx = S.lane(dc).lx + sg * r.between([32, 50]), top = yrel(S, dc, lanes((dc - S.d0) / L)) + 38; for (let y = -8; y < top; y += 22) S.ball(dc, lx + sg * (y / top) * r.between([0, 8]), y, r.between([21, 27]), tone((y + 8) / top, 0), undefined, true, 1.2); }));
+      for (const [u, sg] of [[0.52, 1], [0.545, -1], [0.58, 1], [0.64, -1], [0.7, 1], [0.735, -1]]) S.item(d(u), (r) => { const dc = d(u), top = yrel(S, dc, lanes(u)) + 40; for (let y = -6; y < top; y += 15) S.ball(dc, S.lane(dc).lx + sg * 15, y, r.between([7, 8.5]), tone(y / top, 0), undefined, true, 1.6); });
       for (let i = 0; i < 16; i++) { const u = 0.47 + i * 0.02, dc = d(u); S.item(dc, (r) => jelly(S, dc, r.between([-26, 26]), lanes(u) + r.between([-14, 18]), pk(r, ['#7affff', '#ff8aff', '#8affa8']))); }
       for (let i = 0; i < 6; i++) { const u = 0.5 + i * 0.05, dc = d(u); S.item(dc, () => ventCone(S, dc, (i % 2 ? 1 : -1) * 28, Math.max(10, yrel(S, dc, lanes(u)) + 30), i % 2 ? '#ff8a4a' : '#7affc8')); }
       EVO.oc.whale(S, d(0.62), 0, lanes(0.62) + 8, 7);
       foe(S, 'sub', d(0.56), 14, yrel(S, d(0.56), lanes(0.56)), { name: 'SOUS-MARIN', hp: 3, armed: true, keep: true }); foe(S, 'sub', d(0.75), -14, yrel(S, d(0.75), lanes(0.75)), { name: 'SOUS-MARIN', hp: 3, armed: true, keep: true });
       for (let i = 0; i < 6; i++) { const u = 0.5 + i * 0.05, dc = d(u); foe(S, 'mine', dc, (i % 2 ? 1 : -1) * 16, yrel(S, dc, lanes(u)), { name: 'MINE', keep: i < 2 }); }
       // --- le CONDUIT MAGMATIQUE (0.8 a 1) : la roche vire au rouge, des failles incandescentes, la lueur de la chambre devant
-      for (const sg of [-1, 1]) S.rows(d(0.8), d(1), 9, 0.4, (dc) => S.item(dc, (r) => { const u = (dc - S.d0) / L, lx = S.lane(dc).lx + sg * r.between([38, 50]), top = yrel(S, dc, lanes(u)) + 36; for (let y = 0; y < top; y += 24) rockAt(S, dc, lx, y, r.between([14, 22]), r, pk(r, HOT)); if (r() < 0.5) { S.bx(dc, lx - sg * 8, yrel(S, dc, lanes(u)) + r.between([-24, 24]), 0.8, r.between([16, 40]), 6, 'emis:#ff5a14', undefined, false); } }));
+      for (const sg of [-1, 1]) S.rows(d(0.8), d(1), 9, 0.4, (dc) => S.item(dc, (r) => { const u = (dc - S.d0) / L, lx = S.lane(dc).lx + sg * r.between([38, 50]), top = yrel(S, dc, lanes(u)) + 36; for (let y = -8; y < top; y += 22) S.ball(dc, lx, y, r.between([19, 25]), tone(y / top, 1), undefined, true, 1.2); if (r() < 0.5) { S.bx(dc, lx - sg * 8, yrel(S, dc, lanes(u)) + r.between([-24, 24]), 0.8, r.between([16, 40]), 6, 'emis:#ff5a14', undefined, false); } }));
       for (let k = 0; k < 8; k++) S.item(d(0.82 + k * 0.022), () => { const dc = d(0.82 + k * 0.022); S.glow(dc, 0, yrel(S, dc, lanes(0.82 + k * 0.022)), '#ff6a2a', 70 + k * 12); });
       S.item(d(0.995), () => { const dc = d(0.995), y = yrel(S, dc, lanes(1)); S.glow(dc, 0, y, '#ffb060', 260); });
+      // le SAS : une porte blindee dont les deux battants s'ecartent quand la fusee approche (on voit toujours la lumiere de la chambre derriere)
+      S.item(d(0.95), () => {
+        const dc = d(0.95), L0 = S.lane(dc), lx = L0.lx, ly = L0.y;
+        for (const sg of [-1, 1]) { S.bx(dc, lx + sg * 36, ly, 36, 110, 14, 'col:#59656f', undefined, true); S.bx(dc - 7.4, lx + sg * 18.4, ly, 1.4, 44, 0.8, 'emis:#ff9a3a', undefined, false); }
+        S.bx(dc, lx, ly + 36, 40, 26, 14, 'col:#59656f', undefined, true); S.bx(dc, lx, ly - 36, 40, 26, 14, 'col:#59656f', undefined, true);
+        for (let k = 0; k < 4; k++) { S.bx(dc - 7.4, lx - 14 + k * 9.4, ly + 22.6, 4, 1.1, 0.8, 'emis:#ff9a3a', undefined, false); S.bx(dc - 7.4, lx - 14 + k * 9.4, ly - 22.6, 4, 1.1, 0.8, 'emis:#ff9a3a', undefined, false); }
+        S.glow(dc, lx, ly, '#ffb060', 120);
+        const g = new T3.Group(), cols = [], mat = lam('#6a7682'), hz = lam('#c9a028');
+        for (const sg of [-1, 1]) { const leaf = new T3.Group(); leaf.position.x = sg * 9; leaf.userData.sg = sg; g.add(leaf); mb(leaf, 18, 44, 8, mat, 0, 0, 0); mb(leaf, 18, 3, 8.4, hz, 0, 9, 0); mb(leaf, 18, 3, 8.4, hz, 0, -9, 0); cols.push(EVO.colBox(leaf, 18, 44, 8, 0, 0, 0)); }
+        EVO.placeGroup(S, g, dc, lx, ly, 0);
+        EVO.addDyn(g, (t, dt, game) => { const run = game.endlessRun; if (!run) return; const k = ss(dc - 230, dc - 90, run.dist); g.children.forEach((lf) => { lf.position.x = lf.userData.sg * (9 + 24 * k); }); if (k > 0.05 && !g.userData.snd && game.state === 'FLIGHT') { g.userData.snd = 1; game.audio.play('hydraulic'); } }, cols, { near: 800 });
+      });
     } };
 
   // ============================================ LE VOLCAN (1200 m) : chambre de magma, puits de lave a remonter en spirale, ERUPTION ============================================
@@ -84,13 +113,13 @@
       for (let dc = S.d0 + 6; dc < d(0.95); dc += 12) S.item(dc, (r) => {
         const u = (dc - S.d0) / L, R = RW(dc, u), L0 = S.lane(dc), lx = L0.lx, ly = L0.y;
         for (const sg of [-1, 1]) {
-          S.bx(dc, lx + sg * (R + 8), ly, 16, 200, 13, 'col:' + pk(r, BAS), undefined, true);
-          if (r() < 0.55) { const p = S.at(dc, lx + sg * (R - 2), ly + r.between([-60, 60])); TR.rock(S.b, p[0], p[1], p[2], r.between([10, 20]), r, { gray: pk(r, BAS), noMoss: true }); }
+          S.cyl(dc, lx + sg * (R + 6 + r.between([-3, 3])), ly - 100, r.between([12, 16]), 200, 'col:' + pk(r, BAS), undefined, 11, r.between([8, 12]), true);
+          if (r() < 0.5) S.ball(dc, lx + sg * (R - 3), ly + r.between([-70, 70]), r.between([9, 14]), 'col:' + pk(r, BAS), undefined, true, 1.3);
           if (r() < 0.5) S.bx(dc, lx + sg * (R - 0.6), ly + r.between([-70, 70]), 0.7, r.between([20, 60]), 6, 'emis:#ff5a14', undefined, false);
           if (r() < 0.14) lavaFall(S, dc, lx + sg * (R - 0.8), ly - 10, 150);
           if (dc % 36 < 12 && r() < 0.7) { S.bx(dc, lx + sg * (R - 6), ly - 24 - r.between([0, 20]), 12, 2.4, 11, 'col:#4a3a32', undefined, true); }
         }
-        if (u < 0.2) { S.bx(dc, lx, ly + 78, R * 2 + 24, 8, 13, 'col:' + pk(r, BAS), undefined, true); if (r() < 0.4) S.cyl(dc, lx + r.between([-R * 0.8, R * 0.8]), ly + 74, 3, -26, 'col:#4a3a32', undefined, 6, 0.2, false); }   // plafond de la chambre + stalactites
+        if (u < 0.2 && r() < 0.35) S.cyl(dc, lx + r.between([-R * 0.7, R * 0.7]), ly + 70, 6, -34, 'col:#3a302b', undefined, 8, 0.5, false);   // stalactites (plus de plafond plat)
       });
       // la chambre : des stalagmites qui montent du lac de lave, des geysers de lueur
       for (let i = 0; i < 14; i++) { const u = 0.01 + i * 0.014, dc = d(u); S.item(dc, (r) => { const sg = i % 2 ? 1 : -1, lx = S.lane(dc).lx + sg * r.between([22, 56]), base = S.lane(dc).y; S.cyl(dc, lx, 0, r.between([5, 10]), base + r.between([-30, -4]), 'col:' + pk(r, HOT), undefined, 8, 2, true); S.glow(dc, lx, 4, '#ff6a2a', 60); }); }
@@ -99,7 +128,7 @@
       for (let i = 0; i < 12; i++) { const u = 0.26 + i * 0.05, dc = d(u); S.item(dc, () => magmaOrb(S, dc, (i % 2 ? 1 : -1) * (12 + (i % 3) * 4), LVO(u), i * 0.7, 3 + (i % 3) * 0.6)); }
       for (let i = 0; i < 6; i++) { const u = 0.3 + i * 0.1, dc = d(u); foe(S, 'mine', dc, (i % 2 ? 1 : -1) * 18, yrel(S, dc, LVO(u) + 4), { name: 'MINE', keep: i < 3 }); }
       // le cratere : la bouche s'ouvre, rochers incandescents, geysers de lave, panache de cendres
-      for (let k = 0; k < 16; k++) S.item(d(0.9 + k * 0.0065), (r) => { const dc = d(0.9 + k * 0.0065), sg = k % 2 ? 1 : -1, ly = S.lane(dc).y, lx = S.lane(dc).lx + sg * r.between([36, 70]); const p = S.at(dc, lx, ly - r.between([20, 50])); TR.rock(S.b, p[0], p[1], p[2], r.between([14, 30]), r, { gray: pk(r, BAS), noMoss: true }); S.b.box({ p: [p[0], p[1] + 8, p[2]], s: [20, 16, 20], render: false }); S.glow(dc, lx, ly - 20, '#ff5a1a', 90); });
+      for (let k = 0; k < 16; k++) S.item(d(0.9 + k * 0.0065), (r) => { const dc = d(0.9 + k * 0.0065), sg = k % 2 ? 1 : -1, ly = S.lane(dc).y, lx = S.lane(dc).lx + sg * r.between([36, 70]); S.ball(dc, lx, ly - r.between([20, 50]), r.between([16, 28]), 'col:' + pk(r, BAS), undefined, true, 0.9); S.glow(dc, lx, ly - 20, '#ff5a1a', 90); });
       for (let k = 0; k < 4; k++) S.item(d(0.9 + k * 0.025), () => { const dc = d(0.9 + k * 0.025), sg = k % 2 ? 1 : -1, ly = S.lane(dc).y, p = S.at(dc, S.lane(dc).lx + sg * 40, ly - 30), g = new T3.Group(), m = new T3.Mesh(new T3.CylinderGeometry(5, 12, 90, 8, 1, true), basic('#ff7a2a', { transparent: true, opacity: 0.4, blending: T3.AdditiveBlending, depthWrite: false, side: T3.DoubleSide, fog: false })); g.add(m); g.position.set(p[0], p[1] + 30, p[2]); if (S.inClip(dc)) S.b.root.add(g); EVO.addDyn(g, (t) => { m.scale.y = 0.6 + 0.4 * Math.abs(Math.sin(t * 1.4 + k)); }, [], { near: 600 }); });
       S.item(d(0.88), () => { const dc = d(0.88), g = new T3.Group(); EVO.placeGroup(S, g, dc, 0, 0, 0); let fired = false; EVO.addDyn(g, (t, dt, game) => { const run = game.endlessRun; if (!fired && game.state === 'FLIGHT' && run && run.dist > dc - 10) { fired = true; EVO.lavaBurst(game, true); } }, [], { near: 99999, span: 99999 }); });
     } };
@@ -181,7 +210,7 @@
     } };
 
   // ============================================ L'ORBITE (1500 m) : debris, satellites, roues de lasers ; AEGIS au bout ============================================
-  const LO = 1500, LNO = (u) => 570 + 60 * ss(0, 1, u) + 10 * Math.sin(u * 14);
+  const LO = 1900, LNO = (u) => 570 + 60 * ss(0, 1, u) + 10 * Math.sin(u * 14);
   const satellite = (S, dc, lx, yw, i) => {
     const g = new T3.Group(), hull = lam('#b8c4d0'), panel = lam('#2a4a7a'); mb(g, 8, 8, 14, hull, 0, 0, 0); mb(g, 36, 0.8, 10, panel, 0, 0, 0); mb(g, 1, 1, 12, lam('#2a313a'), 0, 5, 0); const col = EVO.colBox(g, 36, 9, 14, 0, 0, 0);
     EVO.placeGroup(S, g, dc, lx, yrel(S, dc, yw), 0); EVO.addDyn(g, (t) => { g.rotation.z = t * 0.25 * (i % 2 ? 1 : -1); g.rotation.x = t * 0.15; }, [col], { near: 500 });
@@ -197,31 +226,41 @@
     pin: wpin((d, sc) => LNO((d - sc.d0) / (sc.d1 - sc.d0))), ground: (d, lx, c) => { c.set('#101830'); },
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L;
-      for (let i = 0; i < 12; i++) { const u = 0.02 + i * 0.047, dc = d(u); S.item(dc, (r) => satellite(S, dc, (i % 2 ? 1 : -1) * r.between([34, 70]), LNO(u) + r.between([-20, 24]), i)); }
-      for (let i = 0; i < 5; i++) { const u = 0.1 + i * 0.1, dc = d(u); S.item(dc, () => laserWheel(S, dc, LNO(u), i)); }
-      for (let i = 0; i < 30; i++) { const u = 0.01 + i * 0.03, dc = d(u); S.item(dc, (r) => { const sg = i % 2 ? 1 : -1, lx = S.lane(dc).lx + sg * r.between([30, 100]), p = S.at(dc, lx, yrel(S, dc, LNO(u)) + r.between([-40, 40])); TR.rock(S.b, p[0], p[1], p[2], r.between([4, 12]), r, { gray: pk(r, ['#5a5660', '#6a6670', '#4a4650']), noMoss: true }); }); }
-      for (let i = 0; i < 6; i++) { const u = 0.15 + i * 0.1, dc = d(u); foe(S, 'mine', dc, (i % 2 ? 1 : -1) * 15, yrel(S, dc, LNO(u)), { name: 'DRONE', keep: i < 3 }); }
-      for (let i = 0; i < 4; i++) { const u = 0.2 + i * 0.1, dc = d(u); foe(S, 'jet', dc, (i % 2 ? 1 : -1) * 18, yrel(S, dc, LNO(u) + 4), { name: 'INTERCEPTEUR', armed: true, keep: true }); }
+      for (let i = 0; i < 8; i++) { const u = 0.02 + i * 0.045, dc = d(u); S.item(dc, (r) => satellite(S, dc, (i % 2 ? 1 : -1) * r.between([34, 70]), LNO(u) + r.between([-20, 24]), i)); }
+      for (let i = 0; i < 4; i++) { const u = 0.08 + i * 0.085, dc = d(u); S.item(dc, () => laserWheel(S, dc, LNO(u), i)); }
+      for (let i = 0; i < 22; i++) { const u = 0.01 + i * 0.03, dc = d(u); S.item(dc, (r) => { const sg = i % 2 ? 1 : -1, lx = S.lane(dc).lx + sg * r.between([30, 100]), p = S.at(dc, lx, yrel(S, dc, LNO(u)) + r.between([-40, 40])); TR.rock(S.b, p[0], p[1], p[2], r.between([4, 12]), r, { gray: pk(r, ['#5a5660', '#6a6670', '#4a4650']), noMoss: true }); }); }
+      for (let i = 0; i < 4; i++) { const u = 0.1 + i * 0.07, dc = d(u); foe(S, 'mine', dc, (i % 2 ? 1 : -1) * 15, yrel(S, dc, LNO(u)), { name: 'DRONE', keep: i < 2 }); }
+      for (let i = 0; i < 3; i++) { const u = 0.12 + i * 0.09, dc = d(u); foe(S, 'jet', dc, (i % 2 ? 1 : -1) * 18, yrel(S, dc, LNO(u) + 4), { name: 'INTERCEPTEUR', armed: true, keep: true }); }
     } };
+  // l'arrivee : un tronçon vide dans l'espace, pour ne jamais retomber sur le sol apres la derniere scene
+  SC.fin = { len: [260, 260], noDoor: true, noChaos: true, gw: 125, grass: false, sub: [{ u: 0, key: 'fin', name: 'FIN' }], pin: wpin((d, sc) => LNO(1)), ground: (d, lx, c) => { c.set('#101830'); }, build() {} };
   // la Terre, tres loin sous nous, des la stratosphere ; elle suit la fusee (aucune parallaxe) et reste a une altitude fixe
-  let planet = null;
+  let planet = null, earthTex = null;
+  const earthTexture = () => {
+    if (earthTex) return earthTex; const c = document.createElement('canvas'); c.width = 1024; c.height = 512; const x = c.getContext('2d'); let sd = 11; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    const gr = x.createLinearGradient(0, 0, 0, 512); gr.addColorStop(0, '#1a4a94'); gr.addColorStop(0.5, '#2a72c4'); gr.addColorStop(1, '#1a4a94'); x.fillStyle = gr; x.fillRect(0, 0, 1024, 512);
+    for (let i = 0; i < 11; i++) { const cx = rnd() * 1024, cy = 110 + rnd() * 290, rx = 20 + rnd() * 50, ry = 14 + rnd() * 30; x.fillStyle = rnd() < 0.7 ? '#4a8a52' : '#a8935a'; for (let k = 0; k < 5; k++) { x.beginPath(); x.ellipse(cx + (rnd() - 0.5) * rx, cy + (rnd() - 0.5) * ry, rx * (0.4 + rnd() * 0.6), ry * (0.4 + rnd() * 0.6), rnd() * 3, 0, 6.283); x.fill(); } }
+    x.fillStyle = 'rgba(255,255,255,0.92)'; x.fillRect(0, 0, 1024, 26); x.fillRect(0, 486, 1024, 26);
+    for (let i = 0; i < 110; i++) { x.fillStyle = 'rgba(255,255,255,' + (0.22 + rnd() * 0.4) + ')'; x.beginPath(); x.ellipse(rnd() * 1024, 24 + rnd() * 464, 18 + rnd() * 70, 5 + rnd() * 14, 0, 0, 6.283); x.fill(); }
+    earthTex = new T3.CanvasTexture(c); earthTex.wrapS = T3.RepeatWrapping; return earthTex;
+  };
   const _tp = EVO.frame;
   EVO.frame = (g, dt) => {
     _tp(g, dt);
     if (EVO.seaLevel === undefined || !g.scene || !g.rocket) { if (planet) planet.visible = false; EVO.noHorizon = false; return; }
     const a = EVO.s2d0('strato'), run = g.endlessRun; if (a === undefined || !run) return;
-    const on = g.state === 'FLIGHT' && run.dist > a + 0.2 * LS2 && !g.cine3d;
-    if (!planet) { planet = new T3.Group(); const m = new T3.Mesh(new T3.SphereGeometry(9000, 48, 32), new T3.MeshBasicMaterial({ color: '#2a63b0', fog: false })); planet.add(m); const atm = new T3.Mesh(new T3.SphereGeometry(9120, 48, 32), new T3.MeshBasicMaterial({ color: '#7fc4ff', transparent: true, opacity: 0.22, side: T3.BackSide, fog: false, depthWrite: false })); planet.add(atm); const cl = new T3.Mesh(new T3.SphereGeometry(9030, 32, 20), new T3.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.35, wireframe: true, fog: false })); planet.add(cl); g.scene.add(planet); }
+    const on = g.state === 'FLIGHT' && run.dist > a + 0.45 * LS2 && !g.cine3d;
+    if (!planet) { planet = new T3.Group(); const m = new T3.Mesh(new T3.SphereGeometry(3000, 64, 40), new T3.MeshBasicMaterial({ map: earthTexture(), fog: false })); planet.add(m); const atm = new T3.Mesh(new T3.SphereGeometry(3070, 48, 30), new T3.MeshBasicMaterial({ color: '#7fc4ff', transparent: true, opacity: 0.28, side: T3.BackSide, fog: false, depthWrite: false, blending: T3.AdditiveBlending })); planet.add(atm); planet.userData.m = m; g.scene.add(planet); }
     EVO.noHorizon = !!on; planet.visible = !!on; if (!on) return;
-    const k = U.clamp((run.dist - (a + 0.35 * LS2)) / (0.4 * LS2), 0, 1);
-    planet.position.set(g.rocket.pos.x, -9000 - 120 + 0 * k, g.rocket.pos.z - 0);
-    if (g.camera.far < 2600) { g.camera.far = 2600; g.camera.updateProjectionMatrix(); }
+    const rk = g.rocket;   // la surface reste ~380 m sous la fusee (horizon courbe bien visible) ; elle tourne avec la distance : c'est elle qui donne la sensation de vitesse
+    planet.position.set(rk.pos.x, Math.min(rk.pos.y, 900) - 380 - 3000, rk.pos.z); planet.userData.m.rotation.set(Math.PI / 2, 0, run.dist * 0.00045);   // le pole est sur le cote : sous la fusee on voit oceans et continents
+    if (g.camera.far < 4200) { g.camera.far = 4200; g.camera.updateProjectionMatrix(); }
   };
   EVO.addMood('strat', { top: '#0a2a6a', hor: '#8ab8e8', fog: '#a8c8ec', near: 220, far: 1000, hemiS: '#e4eeff', hemiG: '#6a8ab0', hemiI: 1.0, amb: 0.22, sunC: '#fff4dc', sunI: 1.0, night: 0.2 });
   EVO.addMood('space', { top: '#01020a', hor: '#0a1230', fog: '#04061a', near: 500, far: 1600, hemiS: '#a0b4ff', hemiG: '#10183a', hemiI: 0.75, amb: 0.22, sunC: '#ffffff', sunI: 1.15, night: 1 });
   EVO.SCENE_MOOD.behemoth = 'sea'; EVO.SCENE_AUDIO.behemoth = 'evoBoss'; EVO.SCENE_MOOD.strato = 'strat'; EVO.SCENE_AUDIO.strato = 'evoDay'; EVO.SCENE_MOOD.orbite = 'space'; EVO.SCENE_AUDIO.orbite = 'evoBoss';
   // les sous-chapitres prennent l'ambiance de leur scene (sinon ils retombent sur le jour clair)
-  { const MOODS = { cote: ['day', 'evoDusk', ['conduit']], bassin: ['sea', 'evoMine', ['fourche', 'sas']], fosse: ['sea', 'evoMine', ['mines', 'falaise', 'conduit2']], volcan: ['magma', 'evoSiege', ['chambre', 'puits', 'cratere']], eruption: ['stormEnd', 'evoSiege', ['ciel', 'plongee']], behemoth: ['sea', 'evoBoss', []], strato: ['strat', 'evoDay', ['orbite0']], orbite: ['space', 'evoBoss', ['aegis']] };
+  { const MOODS = { cote: ['day', 'evoDusk', ['conduit']], bassin: ['sea', 'evoMine', ['fourche', 'sas']], fosse: ['sea', 'evoMine', ['mines', 'falaise', 'conduit2']], volcan: ['magma', 'evoSiege', ['chambre', 'puits', 'cratere']], eruption: ['stormEnd', 'evoSiege', ['ciel', 'plongee']], behemoth: ['sea', 'evoBoss', []], strato: ['strat', 'evoDay', ['orbite0']], orbite: ['space', 'evoBoss', ['aegis']], fin: ['space', 'evoBoss', []] };
     for (const k of Object.keys(MOODS)) { const [m, au, subs] = MOODS[k]; for (const q of [k].concat(subs)) { EVO.SCENE_MOOD[q] = m; EVO.SCENE_AUDIO[q] = au; } } }
   EVO.s2d0 = (key) => { let d = 0; for (const k of (EVO.SCENES2 || [])) { if (k === key) return d; d += SC[k].len[0]; } return undefined; };
   const _tk = EVO.tick;
@@ -229,6 +268,7 @@
     _tk(g, dt);
     if (EVO.seaLevel === undefined || !g.endlessRun) return;
     const a = EVO.s2d0('volcan'), b = a === undefined ? undefined : a + LV, dist = g.endlessRun.dist;
-    EVO.seaLevel = a !== undefined && dist > a - 20 && dist < b ? -9999 : 0;   // dans le puits de lave on est a l'air libre, meme sous le niveau de la mer
+    const st = EVO.s2d0('strato');
+    EVO.seaLevel = (a !== undefined && dist > a - 20 && dist < b) || (st !== undefined && dist > st + 0.5 * LS2) ? -9999 : 0;   // dans le puits de lave on est a l'air libre, meme sous le niveau de la mer
   };
 })();
