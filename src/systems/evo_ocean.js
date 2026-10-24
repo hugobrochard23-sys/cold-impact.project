@@ -71,19 +71,23 @@
   // niveau 2 : à la place de la rampe, un tube de lancement (anneaux d'acier) autour du missile, qui laisse échapper des bulles
   // v150 : une mer qui s'etend jusqu'a l'horizon (la bande d'eau du niveau ne depasse pas 140 m de chaque cote : on en voyait les bords de haut)
   let sea = null, seaFog = '';
-  const SEA_R = [0, 150, 400, 1200, 4000, 20000], SEA_K = [0, 0, 0.22, 0.55, 0.85, 1], SEA_N = 28, NEAR = new T3.Color('#4f95b6');
+  const SEA_R = [0, 150, 400, 1200, 4000, 20000], SEA_K = [0, 0, 0.12, 0.4, 0.78, 1], SEA_N = 28, NEAR = new T3.Color('#3cb4ec');
+  let seaTex = null;
+  const waveTexture = () => { if (seaTex) return seaTex; const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); x.fillStyle = '#e4f3ff'; x.fillRect(0, 0, 128, 128); let sd = 3; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647; for (let i = 0; i < 70; i++) { const px = rnd() * 128, py = rnd() * 128, w = 8 + rnd() * 22; x.fillStyle = 'rgba(' + (rnd() < 0.5 ? '255,255,255' : '90,160,215') + ',0.7)'; x.fillRect(px, py, w, 2 + rnd() * 2); x.fillRect(px - 128, py, w, 3); } seaTex = new T3.CanvasTexture(c); seaTex.wrapS = seaTex.wrapT = T3.RepeatWrapping; return seaTex; };
   const seaTick = (g) => {
     if (!sea) {
       const geo = new T3.BufferGeometry(), pos = [], col = [], idx = [];
-      for (let r = 0; r < SEA_R.length; r++) for (let k = 0; k < SEA_N; k++) { const a = k / SEA_N * 6.2832; pos.push(Math.cos(a) * SEA_R[r], 0, Math.sin(a) * SEA_R[r]); col.push(1, 1, 1); }
+      const uv = []; for (let r = 0; r < SEA_R.length; r++) for (let k = 0; k < SEA_N; k++) { const a = k / SEA_N * 6.2832; pos.push(Math.cos(a) * SEA_R[r], 0, Math.sin(a) * SEA_R[r]); col.push(1, 1, 1); uv.push(Math.cos(a) * SEA_R[r] / 60, Math.sin(a) * SEA_R[r] / 60); }
       for (let r = 0; r < SEA_R.length - 1; r++) for (let k = 0; k < SEA_N; k++) { const a = r * SEA_N + k, b = r * SEA_N + (k + 1) % SEA_N, c = (r + 1) * SEA_N + k, d = (r + 1) * SEA_N + (k + 1) % SEA_N; idx.push(a, c, b, b, c, d); }
-      geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(col, 3)); geo.setIndex(idx);
-      sea = new T3.Mesh(geo, new T3.MeshBasicMaterial({ vertexColors: true, fog: false, depthWrite: false })); sea.renderOrder = -5; sea.frustumCulled = false;
+      geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(col, 3)); geo.setAttribute('uv', new T3.Float32BufferAttribute(uv, 2)); geo.setIndex(idx);
+      sea = new T3.Mesh(geo, new T3.MeshBasicMaterial({ vertexColors: true, map: waveTexture(), fog: false, depthWrite: true, side: T3.DoubleSide })); sea.renderOrder = -5; sea.frustumCulled = false;
     }
-    const st2 = EVO.seaLevel !== undefined && g.evo && !g.cine3d && g.rocket && (g.uwK || 0) < 0.5;
+    const st2 = EVO.seaLevel !== undefined && g.evo && !g.cine3d && g.rocket && (g.uwK || 0) < 0.5 && !(g.endlessRun && g.endlessRun.dist < 340);   // sur la falaise de depart et dans le conduit, pas de mer devant la fusee
     if (sea.parent !== g.scene) g.scene.add(sea);
-    sea.visible = !!st2; if (!st2) return;
-    sea.position.set(g.rocket.pos.x, EVO.seaLevel - 1.2, g.rocket.pos.z);
+    sea.visible = !!st2;
+    { const hi = !!st2 && g.rocket.pos.y > 25 && !(CC.EVO.boss2); if (hi && g.camera.far < 1800) { EVO._farBase = EVO._farBase || g.camera.far; g.camera.far = 1800; g.camera.updateProjectionMatrix(); } else if (!hi && EVO._farBase && g.camera.far === 1800) { g.camera.far = EVO._farBase; g.camera.updateProjectionMatrix(); } }   // v253 : en altitude, on voit la mer jusqu'a l'horizon (avant : coupee a 400 m)
+    if (!st2) return;
+    sea.position.set(g.rocket.pos.x, EVO.seaLevel - 1.2, g.rocket.pos.z); seaTex.offset.set(g.rocket.pos.x / 60, -g.rocket.pos.z / 60 + (EVO.clock || 0) * 0.02);   // la texture est fixe dans le monde (on la voit defiler) et bouge doucement
     const fc = g.scene.fog ? g.scene.fog.color : null, hx = fc ? fc.getHexString() : '';
     if (hx !== seaFog) { seaFog = hx; const a = sea.geometry.attributes.color, c = new T3.Color(); for (let r = 0; r < SEA_R.length; r++) { c.copy(NEAR); if (fc) c.lerp(fc, SEA_K[r]); for (let k = 0; k < SEA_N; k++) a.setXYZ(r * SEA_N + k, c.r, c.g, c.b); } a.needsUpdate = true; }
   };

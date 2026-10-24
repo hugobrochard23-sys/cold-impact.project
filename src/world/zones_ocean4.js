@@ -215,7 +215,7 @@
     } };
 
   // ============================================ L'ORBITE (1500 m) : debris, satellites, roues de lasers ; AEGIS au bout ============================================
-  const LO = 1900, LNO = (u) => 570 + 60 * ss(0, 1, u) + 10 * Math.sin(u * 14);
+  const LO = 2600, LNO = (u) => 570 + 60 * ss(0, 1, u) + 10 * Math.sin(u * 14);
   // SATELLITE : bus dore, deux ailes de panneaux solaires a cellules, antenne parabolique, mat, propulseurs, feux clignotants. On peut le TOUCHER : il explose en gerbe de pieces (jamais mortel).
   let solarTex = null;
   const solarTexture = () => { if (solarTex) return solarTex; const c = document.createElement('canvas'); c.width = 128; c.height = 64; const x = c.getContext('2d'); x.fillStyle = '#16305e'; x.fillRect(0, 0, 128, 64); x.strokeStyle = '#4f7fc4'; x.lineWidth = 1.5; for (let i = 0; i <= 8; i++) { x.beginPath(); x.moveTo(i * 16, 0); x.lineTo(i * 16, 64); x.stroke(); } for (let j = 0; j <= 4; j++) { x.beginPath(); x.moveTo(0, j * 16); x.lineTo(128, j * 16); x.stroke(); } x.fillStyle = 'rgba(160,200,255,0.18)'; x.fillRect(0, 0, 128, 10); solarTex = new T3.CanvasTexture(c); return solarTex; };
@@ -234,12 +234,20 @@
     EVO.addDyn(g, (t) => { if (!alive) return; m.rotation.z = Math.sin(t * 0.3 + i) * 0.35; m.rotation.x = Math.sin(t * 0.21 + i * 2) * 0.2; const on = (Math.floor(t * 1.6 + i) % 2) === 0; m.userData.lights[0].visible = on; m.userData.lights[1].visible = !on; }, [col],
       { near: 600, hit: (g2) => { if (!alive) return true; alive = false; g.visible = false; const p = g.getWorldPosition(new V()), fx = g2.effects; fx.explosion(p.clone(), null, true, 'orange'); fx.ring(p.clone(), new V(0, 1, 0), 6, 60, 0.7, '#ffd060', 0.8); g2.audio.play('boom', p); g2.audio.play('target', p); if (EVO.coinBurst) EVO.coinBurst(g2, p, 22); g2.rig.shake = Math.max(g2.rig.shake, 0.7); g2.flash = Math.max(g2.flash || 0, 0.18); g2.flashColor = '#ffe9b0'; return true; } });
   };
+  const laserWheel = (S, dc, yw, i) => {   // roue de lasers : deux bras opposes qui tournent autour de l'axe ; le centre (rayon < 12 m) est libre
+    const g = new T3.Group(), cols = [], m = basic('#ff3a3a', { transparent: true, opacity: 0.9 });
+    for (const s of [-1, 1]) { mb(g, 2.6, 54, 2.6, m, 0, s * 43, 0); mb(g, 6, 54, 6, basic('#ff3a3a', { transparent: true, opacity: 0.25, depthWrite: false }), 0, s * 43, 0); cols.push(EVO.colBox(g, 3, 54, 3, 0, s * 43, 0)); }
+    mb(g, 9, 9, 9, lam('#2a313a'), 0, 0, 0); EVO.placeGroup(S, g, dc, S.lane(dc).lx, yrel(S, dc, yw), 0); S.glow(dc, S.lane(dc).lx, yrel(S, dc, yw), '#ff3a3a', 90);
+    EVO.addDyn(g, (t) => { g.rotation.z = t * (0.9 + i * 0.12) * (i % 2 ? 1 : -1) + i; }, cols, { near: 600 });
+  };
   SC.orbite = { len: [LO, LO], noDoor: true, noChaos: true, gw: 125, grass: false, turns: [[0.1, 0.3, 18], [0.3, 0.55, -26], [0.62, 0.9, 12]],
-    sub: [{ u: 0, key: 'orbite', name: "L'ORBITE" }, { u: 0.5, key: 'aegis', name: 'AEGIS' }],
+    sub: [{ u: 0, key: 'orbite', name: "L'ORBITE" }, { u: 0.6, key: 'aegis', name: 'AEGIS' }],
     pin: wpin((d, sc) => LNO((d - sc.d0) / (sc.d1 - sc.d0))), ground: (d, lx, c) => { c.set('#101830'); },
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L;
-      for (let i = 0; i < 7; i++) { const u = 0.04 + i * 0.058, dc = d(u); S.item(dc, (r) => satellite(S, dc, (i % 2 ? 1 : -1) * r.between([10, 26]), LNO(u) + r.between([-8, 8]), i)); }   // quelques satellites, sur la trajectoire : on veut les toucher
+      // une alternance lisible, tres espacee : satellite, roue de lasers, satellite, roue de lasers, puis un grand vide avant AEGIS (u = 0.66)
+      for (const [u, k] of [[0.10, 0], [0.32, 1]]) { const dc = d(u); S.item(dc, (r) => satellite(S, dc, (k % 2 ? 1 : -1) * r.between([8, 22]), LNO(u) + r.between([-6, 6]), k)); }
+      for (const [u, k] of [[0.21, 0], [0.43, 1]]) { const dc = d(u); S.item(dc, () => laserWheel(S, dc, LNO(u), k)); }
     } };
   // l'arrivee : un tronçon vide dans l'espace, pour ne jamais retomber sur le sol apres la derniere scene
   SC.fin = { len: [260, 260], noDoor: true, noChaos: true, gw: 125, grass: false, sub: [{ u: 0, key: 'fin', name: 'FIN' }], pin: wpin((d, sc) => LNO(1)), ground: (d, lx, c) => { c.set('#101830'); }, build() {} };

@@ -57,7 +57,7 @@
   }
   const DEFS = {
     behemoth: { scene: 'behemoth', at: 0.0, ahead: 280, speed: 30, name: 'BEHEMOTH', hp: 4, model: behemothModel, yOff: -30, surge: 260, fire: 2.8 },
-    aegis: { scene: 'orbite', at: 0.43, ahead: 0, speed: 0, name: 'AEGIS', hp: 4, model: aegisModel, yOff: 0, surge: 300, fire: 2.6, aegis: true },
+    aegis: { scene: 'orbite', at: 0.66, ahead: 0, speed: 0, name: 'AEGIS', hp: 4, model: aegisModel, yOff: 0, surge: 300, fire: 2.6, aegis: true },
   };
 
   let B = null; const made = {};
