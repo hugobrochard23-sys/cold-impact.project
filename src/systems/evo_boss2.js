@@ -140,6 +140,7 @@
       if (dist > 120 && dist < 900) { B.fireT -= dt; if (B.fireT <= 0) { B.fireT = def.fire * (B.hp <= 2 ? 0.8 : 1); const q = def.aegis ? _b.set(0, 0, -86) : _b.set(rr(-60, 60), 60, -250); B.W.localToWorld(q); shotAt(g, q, true); } }
       if (B.hp <= 2) { B.podT -= dt; if (B.podT <= 0) { B.podT = 4.6; for (const sx of [-1, 1]) { const q = def.aegis ? _a.set(sx * 40, 0, -40) : _a.set(sx * 100, 40, -200); B.W.localToWorld(q); g.spawnEnemyMissile(q.clone(), rk, { miss: 0, lead: 0.05, turn: 0.1, speed: 30, life: 7, quiet: true, visualFrom: q.clone() }); } g.audio.play('hydraulic', _a); } }
     }
+    if (B.mode === 'dying' || B.mode === 'dead') { rk.fuel = rk.fuelMax; rk.shieldT = Math.max(rk.shieldT || 0, 5); if (rk.vel.y < 0) rk.vel.y *= 0.5; }   // pendant la mort du boss et le bilan : pas de chute, pas de crash
     if (B.mode === 'dying') {
       B.dying += dt; const t = B.dying; B.sm = (B.sm || 0) - dt;
       const tb = def.aegis ? 0.3 : 3.0;   // BEHEMOTH plonge d'abord vers la mer en brulant, puis explose ; AEGIS explose tout de suite
