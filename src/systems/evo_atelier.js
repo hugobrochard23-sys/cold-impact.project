@@ -113,6 +113,16 @@
     if (id === 'cm') { const d = EVO.mult(n) - EVO.mult(before); g.evoBought = { id, t0: performance.now(), delta: d, palier: Math.floor(EVO.mult(n)) > Math.floor(EVO.mult(before)) || d >= 0.5, mult: EVO.mult(n) }; if (CC.Haptics && g.evoBought.palier) CC.Haptics.pattern('levelUp'); if (g.evoBought.palier) g.audio.play('coinPing'); }
     return ok;
   };
+  // v245 : RACCOURCI DE TEST : ajouter &evojump=<distance> a l'adresse fait demarrer le vol directement a cette distance (ex. 3940 = le volcan, 4580 = l'eruption)
+  const JM = /[?&]evojump=(\d+)/.exec(location.search), JUMP = JM ? +JM[1] : 0; let jumped = false;
+  const _tk = EVO.tick;
+  EVO.tick = (g, dt) => {
+    _tk(g, dt);
+    if (!JUMP || jumped || g.state !== 'FLIGHT' || !g.endlessRun || !g.endlessRun.T || !g.rocket || !g.rocket.active) return;
+    jumped = true; const run = g.endlessRun, T = run.T, rk = g.rocket, d = JUMP, lx = T.laneX(d), p = T.at(d, lx, T.laneY(d) + 6), q = T.at(d + 6, T.laneX(d + 6), T.laneY(d + 6) + 6);
+    rk.pos.set(p[0], p[1], p[2]); rk.vel.set(q[0] - p[0], q[1] - p[1], q[2] - p[2]).setLength(Math.max(55, rk.vel.length())); rk.fwd.copy(rk.vel).normalize(); run.dist = d;
+    const rg = g.rig; if (rg) { rg.camNose.copy(rk.fwd); rg.camDir.copy(rk.fwd); rg.prevCamDir.copy(rk.fwd); rg.updateCamBasis(); }
+  };
   const _br = EVO.beginRun; EVO.beginRun = (g) => { g.evoGemOffer = null; _br(g); };
   const _st = EVO.start; EVO.start = (g) => { g.evoGemOffer = null; return _st(g); };
   const _ch = EVO.camHook;
