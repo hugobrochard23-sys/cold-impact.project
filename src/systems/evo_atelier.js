@@ -123,6 +123,10 @@
     rk.pos.set(p[0], p[1], p[2]); rk.vel.set(q[0] - p[0], q[1] - p[1], q[2] - p[2]).setLength(Math.max(55, rk.vel.length())); rk.fwd.copy(rk.vel).normalize(); run.dist = d;
     const rg = g.rig; if (rg) { rg.camNose.copy(rk.fwd); rg.camDir.copy(rk.fwd); rg.prevCamDir.copy(rk.fwd); rg.updateCamBasis(); }
   };
+  // tickets du mini-jeu : 2 gratuits par jour, +1 par pub (maximum 5 dans la journee)
+  const dayKey = () => new Date().toISOString().slice(0, 10);
+  EVO.miniTickets = (g) => { const B = EVO.saveBase(g), m = B.mini = B.mini || { d: dayKey(), t: 2, ads: 0 }; if (m.d !== dayKey()) { m.d = dayKey(); m.t = 2; m.ads = 0; } return m.t; };
+  EVO.addMiniTicket = (g, n) => { EVO.miniTickets(g); const m = EVO.saveBase(g).mini; if (m.ads >= 3) return false; const go = () => { m.t += n; m.ads++; g.writeSave(); g.audio.play('levelUp'); }; if (g.ads && g.ads.rewarded) g.ads.rewarded(go, null, 'ticket', 'TICKET MINI-JEU'); else go(); return true; };
   const _br = EVO.beginRun; EVO.beginRun = (g) => { g.evoGemOffer = null; _br(g); };
   const _st = EVO.start; EVO.start = (g) => { g.evoGemOffer = null; return _st(g); };
   const _ch = EVO.camHook;

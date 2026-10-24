@@ -46,6 +46,19 @@
     else if (!o.noGear) { UI.slateIconButton(ctx, bx, y - S(8), bs, 'gear'); UI.tap(ui, bx, y - S(8), bs, bs, () => { ui.overlay = 'msettings'; }); }
     return y + h;
   }
+  // icone du MINI-JEU : bouton rond bleu (comme les autres boutons ronds), chronometre blanc, pastille verte = tickets du jour
+  function miniIcon(ctx, x, y, s, tickets, now) {
+    const cx = x + s / 2, cy = y + s / 2, r = s * 0.48, ow = Math.max(2, S(4)), ph = ((now || 0) % 3400) / 3400, k = ph < 0.22 ? ph / 0.22 : 1, wob = k < 1 ? Math.sin(k * Math.PI * 6) * (1 - k) * 0.16 : 0;
+    ctx.save(); ctx.translate(cx, cy + r * 0.6); ctx.rotate(wob); ctx.translate(-cx, -(cy + r * 0.6));
+    ctx.beginPath(); ctx.arc(cx, cy, r + ow, 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); ctx.fillStyle = tickets > 0 ? '#2E86DE' : '#6F8094'; ctx.fill();
+    ctx.save(); ctx.shadowColor = 'rgba(6,20,40,0.4)'; ctx.shadowOffsetY = S(4); ctx.shadowBlur = 0;
+    const R = r * 0.58, cyy = cy + r * 0.06; ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(cx, cyy, R, 0, 6.2832); ctx.fill(); ctx.fillRect(cx - R * 0.16, cyy - R - r * 0.22, R * 0.32, r * 0.2); ctx.restore();
+    ctx.fillStyle = tickets > 0 ? '#1B5FA8' : '#4A5B6E'; ctx.beginPath(); ctx.arc(cx, cyy, R * 0.82, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = '#FFFFFF'; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(2, R * 0.12); for (let i = 0; i < 12; i++) { const a = i / 12 * 6.2832, r1 = R * 0.7, r2 = R * (i % 3 === 0 ? 0.55 : 0.62); ctx.beginPath(); ctx.moveTo(cx + Math.sin(a) * r1, cyy - Math.cos(a) * r1); ctx.lineTo(cx + Math.sin(a) * r2, cyy - Math.cos(a) * r2); ctx.stroke(); }
+    ctx.lineWidth = Math.max(3, R * 0.16); ctx.beginPath(); ctx.moveTo(cx, cyy); ctx.lineTo(cx + R * 0.34, cyy - R * 0.42); ctx.stroke(); ctx.fillStyle = '#FFD23A'; ctx.beginPath(); ctx.arc(cx, cyy, R * 0.12, 0, 6.2832); ctx.fill();
+    ctx.restore();
+    { const br = r * 0.34, bx = cx + r * 0.78, by = cy - r * 0.74; ctx.beginPath(); ctx.arc(bx, by, br + ow, 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.beginPath(); ctx.arc(bx, by, br, 0, 6.2832); ctx.fillStyle = tickets > 0 ? '#2ECC71' : '#F04438'; ctx.fill(); UI.outlined(ctx, String(tickets), bx, by + br * 0.04, br * 1.25, '#FFFFFF'); }
+  }
   // petite icone de carburant (bidon + bec), pour les gains de l'ogive
   function fuelIcon(ctx, cx, cy, s) {
     ctx.save(); ctx.translate(cx, cy); const w = s * 0.72, h = s * 0.9; ctx.lineJoin = 'round';
@@ -123,6 +136,7 @@
     if (!(game.meta && game.meta.noAds)) { const y = ly + bs + S(28); UI.noAdsBadge(ctx, lx, y, bs); UI.tap(ui, lx, y, bs, bs, () => { ui.overlay = 'evoShop'; }); }
     { const unlocked = S0.runs >= 3, ready = E.chestReady(game), wait = Math.max(0, (S0.chestAt || 0) - Date.now()), rx0 = ox + cw - S(36) - bs, y = ly, pulse = 0.5 + 0.5 * Math.sin(now / 240);
       UI.chestFrame(ctx, rx0, y, bs, ready, unlocked, now);
+      { const ty = y + bs + S(86), tk = E.miniTickets(game); miniIcon(ctx, rx0, ty, bs, tk, now); UI.tap(ui, rx0, ty, bs, bs, () => { ui.overlay = 'evoMini'; }); }   // mini-jeu : sous le coffre
       // (lueur du coffre pret : voir UI.chestFrame)
       { const lab = !unlocked || ready ? '' : secFmt(wait); if (lab) UI.outlined(ctx, lab, rx0 + bs / 2, y + bs + S(34), UI.fit(ctx, lab, bs * 1.2, S(36)), '#F0EDE4'); }
       if (unlocked) UI.tap(ui, rx0, y, bs, bs + S(50), () => E.openChest(game));
@@ -143,6 +157,22 @@
     hit(ui, 0, T0 + S(160), W, Y(0.68) - T0 - S(160), () => { game.evoLvPop = false; E.start(game); }, true);
   };
 
+  // ---------- MINI-JEU (ecran provisoire : il montre ou se range le mode et le parcours du joueur) ----------
+  Home.drawEvoMini = function (ui, ctx, game, W, H) {
+    const F = frame(ui, ctx, W, H), { HH, Y, T0, cw, ox, cx } = F, E = CC.EVO, S0 = E.save(game), tk = E.miniTickets(game);
+    bgPattern(ctx, W, T0, HH); topBar(ui, ctx, game, F, S0, E, { close: () => { ui.overlay = 'evo'; } });
+    UI.outlined(ctx, 'MINI-JEU', cx, Y(0.16), S(104), T.white);
+    UI.outlined(ctx, 'COURSE CONTRE LE FANTÔME', cx, Y(0.215), UI.fit(ctx, 'COURSE CONTRE LE FANTÔME', cw * 0.86, S(64)), '#9FD0FF');
+    miniIcon(ctx, cx - S(150), Y(0.28), S(300), tk, performance.now());
+    UI.outlined(ctx, 'MINI-NIVEAU 1', cx, Y(0.56), S(78), T.white);
+    UI.outlined(ctx, 'BIENTÔT DISPONIBLE', cx, Y(0.615), S(52), '#FFD23A');
+    UI.outlined(ctx, 'TICKETS DU JOUR : ' + tk + ' / 2', cx, Y(0.69), S(54), '#FFFFFF');
+    const bw = cw * 0.8, bh = S(150), bx = cx - bw / 2, by = Y(0.74);
+    UI.btnPrimary(ctx, bx, by, bw, bh, 'JOUER', { px: S(70), disabled: true });
+    UI.btnSecondary(ctx, bx, by + bh + S(36), bw, bh * 0.8, '+1 TICKET (PUB)', { px: S(52) });
+    UI.tap(ui, bx, by + bh + S(36), bw, bh * 0.8, () => { if (E.addMiniTicket) E.addMiniTicket(game, 1); });
+    UI.btnSecondary(ctx, bx, Y(0.92) - S(20), bw, bh * 0.7, 'RETOUR', { px: S(52) }); UI.tap(ui, bx, Y(0.92) - S(20), bw, bh * 0.7, () => { ui.overlay = 'evo'; });
+  };
   // ---------- JAUGE DE PRESSION (lancement au piston) ----------
   const lerpC = (a, b, t) => { const p = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)], A = p(a), B = p(b); return 'rgb(' + A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(',') + ')'; };
   const powerCol = (k) => k < 0.5 ? lerpC('#FF2B2B', '#FFB400', k / 0.5) : lerpC('#FFB400', '#3FD84A', (k - 0.5) / 0.5);   // du rouge vers le vert

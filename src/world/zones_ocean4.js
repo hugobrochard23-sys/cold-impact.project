@@ -117,6 +117,7 @@
     ground: (d, lx, c) => { c.set('#e0500f'); c.multiplyScalar(0.8 + 0.25 * Math.sin(lx * 0.07 + d * 0.05) * Math.sin(d * 0.11 - lx * 0.04)); },
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L, T = S.T;
+      Z.oceanSurface(S, d(0.78), S.d1, 420, 0.9);   // la mer reprend a la sortie du cratere
       // les murs : tranches de basalte verticales de chaque cote, plus ou moins serrees, avec failles incandescentes et chutes de lave
       for (let dc = S.d0 + 6; dc < d(0.95); dc += 16) S.item(dc, (r) => {
         const u = (dc - S.d0) / L, R = RW(dc, u), L0 = S.lane(dc), lx = L0.lx, ly = L0.y;
@@ -164,6 +165,7 @@
     ground: (d, lx, c) => { c.set('#243c46'); },
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L, T = S.T;
+      Z.oceanSurface(S, S.d0, S.d1, 420, 1.0);
       for (let k = 0; k < 8; k++) S.item(d(0.0 + k * 0.012), (r) => { const dc = d(0.0 + k * 0.012), sg = k % 2 ? 1 : -1, lx = sg * r.between([40, 80]); const p = S.at(dc, lx, yrel(S, dc, LANE(k * 0.012)) - r.between([30, 70])); TR.rock(S.b, p[0], p[1], p[2], r.between([14, 28]), r, { gray: pk(r, BAS), noMoss: true }); S.glow(dc, lx, yrel(S, dc, LANE(k * 0.012)) - 30, '#ff5a1a', 80); });
       for (let i = 0; i < 26; i++) { const u = 0.02 + i * 0.037, dc = d(u); S.item(dc, (r) => ashCloud(S, dc, r.between([-80, 80]), LANE(u) + r.between([-60, 70]), r.between([14, 28]), i < 6 ? '#8a4a30' : undefined)); }
       for (let i = 0; i < 18; i++) { const u = 0.18 + i * 0.04, dc = d(u); S.item(dc, (r) => flak(S, dc, r.between([-40, 40]), LANE(u) + r.between([-30, 40]))); }
@@ -184,6 +186,7 @@
     pin: wpin((d, sc) => LNB((d - sc.d0) / (sc.d1 - sc.d0))), ground: (d, lx, c) => { c.set('#243c46'); },
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L;
+      Z.oceanSurface(S, S.d0, S.d1, 420, 1.0);
       for (let i = 0; i < 26; i++) { const u = 0.02 + i * 0.037, dc = d(u); S.item(dc, (r) => ashCloud(S, dc, r.between([-90, 90]), LNB(u) + r.between([-70, 60]), r.between([16, 30]), '#d8e0ea')); }
       for (let i = 0; i < 6; i++) { const u = 0.1 + i * 0.12, dc = d(u); foe(S, 'jet', dc, (i % 2 ? 1 : -1) * 18, yrel(S, dc, LNB(u) + 6), { name: 'CHASSEUR', armed: true, keep: i < 3 }); }
       for (let i = 0; i < 12; i++) { const u = 0.08 + i * 0.07, dc = d(u); S.item(dc, (r) => flak(S, dc, r.between([-50, 50]), LNB(u) + r.between([-30, 40]))); }
@@ -207,6 +210,7 @@
     pin: wpin((d, sc) => LNS((d - sc.d0) / (sc.d1 - sc.d0))), ground: (d, lx, c) => { c.set('#243c46'); },
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L;
+      Z.oceanSurface(S, S.d0, d(0.8), 420, 1.0);
       for (let i = 0; i < 8; i++) { const u = 0.07 + i * 0.1, dc = d(u); S.item(dc, () => cloudRing(S, dc, LNS(u), i)); }
       for (let i = 0; i < 30; i++) { const u = 0.02 + i * 0.032, dc = d(u); S.item(dc, (r) => ashCloud(S, dc, r.between([-110, 110]), LNS(u) + r.between([-90, 70]), r.between([18, 34]), u < 0.5 ? '#d8e0ea' : '#9aa6bc')); }
       for (let i = 0; i < 10; i++) { const u = 0.05 + i * 0.09, dc = d(u); S.item(dc, (r) => streak(S, dc, (i % 2 ? 1 : -1) * r.between([60, 110]), LNS(u) - 140)); }

@@ -71,6 +71,7 @@
       else if (this.overlay === 'unlock') { this.buttons = []; CC.Home.drawUnlock(this, ctx, game, W, H); }          // v086
       else if (this.overlay === 'daily') { this.buttons = []; CC.Home.drawDaily(this, ctx, game, W, H); }
       else if (this.overlay === 'msettings') { this.buttons = []; CC.Home.drawSettings(this, ctx, game, W, H); }
+      else if (this.overlay === 'evoMini') { this.buttons = []; CC.Home.drawEvoMini(this, ctx, game, W, H); }
       else if (this.overlay === 'evoShop') { this.buttons = []; CC.Home.drawEvoShop(this, ctx, game, W, H); }   // v159
       else if (this.overlay === 'evoSkins') { this.buttons = []; CC.Home.drawEvoSkins(this, ctx, game, W, H); }   // v159
       else if (this.overlay === 'evoReport') { this.buttons = []; CC.Home.drawEvoReport(this, ctx, game, W, H); }   // v152
