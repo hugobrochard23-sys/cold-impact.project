@@ -37,7 +37,7 @@
     _c.copy(UW_TOP).lerp(UW_DEEP, depth * 0.85);
     _c.lerp(UW_FAR, 0.3); f.color.lerp(_c, k); _c.copy(UW_TOP).lerp(UW_DEEP, depth * 0.85); f.near = U.lerp(f.near, 8, k); f.far = U.lerp(f.far, 380 - 190 * depth, k); g.renderer.setClearColor(f.color); g.fogBase = null;
     u.cloud.value *= (1 - k); u.top.value.lerp(_c, k); u.horizon.value.lerp(_c, k); u.bottom.value.lerp(UW_DEEP, k * 0.7);
-    g.hemi.color.lerp(C3('#cfe6ff'), k); g.hemi.groundColor.lerp(C3('#2a6f94'), k); g.hemi.intensity = U.lerp(g.hemi.intensity, 0.8 - 0.3 * depth, k); g.ambient.intensity = U.lerp(g.ambient.intensity, 0.24, k);
+    g.hemi.color.lerp(C3('#cfe6ff'), k); g.hemi.groundColor.lerp(C3('#2a6f94'), k); g.hemi.intensity = U.lerp(g.hemi.intensity, 1.0 - 0.2 * depth, k); g.ambient.intensity = U.lerp(g.ambient.intensity, 0.24, k);
     g.sun.intensity = U.lerp(g.sun.intensity, 0.95 * (1 - 0.7 * depth), k); g.sun.color.lerp(C3('#e8fbff'), k);
     if (g.postParams) { g.postParams.tint = '#' + C3('#ffffff').lerp(C3('#dcefff'), k).getHexString(); g.postParams.bloomStrength = Math.max(g.postParams.bloomStrength, 0.05 * k); g.postParams.saturation = U.lerp(g.postParams.saturation === undefined ? 1 : g.postParams.saturation, 1.03, k); g.postParams.contrast = U.lerp(g.postParams.contrast === undefined ? 1 : g.postParams.contrast, 1.04, k); }
     g.nightK = U.lerp(g.nightK || 0, 0.35 * depth, k);

@@ -75,42 +75,24 @@
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L, T = S.T, lanes = (u) => LNF(u);
       Z.oceanSurface(S, S.d0, d(0.3), 140, 0.4);
-      for (let u = 0.17; u < 0.97; u += 0.04) { const dc = d(u); S.item(dc, () => guideRing(S, dc, yrel(S, dc, lanes(u)), 20, u < 0.46 ? '#9fe8ff' : u < 0.8 ? '#7affc8' : '#ffb060')); }   // anneaux de guidage (decor)
       // --- les MINES (0 a 0.15) : chaines de mines en quinconce, filets, anneaux de sonar, deux sous-marins de garde
       for (let i = 0; i < 12; i++) { const u = 0.02 + i * 0.011, dc = d(u), sg = i % 2 ? 1 : -1, lx0 = sg * (11 + (i % 3) * 5); foe(S, 'mine', dc, lx0, yrel(S, dc, lanes(u)), { name: 'MINE', keep: i < 4 }); S.item(dc, () => { const h = Math.max(2, yrel(S, dc, lanes(u))); S.cyl(dc, lx0, 0, 0.14, h, 'col:#34342e', undefined, 5, 0.14, false); }); }
-      for (const [u, ph] of [[0.035, 0], [0.07, 0.33], [0.105, 0.66], [0.14, 0.15]]) S.item(d(u), () => sonar(S, d(u), 0, lanes(u), ph));
-      for (const u of [0.06, 0.1, 0.13]) S.item(d(u), (r) => { const dc = d(u), y = yrel(S, dc, lanes(u)); for (let k = -3; k <= 3; k++) if (Math.abs(k) > 0) S.bx(dc, k * 14, y, 12, 70, 0.6, 'col:#4a5a62', undefined, false); });
       foe(S, 'sub', d(0.08), 24, yrel(S, d(0.08), lanes(0.08)), { name: 'SOUS-MARIN', hp: 2, armed: true, keep: true }); foe(S, 'sub', d(0.14), -24, yrel(S, d(0.14), lanes(0.14)), { name: 'SOUS-MARIN', hp: 2, armed: true, keep: true });
       for (const sg of [-1, 1]) S.rows(d(0.0), d(0.2), 10, 0.7, (dc) => S.item(dc, (r) => { crag(S, dc, S.lane(dc).lx + sg * r.between([34, 110]), 0, r.between([8, 22]), r.between([10, 34]), r, rtint(0.3, 0, r)); }));
       // --- la FALAISE (0.15 a 0.46) : on plonge le long d'une paroi percee de baies, de passerelles et de projecteurs : une base engloutie
-      for (let k = 0; k < 30; k++) { const u = 0.15 + k * 0.0105, dc = d(u); S.item(dc, (r) => { const lx = S.lane(dc).lx - 62, h = yrel(S, dc, lanes(u)) + 30; for (let y = -14; y < h; y += r.between([14, 30])) { const wd = r.between([18, 40]); crag(S, dc + r.between([-5, 5]), lx - r.between([0, 12]), y, wd, r.between([24, 58]), r, rtint((y + 14) / h, 0, r), { lean: 0.5 }); if (r() < 0.4) crag(S, dc + r.between([-4, 4]), lx + r.between([-4, 5]), y + r.between([4, 14]), wd * 0.5, r.between([14, 30]), r, rtint((y + 14) / h, 0, r), { lean: 0.6 }); } if (k % 3 === 0) { const y = yrel(S, dc, lanes(u)) - 4; S.bx(dc, lx + 12, y, 18, 2.2, 10, 'col:#6a7a87', undefined, true); S.bx(dc, lx + 6, y + 2, 1, 6, 10, 'col:#6a7a87', undefined, false); lampS(S, dc, lx + 8, y + 3, '#ffd9a0', 36); } if (k % 5 === 2) { const y = yrel(S, dc, lanes(u)); S.bx(dc, lx + 10, y + 12, 16, 0.9, 1.6, 'emis:#7be8ff', undefined, false); S.glow(dc, lx + 10, y + 12, '#7be8ff', 34); } }); }
+      for (let k = 0; k < 30; k++) { const u = 0.15 + k * 0.0105, dc = d(u); S.item(dc, (r) => { const lx = S.lane(dc).lx - 62, h = yrel(S, dc, lanes(u)) + 30; for (let y = -14; y < h; y += r.between([14, 30])) { const wd = r.between([18, 40]); crag(S, dc + r.between([-5, 5]), lx - r.between([0, 12]), y, wd, r.between([24, 58]), r, rtint((y + 14) / h, 0, r), { lean: 0.5 }); if (r() < 0.4) crag(S, dc + r.between([-4, 4]), lx + r.between([-4, 5]), y + r.between([4, 14]), wd * 0.5, r.between([14, 30]), r, rtint((y + 14) / h, 0, r), { lean: 0.6 }); } }); }
       for (const sg of [1]) S.rows(d(0.16), d(0.46), 14, 0.7, (dc) => S.item(dc, (r) => { if (r() < 0.6) crag(S, dc, S.lane(dc).lx + sg * r.between([50, 100]), 0, r.between([10, 26]), r.between([14, 44]), r, rtint(0.3, 0, r)); }));
       for (let i = 0; i < 5; i++) { const u = 0.2 + i * 0.05, dc = d(u); foe(S, 'mine', dc, (i % 2 ? 1 : -1) * 13, yrel(S, dc, lanes(u)), { name: 'MINE', keep: i < 2 }); }
       foe(S, 'sub', d(0.3), -8, yrel(S, d(0.3), lanes(0.3)), { name: 'SOUS-MARIN', hp: 3, armed: true, keep: true });
       // --- la FOSSE (0.46 a 0.8) : canyon etroit a virages, parois de roche, piliers a slalomer, meduses, sources chaudes, la baleine
       for (const sg of [-1, 1]) S.rows(d(0.46), d(0.82), 11, 0.5, (dc) => S.item(dc, (r) => { const lx = S.lane(dc).lx + sg * r.between([58, 74]), top = yrel(S, dc, lanes((dc - S.d0) / L)) + 38; for (let y = -10; y < top; y += r.between([14, 30])) { crag(S, dc + r.between([-5, 5]), lx + sg * r.between([0, 14]) - sg * (y / top) * r.between([0, 8]), y, r.between([18, 38]), r.between([26, 56]), r, rtint((y + 10) / top, 0, r), { lean: 0.5 }); } }));
       for (const [u, sg] of [[0.52, 1], [0.545, -1], [0.58, 1], [0.64, -1], [0.7, 1], [0.735, -1]]) S.item(d(u), (r) => { const dc = d(u), top = yrel(S, dc, lanes(u)) + 40; for (let y = -6; y < top; y += r.between([14, 22])) crag(S, dc, S.lane(dc).lx + sg * r.between([26, 34]), y, r.between([10, 16]), r.between([22, 40]), r, rtint(y / top, 0, r), { lean: 0.4 }); });
-      for (let i = 0; i < 16; i++) { const u = 0.47 + i * 0.02, dc = d(u); S.item(dc, (r) => jelly(S, dc, r.between([-26, 26]), lanes(u) + r.between([-14, 18]), pk(r, ['#7affff', '#ff8aff', '#8affa8']))); }
-      for (let i = 0; i < 6; i++) { const u = 0.5 + i * 0.05, dc = d(u); S.item(dc, () => ventCone(S, dc, (i % 2 ? 1 : -1) * 28, Math.max(10, yrel(S, dc, lanes(u)) + 30), i % 2 ? '#ff8a4a' : '#7affc8')); }
-      EVO.oc.whale(S, d(0.62), 0, lanes(0.62) + 8, 7);
       foe(S, 'sub', d(0.56), 14, yrel(S, d(0.56), lanes(0.56)), { name: 'SOUS-MARIN', hp: 3, armed: true, keep: true }); foe(S, 'sub', d(0.75), -14, yrel(S, d(0.75), lanes(0.75)), { name: 'SOUS-MARIN', hp: 3, armed: true, keep: true });
       for (let i = 0; i < 6; i++) { const u = 0.5 + i * 0.05, dc = d(u); foe(S, 'mine', dc, (i % 2 ? 1 : -1) * 16, yrel(S, dc, lanes(u)), { name: 'MINE', keep: i < 2 }); }
       // --- le CONDUIT MAGMATIQUE (0.8 a 1) : la roche vire au rouge, des failles incandescentes, la lueur de la chambre devant
       for (const sg of [-1, 1]) S.rows(d(0.8), d(1), 9, 0.4, (dc) => S.item(dc, (r) => { const u = (dc - S.d0) / L, lx = S.lane(dc).lx + sg * r.between([56, 70]), top = yrel(S, dc, lanes(u)) + 36; for (let y = -10; y < top; y += r.between([14, 30])) crag(S, dc + r.between([-5, 5]), lx + sg * r.between([0, 12]), y, r.between([18, 38]), r.between([26, 56]), r, rtint((y + 10) / top, 1, r), { lean: 0.5 }); if (r() < 0.5) { S.bx(dc, lx - sg * 8, yrel(S, dc, lanes(u)) + r.between([-24, 24]), 0.8, r.between([16, 40]), 6, 'emis:#ff5a14', undefined, false); } }));
       for (let k = 0; k < 8; k++) S.item(d(0.82 + k * 0.022), () => { const dc = d(0.82 + k * 0.022); S.glow(dc, 0, yrel(S, dc, lanes(0.82 + k * 0.022)), '#ff6a2a', 70 + k * 12); });
       S.item(d(0.995), () => { const dc = d(0.995), y = yrel(S, dc, lanes(1)); S.glow(dc, 0, y, '#ffb060', 260); });
-      // le SAS : une porte blindee dont les deux battants s'ecartent quand la fusee approche (on voit toujours la lumiere de la chambre derriere)
-      S.item(d(0.95), () => {
-        const dc = d(0.95), L0 = S.lane(dc), lx = L0.lx, ly = L0.y;
-        for (const sg of [-1, 1]) { S.bx(dc, lx + sg * 36, ly, 36, 110, 14, 'col:#59656f', undefined, true); S.bx(dc - 7.4, lx + sg * 18.4, ly, 1.4, 44, 0.8, 'emis:#ff9a3a', undefined, false); }
-        S.bx(dc, lx, ly + 36, 40, 26, 14, 'col:#59656f', undefined, true); S.bx(dc, lx, ly - 36, 40, 26, 14, 'col:#59656f', undefined, true);
-        for (let k = 0; k < 4; k++) { S.bx(dc - 7.4, lx - 14 + k * 9.4, ly + 22.6, 4, 1.1, 0.8, 'emis:#ff9a3a', undefined, false); S.bx(dc - 7.4, lx - 14 + k * 9.4, ly - 22.6, 4, 1.1, 0.8, 'emis:#ff9a3a', undefined, false); }
-        S.glow(dc, lx, ly, '#ffb060', 120);
-        const g = new T3.Group(), cols = [], mat = lam('#6a7682'), hz = lam('#c9a028');
-        for (const sg of [-1, 1]) { const leaf = new T3.Group(); leaf.position.x = sg * 9; leaf.userData.sg = sg; g.add(leaf); mb(leaf, 18, 44, 8, mat, 0, 0, 0); mb(leaf, 18, 3, 8.4, hz, 0, 9, 0); mb(leaf, 18, 3, 8.4, hz, 0, -9, 0); cols.push(EVO.colBox(leaf, 18, 44, 8, 0, 0, 0)); }
-        EVO.placeGroup(S, g, dc, lx, ly, 0);
-        EVO.addDyn(g, (t, dt, game) => { const run = game.endlessRun; if (!run) return; const k = ss(dc - 230, dc - 90, run.dist); g.children.forEach((lf) => { lf.position.x = lf.userData.sg * (9 + 24 * k); }); if (k > 0.05 && !g.userData.snd && game.state === 'FLIGHT') { g.userData.snd = 1; game.audio.play('hydraulic'); } }, cols, { near: 800 });
-      });
     } };
 
   // ============================================ LE VOLCAN (1200 m) : chambre de magma, puits de lave a remonter en spirale, ERUPTION ============================================
@@ -135,14 +117,15 @@
     ground: (d, lx, c) => { c.set('#e0500f'); c.multiplyScalar(0.8 + 0.25 * Math.sin(lx * 0.07 + d * 0.05) * Math.sin(d * 0.11 - lx * 0.04)); },
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L, T = S.T;
+      Z.oceanSurface(S, d(0.7), S.d1, 140, 0.9);   // la mer reprend a la sortie du cratere (pas de trou dans l'eau)
       // les murs : tranches de basalte verticales de chaque cote, plus ou moins serrees, avec failles incandescentes et chutes de lave
-      for (let dc = S.d0 + 6; dc < d(0.95); dc += 12) S.item(dc, (r) => {
+      for (let dc = S.d0 + 6; dc < d(0.95); dc += 16) S.item(dc, (r) => {
         const u = (dc - S.d0) / L, R = RW(dc, u), L0 = S.lane(dc), lx = L0.lx, ly = L0.y;
         for (const sg of [-1, 1]) {
-          S.bx(dc, lx + sg * (R + 14), ly, 14, 200, 13, 'col:#1d1512', undefined, true);   // fond de paroi (cache l'arriere)
-          for (let y = -95; y < 95; y += r.between([20, 40])) crag(S, dc + r.between([-4, 4]), lx + sg * (R + r.between([12, 24])), ly + y - r.between([0, 10]), r.between([18, 36]), r.between([30, 60]), r, rtint((y + 95) / 190, 1, r), { lean: 0.5, tilt: 0.3 });
-          if (r() < 0.5) S.bx(dc, lx + sg * (R - 0.6), ly + r.between([-70, 70]), 0.7, r.between([20, 60]), 6, 'emis:#ff5a14', undefined, false);
-          if (r() < 0.14) lavaFall(S, dc, lx + sg * (R - 0.8), ly - 10, 150);
+          S.bx(dc, lx + sg * (R + 14), (ly + 105) / 2 - 8, 14, ly + 130, 13, 'col:#1d1512', undefined, true);   // fond de paroi : du sol de lave jusqu'au-dessus de la fusee
+          for (let y = -12; y < ly + 100; y += r.between([26, 44])) crag(S, dc + r.between([-4, 4]), lx + sg * (R + r.between([12, 24])), y, r.between([22, 40]), r.between([36, 66]), r, rtint(y / (ly + 100), 1, r), { lean: 0.5, tilt: 0.3 });
+          if (r() < 0.2) S.bx(dc, lx + sg * (R - 0.6), r.between([10, ly + 60]), 0.7, r.between([16, 40]), 6, 'emis:#d8400f', undefined, false);
+          if (r() < 0.07) lavaFall(S, dc, lx + sg * (R - 0.8), ly - 10, 150);
           if (dc % 36 < 12 && r() < 0.7) { S.bx(dc, lx + sg * (R - 6), ly - 24 - r.between([0, 20]), 12, 2.4, 11, 'col:#4a3a32', undefined, true); }
         }
         if (u < 0.2 && r() < 0.35) S.cyl(dc, lx + r.between([-R * 0.7, R * 0.7]), ly + 70, 6, -34, 'col:#3a302b', undefined, 8, 0.5, false);   // stalactites (plus de plafond plat)
@@ -151,7 +134,7 @@
       for (let i = 0; i < 14; i++) { const u = 0.01 + i * 0.014, dc = d(u); S.item(dc, (r) => { const sg = i % 2 ? 1 : -1, lx = S.lane(dc).lx + sg * r.between([22, 56]), base = S.lane(dc).y; S.cyl(dc, lx, 0, r.between([5, 10]), base + r.between([-30, -4]), 'col:' + pk(r, HOT), undefined, 8, 2, true); S.glow(dc, lx, 4, '#ff6a2a', 60); }); }
       for (let k = 0; k < 18; k++) { const u = 0.02 + k * 0.05, dc = d(u); S.item(dc, () => S.glow(dc, 0, 6, '#ff7a2a', 220)); }
       // les orbes de magma sur le puits
-      for (let i = 0; i < 12; i++) { const u = 0.26 + i * 0.05, dc = d(u); S.item(dc, () => magmaOrb(S, dc, (i % 2 ? 1 : -1) * (12 + (i % 3) * 4), LVO(u), i * 0.7, 3 + (i % 3) * 0.6)); }
+      for (let i = 0; i < 7; i++) { const u = 0.28 + i * 0.085, dc = d(u); S.item(dc, () => magmaOrb(S, dc, (i % 2 ? 1 : -1) * (10 + (i % 3) * 7), LVO(u) + (i % 3 - 1) * 22, i * 0.7, 3 + (i % 3) * 0.6)); }
       for (let i = 0; i < 6; i++) { const u = 0.3 + i * 0.1, dc = d(u); foe(S, 'mine', dc, (i % 2 ? 1 : -1) * 18, yrel(S, dc, LVO(u) + 4), { name: 'MINE', keep: i < 3 }); }
       // le cratere : la bouche s'ouvre, rochers incandescents, geysers de lave, panache de cendres
       for (let k = 0; k < 16; k++) S.item(d(0.9 + k * 0.0065), (r) => { const dc = d(0.9 + k * 0.0065), sg = k % 2 ? 1 : -1, ly = S.lane(dc).y, lx = S.lane(dc).lx + sg * r.between([36, 70]); crag(S, dc, lx, ly - r.between([40, 70]), r.between([24, 44]), r.between([40, 80]), r, rtint(0.5, 1, r)); S.glow(dc, lx, ly - 20, '#ff5a1a', 90); });
@@ -182,7 +165,7 @@
     ground: (d, lx, c) => { c.set('#243c46'); },
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L, T = S.T;
-      Z.oceanSurface(S, d(0.1), S.d1, 140, 1.0);
+      Z.oceanSurface(S, S.d0, S.d1, 140, 1.0);
       for (let k = 0; k < 8; k++) S.item(d(0.0 + k * 0.012), (r) => { const dc = d(0.0 + k * 0.012), sg = k % 2 ? 1 : -1, lx = sg * r.between([40, 80]); const p = S.at(dc, lx, yrel(S, dc, LANE(k * 0.012)) - r.between([30, 70])); TR.rock(S.b, p[0], p[1], p[2], r.between([14, 28]), r, { gray: pk(r, BAS), noMoss: true }); S.glow(dc, lx, yrel(S, dc, LANE(k * 0.012)) - 30, '#ff5a1a', 80); });
       for (let i = 0; i < 26; i++) { const u = 0.02 + i * 0.037, dc = d(u); S.item(dc, (r) => ashCloud(S, dc, r.between([-80, 80]), LANE(u) + r.between([-60, 70]), r.between([14, 28]), i < 6 ? '#8a4a30' : undefined)); }
       for (let i = 0; i < 18; i++) { const u = 0.18 + i * 0.04, dc = d(u); S.item(dc, (r) => flak(S, dc, r.between([-40, 40]), LANE(u) + r.between([-30, 40]))); }
@@ -227,6 +210,7 @@
     pin: wpin((d, sc) => LNS((d - sc.d0) / (sc.d1 - sc.d0))), ground: (d, lx, c) => { c.set('#243c46'); },
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L;
+      Z.oceanSurface(S, S.d0, S.d1, 140, 1.0);   // la mer ne s'arrete plus brutalement
       for (let i = 0; i < 8; i++) { const u = 0.07 + i * 0.1, dc = d(u); S.item(dc, () => cloudRing(S, dc, LNS(u), i)); }
       for (let i = 0; i < 30; i++) { const u = 0.02 + i * 0.032, dc = d(u); S.item(dc, (r) => ashCloud(S, dc, r.between([-110, 110]), LNS(u) + r.between([-90, 70]), r.between([18, 34]), u < 0.5 ? '#d8e0ea' : '#9aa6bc')); }
       for (let i = 0; i < 10; i++) { const u = 0.05 + i * 0.09, dc = d(u); S.item(dc, (r) => streak(S, dc, (i % 2 ? 1 : -1) * r.between([60, 110]), LNS(u) - 140)); }
@@ -274,11 +258,11 @@
     _tp(g, dt);
     if (EVO.seaLevel === undefined || !g.scene || !g.rocket) { if (planet) planet.visible = false; EVO.noHorizon = false; return; }
     const a = EVO.s2d0('strato'), run = g.endlessRun; if (a === undefined || !run) return;
-    const on = g.state === 'FLIGHT' && run.dist > a + 0.45 * LS2 && !g.cine3d;
+    const on = g.state === 'FLIGHT' && run.dist > a + 0.3 * LS2 && !g.cine3d;
     if (!planet) { planet = new T3.Group(); const m = new T3.Mesh(new T3.SphereGeometry(3000, 64, 40), new T3.MeshBasicMaterial({ map: earthTexture(), fog: false })); planet.add(m); const atm = new T3.Mesh(new T3.SphereGeometry(3070, 48, 30), new T3.MeshBasicMaterial({ color: '#7fc4ff', transparent: true, opacity: 0.28, side: T3.BackSide, fog: false, depthWrite: false, blending: T3.AdditiveBlending })); planet.add(atm); planet.userData.m = m; g.scene.add(planet); }
     EVO.noHorizon = !!on; planet.visible = !!on; if (!on) return;
     const rk = g.rocket;   // la surface reste ~380 m sous la fusee (horizon courbe bien visible) ; elle tourne avec la distance : c'est elle qui donne la sensation de vitesse
-    planet.position.set(rk.pos.x, Math.min(rk.pos.y, 900) - 380 - 3000, rk.pos.z); planet.userData.m.rotation.set(Math.PI / 2, 0, run.dist * 0.00045);   // le pole est sur le cote : sous la fusee on voit oceans et continents
+    { const kk = U.clamp((run.dist - (a + 0.3 * LS2)) / (0.4 * LS2), 0, 1); planet.position.set(rk.pos.x, Math.min(rk.pos.y, 900) - 380 - 3000 - (1 - kk) * 2600, rk.pos.z); } planet.userData.m.rotation.set(Math.PI / 2, 0, run.dist * 0.00045);   // le pole est sur le cote : sous la fusee on voit oceans et continents
     if (g.camera.far < 4200) { g.camera.far = 4200; g.camera.updateProjectionMatrix(); }
   };
   EVO.addMood('strat', { top: '#0a2a6a', hor: '#8ab8e8', fog: '#a8c8ec', near: 220, far: 1000, hemiS: '#e4eeff', hemiG: '#6a8ab0', hemiI: 1.0, amb: 0.22, sunC: '#fff4dc', sunI: 1.0, night: 0.2 });
@@ -294,6 +278,6 @@
     if (EVO.seaLevel === undefined || !g.endlessRun) return;
     const a = EVO.s2d0('volcan'), b = a === undefined ? undefined : a + LV, dist = g.endlessRun.dist;
     const st = EVO.s2d0('strato');
-    EVO.seaLevel = (a !== undefined && dist > a - 20 && dist < b) || (st !== undefined && dist > st + 0.5 * LS2) ? -9999 : 0;   // dans le puits de lave on est a l'air libre, meme sous le niveau de la mer
+    EVO.seaLevel = (a !== undefined && dist > a - 20 && dist < b) || (st !== undefined && dist > st + 0.7 * LS2) ? -9999 : 0;   // dans le puits de lave on est a l'air libre, meme sous le niveau de la mer
   };
 })();

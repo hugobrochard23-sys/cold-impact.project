@@ -98,11 +98,11 @@
     if (z.dead || B.cool > 0) return true;
     B.cool = 1.5; B.hp--; const rk = g.rocket, p = rk.pos.clone(), fx = g.effects;
     z.node.updateWorldMatrix(true, false); z.node.getWorldPosition(_a); if (!z.multi) z.dead = true;
-    fx.explosion(_a.clone(), null, true, 'orange'); fx.ring(_a.clone(), new V(0, 1, 0), 6, 70, 0.8, '#ffd060', 0.9); fx.flash(_a.clone(), '#ffb040', 9, 200, 0.4, '#ff5020'); g.audio.play('boom', p); g.audio.play('clunk', p); g.audio.play('robotRoar', p);
+    fx.explosion(_a.clone(), null, true, 'orange'); fx.ring(_a.clone(), new V(0, 1, 0), 6, 50, 0.7, '#ffd060', 0.8); g.audio.play('boom', p); g.audio.play('clunk', p); g.audio.play('robotRoar', p);
     if (EVO.onBossHit) EVO.onBossHit(g, null); if (EVO.coinBurst) EVO.coinBurst(g, p, B.hp > 0 ? 16 : 40);
     g.rig.shake = Math.max(g.rig.shake, 1.7); g.flash = 0.35; g.flashColor = '#ffe9b0'; g.hitStop = 0.14; g.hitScale = 0.15; g.chromaBurst = 0.02;
     if (z.burn) snuff(z);
-    if (z.shields) { const sh = z.shields.find((m) => m.visible); if (sh) { sh.visible = false; fx.ring(_a.clone(), new V(0, 0, 1), 20, 150, 0.9, '#9ad8ff', 0.8); for (let i = 0; i < 40; i++) fx.sparks.emit({ pos: _a.clone().add(new V(rr(-30, 30), rr(-30, 30), rr(-30, 30))), vel: new V(rr(-1, 1), rr(-1, 1), rr(-1, 1)).multiplyScalar(rr(20, 60)), life: rr(0.5, 1.1), s0: 0.8, s1: 0.9, s2: 0.3, cols: fx.pal.ember, drag: 1, grav: 0, a: 1, fout: 0.5 }); } }
+    if (z.shields) { const sh = z.shields.find((m) => m.visible); if (sh) { sh.visible = false; fx.ring(_a.clone(), new V(0, 0, 1), 20, 150, 0.9, '#9ad8ff', 0.8); for (let i = 0; i < 14; i++) fx.sparks.emit({ pos: _a.clone().add(new V(rr(-30, 30), rr(-30, 30), rr(-30, 30))), vel: new V(rr(-1, 1), rr(-1, 1), rr(-1, 1)).multiplyScalar(rr(20, 60)), life: rr(0.5, 1.1), s0: 0.8, s1: 0.9, s2: 0.3, cols: fx.pal.ember, drag: 1, grav: 0, a: 1, fout: 0.5 }); } }
     if (B.hp > 0) {
       B.surge = { t: 0, dur: 1.6, dist: B.def.surge || 0 }; B.spin += 0.5;
       if (CC.L1) CC.L1.msg(g, B.def.aegis ? 'BOUCLIER BRISE !' : 'MOTEUR ' + (B.hpMax - B.hp) + ' / ' + (B.hpMax - 1), 1.8, '#ffe9a0');
@@ -133,7 +133,7 @@
     else for (const z of B.M.zones) {
       if (z.fl && !z.dead) z.fl.scale.set(1, 1, 0.8 + 0.3 * Math.sin(B.t * 18 + z.pos.x));
       if (z.mk && !z.dead) animMarker(z.mk, B.t, z.pos.x);
-      if (z.fire && near && Math.random() < dt * 14) { z.node.getWorldPosition(_a); _a.add(_b.set(rr(-8, 8), rr(-6, 10), rr(-8, 8))); fx.smokePuff(_a.clone(), new V(rr(-2, 2), rr(6, 14), rr(-2, 2)), rr(26, 44), 2.4); if (Math.random() < 0.35) fx.flash(_a.clone(), '#ff8a30', 3, 70, 0.3, '#ff5020'); }
+      if (z.fire && near && Math.random() < dt * 3.5) { z.node.getWorldPosition(_a); _a.add(_b.set(rr(-4, 4), 4, rr(-4, 4))); fx.smokePuff(_a.clone(), new V(0, rr(10, 16), 0), rr(14, 20), 2.2); }   // fumee grise, petite, qui monte
     }
     if (B.mode === 'live' && live && B.awake) {
       const dist = B.W.position.distanceTo(rk.pos);
@@ -144,12 +144,12 @@
       B.dying += dt; const t = B.dying; B.sm = (B.sm || 0) - dt;
       const tb = def.aegis ? 0.3 : 3.0;   // BEHEMOTH plonge d'abord vers la mer en brulant, puis explose ; AEGIS explose tout de suite
       if (t > tb && !B.burst) { B.burst = 1; blast(g); }
-      if (B.sm <= 0 && t < tb + 2.4) { B.sm = 0.1; _c.set(rr(-70, 70), rr(0, 70), rr(-200, 200)); B.W.localToWorld(_c); fx.explosion(_c.clone(), null, true, Math.random() < 0.5 ? 'cyan' : 'orange'); fx.smokePuff(_c.clone(), new V(0, 12, 0), 40, 2.6); if (Math.random() < 0.5) g.audio.play('boom', _c); }
+      if (B.sm <= 0 && t < tb + 2.0) { B.sm = 0.28; _c.set(rr(-70, 70), rr(0, 70), rr(-200, 200)); B.W.localToWorld(_c); fx.explosion(_c.clone(), null, true, 'orange'); if (Math.random() < 0.5) g.audio.play('boom', _c); }
       if (t < tb + 2.4) g.rig.shake = Math.max(g.rig.shake, 0.9 * (1 - t / (tb + 2.6)));
       if (B.ball) { const k = U.clamp((t - tb) / 1.4, 0, 1); B.ball.scale.setScalar(80 + 520 * (1 - Math.pow(1 - k, 3))); B.ball.material.opacity = (1 - k) * 0.95; B.ball.visible = k < 1; }
       if (t > tb + 3.0) { B.mode = 'dead'; if (def.aegis && EVO.finishRun) EVO.finishRun(g); }
     }
-    for (let i = B.debris.length - 1; i >= 0; i--) { const q = B.debris[i]; q.t += dt; q.o.position.addScaledVector(q.v, dt); q.o.rotation.x += q.s * dt; q.o.rotation.z += q.s * 0.7 * dt; if (!def.aegis) q.v.y -= 30 * dt; if (Math.random() < 0.2) fx.smokePuff(q.o.position.clone(), new V(0, 4, 0), 14, 1.5); if (q.t > 6) { g.scene.remove(q.o); B.debris.splice(i, 1); } }
+    for (let i = B.debris.length - 1; i >= 0; i--) { const q = B.debris[i]; q.t += dt; q.o.position.addScaledVector(q.v, dt); q.o.rotation.x += q.s * dt; q.o.rotation.z += q.s * 0.7 * dt; if (!def.aegis) q.v.y -= 30 * dt; if (q.t > 6) { g.scene.remove(q.o); B.debris.splice(i, 1); } }
   }
 
   const _tk = EVO.tick;
