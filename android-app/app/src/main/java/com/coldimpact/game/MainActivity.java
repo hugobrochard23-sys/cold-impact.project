@@ -14,7 +14,7 @@ import androidx.webkit.WebViewAssetLoader;
 
 /** COLD IMPACT : un WebView plein ecran qui sert les fichiers du jeu depuis les assets de l appli (hors ligne, https://appassets.androidplatform.net/). */
 public class MainActivity extends Activity {
-    private static final String HOME = "https://appassets.androidplatform.net/assets/index.html";
+    private static final String HOME = "https://appassets.androidplatform.net/assets/index.html?evo=1";
     private WebView web;
 
     @Override protected void onCreate(Bundle b) {
