@@ -598,7 +598,7 @@
   EVO.afterReport = (g) => {
     if (!g.evoReport) return; const S = EVO.save(g);
     const go = () => { g.evoReport = false; g.evoLast = null; g.goHome({}); };
-    if (EVO.INTERSTITIAL && S.runs >= 5 && !g.evoAdDone && g.ads && g.ads.forced()) { g.ui.overlay = null; g.ads.open('interstitial', go, null, 5); return; }
+    if (!g.evoAdDone && g.ads && (EVO.adDue ? EVO.adDue(g, S) : (EVO.INTERSTITIAL && S.runs >= 5 && g.ads.forced()))) { g.ui.overlay = null; g.ads.open('interstitial', go, null, 5); return; }
     go();
   };
   // v150 : la pub de fin de vol multiplie les pieces du vol par le multiplicateur lu sur le curseur (x1,5 a x4)

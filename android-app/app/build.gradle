@@ -2,6 +2,11 @@ plugins { id 'com.android.application' }
 
 def ksFile = new File('C:/Users/PASSECOUTRIN/Documents/GitHub/cold-impact-missions-android/keystore.properties')   // cle d'envoi de Cold Impact! (SHA1 AA:D9:57:D1:...:6A:59)
 def ks = new Properties(); if (ksFile.exists()) ksFile.withInputStream { ks.load(it) }
+// IDs AdMob : par defaut les IDs de TEST de Google ; les vrais vont dans android-app/ads.properties (admobAppId, admobRewarded, admobInterstitial)
+def adp = new Properties(); def adf = new File(rootDir, 'ads.properties'); if (adf.exists()) adf.withInputStream { adp.load(it) }
+def adAppId = adp.getProperty('admobAppId', 'ca-app-pub-3940256099942544~3347511713')
+def adRewarded = adp.getProperty('admobRewarded', 'ca-app-pub-3940256099942544/5224354917')
+def adInter = adp.getProperty('admobInterstitial', 'ca-app-pub-3940256099942544/1033173712')
 def vjFile = new File(rootDir, '../version.json')
 def vj = vjFile.exists() ? new groovy.json.JsonSlurper().parse(vjFile).v : 'dev'
 
@@ -14,7 +19,11 @@ android {
         targetSdk 36
         versionCode = Integer.parseInt(String.valueOf(project.findProperty('vcode') ?: '2'))
         versionName "0.1.0 (${vj})"
+        manifestPlaceholders = [admobAppId: adAppId]
+        buildConfigField 'String', 'ADMOB_REWARDED', "\"${adRewarded}\""
+        buildConfigField 'String', 'ADMOB_INTERSTITIAL', "\"${adInter}\""
     }
+    buildFeatures { buildConfig true }
     signingConfigs {
         release {
             if (ks.containsKey('storeFile')) { storeFile file(ks['storeFile']); storePassword ks['storePassword']; keyAlias ks['keyAlias']; keyPassword ks['keyPassword'] }
@@ -25,4 +34,9 @@ android {
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     androidResources { noCompress 'js', 'png', 'jpg', 'ogg', 'mp3', 'json' }
 }
-dependencies { implementation 'androidx.webkit:webkit:1.12.1' }
+dependencies {
+    implementation 'androidx.webkit:webkit:1.12.1'
+    implementation 'com.google.android.gms:play-services-ads:24.2.0'
+    implementation 'com.google.android.ump:user-messaging-platform:3.1.0'
+    implementation 'com.android.billingclient:billing:7.1.1'
+}
