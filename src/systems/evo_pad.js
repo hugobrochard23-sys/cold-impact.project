@@ -36,14 +36,11 @@
     const L = pad.evoL = new T3.Group(); pad.group.add(L);
     const concrete = lam('#8a8c90'), concD = lam('#6e7074'), steel = lam('#4c5460'), dark = lam('#262a31'), light = lam('#c8ccd2'), red = lam('#c8352a'), white = lam('#eceef2');
     // v174 : un petit lanceur de roquette tout simple : dalle, rail incline, deux bras de maintien, bouclier de flamme, quelques cones
-    box(L, 2.6, 0.3, 6.0, concrete, 0, -0.78, -0.2);
-    for (const s of [-1, 1]) box(L, 0.06, 0.05, 6.0, lam('#5C6670'), s * 1.24, -0.62, -0.2);   // v257 : fines lisses d'acier au lieu des bandes jaunes
-    pad.deflMat = lam('#2a2d33', '#000000'); const defl = new T3.Mesh(new T3.BoxGeometry(0.9, 0.05, 1.3), pad.deflMat); defl.position.set(0, -0.6, 1.7); L.add(defl); pad.defl = defl; defl.userData.noBake = true;
+    box(L, 2.6, 0.3, 6.0, concrete, 0, -0.78, -0.2).userData.noShadow = true; L.userData.padSlabTop = -0.63;
+    for (const s of [-1, 1]) box(L, 0.06, 0.05, 6.0, lam('#5C6670'), s * 1.24, -0.62, -0.2).userData.noShadow = true;   // v257 : fines lisses d'acier au lieu des bandes jaunes
+    pad.deflMat = lam('#2a2d33', '#000000'); const defl = new T3.Mesh(new T3.BoxGeometry(0.9, 0.05, 1.3), pad.deflMat); defl.position.set(0, -0.6, 1.7); L.add(defl); pad.defl = defl; defl.userData.noBake = true; defl.userData.noShadow = true;
     const cradle = new T3.Group(); L.add(cradle); cradle.rotation.x = pad.pitch || 0; pad.cradle = cradle;
     for (const s of [-1, 1]) box(cradle, 0.08, 0.1, 4.6, steel, s * 0.22, -0.3, -0.4);
-    { const shM = new T3.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.34, depthWrite: false });   // ombres : sous la fusee (sur le rail) et sous tout le lanceur (sur la dalle)
-      const sh1 = new T3.Mesh(new T3.PlaneGeometry(0.62, 4.5), shM); sh1.rotation.x = -Math.PI / 2; sh1.position.set(0.06, -0.352, -0.35); sh1.userData.noBake = true; cradle.add(sh1);
-      const sh2 = new T3.Mesh(new T3.CircleGeometry(1, 28), new T3.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false })); sh2.scale.set(1.7, 3.5, 1); sh2.rotation.x = -Math.PI / 2; sh2.position.set(0.1, -0.628, -0.2); sh2.userData.noBake = true; L.add(sh2); }
     for (const z of [-2.1, -0.6, 0.9, 1.9]) box(cradle, 0.56, 0.06, 0.1, dark, 0, -0.34, z);
     if (EVO.isS2()) { box(cradle, 2.8, 0.3, 17, concrete, 0, -0.78, -8.2); for (const sx of [-1.3, 1.3]) box(cradle, 0.12, 0.04, 17, bas('#FFB347'), sx, -0.6, -8.2); for (let k = 0; k < 7; k++) box(cradle, 0.5, 0.04, 0.35, bas('#FFE08A'), 0, -0.6, -2.5 - k * 2); }   // niveau 2 : une rampe de beton dans le prolongement du rail
     for (const z of [-1.4, 0.6]) for (const s of [-1, 1]) box(L, 0.07, 0.42, 0.07, steel, s * 0.22, -0.52, z);
@@ -133,6 +130,27 @@
     }
     // grille de la fosse : rougeoie avec la pression
     if (pad.deflMat && a && !a.lock) { const h = hold ? ch : 0; pad.deflMat.emissive.setRGB(0.95 * h, 0.35 * h * h, 0.04 * h); }
+  };
+  // v258 : VRAIES OMBRES au sol : chaque piece du lanceur et de la fusee est ecrasee sur la dalle suivant la direction de la lumiere (ombre a la forme exacte des rails, montants et de la fusee)
+  const LD = new V(0.55, -1, 0.38), PM = new T3.Matrix4(), SM = new T3.Matrix4(), pool = [], shMat = new T3.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false, side: T3.DoubleSide, stencilWrite: true, stencilFunc: T3.NotEqualStencilFunc, stencilRef: 1, stencilZPass: T3.ReplaceStencilOp, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+  let shGroup = null;
+  const collect = (o, out) => { if (!o.visible || o.userData.noShadow || o.userData.isShadow) return; if (o.isMesh && o.geometry && !(o.material && (o.material.transparent || o.material.blending === T3.AdditiveBlending))) out.push(o); for (const k of o.children) collect(k, out); };
+  EVO.shadowTick = (g) => {
+    const pad = g.pad, L = pad && pad.evoL; if (!L) return;
+    const on = pad.group.visible && g.rocket && !g.rocket.active && g.state !== 'FLIGHT' && g.state !== 'DEAD';
+    if (!shGroup) { shGroup = new T3.Group(); shGroup.frustumCulled = false; }
+    if (shGroup.parent !== g.scene) g.scene.add(shGroup);
+    shGroup.visible = !!on; if (!on) return;
+    L.updateMatrixWorld(true);
+    const out = []; for (const k of L.children) { if (k === pad.hangar) continue; collect(k, out); }
+    if (g.rocket.mesh && g.rocket.mesh.visible) { g.rocket.mesh.updateMatrixWorld(true); collect(g.rocket.mesh, out); }
+    const y = new T3.Vector3(0, L.userData.padSlabTop + 0.004, 0).applyMatrix4(L.matrixWorld).y, dx = LD.x / LD.y, dz = LD.z / LD.y;
+    PM.set(1, -dx, 0, dx * y, 0, 0, 0, y, 0, -dz, 1, dz * y, 0, 0, 0, 1);
+    for (let i = 0; i < out.length; i++) {
+      let m = pool[i]; if (!m) { m = pool[i] = new T3.Mesh(out[i].geometry, shMat); m.matrixAutoUpdate = false; m.frustumCulled = false; m.renderOrder = 3; m.userData.isShadow = true; shGroup.add(m); }
+      m.geometry = out[i].geometry; m.visible = true; SM.multiplyMatrices(PM, out[i].matrixWorld); m.matrix.copy(SM); m.matrixWorldNeedsUpdate = true;
+    }
+    for (let i = out.length; i < pool.length; i++) pool[i].visible = false;
   };
   // le lancement : maintenir pour allumer, relacher pour liberer
   const _hs = EVO.holdStart; EVO.holdStart = (g) => { const had = g.evoAim && g.evoAim.hold; _hs(g); const a = g.evoAim; if (a && a.hold && !had && g.audio && g.audio.startIgnition) g.audio.startIgnition(); };

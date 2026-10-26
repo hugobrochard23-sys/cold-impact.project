@@ -24,19 +24,40 @@
     panel: (ctx, x, y, w, h, r, fill, f2, border) => UI.panel(ctx, x, y, w, h, { fill: fill && fill.length ? fill : T.bg, border: border === null ? null : border }),
     btnPrimary: UI.btnPrimary,
   };
+  // v258 : reflet blanc qui balaie un rectangle quand il apparait (k de 0 a 1)
+  const shimmer = (ctx, x, y, w, h, r, k) => { if (k <= 0 || k >= 1) return; ctx.save(); UI.rrect(ctx, x, y, w, h, r); ctx.clip(); const bw = w * 0.2, p = x - bw * 1.6 + (w + bw * 3.2) * k, g = ctx.createLinearGradient(p, 0, p + bw, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.55)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.translate(0, y + h / 2); ctx.transform(1, 0, -0.35, 1, 0, 0); ctx.fillStyle = g; ctx.fillRect(p, -h, bw, h * 2); ctx.restore(); };
+  // chiffre blanc, contour bleu, relief (compteur de vitesse)
+  const blueText = (ctx, s, x, y, px) => { ctx.save(); UI.setFont(ctx, px); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.miterLimit = 2; const lw = Math.max(2, px * 0.2), off = px * 0.08; ctx.lineWidth = lw; ctx.strokeStyle = '#0F3A8C'; ctx.strokeText(s, x, y + off); ctx.fillStyle = '#0F3A8C'; ctx.fillText(s, x, y + off); ctx.strokeStyle = '#2F7BEA'; ctx.strokeText(s, x, y); ctx.fillStyle = '#FFFFFF'; ctx.fillText(s, x, y); ctx.restore(); };
+  // pieces / gemmes du coffre qui volent vers la pastille du haut (le compteur ne monte qu'a l'arrivee)
+  const FLY_N = 14, FLY_G = 6, FLY_DUR = 0.8, FLY_GAP = 0.05;
+  function flyStep(game, now) {
+    const f = game.evoFly, h = game.evoHold; if (!f) { if (h && !game.evoChest) game.evoHold = null; return; }
+    const t = (now - f.t0) / 1000, nC = f.c > 0 ? FLY_N : 0, nG = f.g > 0 ? FLY_G : 0; let a = 0, b = 0;
+    for (let i = 0; i < nC; i++) if (t >= i * FLY_GAP + FLY_DUR) a++;
+    for (let i = 0; i < nG; i++) if (t >= i * FLY_GAP * 1.6 + FLY_DUR) b++;
+    if (h) { h.c = nC ? f.c * (1 - a / nC) : 0; h.g = nG ? f.g * (1 - b / nG) : 0; }
+    if (a >= nC && b >= nG) { game.evoFly = null; game.evoHold = null; }
+  }
+  function flyDraw(ctx, game, F, now) {
+    const f = game.evoFly; if (!f) return; const t = (now - f.t0) / 1000, h = S(96), y = F.T0 + S(34), x0 = F.ox + S(36), ty = y + h / 2;
+    const go = (n, art, sx, tx, gap, size) => { for (let i = 0; i < n; i++) { const d = t - i * gap; if (d < 0 || d >= FLY_DUR) continue; const k = d / FLY_DUR, e = k < 0.5 ? 2 * k * k : 1 - 2 * (1 - k) * (1 - k), ox = Math.sin(i * 12.9) * S(70), oy = Math.cos(i * 7.7) * S(40), p0x = sx + ox, p0y = f.sy + oy, cx2 = (p0x + tx) / 2 + Math.sin(i * 5.3) * S(120), cy2 = Math.min(p0y, ty) - S(150), u = 1 - e;
+      const px = u * u * p0x + 2 * u * e * cx2 + e * e * tx, py = u * u * p0y + 2 * u * e * cy2 + e * e * ty; ctx.save(); ctx.globalAlpha = Math.min(1, d / 0.08); UI.artImg(ctx, art, px, py, size * (1 - 0.3 * e)); ctx.restore(); } };
+    if (f.c > 0) go(FLY_N, 'coin', f.cx - S(125), x0 + h * 0.5, FLY_GAP, S(64));
+    if (f.g > 0) go(FLY_G, 'gem', f.cx + S(125), x0 + S(250) + S(30) + h * 0.5, FLY_GAP * 1.6, S(64));
+  }
   // ---------- barre du haut ----------
   function topBar(ui, ctx, game, F, S0, E, o) {
     o = o || {}; const h = S(96), y = F.T0 + S(34), x0 = F.ox + S(36), now = performance.now(), fxg = game.evoGemFx;
     const cwid = S(250);
     // v237 : le compteur de pieces defile jusqu'a la nouvelle valeur, la pastille rebondit quand on gagne, une valeur « -1 897 » tombe quand on depense
-    const tgt = S0.coins; if (game._cs === undefined) { game._cs = tgt; game._cp = tgt; }
+    flyStep(game, now); const hold = game.evoHold, tgt = S0.coins - (hold ? hold.c : 0); if (game._cs === undefined) { game._cs = tgt; game._cp = tgt; }
     { const dtc = Math.min(0.1, (now - (game._ct || now)) / 1000); game._ct = now; if (game._cp !== tgt) { game._cb = now; game._cd = tgt - game._cp; game._cp = tgt; } game._cs += (tgt - game._cs) * (1 - Math.exp(-dtc * 8)); if (Math.abs(tgt - game._cs) < 1) game._cs = tgt; }
     const cs = U.formatInt(Math.round(game._cs)), cbk = game._cb ? (now - game._cb) / 1000 : 9, cbump = cbk < 0.45 ? Math.sin(cbk / 0.45 * 3.1416) * (game._cd > 0 ? 0.1 : -0.045) : 0;
     ctx.save(); ctx.translate(x0 + cwid / 2, y + h / 2); ctx.scale(1 + cbump, 1 + cbump); ctx.translate(-(x0 + cwid / 2), -(y + h / 2));
     UI.currencyPill(ctx, ui, x0, y, cwid, h, 'coin', cs);
     ctx.restore();
-    if (cbk < 1.0 && game._cd && !(game._cd > 0 && game.evoCoinFx)) { const a = U.clamp(1 - cbk / 1.0, 0, 1), neg = game._cd < 0, tx = (neg ? '-' : '+') + U.formatInt(Math.abs(Math.round(game._cd))); ctx.save(); ctx.globalAlpha = a; UI.outlined(ctx, tx, x0 + cwid * 0.52, y + h * (neg ? 1.2 + cbk * 0.5 : 1.5 - cbk * 0.5), h * 0.5, neg ? '#FF8A7A' : '#FFE16A', '#1a1208', { keep: true, ow: 0.16 }); ctx.restore(); }
-    const gs = String(S0.gems || 0), gx = x0 + cwid + S(30), gwid = S(220), pulse = fxg ? U.clamp(1 - (now - fxg.t0) / 900, 0, 1) : 0;
+    if (cbk < 1.0 && game._cd && !(game._cd > 0 && (game.evoCoinFx || game.evoFly))) { const a = U.clamp(1 - cbk / 1.0, 0, 1), neg = game._cd < 0, tx = (neg ? '-' : '+') + U.formatInt(Math.abs(Math.round(game._cd))); ctx.save(); ctx.globalAlpha = a; UI.outlined(ctx, tx, x0 + cwid * 0.52, y + h * (neg ? 1.2 + cbk * 0.5 : 1.5 - cbk * 0.5), h * 0.5, neg ? '#FF8A7A' : '#FFE16A', '#1a1208', { keep: true, ow: 0.16 }); ctx.restore(); }
+    const gs = String((S0.gems || 0) - (hold ? hold.g : 0)), gx = x0 + cwid + S(30), gwid = S(220), pulse = fxg ? U.clamp(1 - (now - fxg.t0) / 900, 0, 1) : 0;
     UI.currencyPill(ctx, ui, gx, y, gwid, h, 'gem', gs, { plus: true });
     if (pulse > 0) { ctx.save(); UI.cham(ctx, gx + h * 0.3, y, gwid - h * 0.3, h, h * 0.28); ctx.lineWidth = S(5); ctx.strokeStyle = 'rgba(255,255,255,' + pulse + ')'; ctx.stroke(); UI.text(ctx, '+' + fxg.n, gx + h * 1.5, y + h * 1.5 - (1 - pulse) * h * 0.4, h * 0.6, T.yellow, { outline: true }); ctx.restore(); }
     UI.tap(ui, gx, y, gwid, h, () => { ui.overlay = 'evoShop'; });
@@ -122,7 +143,7 @@
       const t = (now - ch.t1) / 1000, dur = 1.35, a = Math.sin(t * 70) * (0.03 + 0.07 * Math.min(1, t / 0.9)), sc = 1 + 0.1 * Math.min(1, t / dur), l = Math.max(0, (t - 0.6) / 0.75);
       glowAt(cx, cyc, S(430) + l * S(520), 0.4 + l * 0.6); ctx.save(); ctx.translate(cx, cyc + S(180)); ctx.rotate(a); ctx.scale(sc, sc); ctx.translate(-cx, -(cyc + S(180))); UI.artImg(ctx, 'chest', cx + Math.sin(t * 90) * S(5) * l, cyc, S(580)); ctx.restore();
       if (l > 0.35) { ctx.fillStyle = 'rgba(255,248,220,' + Math.min(0.95, (l - 0.35) * 1.5) + ')'; ctx.fillRect(0, -(ui.offsetY || 0), W, ui.fullH || H); }
-      if (t >= dur) { game.evoChest = null; E.openChest(game); if (game.evoChest) { game.evoChest.st = 'open'; game.evoChest.t2 = performance.now(); game.flash = 0.5; game.flashColor = '#FFF2C0'; } }
+      if (t >= dur) { game.evoChest = null; E.openChest(game); if (game.evoChest) { game.evoHold = { c: game.evoChest.coins, g: game.evoChest.gems }; game.evoChest.st = 'open'; game.evoChest.t2 = performance.now(); game.flash = 0.5; game.flashColor = '#FFF2C0'; } }
     } else if (ch.st === 'open') {
       const k = (now - ch.t2) / 1000, e = ease(k * 2.6), pw = cw * 0.88, ph = S(1000), px = cx - pw / 2, py = Y(0.5) - ph / 2;
       ctx.save(); ctx.translate(cx, Y(0.5)); ctx.scale(0.6 + 0.4 * e, 0.6 + 0.4 * e); ctx.globalAlpha = Math.min(1, e * 1.4); ctx.translate(-cx, -Y(0.5));
@@ -139,8 +160,8 @@
       { const by = py + S(870), bh = S(130), gp = S(30), bw = (pw - S(80) - gp) / 2, bx0 = px + S(40), bx1 = bx0 + bw + gp;
         const dbl = !!ch.doubled; UI.btnSecondary(ctx, bx0, by, bw, bh, '', {}); ctx.save(); if (dbl) ctx.globalAlpha = 0.45; UI.outlined(ctx, 'X2', bx0 + bw * 0.4, by + bh * 0.42, S(70), '#FFFFFF'); UI.artImg(ctx, 'ticket', bx0 + bw * 0.74, by + bh * 0.42, S(84)); ctx.restore();
         UI.btnPrimary(ctx, bx1, by, bw, bh, 'RÉCLAMER', { px: S(56) });
-        hit(ui, bx0, by, bw, bh, () => { if (ch.doubled) return; const go = () => { ch.doubled = true; const S0 = E.save(game); S0.coins += ch.coins; ch.coins *= 2; game.writeSave(); game.audio.play('coinPing'); game.flash = 0.25; game.flashColor = '#FFF2C0'; }; if (game.ads && game.ads.enabled && game.ads.enabled() && game.ads.rewarded) game.ads.rewarded(go, null, 'chestx2', 'COFFRE X2'); else go(); });
-        hit(ui, bx1, by, bw, bh, () => { game.evoChest = null; game.audio.play('uiTick'); }); }
+        hit(ui, bx0, by, bw, bh, () => { if (ch.doubled) return; const go = () => { ch.doubled = true; const S0 = E.save(game); S0.coins += ch.coins; ch.coins *= 2; game.evoHold = { c: ch.coins, g: ch.gems }; game.writeSave(); game.audio.play('coinPing'); game.flash = 0.25; game.flashColor = '#FFF2C0'; }; if (game.ads && game.ads.enabled && game.ads.enabled() && game.ads.rewarded) game.ads.rewarded(go, null, 'chestx2', 'COFFRE X2'); else go(); });
+        hit(ui, bx1, by, bw, bh, () => { const c0 = ch.coins, g0 = ch.gems; game.evoChest = null; game.audio.play('uiTick'); game.evoHold = { c: c0, g: g0 }; game.evoFly = { t0: performance.now(), c: c0, g: g0, sy: Y(0.5) + S(205), cx }; }); }
       ctx.restore();
       hit(ui, 0, 0, W, H, () => {});
     }
@@ -185,7 +206,7 @@
     // (plus d'etoile sur l'ogive)
     for (const c of cards) if (!c.can && c.cost !== null && game.evoGemOffer === c.id) UI.tap(ui, c.bx, c.by, c.bw, c.bh, () => E.buyGem(game, c.id));
     for (const c of cards) hit(ui, c.rx, c.y, c.w, c.h, () => E.buy(game, c.id));
-    chestOverlay(ui, ctx, game, F, E, now, W, H);
+    chestOverlay(ui, ctx, game, F, E, now, W, H); flyDraw(ctx, game, F, now);
     hit(ui, 0, T0 + S(160), W, Y(0.68) - T0 - S(160), () => { game.evoLvPop = false; E.start(game); }, true);
   };
 
@@ -245,17 +266,18 @@
       const fl = r.kind === 'ad' && r.t ? U.clamp(1 - (now - r.t) / 900, 0, 1) : 0, e = r.t ? ease((now - r.t) / 900) : ease((tt - t0) / 0.7);
       UI.panel(ctx, px0 + S(24), y, pw - S(48), rowH, { c: S(22), fill: fl > 0 ? 'rgba(255,230,0,' + (0.1 + 0.25 * fl) + ')' : T.bg2, border: T.border, bw: S(2) });
       const lab = r.kind === 'dist' ? 'DISTANCE ' + U.formatInt(Math.round(last.dist * e)) + ' M' : r.lab, ix = px0 + S(90), iy = y + rowH / 2;
-      if (r.kind === 'dist') UI.artImg(ctx, 'pin', ix, iy, S(86)); else if (r.kind === 'kills') UI.glyph(ctx, 'target', ix, iy, S(40), '#5AC3DF'); else if (r.kind === 'ad') UI.icon(ctx, 'video', ix, iy, S(70)); else UI.glyph(ctx, 'plus', ix, iy, S(30), T.yellow);
+      if (r.kind === 'dist') UI.artImg(ctx, 'pin', ix, iy, S(86)); else if (r.kind === 'kills') UI.glyph(ctx, 'target', ix, iy, S(40), '#5AC3DF'); else if (r.kind === 'ad') UI.icon(ctx, 'video', ix, iy, S(70)); else UI.glyph(ctx, 'plus', ix, iy, S(30), '#3CC027');
       UI.text(ctx, lab, px0 + S(150), iy, UI.fit(ctx, r.kind === 'dist' ? 'DISTANCE 99 999 M' : lab, pw * (r.kind === 'mult' ? 0.5 : 0.45), r.kind === 'mult' ? S(32) : S(44)), r.kind === 'mult' ? T.dim : T.white, { align: 'left', shadow: false });
       if (r.kind === 'mult') UI.text(ctx, r.mult + ' »', px0 + pw - S(60), iy, S(56), T.yellow, { align: 'right', shadow: false });
       else { const vs = U.formatInt(Math.round(r.val * e)), vp = UI.fit(ctx, vs, pw * 0.26, S(56)); UI.icon(ctx, 'coin', px0 + pw - S(76), iy, S(60)); UI.text(ctx, vs, px0 + pw - S(120), iy, vp, T.yellow, { align: 'right', shadow: false }); }
+      if (r.kind === 'dist') shimmer(ctx, px0 + S(24), y, pw - S(48), rowH, S(12), (tt - t0 - 0.05) / 0.6);
       ctx.restore(); });
     { const y = py0 + S(26) + rows.length * (rowH + S(12)) + S(30), a = U.clamp((tt - tTot) / 0.25, 0, 1);
       if (a > 0) { ctx.save(); ctx.globalAlpha = a;
         const dtm = Math.min(0.1, (now - (last._tn || now)) / 1000); last._tn = now; if (last.disp === undefined) last.disp = 0;
         if (tt < tTot + 0.8) last.disp = last.total * ease((tt - tTot) / 0.72); else { last.disp += (last.total - last.disp) * (1 - Math.exp(-dtm * 5)); if (Math.abs(last.total - last.disp) < 1) last.disp = last.total; }
         const pop = 1 + 0.05 * U.clamp(1 - (now - (last.popT || 0)) / 300, 0, 1); ctx.translate(cx, y + totH / 2); ctx.scale(pop, pop); ctx.translate(-cx, -(y + totH / 2));
-        UI.panel(ctx, px0 + S(24), y, pw - S(48), totH, { c: S(28), fill: 'rgba(255,230,0,0.06)', border: T.white, bw: S(5) }); UI.text(ctx, 'TOTAL', cx, y + totH * 0.22, S(46), T.white, { shadow: false });
+        UI.panel(ctx, px0 + S(24), y, pw - S(48), totH, { c: S(28), fill: 'rgba(255,230,0,0.06)', border: T.white, bw: S(5) }); UI.text(ctx, 'TOTAL', cx, y + totH * 0.22, S(46), T.white, { shadow: false }); shimmer(ctx, px0 + S(24), y, pw - S(48), totH, S(15), (tt - tTot - 0.05) / 0.6);
         const vs = U.formatInt(Math.round(last.disp)), vp = UI.fit(ctx, vs, pw * 0.5, S(118)); UI.text(ctx, vs, cx, y + totH * 0.64, vp, T.yellow, { outline: true, ow: 0.18 }); UI.icon(ctx, 'coin', cx + UI.tw(ctx, vs, vp) / 2 + S(52), y + totH * 0.62, S(76));
         if (last.fx) { const k = U.clamp(1 - (now - last.fx.t0) / 1300, 0, 1); if (k > 0) UI.text(ctx, '+' + U.formatInt(last.fx.n), px0 + pw - S(90), y + totH * 0.3 - (1 - k) * S(90), S(66), T.yellowL, { align: 'right', outline: true }); }
         ctx.restore(); } }
@@ -268,10 +290,10 @@
         const sw2 = bw * 0.9, sx = cx - sw2 / 2, sY = by0 + bh * 0.5, sh = bh * 0.3, X = (v) => sx + sw2 * (v + 1) / 2;
         if (!last.mult) last.cur = Math.sin((now - last.t0) / 520); const lock = !!last.mult, pos = lock ? last.mult.p : last.cur, mv = lock ? last.mult.m : multAt(pos);
         const edges = [[-1, -0.75, 1.5], [-0.75, -0.45, 2], [-0.45, -0.2, 3], [-0.2, 0.2, 4], [0.2, 0.45, 3], [0.45, 0.75, 2], [0.75, 1, 1.5]];
-        ctx.save(); UI.cham(ctx, sx, sY, sw2, sh, sh * 0.3); ctx.clip(); for (const [v0, v1, m] of edges) { ctx.fillStyle = MCOL[m]; ctx.fillRect(X(v0), sY, X(v1) - X(v0) + 1, sh); } ctx.fillStyle = 'rgba(255,255,255,0.14)'; ctx.fillRect(sx, sY, sw2, sh * 0.4); ctx.restore(); UI.cham(ctx, sx, sY, sw2, sh, sh * 0.3); ctx.lineWidth = S(4); ctx.strokeStyle = T.ink; ctx.stroke();
+        ctx.save(); UI.rrect(ctx, sx, sY, sw2, sh, sh * 0.5); ctx.clip(); for (const [v0, v1, m] of edges) { ctx.fillStyle = MCOL[m]; ctx.fillRect(X(v0), sY, X(v1) - X(v0) + 1, sh); } ctx.fillStyle = 'rgba(255,255,255,0.14)'; ctx.fillRect(sx, sY, sw2, sh * 0.4); ctx.restore(); UI.rrect(ctx, sx, sY, sw2, sh, sh * 0.5); ctx.lineWidth = S(4); ctx.strokeStyle = T.ink; ctx.stroke();
         for (const [v0, v1, m] of edges) { const lbl = 'X' + (m === 1.5 ? '1,5' : m); UI.outlined(ctx, lbl, (X(v0) + X(v1)) / 2, by0 + bh * 0.24, UI.fit(ctx, lbl, (X(v1) - X(v0)) * 0.95, S(38)), '#FFFFFF'); }
-        const x = X(pos); ctx.fillStyle = T.white; ctx.strokeStyle = T.ink; ctx.lineWidth = S(3); ctx.beginPath(); ctx.moveTo(x - S(20), sY - S(30)); ctx.lineTo(x + S(20), sY - S(30)); ctx.lineTo(x, sY - S(4)); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle = T.white; ctx.fillRect(x - S(4), sY - S(4), S(8), sh + S(8));
-        if (!last.doubled) { const f = UI.greenButton(ctx, bx, b2y, wA, b2h, { cat: 'mx' }); UI.outlined(ctx, 'MULTIPLIER', bx + wA * 0.5, f.y + f.h * 0.32, UI.fit(ctx, 'MULTIPLIER', wA * 0.8, f.h * 0.4), '#FFFFFF'); UI.outlined(ctx, 'ET RÉCUPÉRER', bx + wA * 0.5, f.y + f.h * 0.7, UI.fit(ctx, 'ET RÉCUPÉRER', wA * 0.8, f.h * 0.3), '#FFFFFF'); UI.artImg(ctx, 'ticket', bx + wA - S(46), b2y + S(8), S(78));
+        const x = X(pos), cy0 = sY - S(32), cy1 = sY + sh + S(12); ctx.save(); ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(x - S(20), cy0); ctx.lineTo(x + S(20), cy0); ctx.lineTo(x + S(8), sY - S(6)); ctx.lineTo(x + S(8), cy1); ctx.lineTo(x - S(8), cy1); ctx.lineTo(x - S(8), sY - S(6)); ctx.closePath(); ctx.lineWidth = S(15); ctx.strokeStyle = T.ink; ctx.stroke(); ctx.lineWidth = S(10); ctx.strokeStyle = T.white; ctx.fillStyle = T.white; ctx.fill(); ctx.stroke(); ctx.restore();   // v258 : curseur d'un seul tenant, bouts arrondis
+        if (!last.doubled) { const f = UI.greenButton(ctx, bx, b2y, wA, b2h, { cat: 'mx' }); UI.outlined(ctx, 'MULTIPLIER', bx + wA * 0.5, f.y + f.h * 0.32, UI.fit(ctx, 'MULTIPLIER', wA * 0.8, f.h * 0.4), '#FFFFFF'); UI.outlined(ctx, 'ET RÉCUPÉRER', bx + wA * 0.5, f.y + f.h * 0.7, UI.fit(ctx, 'ET RÉCUPÉRER', wA * 0.8, f.h * 0.3), '#FFFFFF'); ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowOffsetY = S(7); ctx.shadowOffsetX = S(3); ctx.shadowBlur = S(4); UI.artImg(ctx, 'ticket', bx + wA - S(46), b2y + S(8), S(78)); ctx.restore(); shimmer(ctx, f.x, f.y, f.w, f.h, f.h * 0.07, (tt - tMul - 0.1) / 0.6);
           if (tt > tMul + 0.15) UI.tap(ui, bx, b2y, wA, b2h, () => { if (last.mult) return; last.mult = { m: mv, p: pos }; game.audio.play('uiTick'); setTimeout(() => game.ads.rewarded(() => E.multiply(game, mv), null, 'coins', 'PIÈCES X' + (mv === 1.5 ? '1,5' : mv) + '   +' + U.formatInt(Math.round(last.total * (mv - 1)))), 420); }); }
         else UI.text(ctx, 'BONUS X' + (last.doubled === 1.5 ? '1,5' : last.doubled) + ' AJOUTÉ', bx + wA / 2, b2y + b2h / 2, UI.fit(ctx, 'BONUS X1,5 AJOUTÉ', wA * 0.9, S(54)), T.yellow, { outline: true });
         ctx.restore(); }
@@ -371,20 +393,27 @@
     { let near = false; for (const m of g.missiles || []) { if (m.alive && m.pos.distanceTo(rk.pos) < 140) { near = true; break; } } if (near && g.state === 'FLIGHT') { const a = 0.55 + 0.45 * Math.sin(now / 110); ctx.save(); ctx.globalAlpha = a; const wy = H * 0.125, wr = S(24), tx = W / 2 - S(150); ctx.lineJoin = 'round'; ctx.lineWidth = S(5); ctx.strokeStyle = T.red; ctx.beginPath(); ctx.moveTo(tx, wy - wr); ctx.lineTo(tx + wr * 0.95, wy + wr * 0.7); ctx.lineTo(tx - wr * 0.95, wy + wr * 0.7); ctx.closePath(); ctx.stroke(); UI.text(ctx, '!', tx, wy + wr * 0.2, wr * 0.9, T.red, { shadow: false }); UI.text(ctx, 'MISSILE !', W / 2 + S(22), wy + wr * 0.1, S(44), T.red, { outline: true, ow: 0.2 }); ctx.restore(); } }
     { const pct = U.clamp(run.dist / Math.max(1, (TT && TT.levelLen) || 5000), 0, 1), bh = H * 0.36, bw = bh * 0.15, bx = ox + u - S(40) - bw, by = top;
       // piste : fond gris (#696a6d) aux bouts arrondis, progression bleue (#387cee), puis le cadre fourni par-dessus
-      const tx = bx + bw * 0.213, tw2 = bw * 0.567, ty = by + bh * 0.125, th = bh * 0.77, rr2 = tw2 / 2; ctx.save(); ctx.beginPath(); ctx.moveTo(tx + rr2, ty); ctx.arc(tx + rr2, ty + rr2, rr2, -Math.PI / 2, 0); ctx.lineTo(tx + tw2, ty + th - rr2); ctx.arc(tx + rr2, ty + th - rr2, rr2, 0, Math.PI / 2); ctx.arc(tx + rr2, ty + th - rr2, rr2, Math.PI / 2, Math.PI); ctx.lineTo(tx, ty + rr2); ctx.arc(tx + rr2, ty + rr2, rr2, Math.PI, Math.PI * 1.5); ctx.closePath(); ctx.fillStyle = '#696A6D'; ctx.fill(); ctx.clip();
+      const tx = bx + bw * 0.213, tw2 = bw * 0.567, ty = by + bh * 0.125, th = bh * 0.77, rr2 = tw2 / 2; ctx.save(); ctx.beginPath(); ctx.moveTo(tx + rr2, ty); ctx.arc(tx + rr2, ty + rr2, rr2, -Math.PI / 2, 0); ctx.lineTo(tx + tw2, ty + th - rr2); ctx.arc(tx + rr2, ty + th - rr2, rr2, 0, Math.PI / 2); ctx.arc(tx + rr2, ty + th - rr2, rr2, Math.PI / 2, Math.PI); ctx.lineTo(tx, ty + rr2); ctx.arc(tx + rr2, ty + rr2, rr2, Math.PI, Math.PI * 1.5); ctx.closePath(); ctx.fillStyle = 'rgba(0,0,0,0.16)'; ctx.fill(); ctx.clip();
       ctx.fillStyle = '#387CEE'; ctx.fillRect(tx, ty + th * (1 - pct), tw2, th * pct + 1); ctx.restore();
       if (!UI.artImg(ctx, 'bar', bx + bw / 2, by + bh / 2, bh)) UI.checkFlag(ctx, bx, by, bw, S(60));
+      { const S1 = E.save(g), rec = (S1 && S1.best) || 0; if (rec > 0) {   // v258 : le record : un trait sur la barre et une fleche arrondie qui depasse a droite
+          const rp = U.clamp(rec / Math.max(1, (TT && TT.levelLen) || 5000), 0, 1), ry = ty + th * (1 - rp), aw = bw * 0.62, ah = bw * 0.62, tip = bx + bw * 0.58, bk = tip + aw, lw = bw * 0.16, off = bw * 0.06;
+          ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = S(7); ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.moveTo(tx + S(2), ry + S(2)); ctx.lineTo(tip, ry + S(2)); ctx.stroke(); ctx.lineWidth = S(4.5); ctx.strokeStyle = '#FFFFFF'; ctx.beginPath(); ctx.moveTo(tx + S(2), ry); ctx.lineTo(tip, ry); ctx.stroke();
+          const tri = (dy) => { ctx.beginPath(); ctx.moveTo(tip + lw * 0.5, ry + dy); ctx.lineTo(bk - lw * 0.5, ry - ah / 2 + dy); ctx.lineTo(bk - lw * 0.5, ry + ah / 2 + dy); ctx.closePath(); };
+          tri(off); ctx.lineWidth = lw; ctx.strokeStyle = T.yellowD; ctx.fillStyle = T.yellowD; ctx.fill(); ctx.stroke();
+          tri(0); const ag = ctx.createLinearGradient(0, ry - ah / 2, 0, ry + ah / 2); ag.addColorStop(0, T.yellowL); ag.addColorStop(1, T.yellow); ctx.strokeStyle = T.yellow; ctx.fillStyle = ag; ctx.fill(); ctx.stroke(); ctx.restore(); } }
       UI.icon(ctx, 'missile_ogive', bx + bw / 2, ty + th * (1 - pct) - S(6), S(84), { rot: -Math.PI / 4 }); UI.text(ctx, Math.round(pct * 100) + '%', bx + bw / 2, by + bh + S(52), S(70), T.white, { outline: true }); }
-    { const kmh = rk.active ? rk.vel.length() * 3.6 : 0, R = S(76), cx = ox + S(44) + R, cy = top + S(236) + R * 0.25, f = Math.min(1, kmh / 450), D = R * 2 / 0.74;   // v257 : cadran et aiguille en images
-      ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, D * 0.27, 0, 6.2832); const fg = ctx.createLinearGradient(0, cy - R, 0, cy + R); fg.addColorStop(0, '#6EC2F4'); fg.addColorStop(1, '#2468B0'); ctx.fillStyle = fg; ctx.fill(); ctx.restore();
+    { const kmh = rk.active ? rk.vel.length() * 3.6 : 0, R = S(112), cx = ox + S(36) + R, cy = top + S(172) + R, f = Math.min(1, kmh / 450), D = R * 2 / 0.74, rf = D * 0.262, cyf = cy + D * 0.02;   // v258 : plus gros, fond transparent, moitie basse noire a 13 %
+      ctx.save(); ctx.beginPath(); ctx.arc(cx, cyf, rf, 0, Math.PI); ctx.closePath(); ctx.fillStyle = 'rgba(0,0,0,0.13)'; ctx.fill(); ctx.restore();
       UI.artImg(ctx, 'speed_ring', cx, cy, D);
       { const im = UI.art('speed_needle'); if (im) { ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.PI + f * Math.PI + 0.5236); ctx.imageSmoothingQuality = 'high'; ctx.drawImage(im, -D / 2, -D / 2, D, D); ctx.restore(); } }
-      UI.text(ctx, String(Math.round(kmh)), cx, cy + R * 0.46, R * 0.46, '#ffffff', { stroke: true }); UI.text(ctx, 'KM/H', cx, cy + R * 0.74, R * 0.2, '#ffffff', { stroke: true }); }
+      const ns = String(Math.round(kmh)); blueText(ctx, ns, cx, cyf + rf * 0.36, UI.fit(ctx, ns, rf * 1.1, rf * 0.54));
+      UI.text(ctx, 'KM/H', cx, cyf + rf * 0.77, UI.fit(ctx, 'KM/H', rf * 0.85, rf * 0.24), '#FFFFFF', { flat: true }); }
     if (E.titanHud) E.titanHud(ctx, g, ox, u, H, UI, S);
   };
   // petit compteur de pieces de la partie, sous la vitesse
   Home.evoUI.coinCounter = function (ctx, g, W, H, tot, bump) {
-    const u = H > W ? W : Math.min(W, H * 0.62), ox = (W - u) / 2; UI.begin(u, g.hudPr || 1); const h = S(76) * bump, y = H * 0.022 + S(400), s = U.formatInt(tot), w = UI.tw(ctx, s, h * 0.6) + h * 1.8;
+    const u = H > W ? W : Math.min(W, H * 0.62), ox = (W - u) / 2; UI.begin(u, g.hudPr || 1); const h = S(76) * bump, y = H * 0.022 + S(440), s = U.formatInt(tot), w = UI.tw(ctx, s, h * 0.6) + h * 1.8;
     UI.currencyPill(ctx, null, ox + S(36), y, w, h, 'coin', s);
   };
   // le bouton de pause (element de page) prend le meme habillage : carre chanfreine sombre, deux barres jaunes
