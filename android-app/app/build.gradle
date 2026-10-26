@@ -1,6 +1,6 @@
 plugins { id 'com.android.application' }
 
-def ksFile = new File(System.getProperty('user.home'), 'coldimpact-keystore/keystore.properties')
+def ksFile = new File('C:/Users/PASSECOUTRIN/Documents/GitHub/cold-impact-missions-android/keystore.properties')   // cle d'envoi de Cold Impact! (SHA1 AA:D9:57:D1:...:6A:59)
 def ks = new Properties(); if (ksFile.exists()) ksFile.withInputStream { ks.load(it) }
 def vjFile = new File(rootDir, '../version.json')
 def vj = vjFile.exists() ? new groovy.json.JsonSlurper().parse(vjFile).v : 'dev'
@@ -9,10 +9,10 @@ android {
     namespace 'com.coldimpact.game'
     compileSdk 36
     defaultConfig {
-        applicationId 'com.coldimpact.game'
+        applicationId 'com.king6code.coldimpactmissions'
         minSdk 24
         targetSdk 36
-        versionCode = Integer.parseInt(String.valueOf(project.findProperty('vcode') ?: '1'))
+        versionCode = Integer.parseInt(String.valueOf(project.findProperty('vcode') ?: '2'))
         versionName "0.1.0 (${vj})"
     }
     signingConfigs {

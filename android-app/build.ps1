@@ -1,6 +1,6 @@
 # Construit le bundle signe (.aab) de COLD IMPACT : android-app\app\build\outputs\bundle\release\app-release.aab
 # Utilisation : .\build.ps1   (ou  .\build.ps1 -VersionCode 2  pour un nouvel envoi sur la Play Console)
-param([int]$VersionCode = 1)
+param([int]$VersionCode = 2)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repo = Split-Path -Parent $root
@@ -12,6 +12,16 @@ $assets = Join-Path $root 'app\src\main\assets'
 New-Item -ItemType Directory -Force -Path $assets | Out-Null
 foreach ($f in 'index.html', 'style.css', 'game.js') { if (Test-Path (Join-Path $repo $f)) { Copy-Item -Force (Join-Path $repo $f) $assets } }
 foreach ($d in 'src', 'assets') { robocopy (Join-Path $repo $d) (Join-Path $assets $d) /MIR /XD _spare /NFL /NDL /NJH /NJS /NP | Out-Null; if ($LASTEXITCODE -ge 8) { throw "copie de $d impossible" } }
+# 1b) version Android : plus de requete reseau (polices Google retirees) et pas de fausses pubs
+$idx = Join-Path $assets 'index.html'
+$h = [IO.File]::ReadAllText($idx)
+$h = [regex]::Replace($h, '<link rel="preconnect" href="https://fonts[^>]*>', '')
+$h = [regex]::Replace($h, '<link rel="stylesheet" href="https://fonts.googleapis.com[^>]*>', '')
+[IO.File]::WriteAllText($idx, $h)
+$cfg = Join-Path $assets 'src\config.js'
+$c = [IO.File]::ReadAllText($cfg)
+$c = [regex]::Replace($c, '(ads:\s*\{\s*\r?\n\s*enabled:\s*)true', '${1}false')
+[IO.File]::WriteAllText($cfg, $c)
 # 2) bundle
 $g = (Get-ChildItem (Join-Path $env:USERPROFILE '.gradle\wrapper\dists\gradle-8.14.3-all\*\gradle-8.14.3\bin\gradle.bat') | Select-Object -First 1).FullName
 Push-Location $root
