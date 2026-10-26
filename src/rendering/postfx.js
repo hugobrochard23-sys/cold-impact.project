@@ -56,7 +56,7 @@
     constructor(renderer) {
       this.renderer = renderer;
       const isGL2 = renderer.capabilities.isWebGL2;
-      this.rtScene = new THREE.WebGLRenderTarget(4, 4, { samples: isGL2 ? 4 : 0 });
+      this.rtScene = new THREE.WebGLRenderTarget(4, 4, { samples: isGL2 ? 4 : 0, stencilBuffer: true });
       this.rtA = new THREE.WebGLRenderTarget(4, 4); this.rtB = new THREE.WebGLRenderTarget(4, 4);
       this.cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
       this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2));
@@ -82,7 +82,7 @@
       const isGL2 = this.renderer.capabilities.isWebGL2, s = isGL2 ? n : 0;
       if (this.rtScene.samples === s) return;
       this.rtScene.dispose();
-      this.rtScene = new THREE.WebGLRenderTarget(Math.max(1, this.w || 4), Math.max(1, this.h || 4), { samples: s });
+      this.rtScene = new THREE.WebGLRenderTarget(Math.max(1, this.w || 4), Math.max(1, this.h || 4), { samples: s, stencilBuffer: true });
     }
 
     setSize(w, h) {
