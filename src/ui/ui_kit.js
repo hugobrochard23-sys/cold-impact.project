@@ -46,7 +46,7 @@
     o = o || {}; ctx.save(); UI.setFont(ctx, px); ctx.textAlign = o.align || 'center'; ctx.textBaseline = 'middle';
     if (o.stroke) { ctx.lineJoin = 'round'; ctx.miterLimit = 2; ctx.lineWidth = Math.max(2, px * 0.2); ctx.strokeStyle = '#0b0d12'; ctx.strokeText(s, x, y); ctx.fillStyle = color || THEME.white; ctx.fillText(s, x, y); ctx.restore(); return; }   // v211 : contour noir plat, sans relief
     const off = px * (o.outline ? 0.075 : 0.055);   // l'ecart du relief suit la taille du texte
-    if (!o.flat) { ctx.fillStyle = 'rgba(8,9,12,0.95)'; ctx.fillText(s, x, y + off); }
+    if (!o.flat) { ctx.lineJoin = 'round'; ctx.miterLimit = 2; ctx.lineWidth = Math.max(1.5, px * 0.075); ctx.strokeStyle = 'rgba(8,9,12,0.95)'; ctx.strokeText(s, x, y + off); ctx.fillStyle = 'rgba(8,9,12,0.95)'; ctx.fillText(s, x, y + off); ctx.strokeText(s, x, y); }   // v257 : leger contour noir autour du texte a relief
     ctx.fillStyle = color || THEME.white; ctx.fillText(s, x, y); ctx.restore();
   };
   // ---------- composants ----------

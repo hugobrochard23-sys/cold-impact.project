@@ -26,7 +26,7 @@
     for (const k of Object.keys(g.evoParts || {})) if (EVO.partTier()[k] === tier) { const p = g.evoParts[k]; p.userData.k = 0; p.visible = false; p.scale.setScalar(1); const f = FLY[k] || [0, 2, 0]; parts.push({ k, p, from: new V(f[0], f[1], f[2]), t0: 0.9 + i * 0.5, arr: false, glow: glowSprite(1.4, '#ffd9a0') }); i++; }
     const stretch = skinLen(Math.max(0, tier - 1)) / skinLen(tier);
     const last = parts.length ? parts[parts.length - 1].t0 + 0.8 : 1.6;
-    g.evoAnim = { kind: 'tier', t: 0, dur: last + 1.9, tier, label, sub: 'NOUVELLE PIÈCE', parts, stretch, lift: 0, ring: false, sheen: last + 0.1, base: g.rocket.mesh.scale.x };
+    g.evoAnim = { kind: 'tier', t: 0, dur: last + 1.7, ui: last + 0.8, tier, label, sub: 'NOUVELLE PIÈCE', parts, stretch, lift: 0, ring: false, sheen: last + 0.1, base: g.rocket.mesh.scale.x };
     for (const q of parts) { q.p.parent.add(q.glow); q.glow.visible = false; }
     g.audio.play('padArm'); g.rig.shake = Math.max(g.rig.shake, 0.25);
   };
@@ -60,8 +60,8 @@
   EVO.playBuild = (g, n) => {
     const pad = g.pad; if (!pad || !pad.hItems) return false;
     const list = pad.hItems.filter((o) => o.userData.lv === n); if (!list.length) return false;
-    const ctr = new V(); list.forEach((o, i) => { o.visible = false; o.userData.delay = 0.7 + i * 0.5; o.userData.arr = false; o.updateWorldMatrix(true, false); ctr.add(o.getWorldPosition(new V()).add(new V(0, 1.4, 0))); }); ctr.multiplyScalar(1 / list.length);
-    g.evoAnim = { kind: 'build', t: 0, dur: 0.7 + list.length * 0.5 + 1.9, label: 'ENTREPÔT', sub: 'NOUVEL ÉQUIPEMENT', list, ctr, n };
+    const ctr = new V(); list.forEach((o, i) => { o.visible = false; o.userData.delay = 0.6 + i * 0.45; o.userData.arr = false; o.updateWorldMatrix(true, false); ctr.add(o.getWorldPosition(new V()).add(new V(0, 1.4, 0))); }); ctr.multiplyScalar(1 / list.length);
+    g.evoAnim = { kind: 'build', t: 0, dur: 0.6 + (list.length - 1) * 0.45 + 0.9 + 0.3 + 0.9, ui: 0.6 + (list.length - 1) * 0.45 + 0.9 + 0.3, label: 'ENTREPÔT', sub: 'NOUVEL ÉQUIPEMENT', list, ctr, n };
     g.audio.play('padArm'); return true;
   };
   EVO.buildFrame = (g, dt, A) => {
@@ -135,7 +135,7 @@
     // niveau 2 : au lancement, la camera est PLUS HAUTE et regarde vers le bas, derriere la fusee : on voit la fusee, la rampe et la mer devant
     if (!A && g.evoAim && g.pad && EVO.isS2()) { const d = g.pad.dir, up = new V(0, 1, 0), ch = g.pad.charge || 0, p = new V().copy(o).addScaledVector(d, -4.6).addScaledVector(up, 3.0), l = new V().copy(o).addScaledVector(d, 3.4).addScaledVector(up, -0.8); p.lerp(l, 0.2 * ch * ch * (3 - 2 * ch)); rig.padPos.copy(p); rig.padLook.copy(l); rig.padFov = 54 * (1 - 0.1 * ch * ch); return; }
     if (!A || !A.kind) { _ch(g, rig, o); return; }
-    if (A.t > A.dur - 1.1) { g.evoAnim = null; _ch(g, rig, o); g.evoAnim = A; return; }   // fin : la camera du menu reprend en douceur (pas de balayage etrange)
+    if (A.t > (A.ui !== undefined ? A.ui : A.dur - 1.1)) { g.evoAnim = null; _ch(g, rig, o); g.evoAnim = A; return; }   // fin : la camera du menu reprend en douceur (pas de balayage etrange)
     const t = A.t, dir = g.pad.dir, up = new V(0, 1, 0), right = new V().crossVectors(dir, up).normalize(), Lw = EVO.rocketLen(g);
     const k = U.smooth(0, 0.6, t);
     let p, look, fov;

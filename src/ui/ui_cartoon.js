@@ -9,7 +9,7 @@
   UI.C = C;
   // images d'habillage fournies (assets/ui/*.png) : boutique et fonds de cartes (bois, pierre, bois sombre)
   const ART = {}; UI.art = (n) => { let i = ART[n]; if (!i) { i = ART[n] = new Image(); i.src = 'assets/ui/' + n + '.png'; } return i.complete && i.naturalWidth ? i : null; };
-  ['shop', 'card_slate', 'gem', 'chest', 'chest_open', 'gear', 'close', 'coin', 'btn_green', 'ticket', 'fuel', 'bg_la', 'bg_rk', 'bg_cm', 'gems_crate', 'gems_rope', 'gems_bag', 'gems_belt', 'gems_chest', 'cmx_0', 'cmx_1', 'cmx_2', 'cmx_3', 'cmx_4', 'cmx_5'].forEach((n) => UI.art(n));
+  ['shop', 'card_slate', 'gem', 'chest', 'chest_open', 'gear', 'close', 'coin', 'btn_green', 'ticket', 'fuel', 'bg_la', 'bg_rk', 'bg_cm', 'gems_crate', 'gems_rope', 'gems_bag', 'gems_belt', 'gems_chest', 'cmx_0', 'cmx_1', 'cmx_2', 'cmx_3', 'cmx_4', 'cmx_5', 'pin', 'speed_ring', 'speed_needle', 'bar'].forEach((n) => UI.art(n));
   const hexPath = (ctx, cx, cy, r, cut) => { const w = r * 2, c = r * (cut === undefined ? 0.5 : cut); ctx.beginPath(); ctx.moveTo(cx - r + c, cy - r); ctx.lineTo(cx + r - c, cy - r); ctx.lineTo(cx + r, cy - r + c); ctx.lineTo(cx + r, cy + r - c); ctx.lineTo(cx + r - c, cy + r); ctx.lineTo(cx - r + c, cy + r); ctx.lineTo(cx - r, cy + r - c); ctx.lineTo(cx - r, cy - r + c); ctx.closePath(); };
   const rr = (ctx, x, y, w, h, r) => { r = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r); ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath(); };
   const lg = (ctx, y0, y1, a, b, m) => { const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, a); if (m) g.addColorStop(0.5, m); g.addColorStop(1, b); return g; };
@@ -31,7 +31,7 @@
     return { x, y, w, h };
   };
   // --- bouton vert en relief (AMELIORER...) : retourne { x, y, w, h } de la face
-  const BTN = { la: ['#2ECC71', '#1F9A52', '#8FE3B3', '#6BC495'], rk: ['#1E90FF', '#1769C2', '#8FC8FF', '#6AA6DB'], cm: ['#FF8C00', '#C46A00', '#FFC47A', '#E5A25A'] };
+  const BTN = { la: ['#2ECC71', '#1F9A52', '#8FE3B3', '#6BC495'], rk: ['#1E90FF', '#1769C2', '#8FC8FF', '#6AA6DB'], cm: ['#FF8C00', '#C46A00', '#FFC47A', '#E5A25A'], mx: ['#3cc027', '#2A9418', '#9BDD8C', '#79B96B'] };
   UI.CARDCOL = { la: '#2ECC71', rk: '#1E90FF', cm: '#FF8C00' };
   UI.CARDBG = { la: ['#5CB87C', '#3A6D4B'], rk: ['#5D6D7E', '#2C3E50'], cm: ['#F39C12', '#A16E34'] };   // [haut, bas]
   UI.greenButton = (ctx, x, y, w, h, o) => {   // bouton plat avec une tranche (relief) sous la face ; plus clair quand on ne peut pas acheter
@@ -83,14 +83,14 @@
   UI.shade = (hex, k) => { const n = parseInt(hex.slice(1), 16); const f = (v) => Math.max(0, Math.min(255, Math.round(k < 0 ? v * (1 + k) : v + (255 - v) * k))); return '#' + [n >> 16, (n >> 8) & 255, n & 255].map((v) => f(v).toString(16).padStart(2, '0')).join(''); };
   const WH = {};   // silhouette blanche d'une icone (pour son contour)
   UI.artOutlined = (ctx, name, cx, cy, size, ow) => {
-    const im = UI.art(name); if (!im) return false; let c = WH[name];
+    const im = UI.art(name); if (!im) return false; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; let c = WH[name];
     if (!c) { c = WH[name] = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const x = c.getContext('2d'); x.drawImage(im, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, c.width, c.height); }
     const k = size / Math.max(im.naturalWidth, im.naturalHeight), w = im.naturalWidth * k, h = im.naturalHeight * k;
     for (let a = 0; a < 12; a++) ctx.drawImage(c, cx - w / 2 + Math.cos(a / 12 * 6.2832) * ow, cy - h / 2 + Math.sin(a / 12 * 6.2832) * ow, w, h);
     ctx.drawImage(im, cx - w / 2, cy - h / 2, w, h); return true;
   };
   UI.slate = (ctx, x, y, w, h, r, fill) => { rr(ctx, x, y, w, h, r); ctx.fillStyle = fill || '#26394B'; ctx.fill(); };
-  UI.artImg = (ctx, name, cx, cy, size) => { const im = UI.art(name); if (!im) return false; const k = size / Math.max(im.naturalWidth, im.naturalHeight); ctx.drawImage(im, cx - im.naturalWidth * k / 2, cy - im.naturalHeight * k / 2, im.naturalWidth * k, im.naturalHeight * k); return true; };
+  UI.artImg = (ctx, name, cx, cy, size) => { const im = UI.art(name); if (!im) return false; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; const k = size / Math.max(im.naturalWidth, im.naturalHeight); ctx.drawImage(im, cx - im.naturalWidth * k / 2, cy - im.naturalHeight * k / 2, im.naturalWidth * k, im.naturalHeight * k); return true; };
   UI.currencyPill = (ctx, ui, x, y, w, h, kind, value, o) => {   // pastille jaune (pieces) / bleue (gemmes), contour blanc et ombre
     o = o || {}; const gem = kind === 'gem', body = x + h * 0.3, bw = w - h * 0.3; h = h * 0.84; y += S(6); const ow = Math.max(2, S(4));
     ctx.save(); ctx.translate(0, S(5)); rr(ctx, body - ow, y - ow, bw + ow * 2, h + ow * 2, h * 0.3 + ow); ctx.fillStyle = 'rgba(8,12,18,0.34)'; ctx.fill(); ctx.restore();
