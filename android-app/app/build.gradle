@@ -1,0 +1,28 @@
+plugins { id 'com.android.application' }
+
+def ksFile = new File(System.getProperty('user.home'), 'coldimpact-keystore/keystore.properties')
+def ks = new Properties(); if (ksFile.exists()) ksFile.withInputStream { ks.load(it) }
+def vjFile = new File(rootDir, '../version.json')
+def vj = vjFile.exists() ? new groovy.json.JsonSlurper().parse(vjFile).v : 'dev'
+
+android {
+    namespace 'com.coldimpact.game'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'com.coldimpact.game'
+        minSdk 24
+        targetSdk 36
+        versionCode = Integer.parseInt(String.valueOf(project.findProperty('vcode') ?: '1'))
+        versionName "0.1.0 (${vj})"
+    }
+    signingConfigs {
+        release {
+            if (ks.containsKey('storeFile')) { storeFile file(ks['storeFile']); storePassword ks['storePassword']; keyAlias ks['keyAlias']; keyPassword ks['keyPassword'] }
+        }
+    }
+    buildTypes { release { minifyEnabled false; signingConfig signingConfigs.release } }
+    bundle { language { enableSplit = false } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    androidResources { noCompress 'js', 'png', 'jpg', 'ogg', 'mp3', 'json' }
+}
+dependencies { implementation 'androidx.webkit:webkit:1.12.1' }
