@@ -60,15 +60,7 @@
     { const br = r * 0.34, bx = cx + r * 0.78, by = cy - r * 0.74; ctx.beginPath(); ctx.arc(bx, by, br + ow, 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.beginPath(); ctx.arc(bx, by, br, 0, 6.2832); ctx.fillStyle = tickets > 0 ? '#2ECC71' : '#F04438'; ctx.fill(); UI.outlined(ctx, String(tickets), bx, by + br * 0.04, br * 1.25, '#FFFFFF'); }
   }
   // petite icone de carburant (bidon + bec), pour les gains de l'ogive
-  function fuelIcon(ctx, cx, cy, s) {
-    ctx.save(); ctx.translate(cx, cy); const w = s * 0.72, h = s * 0.9; ctx.lineJoin = 'round';
-    ctx.fillStyle = '#06121c'; rr0(ctx, -w / 2 - s * 0.07, -h / 2 - s * 0.07, w + s * 0.14, h + s * 0.14, s * 0.18); ctx.fill();
-    ctx.fillStyle = '#FF5A3A'; rr0(ctx, -w / 2, -h / 2, w, h, s * 0.14); ctx.fill();
-    ctx.fillStyle = '#C93C22'; ctx.fillRect(-w / 2, h * 0.12, w, h * 0.38 - s * 0.05);
-    ctx.fillStyle = '#FFE16A'; ctx.beginPath(); ctx.moveTo(0, -h * 0.34); ctx.quadraticCurveTo(w * 0.3, -h * 0.02, 0, h * 0.06); ctx.quadraticCurveTo(-w * 0.3, -h * 0.02, 0, -h * 0.34); ctx.fill();
-    ctx.fillStyle = '#06121c'; ctx.fillRect(-w * 0.1, -h / 2 - s * 0.2, w * 0.5, s * 0.16); ctx.fillStyle = '#9aa5b1'; ctx.fillRect(-w * 0.04, -h / 2 - s * 0.16, w * 0.38, s * 0.1);
-    ctx.restore();
-  }
+  function fuelIcon(ctx, cx, cy, s) { ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 0; for (const [dx, dy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) { ctx.shadowOffsetX = dx * S(2); ctx.shadowOffsetY = dy * S(2); UI.artImg(ctx, 'fuel', cx, cy, s * 1.5); } ctx.restore(); }
   // ---------- carte d'amelioration ----------
   function card(ui, ctx, game, E, S0, id, x, y, w, h, now) {
     const n = S0[id], cost = E.nextCost(game, id), can = cost !== null && S0.coins >= cost;
@@ -81,11 +73,14 @@
     rr0(ctx, rx, y, w, h, R); ctx.fillStyle = '#26394B'; ctx.fill();
     const ix = rx + pd, iy = y + h * 0.125, iw = w - pd * 2, ih = h * 0.405;
     UI.outlined(ctx, name, ix, y + h * 0.068, UI.fit(ctx, name, w * 0.6, h * 0.066), ink, null, { align: 'left' });
-    { const bg = UI.CARDBG[id], gr = ctx.createLinearGradient(0, iy, 0, iy + ih); gr.addColorStop(0, bg[0]); gr.addColorStop(1, bg[1]); rr0(ctx, ix, iy, iw, ih, w * 0.025); ctx.fillStyle = gr; ctx.fill(); }
+    { const im = UI.art('bg_' + id); ctx.save(); rr0(ctx, ix, iy, iw, ih, w * 0.025); ctx.clip();
+      if (im) { const k = Math.max(iw / im.naturalWidth, ih / im.naturalHeight), dw = im.naturalWidth * k, dh = im.naturalHeight * k; ctx.drawImage(im, ix + (iw - dw) / 2, iy + (ih - dh) / 2, dw, dh); } else { const bg = UI.CARDBG[id], gr = ctx.createLinearGradient(0, iy, 0, iy + ih); gr.addColorStop(0, bg[0]); gr.addColorStop(1, bg[1]); ctx.fillStyle = gr; ctx.fillRect(ix, iy, iw, ih); }
+      ctx.restore(); }
     // v237 : revenu : a chaque achat la pile de pieces rebondit et la valeur gagnee monte (+0,1) ; a un PALIER (x1,4 -> x2) c'est plus gros, avec une gerbe d'etincelles
     const cb = (id === 'cm' || id === 'rk') && game.evoBought && game.evoBought.id === id && (id === 'rk' || game.evoBought.delta !== undefined) ? game.evoBought : null, ct = cb ? (now - cb.t0) / 1000 : 9, big = cb && cb.palier;
     const pul = ct < 0.55 ? Math.sin(ct / 0.55 * 3.1416) * (big ? 0.34 : 0.2) : 0;
-    ctx.save(); if (id !== 'cm') { ctx.shadowColor = 'rgba(0,0,0,0.38)'; ctx.shadowOffsetY = S(7); ctx.shadowOffsetX = S(3); ctx.shadowBlur = 0; } { const icx = ix + iw / 2, icy = iy + ih / 2 - (id === 'cm' ? ih * 0.07 : 0); ctx.translate(icx, icy - pul * ih * 0.12); ctx.scale(1 + pul, 1 + pul); ctx.translate(-icx, -icy); UI.icon(ctx, ico, icx, icy, ih * 0.66); } ctx.restore();
+    if (id === 'cm') { const m = E.mult(n), ti = m < 2 ? 0 : m < 3 ? 1 : m < 4 ? 3 : m < 6 ? 2 : m < 9 ? 4 : 5; ctx.save(); const icx = ix + iw / 2, icy = iy + ih * 0.46; ctx.translate(icx, icy - pul * ih * 0.12); ctx.scale(1 + pul, 1 + pul); ctx.translate(-icx, -icy); UI.artImg(ctx, 'cmx_' + ti, icx, icy, ih * 0.74); ctx.restore(); }
+    else if (pul > 0) { ctx.save(); ctx.globalAlpha = pul * 1.4; ctx.fillStyle = '#FFFFFF'; rr0(ctx, ix, iy, iw, ih, w * 0.025); ctx.fill(); ctx.restore(); }   // petit flash a l'achat
     if (id === 'cm') { ctx.save(); const tcx = ix + iw / 2, tcy = iy + ih * 0.84; ctx.translate(tcx, tcy); ctx.scale(1 + pul * 0.9, 1 + pul * 0.9); ctx.translate(-tcx, -tcy); UI.outlined(ctx, 'X' + f1(E.mult(n)), tcx, tcy, h * 0.095, big && ct < 0.8 ? T.yellow : T.white, '#000000', { keep: true, ow: 0.16 }); ctx.restore(); }
     {
       if (cb && ct < 1.7) {
@@ -112,6 +107,45 @@
     ctx.restore();
     return { id, rx, y, w, h, ix, iy, iw, ih, can, cost, bx, by, bw, bh };
   }
+  // ---------- COFFRE : il apparait en grand, on le touche, il tremble, une lumiere jaillit, il s'ouvre ; puis le panneau de recompense ----------
+  function chestOverlay(ui, ctx, game, F, E, now) {
+    const ch = game.evoChest; if (!ch) return; const { T0, HH, W, Y, cx, cw } = F;
+    ctx.save(); ctx.fillStyle = 'rgba(6,10,16,0.82)'; ctx.fillRect(0, 0, F.W || ctx.canvas.width, ctx.canvas.height);
+    const glowAt = (gx, gy, r, a) => { const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, r); g.addColorStop(0, 'rgba(255,214,110,' + a + ')'); g.addColorStop(1, 'rgba(255,170,40,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(gx, gy, r, 0, 6.2832); ctx.fill(); };
+    const cyc = Y(0.42);
+    if (ch.st === 'wait') {
+      const t = (now - ch.t0) / 1000, pu = 0.5 + 0.5 * Math.sin(t * 3);
+      glowAt(cx, cyc, S(430) + pu * S(40), 0.35 + 0.15 * pu); ctx.save(); ctx.translate(cx, cyc + S(180)); ctx.scale(1 + 0.025 * pu, 1 - 0.02 * pu); ctx.translate(-cx, -(cyc + S(180))); UI.artImg(ctx, 'chest', cx, cyc, S(580)); ctx.restore();
+      UI.outlined(ctx, 'TOUCHE POUR OUVRIR', cx, Y(0.72), UI.fit(ctx, 'TOUCHE POUR OUVRIR', cw * 0.86, S(70)), '#FFFFFF', '#000000', { keep: true, ow: 0.12 });
+      hit(ui, 0, 0, F.W || ctx.canvas.width, ctx.canvas.height, () => { ch.st = 'shake'; ch.t1 = performance.now(); game.audio.play('padArm'); if (CC.Haptics) CC.Haptics.tick('touch'); });
+    } else if (ch.st === 'shake') {
+      const t = (now - ch.t1) / 1000, dur = 1.35, a = Math.sin(t * 70) * (0.03 + 0.07 * Math.min(1, t / 0.9)), sc = 1 + 0.1 * Math.min(1, t / dur), l = Math.max(0, (t - 0.6) / 0.75);
+      glowAt(cx, cyc, S(430) + l * S(520), 0.4 + l * 0.6); ctx.save(); ctx.translate(cx, cyc + S(180)); ctx.rotate(a); ctx.scale(sc, sc); ctx.translate(-cx, -(cyc + S(180))); UI.artImg(ctx, 'chest', cx + Math.sin(t * 90) * S(5) * l, cyc, S(580)); ctx.restore();
+      if (l > 0.35) { ctx.fillStyle = 'rgba(255,248,220,' + Math.min(0.95, (l - 0.35) * 1.5) + ')'; ctx.fillRect(0, 0, F.W || ctx.canvas.width, ctx.canvas.height); }
+      if (t >= dur) { game.evoChest = null; E.openChest(game); if (game.evoChest) { game.evoChest.st = 'open'; game.evoChest.t2 = performance.now(); game.flash = 0.5; game.flashColor = '#FFF2C0'; } }
+    } else if (ch.st === 'open') {
+      const k = (now - ch.t2) / 1000, e = ease(k * 2.6), pw = cw * 0.88, ph = S(1000), px = cx - pw / 2, py = Y(0.5) - ph / 2;
+      ctx.save(); ctx.translate(cx, Y(0.5)); ctx.scale(0.6 + 0.4 * e, 0.6 + 0.4 * e); ctx.globalAlpha = Math.min(1, e * 1.4); ctx.translate(-cx, -Y(0.5));
+      glowAt(cx, py + S(210), S(380), 0.3);
+      UI.panel(ctx, px, py, pw, ph, { c: S(60), fill: '#26394B' });
+      rr0(ctx, px + S(14), py + S(14), pw - S(28), ph - S(28), S(40)); ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = S(4); ctx.stroke();
+      UI.artImg(ctx, 'chest_open', cx, py + S(250), S(420));
+      { const hw = pw * 0.9, hh = S(120), hx = cx - hw / 2, hy = py - S(50); rr0(ctx, hx, hy + S(8), hw, hh, S(30)); ctx.fillStyle = '#12306A'; ctx.fill(); rr0(ctx, hx, hy, hw, hh, S(30)); const g = ctx.createLinearGradient(0, hy, 0, hy + hh); g.addColorStop(0, '#3C9BEF'); g.addColorStop(1, '#1F6FD0'); ctx.fillStyle = g; ctx.fill(); ctx.lineWidth = S(5); ctx.strokeStyle = '#FFFFFF'; ctx.stroke(); UI.outlined(ctx, 'COFFRE DE RÉCOMPENSE', cx, hy + hh / 2, UI.fit(ctx, 'COFFRE DE RÉCOMPENSE', hw * 0.9, S(64)), '#FFFFFF'); }
+      UI.outlined(ctx, 'Vous avez obtenu :', cx, py + S(520), S(54), '#C9D6E4');
+      { const ay = py + S(570), ah = S(270); rr0(ctx, px + S(40), ay, pw - S(80), ah, S(30)); ctx.fillStyle = '#16222E'; ctx.fill();
+        const tiles = [{ art: 'coin', n: ch.coins, c0: '#FFD66B', c1: '#E8A317' }, { art: 'gem', n: ch.gems, c0: '#7FD0FF', c1: '#2E86DE' }], ts = S(210), gap = S(40), tot = tiles.length * ts + (tiles.length - 1) * gap;
+        tiles.forEach((t, i) => { const tx = cx - tot / 2 + i * (ts + gap), ty = ay + (ah - ts) / 2, kk = ease((k - 0.25 - i * 0.18) * 3); if (kk <= 0) return; ctx.save(); ctx.translate(tx + ts / 2, ty + ts / 2); ctx.scale(kk, kk); ctx.translate(-tx - ts / 2, -ty - ts / 2);
+          rr0(ctx, tx, ty, ts, ts, S(26)); const g = ctx.createLinearGradient(0, ty, 0, ty + ts); g.addColorStop(0, t.c0); g.addColorStop(1, t.c1); ctx.fillStyle = g; ctx.fill(); UI.artImg(ctx, t.art, tx + ts / 2, ty + ts * 0.44, ts * 0.62); UI.outlined(ctx, U.formatInt(t.n), tx + ts / 2, ty + ts * 0.86, UI.fit(ctx, U.formatInt(t.n), ts * 0.9, S(56)), '#FFFFFF', '#000000', { keep: true, ow: 0.16 }); ctx.restore(); }); }
+      { const by = py + S(870), bh = S(130), gp = S(30), bw = (pw - S(80) - gp) / 2, bx0 = px + S(40), bx1 = bx0 + bw + gp;
+        const dbl = !!ch.doubled; UI.btnSecondary(ctx, bx0, by, bw, bh, '', {}); ctx.save(); if (dbl) ctx.globalAlpha = 0.45; UI.outlined(ctx, 'X2', bx0 + bw * 0.4, by + bh * 0.42, S(70), '#FFFFFF'); UI.artImg(ctx, 'ticket', bx0 + bw * 0.74, by + bh * 0.42, S(84)); ctx.restore();
+        UI.btnPrimary(ctx, bx1, by, bw, bh, 'RÉCLAMER', { px: S(56) });
+        hit(ui, bx0, by, bw, bh, () => { if (ch.doubled) return; const go = () => { ch.doubled = true; const S0 = E.save(game); S0.coins += ch.coins; ch.coins *= 2; game.writeSave(); game.audio.play('coinPing'); game.flash = 0.25; game.flashColor = '#FFF2C0'; }; if (game.ads && game.ads.enabled && game.ads.enabled() && game.ads.rewarded) game.ads.rewarded(go, null, 'chestx2', 'COFFRE X2'); else go(); });
+        hit(ui, bx1, by, bw, bh, () => { game.evoChest = null; game.audio.play('uiTick'); }); }
+      ctx.restore();
+      hit(ui, 0, 0, F.W || ctx.canvas.width, ctx.canvas.height, () => {});
+    }
+    ctx.restore();
+  }
   // ---------- MENU ----------
   Home.drawEvo = function (ui, ctx, game, W, H) {
     const F = frame(ui, ctx, W, H), { HH, Y, T0, cw, ox, cx } = F, E = CC.EVO, S0 = E.save(game), last = game.evoLast, now = performance.now(), anim = game.evoAnim;
@@ -136,10 +170,10 @@
     if (!(game.meta && game.meta.noAds)) { const y = ly + bs + S(28); UI.noAdsBadge(ctx, lx, y, bs); UI.tap(ui, lx, y, bs, bs, () => { ui.overlay = 'evoShop'; }); }
     { const unlocked = S0.runs >= 3, ready = E.chestReady(game), wait = Math.max(0, (S0.chestAt || 0) - Date.now()), rx0 = ox + cw - S(36) - bs, y = ly, pulse = 0.5 + 0.5 * Math.sin(now / 240);
       UI.chestFrame(ctx, rx0, y, bs, ready, unlocked, now);
-      { const ty = y + bs + S(86), tk = E.miniTickets(game); miniIcon(ctx, rx0, ty, bs, tk, now); UI.tap(ui, rx0, ty, bs, bs, () => { ui.overlay = 'evoMini'; }); }   // mini-jeu : sous le coffre
+
       // (lueur du coffre pret : voir UI.chestFrame)
       { const lab = !unlocked || ready ? '' : secFmt(wait); if (lab) UI.outlined(ctx, lab, rx0 + bs / 2, y + bs + S(34), UI.fit(ctx, lab, bs * 1.2, S(36)), '#F0EDE4'); }
-      if (unlocked) UI.tap(ui, rx0, y, bs, bs + S(50), () => E.openChest(game));
+      if (unlocked) UI.tap(ui, rx0, y, bs, bs + S(50), () => { if (!game.evoChest && E.chestReady(game)) { game.evoChest = { st: 'wait', t0: performance.now() }; game.audio.play('uiTick'); } });
       if (E.stage) { const y2 = T0 + S(176) + S(104) - S(100);
         if (game.evoLvPop) { const stg = E.stage(game), pw = S(420), rh = S(104), px0 = cx - pw / 2 + S(30), py0 = y2 + S(100); hit(ui, px0, py0, pw, rh * 2, () => {}); UI.panel(ctx, px0, py0 - S(10), pw, rh * 2 + S(20), { c: S(24), border: T.white });
           for (let nn = 1; nn <= 2; nn++) { const yy = py0 + (nn - 1) * rh, open = true, on = stg === nn; if (on) { ctx.fillStyle = 'rgba(255,230,0,0.14)'; ctx.fillRect(px0 + S(6), yy + S(4), pw - S(12), rh - S(8)); } UI.text(ctx, 'NIVEAU ' + nn, px0 + S(30), yy + rh / 2, S(44), open ? T.white : T.dim, { align: 'left', shadow: false }); if (!open) UI.glyph(ctx, 'lock', px0 + pw - S(50), yy + rh / 2, S(26), T.dim); hit(ui, px0, yy, pw, rh, () => { game.evoLvPop = false; if (open && !on) E.switchStage(game, nn); }); }
@@ -151,9 +185,7 @@
     // (plus d'etoile sur l'ogive)
     for (const c of cards) if (!c.can && c.cost !== null && game.evoGemOffer === c.id) UI.tap(ui, c.bx, c.by, c.bw, c.bh, () => E.buyGem(game, c.id));
     for (const c of cards) hit(ui, c.rx, c.y, c.w, c.h, () => E.buy(game, c.id));
-    { const ch = game.evoChest; if (ch) { const k = (now - ch.t0) / 1000; if (k > 3.2) game.evoChest = null; else {
-      const a = U.clamp(k / 0.25, 0, 1) * U.clamp((3.2 - k) / 0.4, 0, 1); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = 'rgba(8,9,12,0.85)'; ctx.fillRect(0, T0, W, HH); UI.icon(ctx, 'chest_open', cx, Y(0.3), S(440) * (0.9 + 0.1 * ease(k * 3)));
-      const t1 = '+' + U.formatInt(ch.coins), t2 = '+' + ch.gems, p1 = S(110); UI.icon(ctx, 'coin', cx - UI.tw(ctx, t1, p1) / 2 - p1 * 0.7, Y(0.5), p1); UI.text(ctx, t1, cx + p1 * 0.2, Y(0.5), p1, T.yellow, { outline: true }); UI.icon(ctx, 'gem', cx - UI.tw(ctx, t2, p1) / 2 - p1 * 0.7, Y(0.58), p1); UI.text(ctx, t2, cx + p1 * 0.2, Y(0.58), p1, T.yellow, { outline: true }); ctx.restore(); hit(ui, 0, T0, W, HH, () => { game.evoChest = null; }); } } }
+    chestOverlay(ui, ctx, game, F, E, now);
     hit(ui, 0, T0 + S(160), W, Y(0.68) - T0 - S(160), () => { game.evoLvPop = false; E.start(game); }, true);
   };
 
@@ -251,7 +283,7 @@
       UI.text(ctx, 'Pack de démarrage', mx + S(40), y + h * 0.86, S(52), T.white, { align: 'left', shadow: false }); const bw = S(250), bh = S(92), bx = mx + mw - bw - S(30), by = y + h - bh - S(26); UI.btnPrimary(ctx, bx, by, bw, bh, '10,99 €', { px: S(46) }); UI.tap(ui, bx, by, bw, bh, () => buy('starter')); }
     { const y = Y(0.145) + S(116) + S(272), h = S(150); UI.panel(ctx, mx, y, mw, h, { c: S(30), border: T.border2, bw: S(4) }); adsBadge(ctx, mx + S(90), y + h / 2, S(56)); UI.text(ctx, 'Pas de publicités', mx + S(200), y + h * 0.5, S(56), T.white, { align: 'left', shadow: false }); const bw = S(250), bh = S(92), bx = mx + mw - bw - S(30), by = y + (h - bh) / 2; UI.btnPrimary(ctx, bx, by, bw, bh, '7,99 €', { px: S(46) }); UI.tap(ui, bx, by, bw, bh, () => buy('noads')); }
     const gy = Y(0.145) + S(116) + S(272) + S(190); sectionHead(ctx, mx, gy, mw, S(100), 'GEMMES', (x, y, r) => UI.icon(ctx, 'gem', x, y, r));
-    const tiles = [{ n: 1, ico: 'gem', free: true }, { n: 5, ico: 'gems_rope', p: '2,09 €' }, { n: 10, ico: 'gems_belt', p: '3,69 €' }, { n: 30, ico: 'bag_wings', p: '9,99 €' }, { n: 100, ico: 'chest_open', p: '25,99 €' }, { n: 250, ico: 'crate_steel', p: '49,99 €', best: true }];
+    const tiles = [{ n: 1, ico: 'gem', free: true }, { n: 5, ico: 'gems_rope', p: '2,09 €' }, { n: 10, ico: 'gems_belt', p: '3,69 €' }, { n: 30, ico: 'bag_wings', p: '9,99 €' }, { n: 100, ico: 'gems_chest', p: '25,99 €' }, { n: 250, ico: 'crate_steel', p: '49,99 €', best: true }];
     const gp = S(20), tw0 = (mw - gp * 2) / 3, th = S(400), free = Math.max(0, 3 - (E.freeGemsUsed ? E.freeGemsUsed(game) : 0));
     tiles.forEach((t, i) => { const x = mx + (i % 3) * (tw0 + gp), y = gy + S(120) + Math.floor(i / 3) * (th + gp);
       UI.panel(ctx, x, y, tw0, th, { c: S(26), border: T.border2, bw: S(4) }); UI.icon(ctx, t.ico, x + tw0 / 2, y + th * 0.34, tw0 * 0.8); UI.text(ctx, String(t.n), x + tw0 / 2, y + th * 0.64, S(54), T.white, { outline: true });
