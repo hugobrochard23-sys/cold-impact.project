@@ -15,7 +15,7 @@
     if (m < 0.08) { J.held = 0; return; }
     J.held = (J.held || 0) + dt; const ramp = 0.65 + 0.35 * Math.min(1, J.held / 0.4);   // la rotation monte doucement pendant la 1re seconde
     const k = ramp * Math.pow((m - 0.08) / 0.92, 1.2) / m, sens = [0.7, 1, 1.4][game.settings.touchSens !== undefined ? game.settings.touchSens : 1] * (game.settings.invertY ? 1 : 1);
-    input.addAim(-nx * k * RATE * sens * dt, -ny * k * RATE * sens * dt * (game.settings.invertY ? -1 : 1) * (ny < 0 ? 1.3 : 1));   // monter (doigt vers le haut) un peu plus vif
+    input.addAim(-nx * k * RATE * sens * dt, -ny * k * RATE * sens * dt * (game.settings.invertY ? -1 : 1));   // v272 : haut et bas exactement a la meme vitesse
   };
   J.draw = (ctx, game, ui) => {
     if (!evo() || game.state !== 'FLIGHT') { J.on = false; return; }
