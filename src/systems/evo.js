@@ -356,6 +356,8 @@
     // planeur : les ailes portent (elles annulent une partie de la gravité tant que la vitesse est suffisante)
     if (r.wing > 0 && !ev.preview) rk.vel.y += C.physics.gravity * r.wing * (r.tier >= 2 && rk.fuel <= 0.01 ? 0.25 : 0.62) * U.clamp((sp - TU('ls')) / TU('lw'), 0, 1.1) * dt;   // v125 : plus de carburant ou plus de vitesse = on pique   // v123 : lent = les ailes ne portent plus : elle pique, on peut redresser avec la vitesse reprise
     if (ev.preview) rk.vel.y += C.physics.gravity * 0.95 * U.clamp(sp / 17, 0, 1.1) * dt;
+    // v264 : en chute libre (nez vers le bas) la fusee accelere jusqu'a sa vitesse maximale (plus de plafond a 100 km/h)
+    if (!ev.preview && rk.vel.y < -1 && rk.fwd.y < -0.25) { const vm = (r.tier >= 2 ? r.vmax : EVO.launcher(S.la).speed) || 60; if (sp < vm) rk.vel.addScaledVector(rk.fwd, 34 * U.clamp(-rk.fwd.y * 1.3, 0, 1) * (1 - sp / vm) * dt); }
     // filet de sécurité : la fusée ne s'enfonce jamais dans le sol (elle roule dessus, le glissement la fait s'écraser)
     { const gyy = run.T.base(Math.max(0, run.dist)) + 0.32; if (rk.pos.y < gyy) { rk.pos.y = gyy; if (rk.vel.y < 0) rk.vel.y = 0; rk.sliding = Math.max(rk.sliding || 0, 0.03); } }
     // sans réacteur ou sans carburant : la fusée tombe ; au sol, le vol est fini
@@ -455,7 +457,7 @@
     { const cols = ['#b8925e', '#c9a46c', '#8a6a44', '#e8dcc0', '#6e5230'], bp = rk.pos.clone();
       for (let i = 0; i < 12; i++) { const sz = rr(0.06, 0.2), ch = new THREE.Mesh(new THREE.BoxGeometry(sz, sz * rr(0.3, 0.8), sz * rr(1, 2.2)), new THREE.MeshLambertMaterial({ color: cols[i % cols.length] })); ch.position.copy(bp).add(new V(rr(-0.2, 0.2), rr(0, 0.3), rr(-0.3, 0.3))); ch.quaternion.setFromEuler(new THREE.Euler(rr(0, 6), rr(0, 6), rr(0, 6))); sc.add(ch);
         add(ch, v0.clone().multiplyScalar(rr(0.2, 0.6)).add(new V(rr(-4, 4), rr(2, 8), rr(-4, 4))), new V(rr(-14, 14), rr(-14, 14), rr(-14, 14)), sz * 0.6); } }
-    g.evoTumble = { P, t: 0, dur: 2.0, flag: null, kind, body, v0: v0.clone() };
+    g.evoTumble = { P, t: 0, dur: 3.0, flag: null, kind, body, v0: v0.clone() };
     g.audio.play('clunk', pos); g.rig.shake = 0.5; g.style.dropCombos();
     sparks(g, pos, 26, 10);
   };
@@ -620,7 +622,7 @@
   EVO.buyGem = (g, id) => {
     const S = EVO.save(g), c = EVO.nextCost(g, id), gc = EVO.gemCost(g, id); if (c === null || g.evoAnim) return;
     const pay = () => { if ((S.gems || 0) < gc) return; S.gems -= gc; g.evoGemN = (g.evoGemN || 0) + 1; EVO.buy(g, id, true); };
-    if ((S.gems || 0) >= gc) pay(); else if (g.ads) g.ads.rewarded(() => { S.gems = (S.gems || 0) + 1; g.writeSave(); g.evoGemFx = { t0: performance.now(), n: 1 }; pay(); }, null, 'gem', '1 GEMME = 1 AMELIORATION');
+    if ((S.gems || 0) >= gc) pay(); else g.ui.overlay = 'evoShop';   // v264 : pas assez de gemmes : on va a la boutique (plus de pub directe)
   };
   // coffre : disponible des le 3e vol, puis toutes les 2 heures
   EVO.chestReady = (g) => { const S = EVO.save(g); return S.runs >= 3 && Date.now() >= (S.chestAt || 0); };

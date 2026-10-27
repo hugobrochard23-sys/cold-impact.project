@@ -418,14 +418,33 @@
   // v263 : le ciel n'est plus vide : montgolfieres a toutes les altitudes (le plafond invisible est supprime) ; elles sont solides
   function skyBalloons(S) {
     const COL = ['#d8442c', '#2f6fb0', '#e8b82a', '#3a9a5a', '#c0488a', '#e8e4d8']; let i = 0;
-    S.rows(S.d0 + 30, S.d1 - 20, 60, 0.7, (dc) => { const k = i++; S.item(dc, (r) => {
+    if (S.sc.name === 'camp') S.item(395, () => balloon(S, 395, -12.7, 51, 12.5, '#d8442c', '#f4f4f0'));   // v264 : un grand ballon PILE sur la trajectoire d'un vol sans toucher l'ecran (juste apres le 2e hangar)
+    S.rows(S.d0 + 30, S.d1 - 20, 60, 0.7, (dc) => { const k = i++; if (S.sc.name === 'camp' && Math.abs(dc - 395) < 45) return; S.item(dc, (r) => {
       const b = [[34, 54], [62, 98], [106, 152]][k % 3], yy = r.between(b), rad = r.between([6, 9]), Lc = S.lane(dc).lx, lx = Lc + r.between([-1, 1]) * Math.min(S.vol(dc) - 12, 40), c1 = pick(r, COL), c2 = pick(r, COL);
-      S.ball(dc, lx, yy, rad, 'col:' + c1, undefined, true, 1.18);
-      S.cyl(dc, lx, yy - rad * 1.12 - 0.5, 1.5, rad * 0.55, 'col:' + c2, undefined, 12, rad * 0.6, false);
-      S.bx(dc, lx, yy - rad * 1.12 - 1.9, 2.2, 1.5, 2.2, 'planks', '#9a6e38', false);
+      balloon(S, dc, lx, yy, rad, c1, c2);
     }); });
   }
+  // montgolfiere detaillee : enveloppe, bandes de couleur, couronne, jupe, bruleur qui brille, quatre montants, nacelle en osier avec rebord
+  function balloon(S, dc, lx, yy, rad, c1, c2) {
+    const sy = 1.18, bot = yy - rad * sy * 0.98;
+    S.ball(dc, lx, yy, rad, 'col:' + c1, undefined, true, sy);
+    for (const [k, h] of [[0, 0.3], [0.52, 0.22], [-0.52, 0.22]]) S.cyl(dc, lx, yy + k * rad * sy - h * rad * 0.5, rad * 1.035 * Math.sqrt(1 - Math.pow(Math.max(0, Math.abs(k) - h * 0.42), 2)), h * rad, 'col:' + c2, undefined, 18, undefined, false);
+    S.cyl(dc, lx, yy + rad * sy * 0.96, rad * 0.22, rad * 0.2, 'col:' + c2, undefined, 12, rad * 0.12, false);                 // couronne
+    S.cyl(dc, lx, bot - rad * 0.38, rad * 0.3, rad * 0.5, 'col:#e8e0cc', undefined, 14, rad * 0.62, false);                       // jupe
+    S.bx(dc, lx, bot - rad * 0.55, 0.9, 0.4, 0.9, 'emis:#ffb050', undefined, false); S.glow(dc, lx, bot - rad * 0.55, '#ffb050', 10);   // bruleur
+    for (const a of [-1, 1]) for (const b of [-1, 1]) S.bx(dc + a * 0.95, lx + b * 0.95, bot - rad * 0.55 - 1.4, 0.14, 2.6, 0.14, 'col:#5a4630', undefined, false);   // montants
+    const by = bot - rad * 0.55 - 3.4; S.bx(dc, lx, by, 2.4, 1.5, 2.4, 'planks', '#a87a40', false); S.bx(dc, lx, by + 0.85, 2.7, 0.22, 2.7, 'planks', '#7a5428', false);   // nacelle + rebord
+  }
+  // v264 : GRANDES FALAISES de chaque cote (a la place des limites invisibles) : tres hautes, quasi infinies ; plus personne ne sort de la carte
+  function skyCliffs(S) {
+    const TN = ['#a9a79f', '#b4b1a8', '#9d9c96', '#aeaaa0', '#a39f94'];
+    S.rows(S.d0, S.d1, 40, 1, (dc) => S.item(dc, (r) => { const v = S.vol(dc) + 12, tn = pick(r, TN); const shade = (k) => '#' + new THREE.Color(tn).multiplyScalar(k).getHexString();
+      for (const sg of [-1, 1]) { S.bxr(dc, sg * (v + 110), 380, 220, 1000, 41.5, 'col:' + tn, undefined, 0, 0, true);
+        for (let k = 0; k < 4; k++) { const pr = r.between([2.5, 9]), hh = r.between([9, 24]), yy = 8 + k * 34 + r.between([0, 20]); S.bxr(dc + r.between([-3, 3]), sg * (v - pr / 2 + 0.2), yy, pr, hh, r.between([14, 34]), 'col:' + shade(r.between([0.78, 1.12])), undefined, 0, 0, true); }   // strates en saillie
+        for (let k = 0; k < 2; k++) S.bxr(dc + r.between([-12, 12]), sg * (v - 0.15), r.between([20, 180]), 0.5, r.between([30, 90]), 0.9, 'col:' + shade(0.62), undefined, 0, 0, false); } }));
+  }
   const campagne = { signature: 'rampe', scenes: {}, dress(S) {
+    skyCliffs(S);
     if (S.sc.name === 'riviere') { const dr = S.d0 + S.len * 0.5, p = S.T.at(dr, 0, 0); const q = S.T.at(dr + 10, 0, 0), q2 = S.T.at(dr - 10, 0, 0), l = Math.hypot(q[0] - q2[0], q[2] - q2[2]) || 1; S.b.water = [{ x: p[0], z: p[2], ux: (q[0] - q2[0]) / l, uz: (q[2] - q2[2]) / l, hw: S.vol(dr) + 70, hd: S.len * 0.3 + 6 }]; }   // v206 : plan d'eau de la riviere (trees.js l'evite)
 
     if (S.sc.name === 'descente') { for (const sd of [-1, 1]) hillStrip(S, sd, S.d0 + 330); return; }   // v220 : les collines continuent sous le debut de la descente (plus de trou sur les cotes)

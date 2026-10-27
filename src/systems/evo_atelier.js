@@ -108,22 +108,22 @@
     if (EVO.foeShadowTick) EVO.foeShadowTick(g);
   };
   // v263 : la rampe change de matiere tous les 5 niveaux : une lumiere blanche la parcourt, elle s'allume, un texte annonce la matiere
-  EVO.RAMPS = ['CARTON', 'BOIS', 'FER', 'ACIER', 'OR'];
+  EVO.RAMPS = ['CARTON', 'BOIS', 'FER', 'ACIER', 'OR', 'TITANE'];
   EVO.rampFrame = (g, dt) => {
     const R = g.evoRamp, pad = g.pad; if (!R) return; R.t += dt; const k = R.t / R.dur, fx = g.effects;
     if (!pad || !pad.cradle) { g.evoRamp = null; return; }
     if (!R.glow) { R.glow = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.22, 1.1), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })); pad.cradle.add(R.glow); }
-    const z = -2.8 + 4.9 * U.clamp(k * 1.25, 0, 1), fl = Math.sin(U.clamp(k, 0, 1) * Math.PI);
+    const z = -2.8 + 4.9 * ((k * 2.2) % 1), fl = Math.sin(U.clamp(k, 0, 1) * Math.PI);
     R.glow.position.set(0, -0.26, z); R.glow.material.opacity = 0.9 * fl; R.glow.scale.set(1 + 0.6 * fl, 1, 1.4);
     if (pad.rampMats) for (const m of pad.rampMats) if (m.emissive) m.emissive.setRGB(0.65 * fl, 0.65 * fl, 0.62 * fl);
-    if (fx && k < 0.85 && Math.random() < 0.8) { _a.set(pad.origin.x + U.fx.range(-0.25, 0.25), pad.origin.y - 0.5, pad.origin.z + z * 0.9); sparks(g, _a, 1, 3, 0.2); }
+    if (fx && k < 0.9 && Math.random() < 0.8) { _a.set(pad.origin.x + U.fx.range(-0.25, 0.25), pad.origin.y - 0.5, pad.origin.z + z * 0.9); sparks(g, _a, 1, 3, 0.2); }
     if (R.t > R.dur) { pad.cradle.remove(R.glow); R.glow.geometry.dispose(); R.glow.material.dispose(); if (pad.rampMats) for (const m of pad.rampMats) if (m.emissive) m.emissive.setRGB(0, 0, 0); g.evoRamp = null; }
   };
   const _buy = EVO.buy;
   EVO.buy = (g, id, free) => {
     const S0 = EVO.save(g), before = S0[id], ok = _buy(g, id, free); if (!ok) return ok;
     const n = EVO.save(g)[id]; g.evoGemOffer = id;
-    if (id === 'la' && Math.floor(n / 5) > Math.floor(before / 5)) g.evoRamp = { t: 0, dur: 1.7, tier: Math.min(4, Math.floor(n / 5)), t0: performance.now() };   // l'offre « gemme / pub » ne s'affiche que sur la carte qu'on vient d'acheter, quand il n'y a plus assez de pieces
+    if (id === 'la' && Math.floor(n / 5) > Math.floor(before / 5)) g.evoRamp = { t: 0, dur: 3.2, tier: Math.min(5, Math.floor(n / 5)), t0: performance.now() };   // l'offre « gemme / pub » ne s'affiche que sur la carte qu'on vient d'acheter, quand il n'y a plus assez de pieces
     if ((id === 'rk' && !g.evoAnim) || id === 'la') EVO.playUp(g, id);
     if (id === 'cm') { const d = EVO.mult(n) - EVO.mult(before); g.evoBought = { id, t0: performance.now(), delta: d, palier: Math.floor(EVO.mult(n)) > Math.floor(EVO.mult(before)) || d >= 0.5, mult: EVO.mult(n) }; if (CC.Haptics && g.evoBought.palier) CC.Haptics.pattern('levelUp'); if (g.evoBought.palier) g.audio.play('coinPing'); }
     return ok;

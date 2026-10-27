@@ -117,7 +117,7 @@
     const bx = rx + pd, bw = w - pd * 2, bh = h * 0.285, by = y + h - pd - h * 0.285, frac = cost === null ? 1 : U.clamp(S0.coins / cost, 0, 1);
     const cs = U.formatInt(cost), gemMode = !can && cost !== null && game.evoGemOffer === id, gc = E.gemCost(game, id), haveG = (S0.gems || 0) >= gc;
     const offId = game.evoGemOffer, offerOn = !!offId && E.nextCost(game, offId) !== null && S0.coins < E.nextCost(game, offId), dim = !can && !gemMode && cost !== null;   // v261 : bouton trop cher = 50 % plus clair ; si une gemme est proposee ailleurs : chiffre rouge + pubs a regarder
-    if (dim) { UI.greenButton(ctx, bx, by, bw, bh, { solid: ['#D9E2EA', '#FFFFFF'] }); ctx.save(); ctx.globalAlpha = 0.65; }   // v263 : trop cher = bouton a 65 % d'opacite sur un fond clair de meme forme
+    if (dim) { rr0(ctx, bx, by, bw, bh, bh * 0.07); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.save(); ctx.globalAlpha = 0.65; }   // v264 : un rectangle blanc a 100 % derriere, exactement de la taille du bouton ; le bouton passe a 65 %
     const face = UI.greenButton(ctx, bx, by, bw, bh, { disabled: false, cat: gemMode ? 'gem' : id });
     if (gemMode) {   // plus assez de pieces : le bouton propose une GEMME (violet, reflet toutes les 1,5 s)
       const gy = face.y + face.h * 0.5, gs = face.h * 0.52, px = face.h * 0.4, tw = UI.tw(ctx, String(gc), px), tot = gs + face.h * 0.12 + tw, gx0 = bx + bw / 2 - tot / 2;   // meme taille de texte que « AMELIORER »
@@ -130,7 +130,7 @@
     ctx.restore();
     if (!gemMode) { const ps = face.h * 0.37, pw = UI.tw(ctx, cs, ps) + ps * 1.3; ctx.save(); UI.icon(ctx, 'coin', bx + bw / 2 - pw / 2 + ps * 0.5, face.y + face.h * 0.73, ps * 1.15); ctx.restore(); UI.outlined(ctx, cs, bx + bw / 2 - pw / 2 + ps * 1.25, face.y + face.h * 0.73, UI.fit(ctx, cs, bw * 0.55, ps), dim && offerOn ? '#F04438' : '#FFFFFF', null, { align: 'left' });
       if (dim) ctx.restore();
-      if (dim && offerOn) { const ts = face.h * 0.5, tcx = bx + bw - ts * 0.55, tcy = face.y + face.h - ts * 0.18; ctx.save(); ctx.translate(tcx, tcy); ctx.rotate(-0.2); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowOffsetY = S(4); UI.artImg(ctx, 'ticket', 0, 0, ts); ctx.restore(); const br = ts * 0.3, bcx = tcx + ts * 0.34, bcy = tcy + ts * 0.22; ctx.beginPath(); ctx.arc(bcx, bcy, br + S(2.5), 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.beginPath(); ctx.arc(bcx, bcy, br, 0, 6.2832); ctx.fillStyle = '#3CC027'; ctx.fill(); UI.outlined(ctx, '10', bcx, bcy + br * 0.05, br * 1.15, '#FFFFFF'); } }
+      if (dim && offerOn) { const ts = face.h * 0.5, tcx = bx + bw - ts * 0.55, tcy = face.y + face.h + ts * 0.02; ctx.save(); ctx.translate(tcx, tcy); ctx.rotate(-0.2); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowOffsetY = S(4); UI.artImg(ctx, 'ticket', 0, 0, ts); ctx.restore(); const br = ts * 0.3, bcx = tcx + ts * 0.34, bcy = tcy - ts * 0.1; ctx.beginPath(); ctx.arc(bcx, bcy, br + S(3), 0, 6.2832); ctx.fillStyle = '#1F6A08'; ctx.fill(); ctx.beginPath(); ctx.arc(bcx, bcy, br, 0, 6.2832); ctx.fillStyle = '#A8EE5C'; ctx.fill(); UI.outlined(ctx, '10', bcx, bcy + br * 0.05, br * 1.15, '#1F6A08', null, { flat: true }); } }
     // (plus de barre de progression de l'argent)
     if (bk > 0) { ctx.fillStyle = 'rgba(255,255,255,' + bk * 0.35 + ')'; UI.cham(ctx, rx, y, w, h, S(26)); ctx.fill(); }
     ctx.restore();
@@ -196,7 +196,7 @@
     }
     if (game.evoRamp && E.RAMPS) {   // v263 : « RAMPE EN FER » quand la rampe change de matiere
       const R = game.evoRamp, q = (now - R.t0) / 1000, name = 'RAMPE EN ' + E.RAMPS[R.tier], a0 = U.clamp(q / 0.3, 0, 1), sc = 1 + 2.7 * Math.pow(a0 - 1, 3) + 1.7 * Math.pow(a0 - 1, 2), fo = U.clamp((R.dur - q) / 0.4, 0, 1);
-      ctx.save(); ctx.globalAlpha = fo; ctx.translate(cx, Y(0.3)); ctx.scale(sc, sc); UI.outlined(ctx, name, 0, 0, UI.fit(ctx, name, cw * 0.86, S(96)), ['#E6C58C', '#D79A5A', '#D6DEE6', '#9FB8D2', '#FFD23A'][R.tier], '#000000', { keep: true, ow: 0.16 }); ctx.restore();
+      ctx.save(); ctx.globalAlpha = fo; ctx.translate(cx, Y(0.3)); ctx.scale(sc, sc); UI.outlined(ctx, name, 0, 0, UI.fit(ctx, name, cw * 0.86, S(96)), ['#E6C58C', '#D79A5A', '#D6DEE6', '#9FB8D2', '#FFD23A', '#8CF0FF'][R.tier], '#000000', { keep: true, ow: 0.16 }); ctx.restore();
     }
     const bs = S(128), lx = ox + S(36), ly = T0 + S(330), free = Math.max(0, 3 - (E.freeGemsUsed ? E.freeGemsUsed(game) : 0));
     UI.shopStall(ctx, lx, ly - S(6), bs, now); UI.tap(ui, lx, ly, bs, bs, () => { ui.overlay = 'evoShop'; });

@@ -107,14 +107,15 @@
       const halfAt = (u) => 52 - 18 * ss(0.265, 0.31, u);
       // ---- carrière et puits : deux grandes parois de roche (de la cote du sol à 36 m au-dessus de la surface d'origine)
       for (let dc = d(0.03); dc < d(0.405); dc += 13) S.item(dc + 6.5, (r) => {
-        const m = dc + 6.5, Lc = S.lane(m).lx, fl = T.rel(m), u = (m - S.d0) / L, hf = halfAt(u), top = 36 - fl;
+        const m = dc + 6.5, Lc = S.lane(m).lx, fl = T.rel(m), u = (m - S.d0) / L, hf = halfAt(u), top = 150 - fl;   // v264 : parois tres hautes + toit de roche : on ne peut plus sauter la mine par le haut
         for (const s of [-1, 1]) {
           { const tn = pk(r, u < 0.3 ? SAND : CAVE), tk = (k) => '#' + new T3.Color(tn).multiplyScalar(k).getHexString();   // v206 : paroi unie (sans quadrillage) + strates en saillie de teintes voisines : une falaise, plus un mur
             S.bx(m, Lc + s * (hf + 14), (top - 15) / 2, 28, top + 15, 13.8, 'col:' + tn, undefined, true);
             for (let k = 0, nb = 2 + Math.floor(r() * 3); k < nb; k++) { const pr = r.between([0.5, 1.7]), hh = r.between([3, 8]), yy = r.between([-6, Math.max(2, top - 8)]); S.bx(m, Lc + s * (hf - pr / 2 + 0.1), yy, pr, hh, 14.2, 'col:' + tk(r.between([0.9, 1.1])), undefined, false, { shadow: false }); } }
-          for (let y = -10; y < top - 10; y += (u < 0.3 ? 21 : 13)) { const sz = r.between(u < 0.3 ? [15, 23] : [6, 10]); boulder(S, m + r.between([-3, 3]), Lc + s * (hf + 1.8 * sz + r.between([0, 3])), y + 1, sz, r, pk(r, u < 0.3 ? SAND : CAVE)); }
+          for (let y = -10; y < Math.min(top - 10, 70); y += (u < 0.3 ? 21 : 13)) { const sz = r.between(u < 0.3 ? [15, 23] : [6, 10]); boulder(S, m + r.between([-3, 3]), Lc + s * (hf + 1.8 * sz + r.between([0, 3])), y + 1, sz, r, pk(r, u < 0.3 ? SAND : CAVE)); }
         }
         if (u < 0.28 && r() < 0.5) { const s = r() < 0.5 ? -1 : 1; lamp(S, m, Lc + s * (hf - 2), 14 + r.between([0, 18]), '#ffd89a', 14); }
+        S.bx(m, Lc, top + 7, 2 * (hf + 28), 14, 13.8, 'col:' + pk(r, CAVE), undefined, true);   // toit de roche
       });
       // ---- carrière : excavatrice à roue, convoyeur au-dessus de la piste, tas de gravier, chemin d'engins
       S.item(d(0.1), (r) => {
@@ -137,7 +138,7 @@
       for (let dc = t0; dc < t1; dc += 12) S.item(dc + 6, (r) => {
         const m = dc + 6, Lc = S.lane(m).lx;
         for (const s of [-1, 1]) S.bx(m, Lc + s * (hw + 7), 30, 14, 100, 12.8, 'concreteDark', pk(r, CONC), true);
-        if (m < tRoof) S.bx(m, Lc, H + 6, 2 * hw + 28, 12, 12.8, 'concreteDark', pk(r, CONC), true);
+        S.bx(m, Lc, H + 6, 2 * hw + 28, 12, 12.8, 'concreteDark', pk(r, CONC), true);   // v264 : le toit du tunnel couvre toute sa longueur
         for (const s of [-1, 1]) { S.bx(m, Lc + s * (hw - 0.3), 0.8, 0.3, 1.6, 12.8, 'hazard', undefined, false); S.bx(m, Lc + s * (hw - 0.4), H - 3, 0.9, 0.9, 12.6, 'metal', '#6a6e74', false); if (Math.round(m / 12) % 2 === 0) { S.bx(m, Lc + s * (hw - 0.3), 15, 0.2, 0.6, 8, 'emis:#ffb04a', undefined, false); S.glow(m, Lc + s * (hw - 1.5), 15, '#ffb04a', 16); } }
         for (const x of [-9, 9]) railTrack(S, m - 6, m + 6, Lc + x);   // v208 : voie complete qui suit le sol (ballast, traverses, deux rails a patin, ame et champignon)
       });
@@ -176,6 +177,12 @@
       for (let k = 0; k < 5 + Math.floor(r() * 4); k++) { const y = 8 + r() * (h - 12); S.bx(dc + r.between([-dd * 0.2, dd * 0.2]), fx, y, 0.25, 1.4, dd * r.between([0.4, 0.85]), 'emis:' + pk(r, NEON), undefined, false); }
       if (h > 60) { S.bx(dc, lx, h + 2.4, 1, 5, 1, 'metal', '#444', false); S.bx(dc, lx, h + 5.2, 1.4, 1.2, 1.4, 'emis:#ff3a2a', undefined, false); S.glow(dc, lx, h + 5, '#ff3a2a', 22); }
       if (r() < 0.4) { S.bx(dc, fx, h * 0.5, 0.5, 12, 18, 'emis:' + pk(r, NEON), undefined, false); }   // enseigne verticale
+      // v264 : devanture eclairee, auvent colore, climatiseurs, reservoir et antenne sur le toit, rangees de fenetres allumees
+      S.bx(dc, lx + face * (w / 2 + 0.25), 2.8, 0.3, 3.6, dd * 0.78, 'emis:' + pk(r, NEON), undefined, false);
+      S.bx(dc, lx + face * (w / 2 + 1.7), 5.1, 3.4, 0.3, dd * 0.86, 'col:' + pk(r, ['#c8352a', '#2f6fb0', '#e8b82a', '#3a9a5a']), undefined, false);
+      for (let k = 0; k < 3; k++) S.bx(dc + r.between([-dd * 0.3, dd * 0.3]), lx + r.between([-w * 0.28, w * 0.28]), h + 2.0, r.between([2.4, 4]), 2.4, r.between([2.4, 4]), 'metal', '#7a8088', false);
+      if (r() < 0.55) S.cyl(dc + r.between([-dd * 0.25, dd * 0.25]), lx + r.between([-w * 0.25, w * 0.25]), h + 1.1, 2.1, 4.2, 'col:#8a6a48', undefined, 10, 2.1, false);
+      for (let k = 0; k < 3 + Math.floor(r() * 3); k++) { const y = 10 + r() * (h - 16); for (let j = 0; j < 4; j++) S.bx(dc - dd * 0.36 + j * dd * 0.24, fx + face * 0.05, y, 0.2, 1.3, 2.2, 'emis:#ffe9b0', undefined, false); }
     }, { vol: 90 });
   }
   D.scenes.ville = { len: [760, 760], noDoor: true, noChaos: true, turns: [[0.14, 0.42, -34], [0.5, 0.86, 40]],
@@ -183,6 +190,9 @@
     ground: (d, lx, c, sc) => { const k = ss(sc.d0 - 4, sc.d0 + 20, d) * (1 - ss(sc.d1 - 20, sc.d1 + 4, d)); if (k > 0) c.lerp(new T3.Color(Math.abs(lx) < 36 ? '#3a3d42' : '#4a4d52'), k * 0.96); },
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L, T = S.T;
+      // v264 : trottoirs, passages pietons, feux, voitures garees
+      for (let dc = S.d0 + 10; dc < S.d1; dc += 23) S.item(dc, (r) => { const Lc = S.lane(dc).lx; for (const s of [-1, 1]) S.bx(dc, Lc + s * 45, 0.3, 14, 0.6, 23.4, 'concrete', '#6c6e72', false, { shadow: false }); });
+      for (let u = 0.07; u < 0.98; u += 0.09) S.item(d(u), (r) => { const m = d(u), Lc = S.lane(m).lx; for (let k = -6; k <= 6; k++) S.bx(m, Lc + k * 5.6, 0.2, 2.4, 0.05, 9, 'col:#d8d8d0', undefined, false, { shadow: false }); for (const s of [-1, 1]) { S.bx(m, Lc + s * 40, 4.5, 0.4, 9, 0.4, 'metal', '#3a3e44', false); S.bx(m, Lc + s * 40, 9.4, 0.9, 2.6, 0.9, 'col:#15171a', undefined, false); S.bx(m - 0.5, Lc + s * 40, 10.4, 0.5, 0.5, 0.2, 'emis:#ff3a2a', undefined, false); S.bx(m - 0.5, Lc + s * 40, 9.4, 0.5, 0.5, 0.2, 'emis:#ffb82a', undefined, false); S.bx(m - 0.5, Lc + s * 40, 8.4, 0.5, 0.5, 0.2, 'emis:#3aff6a', undefined, false); } for (let k = 0; k < 2; k++) { const s = r() < 0.5 ? -1 : 1, lxx = Lc + s * r.between([30, 38]), cc = pk(r, ['#6a2a2a', '#2a3a6a', '#d0d0d4', '#2a2a2e']); S.bx(m + k * 9, lxx, 0.8, 2.2, 1.2, 4.6, 'col:' + cc, undefined, true); S.bx(m + k * 9, lxx, 1.75, 1.9, 0.9, 2.6, 'glass', undefined, false); } });
       // avenue : bandes jaunes, lampadaires, voitures qui brûlent
       for (let dc = S.d0 + 6; dc < S.d1; dc += 18) S.item(dc, (r) => { const Lc = S.lane(dc).lx; S.bx(dc, Lc, 0.12, 0.7, 0.05, 8, 'col:#e8c850', undefined, false, { shadow: false }); for (const s of [-1, 1]) { S.bx(dc, Lc + s * 38, 5, 0.4, 10, 0.4, 'metal', '#5a5e66', false); lamp(S, dc, Lc + s * 36.4, 10, '#ffd89a', 13); } });
       for (let i = 0; i < 9; i++) S.item(d(0.04 + i * 0.105), (r) => { const m = d(0.04 + i * 0.105), Lc = S.lane(m).lx, lx = Lc + (r() < 0.5 ? -1 : 1) * r.between([14, 30]); S.bx(m, lx, 0.8, 2.2, 1.4, 4.6, 'col:#2a2a2e', undefined, true); S.bx(m, lx, 1.9, 1.8, 0.9, 2.4, 'col:#1a1a1e', undefined, true); S.bx(m, lx, 1.2, 2.3, 0.5, 4.7, 'emis:#ff7a2a', undefined, false); S.glow(m, lx, 2.5, '#ff7a2a', 20); });

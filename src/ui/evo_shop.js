@@ -120,13 +120,21 @@
   };
 
   // ---------- tuile « gemme gratuite » du menu (sous le bouton ADS) ----------
+  // silhouette blanche d'une illustration (cache) pour lui dessiner un contour
+  const _sil = {};
+  const outlineArt = (ctx, name, cx, cy, size, w, col) => {
+    const key = name + Math.round(size); let c = _sil[key];
+    if (!c) { const im = UI.art(name); if (!im) { UI.artImg(ctx, name, cx, cy, size); return; } const pad = Math.ceil(w * 2 + 2), n = Math.ceil(size + pad * 2); c = document.createElement('canvas'); c.width = c.height = n; const x = c.getContext('2d'); UI.artImg(x, name, n / 2, n / 2, size); x.globalCompositeOperation = 'source-in'; x.fillStyle = col || '#FFFFFF'; x.fillRect(0, 0, n, n); _sil[key] = c; }
+    const n = c.width; for (let i = 0; i < 16; i++) { const a = i / 16 * 6.2832; ctx.drawImage(c, cx - n / 2 + Math.cos(a) * w, cy - n / 2 + Math.sin(a) * w, n, n); }
+    UI.artImg(ctx, name, cx, cy, size);
+  };
   Home.drawGemTile = (ui, ctx, game, x, y, s, now) => {
     const E = CC.EVO, left = Math.max(0, 3 - (E.freeGemsUsed ? E.freeGemsUsed(game) : 0)), r = s * 0.2;
-    border(ctx, x, y, s, s, r, left > 0 ? '#FFFFFF' : 'rgba(255,255,255,0.55)', S(6));   // pas de fond : seulement un contour blanc
-    UI.artImg(ctx, 'gem', x + s * 0.46, y + s * 0.4, s * 0.58); UI.outlined(ctx, 'X1', x + s * 0.8, y + s * 0.16, s * 0.24, '#FFFFFF', '#0B2A66', { keep: true, ow: 0.16 });
+    // v264 : plus de carre derriere : c'est la gemme elle-meme qui a un contour blanc et qui est plus grande
+    ctx.save(); if (left <= 0) ctx.globalAlpha = 0.6; outlineArt(ctx, 'gem', x + s * 0.5, y + s * 0.4, s * 0.82, S(6)); ctx.restore();
+    UI.outlined(ctx, 'X1', x + s * 0.84, y + s * 0.13, s * 0.26, '#FFFFFF', '#0B2A66', { keep: true, ow: 0.16 });
     ctx.save(); ctx.translate(x + s * 0.3, y + s * 0.8); ctx.rotate(-0.2); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowOffsetY = S(3); UI.artImg(ctx, 'ticket', 0, 0, s * 0.34); ctx.restore();
     UI.outlined(ctx, left + '/3', x + s * 0.64, y + s * 0.8, s * 0.26, '#FFFFFF', '#0B2A66', { keep: true, ow: 0.16 });
-    if (left > 0) K.shimmer(ctx, x, y, s, s, r, ((now / 1000) % 2.5) / 0.6);
     UI.tap(ui, x, y, s, s, () => { if (left > 0) E.gemAd(game, true); else Home.toast(ui, 'REVIENS DEMAIN !'); });
   };
 })();

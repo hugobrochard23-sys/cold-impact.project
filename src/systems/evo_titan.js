@@ -66,6 +66,7 @@
   const heading = (T, d) => { const a = T.at(d, 0, 0), b = T.at(d - 6, 0, 0); return Math.atan2(b[0] - a[0], b[2] - a[2]); };   // cap vers les distances decroissantes (face a la fusee)
   function place(g, T) {
     const lx = T.laneX(TT.d); TT.lx += (lx - TT.lx) * 0.2; const p = T.at(TT.d, TT.lx, 0); TT.W.position.set(p[0], p[1], p[2]); TT.W.rotation.y = heading(T, TT.d) + Math.PI;
+    { const q = TT.W.position.clone(); q.y += 34; const gy = EVO.groundY(g, q); if (gy !== null && gy !== undefined && Math.abs(gy - p[1]) < 12) TT.W.position.y = gy - 0.05; }   // v264 : pose sur le vrai sol (il flottait un peu)
   }
 
   // ---------- tir ----------

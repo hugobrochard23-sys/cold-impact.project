@@ -9,7 +9,7 @@
   const V = THREE.Vector3;
   const U = CC.U;
   // v030 (mobile) : objets de calcul réutilisés — la caméra est mise à jour à chaque image
-  const _wu = new V(), _tu = new V(), _nc = new V(), _f = new V(), _u = new V(), _o = new V(), _z = new V(0, 0, 1), _y = new V(0, 1, 0), _t1 = new V(), _t2 = new V(), _t3 = new V(), _evoD = new V();
+  const _wu = new V(), _tu = new V(), _nc = new V(), _f = new V(), _u = new V(), _o = new V(), _z = new V(0, 0, 1), _y = new V(0, 1, 0), _t1 = new V(), _t2 = new V(), _t3 = new V(), _evoD = new V(), _tf = new V();
   const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _tq = new THREE.Quaternion();
 
   const _yAx = new THREE.Vector3(0, 1, 0), _nb = new THREE.Vector3(), _down = new THREE.Vector3(0, -1, 0);
@@ -115,7 +115,9 @@
         // v019 : la caméra s'oriente vers la tête de la roquette (on monte → elle pivote vers le haut), par un double
         // lissage : le mouvement démarre et s'arrête en douceur, sans à-coup à chaque coup de joystick
         if (rk.active) {
-          this.camNose.lerp(rk.fwd, U.damp(c.noseLag, dt)).normalize();
+          { const want = _evoD.copy(rk.fwd), run = this.game.endlessRun;   // v264 : la camera ne se retourne plus quand la fusee depasse 90 degres : on retire la part qui regarde en arriere
+            if (CC.EVO && CC.EVO.on && run && run.T && this.game.evo) { const T = run.T, d = Math.max(0, run.dist), a = T.at(d, 0, 0), b = T.at(d + 6, 0, 0); _tf.set(b[0] - a[0], 0, b[2] - a[2]); if (_tf.lengthSq() > 1e-6) { _tf.normalize(); const dp = want.dot(_tf); if (dp < 0.12) { want.addScaledVector(_tf, 0.12 - dp); if (want.lengthSq() < 1e-6) want.copy(_tf); want.normalize(); } } }
+            this.camNose.lerp(want, U.damp(c.noseLag, dt)).normalize(); }
           const k = U.damp(c.followLag, dt);
           this.camDir.lerp(this.camNose, k).normalize();
           const u = _t1.copy(this.upRef).lerp(this.up, k);
