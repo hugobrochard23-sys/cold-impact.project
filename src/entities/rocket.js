@@ -120,7 +120,8 @@
       // --- la trajectoire suit le nez (adhérence) ---
       let turned = 0;
       if (!this.grapple.active && this.sliding <= 0 && speed > 1) {
-        const grip = this.thrusting ? cfg.grip : cfg.gripEngineOff;
+        const lowK = game.evo && !game.evo.preview && game.flightTime > 1.5 ? U.clamp(1 - speed / 24, 0, 1) : 0;   // v263 : a basse vitesse l'air ne porte plus : la trajectoire ne suit presque plus le nez (plus de vol stationnaire nez en l'air)
+        const grip = (this.thrusting ? cfg.grip : cfg.gripEngineOff) * (1 - 0.85 * lowK);
         const newDir = _b.copy(velDir);
         const a = newDir.angleTo(this.fwd);
         turned = rotateToward(newDir, this.fwd, a * U.damp(grip, dt));
@@ -140,7 +141,7 @@
         this.vel.multiplyScalar(Math.max(0, speed - loss) / speed);
         if (this.game.autoBoost && this.game.autoBoost()) { const cap = this.game.autoCap(), sp2 = this.vel.length(); if (sp2 > cap) this.vel.multiplyScalar(cap / sp2); }   // v111 : débutants — vitesse plafonnée (lente au niveau 1, puis de plus en plus vive)
       }
-      this.vel.y -= CC.CONFIG.physics.gravity * dt;
+      this.vel.y -= CC.CONFIG.physics.gravity * dt * (1 + 1.8 * (game.evo && !game.evo.preview && game.flightTime > 1.5 ? U.clamp(1 - speed / 24, 0, 1) : 0));   // v263 : plus lent = plus lourd
 
       // --- grappin ---
       const G = this.grapple;

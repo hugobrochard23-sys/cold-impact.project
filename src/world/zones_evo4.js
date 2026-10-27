@@ -23,28 +23,12 @@
       for (const s of [-1, 1]) { S.bx(dc, s * (hw + 0.7), 3, 1.4, 6, len, 'brick', t, true); S.bx(dc, s * (hw + 0.7), 11.5, 1.4, 3, len, 'brick', t, true); S.bx(dc, s * (hw + 0.7), 7.5, 0.3, 3, len - 6, 'glass', undefined, false); }
       for (const e of [-1, 1]) S.wall(dc + e * len / 2, -hw - 1.4, hw + 1.4, 0, hh + 2, 1.6, 'brick', t, { lx: 0, yc: 6, w: 26, h: 12 });
       S.bx(dc, 0, hh + 0.4, 2 * hw + 3, 0.8, len + 2, 'corrugated', pk(r, RUST), true); S.bx(dc, 0, 0.14, 2 * hw, 0.3, len, 'concrete', '#a0a29e', false);
-      for (let k = -1; k <= 1; k++) { S.bx(dc + k * 12, 0, hh - 0.8, 2 * hw, 0.5, 0.5, 'metal', '#7a7e84', false); lamp(S, dc + k * 12, 0, hh - 2); }
+      for (let k = -1; k <= 1; k++) S.glow(dc + k * 12, 0, hh - 2.4, '#ffe2a8', 14);
       for (let i = 0; i < 4; i++) { const s = r() < 0.5 ? -1 : 1; if (r() < 0.6) crate(S, dc + r.between([-14, 14]), s * r.between([9, 13]), r, 1 + Math.floor(r() * 2)); else drum(S, dc + r.between([-14, 14]), s * r.between([9, 13]), r); }
       // murets de briques qui prolongent le garage de chaque côté : on sait où passer, on ne voit pas ce qui vient après
       for (const s of [-1, 1]) for (let k = 0; k < 4; k++) S.bx(dc, s * (hw + 8 + k * 10), 2.2 + k * 0.6, 8, 4.4 + k * 1.2, len + 8 - k * 4, 'brick', pk(r, BR), true);
     });
-    // v150 : le garage est plus riche : bandes de danger, barrieres, atelier (etabli, etagere, pneus, cric), ventilateurs et antenne sur le toit, projecteurs, lumieres chaudes
-    S.item(dc, (r) => {
-      for (const s of [-1, 1]) for (let k = 0; k < 10; k++) S.bx(dc - len / 2 - 0.6, s * (hw + 0.2 - k * 2.9), 0.9, 0.3, 0.5, 1.4, 'col:' + (k % 2 ? '#1d1f23' : '#f2c200'), undefined, false);
-      for (let k = -1; k <= 1; k += 2) { S.bx(dc - len / 2 - 6, k * 10, 1.1, 0.5, 2.2, 0.5, 'col:#c8352a', undefined, true); S.bx(dc - len / 2 - 6, k * 10 + 0, 1.8, 0.4, 0.5, 0.4, 'col:#ffffff', undefined, false); }
-      S.bx(dc - len / 2 - 6, 0, 0.12, 2 * hw + 8, 0.24, 9, 'concrete', '#a8aaa6', false);
-      for (let k = 0; k < 7; k++) S.bx(dc - len / 2 - 6 + 0, -9 + k * 3, 0.26, 0.5, 0.06, 9, 'col:#e8e8dc', undefined, false, { shadow: false });
-      const sx = r() < 0.5 ? -1 : 1;
-      S.bx(dc + 8, sx * 11, 1.0, 7, 0.4, 2, 'planks', '#7a5a3a', true); for (const e of [-1, 1]) S.bx(dc + 8 + e * 3, sx * 11, 0.5, 0.4, 1, 1.6, 'col:#3a3e44', undefined, true);
-      for (let k = 0; k < 3; k++) S.bx(dc + 8 + (k - 1) * 2, sx * 11, 1.5, 1, 0.5, 0.8, 'col:' + ['#c8352a', '#2f6fb0', '#c8a028'][k], undefined, false);
-      for (let k = 0; k < 3; k++) { S.bx(dc - 10, sx * 13.4, 1.3 + k * 2.4, 0.5, 0.25, 7, 'col:#5a626c', undefined, false); for (let j = 0; j < 3; j++) S.bx(dc - 10 + (j - 1) * 2, sx * 13.4, 1.8 + k * 2.4, 1.4, 1, 1.2, 'planks', ['#a8793c', '#9a6e38', '#b08448'][(j + k) % 3], false); }
-      for (const q of [S.bx(dc + 2, -sx * 10, 0.5, 0, 0, 0, 'col:#000', undefined, false)]) void q;
-      for (let k = 0; k < 4; k++) S.cyl(dc - 4, -sx * 12 + (k % 2) * 0.1, k * 0.62, 0.95, 0.6, 'col:#22252a', undefined, 12, 0.95, false);
-      for (let k = 0; k < 4; k++) { S.bx(dc - len / 2 + 4 + k * 9, 0, hh + 1.3, 3, 1.2, 3, 'col:#5a626c', undefined, true); S.cyl(dc - len / 2 + 4 + k * 9, 0, hh + 1.8, 1.3, 0.3, 'col:#2a2e34', undefined, 10, 1.3, false); }
-      S.cyl(dc + len / 2 - 4, hw - 3, hh + 0.8, 0.12, 9, 'col:#8a9098', undefined, 6, 0.12, false); S.glow(dc + len / 2 - 4, hw - 3, hh + 10, '#ff3a2a', 6);
-      for (const e of [-1, 1]) { S.cyl(dc + e * 10, hw + 6, 0, 0.18, 8, 'col:#5a626c', undefined, 6, 0.18, true); S.bx(dc + e * 10, hw + 5.2, 8.1, 1.8, 0.5, 1, 'emis:#fff4d0', undefined, false); S.glow(dc + e * 10, hw + 4.6, 7.6, '#fff0c0', 20); S.cyl(dc + e * 10, -hw - 6, 0, 0.18, 8, 'col:#5a626c', undefined, 6, 0.18, true); S.bx(dc + e * 10, -hw - 5.2, 8.1, 1.8, 0.5, 1, 'emis:#fff4d0', undefined, false); S.glow(dc + e * 10, -hw - 4.6, 7.6, '#fff0c0', 20); }
-      for (let k = -2; k <= 2; k++) S.glow(dc + k * 7, 0, hh - 3.2, '#ffe2a8', 16);
-    });
+    // v263 : garage epure : plus de petits elements (bandes, barrieres, etabli, etageres, pneus, antennes) ; seulement les gros volumes
     foe(S, 'jeep', dc + 2, -4, 0, { name: 'JEEP' });
   }
   D.scenes.rampe = { len: [170, 170], noDoor: true, noChaos: true,
@@ -79,18 +63,11 @@
       for (const e of [-1, 1]) S.wall(dc + e * len / 2, -hw - 1.4, hw + 1.4, 0, hh + 4, 1.8, 'brick', t, { lx: 0, yc: 11.5, w: 40, h: 23 });
       // toit : la 3e travée est tombée, la 4e à moitié
       for (let k = 0; k < 6; k++) { const d2 = dc - len / 2 + (k + 0.5) * bay; if (k === 2) continue; S.bx(d2, k === 3 ? hw / 2 + 2 : 0, hh + 0.6, k === 3 ? hw + 6 : 2 * hw + 3.6, 1, bay, 'corrugated', pk(r, RUST), true); }
-      for (let k = 0; k < 7; k++) { const d2 = dc - len / 2 + k * bay; S.bx(d2, 0, hh - 1, 2 * hw, 0.7, 0.7, 'metal', '#7a7e84', false); for (const s of [-1, 1]) S.bxr(d2, s * hw * 0.5, hh - 3, 0.5, 6, 0.5, 'metal', '#7a7e84', s * 30, 0, false); }
-      // morceaux de toit tombés au sol, poutres de travers
-      const dd = dc - len / 2 + 2.5 * bay;
-      S.bxr(dd, -9, 3, 14, 0.6, 10, 'corrugated', '#7a5446', 18, 20, true); S.bxr(dd + 4, 12, 1.6, 12, 0.6, 9, 'corrugated', '#6a4a3c', -12, -15, true); S.bxr(dd - 2, 1, 6, 0.7, 0.7, 16, 'metal', '#7a7e84', 40, 0, true);
       // sol de béton, rail de pont roulant, passerelle, lampes
       S.bx(dc, 0, 0.14, 2 * hw, 0.3, len, 'concrete', '#a0a29e', false);
-      for (const s of [-1, 1]) S.bx(dc, s * (hw - 1), 17, 0.7, 0.7, len, 'metal', '#6a6e74', false);
-      S.bx(dc - 10, -hw + 3, 8.6, 5, 0.4, 46, 'metal', '#8a8e94', true); for (let k = 0; k < 5; k++) S.bx(dc - 30 + k * 11, -hw + 3, 4.2, 0.5, 8.4, 0.5, 'metal', '#6a6e74', true); S.bx(dc - 10, -hw + 0.6, 9.5, 0.2, 1.2, 46, 'metal', '#8a8e94', false);
-      for (let k = 0; k < 6; k++) { if (k === 2) continue; lamp(S, dc - len / 2 + (k + 0.5) * bay, 0, hh - 3.5); }
+      for (let k = 0; k < 6; k++) { if (k === 2) continue; S.glow(dc - len / 2 + (k + 0.5) * bay, 0, hh - 3.5, '#ffe2a8', 16); }
       // caisses, bidons, établis contre les murs ; un camion en pièces au fond
       for (let i = 0; i < 9; i++) { const d2 = dc + r.between([-len / 2 + 6, len / 2 - 6]), s = r() < 0.5 ? -1 : 1, lx = s * r.between([17, hw - 3]); if (s < 0 && d2 > dc - 32 && d2 < dc + 14) continue; if (r() < 0.55) crate(S, d2, lx, r, 1 + Math.floor(r() * 3)); else drum(S, d2, lx, r); }
-      S.bx(dc + 22, 20, 1.3, 7, 2.6, 3, 'col:#4a5a3a', undefined, true); S.bx(dc + 22, 20, 3.1, 4, 1.4, 3, 'col:#3a4a2c', undefined, true); S.cyl(dc + 26, 22, 0.1, 0.9, 0.5, 'col:#222', undefined, 8, 0.9, false);
     });
     // à l'extérieur : sacs de sable, bidons, un portique rouillé devant l'entrée
     S.item(dc - len / 2 - 14, (r) => { sandbags(S, dc - len / 2 - 14, -24, 4, r); sandbags(S, dc - len / 2 - 14, 14, 4, r); for (let i = 0; i < 5; i++) drum(S, dc - len / 2 - 10 + r.between([-5, 5]), r.between([-30, 30]), r); });
@@ -157,10 +134,6 @@
       for (const s of [-1, 1]) S.bx(dc, s * 21, 0.22, 0.6, 0.05, len, 'col:#d8d4bc', undefined, false, { shadow: false });
       for (let i = 0; i < 26; i++) { const d2 = dc + r.between([-len / 2, len / 2]), lx = r.between([-20, 20]); S.bxr(d2, lx, 0.24, r.between([3, 9]), 0.04, 0.5, 'col:#3a3c3a', undefined, r.between([-90, 90]), r.between([-40, 40]), false); }   // fissures
       for (let i = 0; i < 8; i++) { const d2 = dc + r.between([-len / 2, len / 2]), lx = (r() < 0.5 ? -1 : 1) * r.between([8, 20]); S.bx(d2, lx, 0.3, r.between([2, 4]), 0.5, r.between([2, 4]), 'col:#6f8a50', undefined, false, { shadow: false }); }   // herbe qui perce
-      // avions épaves (fuselage, ailes cassées, dérive) et un camion citerne renversé
-      const wreck = (d2, lx, yaw, tint) => { S.bxr(d2, lx, 1.9, 3.2, 3.2, 18, 'metal', tint, 0, yaw, true); S.bxr(d2 - 2, lx, 1.5, 22, 0.5, 4.6, 'metal', tint, 8, yaw, true); S.bxr(d2 - 8, lx, 4.2, 0.5, 4.4, 3.4, 'metal', tint, 0, yaw, true); S.bxr(d2 - 8, lx, 2.3, 7.6, 0.4, 2.4, 'metal', tint, -6, yaw, true); S.bxr(d2 + 8.5, lx, 2.2, 3.0, 2.4, 3.6, 'glass', undefined, 0, yaw, false); };
-      wreck(dc - 52, -15, 4, '#8d939a'); wreck(dc + 28, 17, -6, '#9a8a6a');
-      S.bxr(dc - 8, 14, 1.6, 3, 3, 10, 'metal', '#a89a7a', 16, 10, true);
       // tour de contrôle en briques, cabine vitrée, antenne
       const dt = dc + 60;
       S.bx(dt, -34, 6, 9, 12, 9, 'brick', '#bba294', true); S.bx(dt, -34, 13.5, 12, 3, 12, 'glass', undefined, false); S.bx(dt, -34, 15.4, 13, 0.7, 13, 'concrete', '#9a9a96', true); S.bx(dt, -34, 19.5, 0.3, 8, 0.3, 'metal', '#6a6e74', false); lamp(S, dt, -34, 12, '#ffd8a0');

@@ -327,6 +327,7 @@
 
   // ---------- vol ----------
   EVO.beginRun = (g) => {
+    EVO.endTumble(g);
     g.evoReport = false;
     g.l1run = { slow: 0, slowK: 0.4, slowDur: 0, slowT: 0, cool: 0, bossHits: 0, wall: 0, ph: 1, tAcc: 0, evo: true };
     g.evo = { kills: 0, coins: 0, preview: !!g.evoPreview, previewT: 14, fuelOut: false, chap: 1, chapCoins: 0, maxD: 0, bossHits: 0, scan: 0, perfect: false };
@@ -454,24 +455,25 @@
     { const cols = ['#b8925e', '#c9a46c', '#8a6a44', '#e8dcc0', '#6e5230'], bp = rk.pos.clone();
       for (let i = 0; i < 12; i++) { const sz = rr(0.06, 0.2), ch = new THREE.Mesh(new THREE.BoxGeometry(sz, sz * rr(0.3, 0.8), sz * rr(1, 2.2)), new THREE.MeshLambertMaterial({ color: cols[i % cols.length] })); ch.position.copy(bp).add(new V(rr(-0.2, 0.2), rr(0, 0.3), rr(-0.3, 0.3))); ch.quaternion.setFromEuler(new THREE.Euler(rr(0, 6), rr(0, 6), rr(0, 6))); sc.add(ch);
         add(ch, v0.clone().multiplyScalar(rr(0.2, 0.6)).add(new V(rr(-4, 4), rr(2, 8), rr(-4, 4))), new V(rr(-14, 14), rr(-14, 14), rr(-14, 14)), sz * 0.6); } }
-    g.evoTumble = { P, t: 0, dur: EVO.isS2() ? 5 : 12, flag: null, kind, body, v0: v0.clone() };
+    g.evoTumble = { P, t: 0, dur: 2.0, flag: null, kind, body, v0: v0.clone() };
     g.audio.play('clunk', pos); g.rig.shake = 0.5; g.style.dropCombos();
     sparks(g, pos, 26, 10);
   };
   // v209 : drapeau du record : mat blanc a pommeau dore, grande banderole ondulante (rouge, galons blancs, flamme jaune), socle de pierres, poussiere
+  const FS = 0.62;   // taille du drapeau
   const plantFlag = (g, p, dist) => {
     const grp = new THREE.Group(), c = document.createElement('canvas'); c.width = 384; c.height = 192; const x = c.getContext('2d');
     const gr = x.createLinearGradient(0, 0, 0, 192); gr.addColorStop(0, '#e8503a'); gr.addColorStop(1, '#b8281c'); x.fillStyle = gr; x.fillRect(0, 0, 384, 192);
     x.fillStyle = '#ffffff'; x.fillRect(0, 0, 384, 14); x.fillRect(0, 178, 384, 14); x.fillStyle = '#ffd23a'; x.fillRect(0, 14, 384, 5); x.fillRect(0, 173, 384, 5);
     x.fillStyle = 'rgba(0,0,0,0.25)'; x.font = 'bold 92px monospace'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(dist + ' M', 194, 100); x.fillStyle = '#ffffff'; x.fillText(dist + ' M', 190, 96);
     const tex = new THREE.CanvasTexture(c), mat = (col) => new THREE.MeshLambertMaterial({ color: col });
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 4.2, 8), mat('#f2f2f2')); pole.position.y = 2.1;
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 4.2, 8, 14), mat('#f2f2f2')); pole.position.y = 2.1;
     const knob = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 8), mat('#ffd23a')); knob.position.y = 4.3;
-    const cg = new THREE.PlaneGeometry(2.4, 1.2, 14, 1), cloth = new THREE.Mesh(cg, new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide })); cloth.position.set(1.28, 3.5, 0);
-    const pen = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.9, 3), new THREE.MeshBasicMaterial({ color: '#ffd23a', side: THREE.DoubleSide })); pen.rotation.z = -Math.PI / 2; pen.position.set(2.95, 3.5, 0);
+    const cg = new THREE.PlaneGeometry(2.4, 1.2, 14, 1), cloth = new THREE.Mesh(cg, new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide })); cloth.position.set(1.2, 3.5, 0);
+    const pen = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.9, 3), new THREE.MeshBasicMaterial({ color: '#ffd23a', side: THREE.DoubleSide })); pen.rotation.z = -Math.PI / 2; pen.position.set(2.67, 3.5, 0);
     grp.add(pole, knob, cloth, pen);
     const mound = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.4, 0.1, 10), mat('#6a5a44')); mound.position.y = 0.05; grp.add(mound);   // petit tertre de terre (plus de pierres)
-    grp.position.copy(p); grp.userData.cloth = cloth; grp.userData.pen = pen; grp.userData.cg = cg; grp.userData.base = Float32Array.from(cg.attributes.position.array); g.scene.add(grp); return grp;
+    grp.position.copy(p); grp.userData.cloth = cloth; grp.userData.pole = pole; grp.userData.pbase = Float32Array.from(pole.geometry.attributes.position.array); grp.userData.knob = knob; grp.userData.pen = pen; grp.userData.cg = cg; grp.userData.base = Float32Array.from(cg.attributes.position.array); g.scene.add(grp); return grp;
   };
   EVO.endTumble = (g) => {
     const Tm = g.evoTumble; if (!Tm) return;
@@ -551,31 +553,39 @@
     // epave qui fume : fumee noire continue, quelques braises au debut
     Tm.smokeT = (Tm.smokeT || 0) - dt; if (Tm.smokeT <= 0) { Tm.smokeT = 0.07; const fx = g.effects, bp = Tm.body.m.position; fx.darkSmoke.emit({ pos: bp.clone().add(new V(rr(-0.15, 0.15), 0.1, rr(-0.15, 0.15))), vel: new V(rr(-0.3, 0.3), rr(1.2, 2.2), rr(-0.3, 0.3)), life: rr(1.3, 2.2), s0: 0.15, s1: rr(0.5, 0.8), s2: 1.1, peak: 0.3, cols: fx.pal.blackSmoke, drag: 1, a: 0.5, fin: 0.1, fout: 0.35, wind: 1, turb: 1.6 }); if (Tm.t < 3 && Math.random() < 0.4) sparks(g, bp, 2, 4); }
     // camera : suit la fusee ou qu'elle aille (elle garde son cote actuel, se rapproche si la fusee s'eloigne, reste au-dessus du sol)
-    { const bp = Tm.body.m.position; g.rig.focus.copy(bp);
+    if (Tm.flag) {   // le drapeau est plante : la camera se tourne vers lui
+      const fp = Tm.flag.position; _dq.copy(g.rig.pos).sub(fp); _dq.y = 0; if (_dq.lengthSq() < 1e-4) _dq.set(0, 0, 1); _dq.normalize().multiplyScalar(7.5);
+      _pv.set(fp.x + _dq.x, fp.y + 3.4, fp.z + _dq.z); g.rig.pos.lerp(_pv, 1 - Math.exp(-3 * dt)); g.camera.position.copy(g.rig.pos);
+      _nx.set(fp.x, fp.y + 2.2, fp.z); g.rig.focus.lerp(_nx, 1 - Math.exp(-4 * dt));
+    } else { const bp = Tm.body.m.position; g.rig.focus.copy(bp);
       _dq.copy(g.rig.pos).sub(bp); const hd = Math.hypot(_dq.x, _dq.z) || 1; if (hd < 2) { _dq.set(-Tm.v0.x, 0, -Tm.v0.z); if (_dq.lengthSq() < 1e-4) _dq.set(0, 0, 1); }
       _dq.y = 0; _dq.normalize().multiplyScalar(4.6); const want = new V(bp.x + _dq.x, bp.y + 2.0, bp.z + _dq.z);
       g.rig.pos.lerp(want, 1 - Math.exp(-6 * dt)); g.camera.position.copy(g.rig.pos); }
-    if (!Tm.flag && (Tm.body.rest ? Tm.t > 0.9 : Tm.t > 9)) {
+    if (!Tm.flag && g.impactT >= 1.98) {   // le drapeau arrive 2 s apres le choc, meme si la fusee roule encore ; il se pose sur le sol sous elle
       const bp = Tm.body.m.position, p = new V(bp.x, bp.y - 0.2, bp.z), gh = EVO.groundY(g, bp);
-      if (gh !== null && bp.y - gh < 1.2 && bp.y - gh > -0.5) p.y = gh; else { const sy = surfBelow(g, bp); if (sy !== null) p.y = sy; }   // le drapeau se pose TOUJOURS sur le sol reel sous la fusee
-      Tm.flag = plantFlag(g, p, Math.round(Math.max(0, run.dist))); Tm.flag.scale.y = 0.01; Tm.flagT = 0; g.audio.play('flag');
+      if (gh !== null) p.y = gh; else { const sy = surfBelow(g, bp); p.y = sy !== null ? sy : floorAt(g, bp); }
+      Tm.flag = plantFlag(g, p, Math.round(Math.max(0, run.dist))); Tm.flag.scale.set(FS, 0.01, FS); Tm.flagT = 0; g.audio.play('flag');
       g.effects.ring(p.clone().setY(p.y + 0.2), new V(0, 1, 0), 0.3, 4, 0.5, '#ffffff', 0.7); g.audio.play('clunk', p); g.rig.shake = Math.max(g.rig.shake, 0.3);
       for (let i = 0; i < 14; i++) g.effects.sparks.emit({ pos: p.clone().setY(p.y + 0.2), vel: new V(rr(-3, 3), rr(0.5, 2.5), rr(-3, 3)), life: rr(0.5, 1.1), s0: 0.1, s1: 0.2, s2: 0.3, cols: g.effects.pal.ember, drag: 2, grav: 1, a: 0.5, fout: 0.5 });
-      Tm.dur = g.impactT + 1.7;   // le rapport de vol (SUIVANT, pieces gagnees) s'ouvre juste apres la plantation du drapeau
     }
     if (Tm.flag) {
-      Tm.flagT += dt; const k = Math.min(1, Tm.flagT / 0.35), e = 1 + 2.2 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2), F = Tm.flag;
-      F.scale.y = Math.max(0.01, e); F.rotation.y = Math.atan2(g.camera.position.x - F.position.x, g.camera.position.z - F.position.z);
-      const pa = F.userData.cg.attributes.position, B = F.userData.base, tt = Tm.flagT * 6;
+      Tm.flagT += dt; const k = Math.min(1, Tm.flagT / 0.4), e = 1 + 2.2 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2), F = Tm.flag, ft = Tm.flagT;
+      F.scale.set(FS, FS * Math.max(0.01, e), FS); F.rotation.y = Math.atan2(g.camera.position.x - F.position.x, g.camera.position.z - F.position.z);
+      const pa = F.userData.cg.attributes.position, B = F.userData.base, tt = ft * 6;
       for (let i = 0; i < pa.count; i++) { const u = (B[i * 3] + 1.2) / 2.4; pa.setZ(i, Math.sin(u * 5 - tt) * 0.16 * u + Math.sin(u * 9 - tt * 1.7) * 0.04 * u); pa.setY(i, B[i * 3 + 1] - u * u * 0.08 * Math.sin(tt * 0.5)); }
-      pa.needsUpdate = true; F.userData.pen.position.z = Math.sin(2.4 / 2 * 5 - tt) * 0.16; F.userData.pen.rotation.y = Math.sin(tt) * 0.3;
+      pa.needsUpdate = true;
+      // la tige vibre de gauche a droite en se courbant, puis se calme
+      const amp = Math.exp(-ft * 1.5) * Math.sin(ft * 24) * 0.5 + Math.sin(ft * 1.7) * 0.012, off = (y) => amp * (y / 4.2) * (y / 4.2);
+      const pg = F.userData.pole.geometry.attributes.position, PB = F.userData.pbase;
+      for (let i = 0; i < pg.count; i++) pg.setX(i, PB[i * 3] + off(PB[i * 3 + 1] + 2.1));
+      pg.needsUpdate = true; F.userData.knob.position.x = off(4.3); F.userData.cloth.position.x = 1.2 + off(3.5); F.userData.cloth.rotation.z = amp * 0.35;
+      F.userData.pen.position.set(2.67 + off(3.5), 3.5, F.userData.pen.position.z); F.userData.pen.position.z = Math.sin(2.4 / 2 * 5 - tt) * 0.16; F.userData.pen.rotation.y = Math.sin(tt) * 0.3;
     }
   };
 
   // ---------- fin d'un vol : on revient sur le lanceur avec le récap ----------
   EVO.beginEnd = (g) => {
-    EVO.endTumble(g);
-    if (g.evo && g.evo.preview) { g.evoPreview = false; g.evoLast = { zone2: true, t0: 0 }; g.goHome({}); return; }
+    if (g.evo && g.evo.preview) { EVO.endTumble(g); g.evoPreview = false; g.evoLast = { zone2: true, t0: 0 }; g.goHome({}); return; }   // l'epave et le drapeau restent visibles sous le rapport (nettoyes au depart)
     const S = EVO.save(g), ev = g.evo || { kills: 0, coins: 0, maxD: 0 }, run = g.endlessRun, dist = Math.round(Math.max(ev.maxD, run ? run.dist : 0)), m = EVO.mult(S.cm);
     const sd = Math.round(dist * EVO.SCORE_K(g)), distCoins = Math.floor(sd * m), lines = [['DISTANCE ' + sd + ' M', distCoins]];
     if (ev.kills) lines.push(['ENNEMIS ' + ev.kills, ev.coins - (ev.bossHits ? Math.round(150 * m) * ev.bossHits : 0)]);
@@ -590,14 +600,14 @@
       detail: g.crashKind === 'weak' && g.evoWeak ? 'ENNEMI ' + g.evoWeak.hp + ' PV : TES DEGATS ' + g.evoWeak.dmg.toFixed(1) : g.crashKind === 'stalled' ? (r.tier >= 2 ? 'DETRUIS DES ENNEMIS POUR RECHARGER' : 'AMELIORE LA FUSEE : ELLE IRA PLUS LOIN') : 'GLISSE LE DOIGT POUR ESQUIVER' };
     g.writeSave();
     g.telemetry.event('evoEnd', { dist, kills: ev.kills, coins: total, rk: S.rk, la: S.la, cm: S.cm, cause: g.crashKind });
-    g.evoReport = true; g.evoAdDone = false; g.ui.overlay = 'evoReport';   // v152 : le rapport de vol s'affiche sur le lieu du crash ; SUIVANT ramene au menu
+    g.evoReport = true; g.evoAdDone = false; g.ui.overlay = 'evoReport'; g.audio.play('report');   // v152 : le rapport de vol s'affiche sur le lieu du crash ; SUIVANT ramene au menu
   };
   // SUIVANT : mini pub de 5 s des le 5e vol (sauf pub de fin deja regardee), puis retour au menu
   EVO.COIN_K = 0.25;   // v194 : la reference ne paie QUE la distance (total = distance x multiplicateur) : un ennemi detruit ne rapporte plus qu'une petite prime
   EVO.INTERSTITIAL = false;   // v173 : pas de pub imposee entre les vols pour l'instant
   EVO.afterReport = (g) => {
     if (!g.evoReport) return; const S = EVO.save(g);
-    const go = () => { g.evoReport = false; g.evoLast = null; g.goHome({}); };
+    const go = () => { g.evoReport = false; g.evoLast = null; EVO.endTumble(g); g.goHome({}); };
     if (!g.evoAdDone && g.ads && (EVO.adDue ? EVO.adDue(g, S) : (EVO.INTERSTITIAL && S.runs >= 5 && g.ads.forced()))) { g.ui.overlay = null; g.ads.open('interstitial', go, null, 5); return; }
     go();
   };

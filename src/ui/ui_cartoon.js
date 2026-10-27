@@ -36,7 +36,7 @@
   UI.CARDCOL = { la: '#2ECC71', rk: '#1E90FF', cm: '#FF8C00' };
   UI.CARDBG = { la: ['#5CB87C', '#3A6D4B'], rk: ['#5D6D7E', '#2C3E50'], cm: ['#F39C12', '#A16E34'] };   // [haut, bas]
   UI.greenButton = (ctx, x, y, w, h, o) => {   // bouton plat avec une tranche (relief) sous la face ; plus clair quand on ne peut pas acheter
-    o = o || {}; const r = h * 0.07, dis = !!o.disabled, lip = Math.max(S(5), h * 0.075), hh = h - lip, c = BTN[o.cat] || BTN.la, bk = o.bright || 1;
+    o = o || {}; const r = h * (o.r || 0.07), dis = !!o.disabled, lip = Math.max(S(5), h * (o.lip || 0.075)), hh = h - lip, c = o.solid ? [o.solid[1], o.solid[0], o.solid[1], o.solid[0]] : (BTN[o.cat] || BTN.la), bk = o.bright || 1;   // o.r / o.lip : coins plus ronds, relief plus haut ; o.solid : [tranche, face] en aplat (fond clair sous un bouton estompe)
     rr(ctx, x, y + lip, w, hh, r); ctx.fillStyle = dis ? c[3] : (bk > 1 ? brightC(c[1], bk) : c[1]); ctx.fill();
     rr(ctx, x, y, w, hh, r); ctx.fillStyle = dis ? c[2] : (bk > 1 ? brightC(c[0], bk) : c[0]); ctx.fill();
     return { x, y, w, h: hh };

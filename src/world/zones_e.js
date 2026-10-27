@@ -119,7 +119,8 @@
     S.bx(dc, lx, hub + 1.5, 4.4, 4.4, 11, 'metal', base);                                 // nacelle
     S.cyl(dc, lx, hub - 0.6, 2.2, 3, 'metal', base, 10, 1.4, false);
     const a0 = r() * 2 * Math.PI / 3, L = 36 + r() * 6;
-    for (let k = 0; k < 3; k++) { const a = a0 + k * 2 * Math.PI / 3, off = 2.2 + L / 2; S.bxr(dc, lx + Math.sin(a) * off, hub + 1.5 + Math.cos(a) * off, 2.2 - (k % 2) * 0.2, L, 0.5, 'metal', '#f4f4f2', -a * DEG, 0, collideBlades); }
+    const spin = []; for (let k = 0; k < 3; k++) { const a = a0 + k * 2 * Math.PI / 3, off = 2.2 + L / 2; if (collideBlades || !Z.spinRotor) S.bxr(dc, lx + Math.sin(a) * off, hub + 1.5 + Math.cos(a) * off, 2.2 - (k % 2) * 0.2, L, 0.5, 'metal', '#f4f4f2', -a * DEG, 0, collideBlades); else spin.push([Math.sin(a) * off, Math.cos(a) * off, 2.2 - (k % 2) * 0.2, L, 0.5, '#f4f4f2', -a]); }
+    if (spin.length) Z.spinRotor(S, dc, lx, hub + 1.5, spin, r, 0.8);   // v263 : les eoliennes tournent
     S.cyl(dc, lx, hub + 1.5 - 0.1, 2, 2.4, 'col:#c8ccd0', undefined, 10, 1.2, false);
   }
   function platform(S, dc, lx, r) {

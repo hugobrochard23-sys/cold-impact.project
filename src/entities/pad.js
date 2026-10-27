@@ -163,7 +163,7 @@
       if (this.mode !== 'idle') return false;
       this.mode = 'charge'; this.charge = 0; this.chargeT = 0;
       const g = this.game;
-      g.audio.play('padArm');
+      if (!(CC.EVO && CC.EVO.on)) g.audio.play('padArm');   // v263 : en mode evolution, le seul bruit au toucher est le pop du bouton
       if (CC.Haptics) CC.Haptics.pattern('charge');
       return true;
     }

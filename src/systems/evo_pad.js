@@ -34,7 +34,7 @@
     // l'ancien decor du lanceur est masque (le nouveau le remplace)
     for (const c of pad.group.children) c.visible = false;
     const L = pad.evoL = new T3.Group(); pad.group.add(L);
-    const lt = Math.floor((EVO.save(g).la || 0) / 5), RM = [['#B88F5E', '#8F6B3E'], ['#8A5B31', '#5E3C1E'], ['#6E7681', '#454C55'], ['#3F4A57', '#262D36'], ['#D2A82E', '#9A7A18']][Math.min(4, lt)], rampM = lam(RM[0]), rampD = lam(RM[1]);   // carton, bois, fer, acier, or
+    const lt = Math.floor((EVO.save(g).la || 0) / 5), RM = [['#B88F5E', '#8F6B3E'], ['#8A5B31', '#5E3C1E'], ['#6E7681', '#454C55'], ['#3F4A57', '#262D36'], ['#D2A82E', '#9A7A18']][Math.min(4, lt)], rampM = lam(RM[0]), rampD = lam(RM[1]); pad.rampMats = [rampM, rampD];   // carton, bois, fer, acier, or
     const concrete = lam('#8a8c90'), concD = lam('#6e7074'), steel = lam('#4c5460'), dark = lam('#262a31'), light = lam('#c8ccd2'), red = lam('#c8352a'), white = lam('#eceef2');
     // v174 : un petit lanceur de roquette tout simple : dalle, rail incline, deux bras de maintien, bouclier de flamme, quelques cones
     box(L, 2.6, 0.3, 6.0, concrete, 0, -0.78, -0.2).userData.noShadow = true; L.userData.padSlabTop = -0.63;
@@ -146,6 +146,26 @@
       m.geometry = out[i].geometry; m.visible = true; SM.multiplyMatrices(PM, out[i].matrixWorld); m.matrix.copy(SM); m.matrixWorldNeedsUpdate = true;
     }
     for (let i = out.length; i < pool.length; i++) pool[i].visible = false;
+  };
+  // v263 : OMBRE REELLE sous chaque ennemi (meme methode que le lanceur : la silhouette projetee sur le sol, d'une seule teinte, sans empilement)
+  const fPool = [], FPM = new T3.Matrix4(); let fGroup = null;
+  EVO.foeShadowTick = (g) => {
+    if (!fGroup) { fGroup = new T3.Group(); fGroup.frustumCulled = false; }
+    if (fGroup.parent !== g.scene) g.scene.add(fGroup);
+    const on = g.evo && g.rocket && g.targets && (g.state === 'FLIGHT' || g.state === 'CRASHED' || g.state === 'IMPACT'); fGroup.visible = !!on; if (!on) return;
+    const rp = g.rocket.pos, now = performance.now(), dx = LD.x / LD.y, dz = LD.z / LD.y; let n = 0;
+    for (const t of g.targets) {
+      if (!t.alive || !t.object || !t.object.visible || !t.model || !t.object.parent || t.object.position.distanceToSquared(rp) > 25600) continue;
+      if (t._gt === undefined || now - t._gt > 450) { t._gy = EVO.groundY(g, t.object.position); t._gt = now; }
+      if (t._gy === null || t._gy === undefined) continue;
+      t.object.updateMatrixWorld(true); const y = t._gy + 0.06; FPM.set(1, -dx, 0, dx * y, 0, 0, 0, y, 0, -dz, 1, dz * y, 0, 0, 0, 1);
+      const list = []; collect(t.model, list);
+      for (const o of list) {
+        if (n >= 260) break; let m = fPool[n]; if (!m) { m = fPool[n] = new T3.Mesh(o.geometry, shMat); m.matrixAutoUpdate = false; m.frustumCulled = false; m.renderOrder = 3; m.userData.isShadow = true; fGroup.add(m); }
+        m.geometry = o.geometry; m.visible = true; m.matrix.multiplyMatrices(FPM, o.matrixWorld); m.matrixWorldNeedsUpdate = true; n++;
+      }
+    }
+    for (let i = n; i < fPool.length; i++) fPool[i].visible = false;
   };
   // le lancement : maintenir pour allumer, relacher pour liberer
   const _hs = EVO.holdStart; EVO.holdStart = (g) => { const had = g.evoAim && g.evoAim.hold; _hs(g); const a = g.evoAim; if (a && a.hold && !had && g.audio && g.audio.startIgnition) g.audio.startIgnition(); };

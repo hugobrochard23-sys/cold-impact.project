@@ -20,12 +20,21 @@
   document.addEventListener('wheel', (e) => { if (active()) { SC.y = cl(SC.y + e.deltaY * 0.8, 0, SC.max); SC.v = 0; } }, { passive: true });
 
   // ---------- fond bleu a motifs qui defile en diagonale (boutique, reglages) ----------
+  // petite fusee blanche (luminosite 100 %) preparee une fois
+  let _wr = null, _wrT = 0;
+  const whiteRocket = () => {
+    if (_wr) return _wr; const now = performance.now(); if (now - _wrT < 400) return null; _wrT = now;
+    const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); UI.icon(x, 'missile_ogive', 64, 64, 110);
+    let ok = false; try { const d = x.getImageData(0, 0, 128, 128).data; for (let i = 3; i < d.length; i += 4) if (d[i] > 10) { ok = true; break; } } catch (e) { ok = true; }
+    if (!ok) return null; x.globalCompositeOperation = 'source-in'; x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, 128, 128); _wr = c; return c;
+  };
   Home.movingBg = (ctx, ui, W, H, scroll) => {
-    const T0 = -(ui.offsetY || 0), HH = ui.fullH || H, t = performance.now() / 1000, tile = Math.max(130, W * 0.3), off = t * 16 + (scroll || 0) * 0.4;
+    const T0 = -(ui.offsetY || 0), HH = ui.fullH || H, t = performance.now() / 1000, tile = Math.max(70, W * 0.16), off = t * 16 + (scroll || 0) * 0.4;
     const g = ctx.createLinearGradient(0, T0, 0, T0 + HH); g.addColorStop(0, '#1F66E8'); g.addColorStop(1, '#0D3796'); ctx.fillStyle = g; ctx.fillRect(0, T0, W, HH);
+    const wr = whiteRocket(); if (!wr) return;
     ctx.save(); ctx.globalAlpha = 0.09;
-    const ox = ((off % tile) + tile) % tile, oy = ox;
-    for (let r = -1, y = -tile; y < HH + tile; y += tile * 0.62, r++) for (let x = -tile; x < W + tile; x += tile) UI.icon(ctx, 'missile_ogive', x + ((r & 1) ? tile / 2 : 0) - ox, T0 + y - oy, tile * 0.42, { rot: 0.8 });
+    const ox = ((off % tile) + tile) % tile, oy = ox, sz = tile * 0.9;
+    for (let r = -1, y = -tile; y < HH + tile; y += tile * 0.62, r++) for (let x = -tile; x < W + tile; x += tile) { ctx.save(); ctx.translate(x + ((r & 1) ? tile / 2 : 0) - ox, T0 + y - oy); ctx.rotate(0.8); ctx.drawImage(wr, -sz / 2, -sz / 2, sz, sz); ctx.restore(); }
     ctx.restore();
   };
 
@@ -33,10 +42,11 @@
   const border = (ctx, x, y, w, h, r, col, bw) => { rr(ctx, x, y, w, h, r); ctx.lineWidth = bw; ctx.strokeStyle = col; ctx.stroke(); };
   const card = (ctx, x, y, w, h, fill, edge) => { const r = S(26); ctx.save(); rr(ctx, x, y + S(6), w, h, r); ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.fill(); ctx.restore(); rr(ctx, x, y, w, h, r); ctx.fillStyle = fill; ctx.fill(); border(ctx, x, y, w, h, r, edge, S(5)); };
   const head = (ctx, x, y, w, h, label, fill, edge, ico) => { const r = h * 0.3; rr(ctx, x, y, w, h, r); ctx.fillStyle = fill; ctx.fill(); border(ctx, x, y, w, h, r, edge, S(5)); if (ico) ico(x + h * 0.6, y + h / 2, h * 0.78); UI.outlined(ctx, label, x + h * 1.2, y + h / 2, UI.fit(ctx, label, w - h * 1.5, h * 0.5), '#FFFFFF', '#0B2A66', { keep: true, ow: 0.1, align: 'left' }); };
-  const priceBtn = (ctx, x, y, w, h, label, cat) => { const f = UI.greenButton(ctx, x, y, w, h, { cat: cat || 'buy' }); UI.outlined(ctx, label, x + w / 2, f.y + f.h * 0.5, UI.fit(ctx, label, w * 0.86, f.h * 0.5), '#FFFFFF', '#1F6A08', { keep: true, ow: 0.1 }); return f; };
-  const adBtn = (ctx, x, y, w, h, label, now) => { const f = UI.greenButton(ctx, x, y, w, h, { cat: 'ad' }); const ts = f.h * 0.78; ctx.save(); ctx.translate(x + f.h * 0.6, f.y + f.h * 0.5); ctx.rotate(-0.2); UI.artImg(ctx, 'ticket', 0, 0, ts); ctx.restore(); UI.outlined(ctx, label, x + w * 0.58, f.y + f.h * 0.5, UI.fit(ctx, label, w * 0.6, f.h * 0.42), '#FFFFFF'); K.shimmer(ctx, f.x, f.y, f.w, f.h, f.h * 0.07, ((now / 1000) % 2) / 0.6); return f; };
+  const priceBtn = (ctx, x, y, w, h, label, cat) => { const f = UI.greenButton(ctx, x, y, w, h, { cat: cat || 'buy', r: 0.26, lip: 0.16 }); UI.outlined(ctx, label, x + w / 2, f.y + f.h * 0.5, UI.fit(ctx, label, w * 0.86, f.h * 0.5), '#FFFFFF', '#1F6A08', { keep: true, ow: 0.1 }); return f; };
+  const adBtn = (ctx, x, y, w, h, label, now) => { const f = UI.greenButton(ctx, x, y, w, h, { cat: 'ad', r: 0.26, lip: 0.16 }); const ts = f.h * 0.78; ctx.save(); ctx.translate(x + f.h * 0.6, f.y + f.h * 0.5); ctx.rotate(-0.2); UI.artImg(ctx, 'ticket', 0, 0, ts); ctx.restore(); UI.outlined(ctx, label, x + w * 0.58, f.y + f.h * 0.5, UI.fit(ctx, label, w * 0.6, f.h * 0.42), '#FFFFFF'); K.shimmer(ctx, f.x, f.y, f.w, f.h, f.h * 0.26, ((now / 1000) % 2) / 0.6); return f; };
   const numTxt = (ctx, s, x, y, px, edge) => UI.outlined(ctx, s, x, y, px, '#FFFFFF', edge || '#5A3A00', { keep: true, ow: 0.16 });
-  const bestBadge = (ctx, x, y, s) => { ctx.save(); ctx.translate(x, y); ctx.rotate(-0.38); UI.artImg(ctx, 'badge_best', 0, 0, s); UI.outlined(ctx, 'BEST', 0, -s * 0.07, s * 0.2, '#FFFFFF', '#6B0F0F', { keep: true, ow: 0.14 }); UI.outlined(ctx, 'VALUE', 0, s * 0.12, s * 0.2, '#FFFFFF', '#6B0F0F', { keep: true, ow: 0.14 }); ctx.restore(); };
+  const bestBadge = (ctx, x, y, s) => { ctx.save(); ctx.translate(x, y); ctx.rotate(-0.38); UI.artImg(ctx, 'badge_best', 0, 0, s); UI.outlined(ctx, 'BEST', 0, -s * 0.07, s * 0.2, '#FFFFFF', '#6B0F0F', { keep: true, ow: 0.14 }); UI.outlined(ctx, 'VALUE', 0, s * 0.12, s * 0.2, '#FFFFFF', '#6B0F0F', { keep: true, ow: 0.14 });
+    ctx.save(); rr(ctx, -s * 0.4, -s * 0.4, s * 0.8, s * 0.8, s * 0.4); ctx.clip(); K.shimmer(ctx, -s * 0.4, -s * 0.4, s * 0.8, s * 0.8, s * 0.4, ((performance.now() / 1000) % 3) / 0.6); ctx.restore(); ctx.restore(); };   // reflet toutes les 3 s
   const price = (id, d) => (CC.Native && CC.Native.price(id)) || d;
 
   // ---------- boutique ----------
@@ -52,10 +62,10 @@
     // --- packs sans publicite : fond creme #f7efcb
     head(ctx, mx, y, mw, S(100), 'PACKS SANS PUBLICITÉ', '#E8C95A', '#B8932E', (x, yy, r) => K.adsBadge(ctx, x, yy, r * 0.45)); y += S(120);
     { const h = S(260); card(ctx, mx, y, mw, h, '#F7EFCB', '#D8C98A'); K.adsBadge(ctx, mx + S(120), y + h * 0.36, S(70)); UI.text(ctx, '+', mx + S(235), y + h * 0.36, S(80), '#6A5320', { shadow: false });
-      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowOffsetY = S(9); ctx.shadowBlur = S(5); UI.icon(ctx, 'gems_belt', mx + S(400), y + h * 0.38, S(190)); ctx.restore(); numTxt(ctx, '10', mx + S(400), y + h * 0.7, S(52));
-      UI.text(ctx, 'Pack de démarrage', mx + S(40), y + h * 0.88, S(50), '#5A4515', { align: 'left', shadow: false });
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowOffsetY = S(9); ctx.shadowBlur = S(5); UI.icon(ctx, 'gems_belt', mx + S(400), y + h * 0.33, S(180)); ctx.restore(); numTxt(ctx, '10', mx + S(400), y + h * 0.66, S(52));
+      UI.outlined(ctx, 'Pack de démarrage', mx + S(40), y + h * 0.9, S(50), '#FFFFFF', '#8A6A1E', { keep: true, ow: 0.14, align: 'left' });
       const bw = S(280), bh = S(100), bx = mx + mw - bw - S(30), by = y + (h - bh) / 2; priceBtn(ctx, bx, by, bw, bh, price('starter', '10,99 €')); tapS(bx, by, bw, bh, () => buy('starter')); y += h + S(24); }
-    { const h = S(170); card(ctx, mx, y, mw, h, '#F7EFCB', '#D8C98A'); K.adsBadge(ctx, mx + S(95), y + h / 2, S(58)); UI.text(ctx, 'Pas de publicités', mx + S(190), y + h * 0.5, S(54), '#5A4515', { align: 'left', shadow: false });
+    { const h = S(170); card(ctx, mx, y, mw, h, '#F7EFCB', '#D8C98A'); K.adsBadge(ctx, mx + S(95), y + h / 2, S(58)); UI.outlined(ctx, 'Pas de publicités', mx + S(190), y + h * 0.5, S(54), '#FFFFFF', '#8A6A1E', { keep: true, ow: 0.14, align: 'left' });
       const bw = S(280), bh = S(100), bx = mx + mw - bw - S(30), by = y + (h - bh) / 2; priceBtn(ctx, bx, by, bw, bh, price('noads', '7,99 €')); tapS(bx, by, bw, bh, () => buy('noads')); y += h + S(44); }
     // --- gemmes : fond #ffcc00 ; plus l'icone est grosse, plus le pack coute cher
     head(ctx, mx, y, mw, S(100), 'PIERRES PRÉCIEUSES', '#12A7FF', '#0A6FB8', (x, yy, r) => UI.icon(ctx, 'gem', x, yy, r)); y += S(122);
@@ -112,8 +122,7 @@
   // ---------- tuile « gemme gratuite » du menu (sous le bouton ADS) ----------
   Home.drawGemTile = (ui, ctx, game, x, y, s, now) => {
     const E = CC.EVO, left = Math.max(0, 3 - (E.freeGemsUsed ? E.freeGemsUsed(game) : 0)), r = s * 0.2;
-    rr(ctx, x, y + S(5), s, s, r); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fill();
-    const g = ctx.createLinearGradient(0, y, 0, y + s); g.addColorStop(0, '#4DB2FF'); g.addColorStop(1, '#1E6FD6'); rr(ctx, x, y, s, s, r); ctx.fillStyle = left > 0 ? g : '#6F8094'; ctx.fill(); border(ctx, x, y, s, s, r, '#FFFFFF', S(5));
+    border(ctx, x, y, s, s, r, left > 0 ? '#FFFFFF' : 'rgba(255,255,255,0.55)', S(6));   // pas de fond : seulement un contour blanc
     UI.artImg(ctx, 'gem', x + s * 0.46, y + s * 0.4, s * 0.58); UI.outlined(ctx, 'X1', x + s * 0.8, y + s * 0.16, s * 0.24, '#FFFFFF', '#0B2A66', { keep: true, ow: 0.16 });
     ctx.save(); ctx.translate(x + s * 0.3, y + s * 0.8); ctx.rotate(-0.2); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowOffsetY = S(3); UI.artImg(ctx, 'ticket', 0, 0, s * 0.34); ctx.restore();
     UI.outlined(ctx, left + '/3', x + s * 0.64, y + s * 0.8, s * 0.26, '#FFFFFF', '#0B2A66', { keep: true, ow: 0.16 });

@@ -606,7 +606,7 @@
         const T = this.T, d = this.dist; let cap = -1e9, vmax = 0;   // v087 : le plafond suit le POINT HAUT de la trajectoire sur -30 m / +100 m (il ne pousse plus le joueur vers le bas dans les descentes)
         for (const k of [-30, 0, 35, 70, 100]) { cap = Math.max(cap, T.base(d + k) + T.laneY(d + k)); vmax = Math.max(vmax, T.vol(d + k)); }
         cap += 30;
-        if (rk.pos.y > cap) { rk.pos.y = cap; if (rk.vel.y > 0) rk.vel.y = 0; }
+        if (rk.pos.y > cap && !g.evo) { rk.pos.y = cap; if (rk.vel.y > 0) rk.vel.y = 0; }   // v263 : mode evolution : plus de limite de hauteur
         const c0 = T.at(d, 0, 0), c1 = T.at(d, 1, 0), sx = c1[0] - c0[0], sz = c1[2] - c0[2], sl = Math.hypot(sx, sz) || 1, nx = sx / sl, nz = sz / sl, lat = (rk.pos.x - c0[0]) * nx + (rk.pos.z - c0[2]) * nz, B = Math.max(vmax + 10, 28);
         if (Math.abs(lat) > B) { const ex = lat - Math.sign(lat) * B; rk.pos.x -= ex * nx; rk.pos.z -= ex * nz; const vl = rk.vel.x * nx + rk.vel.z * nz; if (vl * Math.sign(lat) > 0) { rk.vel.x -= vl * nx; rk.vel.z -= vl * nz; } }
       }

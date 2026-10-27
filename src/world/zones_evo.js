@@ -62,9 +62,10 @@
   function oakT(S, dc, lx, r, sc) { const p = S.at(dc, lx, 0); TR.broadleaf(S.b, p[0], p[1], p[2], r.between([9, 18]) * (sc || 1), r, {}); }
   function knoll(S, dc, lx, rad, h, col) { S.ball(dc, lx, h - rad * 0.0 - rad * 0.0 - 0, rad, 'col:' + col, undefined, false, h / rad); }
   function farmhouse(S, dc, lx, r) {
+    (Z.evoFarms = Z.evoFarms || []).push(S.at(dc, lx, 0));
     // v152 : maison de ferme detaillee (toit a deux pans, cheminee, fenetres eclairees, porte, perron, cloture, grange, silo)
     S.place(dc, lx, 18, 18, 0, 14, () => {
-      const c = pick(r, ['#d8cdb4', '#cfc0a0', '#d4c6aa', '#c9bba0']), roof = pick(r, ['#8a4a34', '#7a3e2c', '#9a5a3c']), trim = '#efe8d8', W = 9, Ln = 12, H0 = 5.2, R = 3.4, sl = Math.atan2(R, W / 2) / DEG;
+      const c = pick(r, ['#d8cdb4', '#cfc0a0', '#d4c6aa', '#c9bba0']), roof = pick(r, ['#8a4a34', '#7a3e2c', '#9a5a3c']), trim = '#efe8d8', W = 9, Ln = 12, H0 = 5.2, R = 3.4, sl = Math.atan2(R, W / 2) * DEG;   // v263 : angle en degres (le toit etait quasi plat : des trous)
       S.bx(dc, lx, 0.45, W + 1, 0.9, Ln + 1, 'col:#8a8478', undefined, true);                                   // soubassement de pierre
       S.bx(dc, lx, 0.9 + (H0 - 0.9) / 2, W, H0 - 0.9, Ln, 'col:' + c, undefined, true);
       for (const [dx, dy, dz] of [[-1, 1, 1], [1, 1, 1], [-1, 1, -1], [1, 1, -1]]) S.bx(dc + dx * (Ln / 2), lx + dz * (W / 2), H0 / 2, 0.5, H0, 0.5, 'col:' + trim, undefined, false);   // chainages d'angle
@@ -79,16 +80,23 @@
       S.glow(dc - Ln / 2 - 1, lx, 3.2, '#ffd890', 10);
       // grange attenante, silo, cloture
       S.bx(dc + 3, lx + 10, 2.4, 6.4, 4.8, 8.2, 'col:#9a4a3a', undefined, true); for (const s of [-1, 1]) S.bxr(dc + 3, lx + 10 + s * 1.7, 5.4, 4.2, 0.35, 8.8, 'col:#5e4a42', undefined, -s * 26, 0, false);
-      S.cyl(dc, lx - 10, 0, 1.8, 9, 'col:#c8c8c0', undefined, 12, 1.8, false); S.cyl(dc, lx - 10, 9, 1.9, 0.6, 'col:#8a9098', undefined, 12, 0.2, false);
       for (let k = 0; k < 8; k++) { S.bx(dc - 9 + k * 2.4, lx + 13, 0.6, 0.18, 1.2, 0.18, 'col:#8a6a48', undefined, false); } S.bx(dc - 1, lx + 13, 0.9, 0.12, 0.12, 17, 'col:#8a6a48', undefined, false);
     });
   }
+  // v263 : rotor qui tourne : un groupe anime (chaque pale est une boite) ; blades = [x, y, largeur, hauteur, epaisseur, couleur, rotation]
+  Z.spinRotor = (S, dc, lx, y, blades, r, speed) => {
+    const E = CC.EVO; if (!E || !E.addDyn || !E.placeGroup || !S.inClip(dc)) return false;
+    const grp = new THREE.Group(), rot = new THREE.Group(); grp.add(rot);
+    for (const q of blades) { const m = new THREE.Mesh(new THREE.BoxGeometry(q[2], q[3], q[4]), new THREE.MeshLambertMaterial({ color: q[5] })); m.position.set(q[0], q[1], 0); m.rotation.z = q[6] || 0; rot.add(m); }
+    E.placeGroup(S, grp, dc, lx, y, 0); const a0 = r() * 6.28, sp = speed * (r() < 0.5 ? -1 : 1) * (0.8 + r() * 0.4);
+    E.addDyn(grp, (t) => { rot.rotation.z = a0 + t * sp; }, [], { near: 700 }); return true;
+  };
   function windmill(S, dc, lx, r) {   // v182 : mat conique, nacelle, moyeu et trois pales effilees (blanc, gris clair en bout)
     S.place(dc, lx, 10, 10, 0, 40, () => { const hub = 27;
       S.cyl(dc, lx, 0, 2.5, 1.6, 'col:#a7b5c3', undefined, 10, 2.4, false); S.cyl(dc, lx, 1.6, 2.2, hub * 0.55, 'col:#dce4eb', undefined, 10, 1.6, false); S.cyl(dc, lx, 1.6 + hub * 0.55, 1.6, hub * 0.45 - 0.6, 'col:#f8fafc', undefined, 10, 1.1, false);
       S.bx(dc + 1.6, lx, hub + 0.2, 2.4, 2.6, 6.4, 'col:#dce4eb', undefined, false); S.bx(dc - 1.4, lx, hub + 0.2, 1.9, 1.9, 1.8, 'col:#a7b5c3', undefined, false);
-      const a0 = r() * 6.28; for (let k = 0; k < 3; k++) { const a = a0 + k * 2.0944, sn = Math.sin(a), cs = Math.cos(a);
-        S.bxr(dc - 2.0, lx + sn * 5.2, hub + cs * 5.2, 1.7, 9.6, 0.34, 'col:#f8fafc', undefined, -a * DEG, 0, false); S.bxr(dc - 2.0, lx + sn * 14, hub + cs * 14, 0.95, 9, 0.28, 'col:#dce4eb', undefined, -a * DEG, 0, false); } });
+      const blades = []; for (let k = 0; k < 3; k++) { const a = k * 2.0944, sn = Math.sin(a), cs = Math.cos(a); blades.push([sn * 5.2, cs * 5.2, 1.7, 9.6, 0.34, '#f8fafc', -a], [sn * 14, cs * 14, 0.95, 9, 0.28, '#dce4eb', -a]); }
+      Z.spinRotor(S, dc - 2.0, lx, hub, blades, r, 0.9); });
   }
   function pylonLine(S, dc, lx) { S.place(dc, lx, 8, 4, 0, 32, () => { S.bx(dc, lx, 14, 1.2, 28, 1.2, 'metal', '#8a8e96', false); S.bx(dc, lx, 24, 14, 0.6, 0.6, 'metal', '#8a8e96', false); S.bx(dc, lx, 20, 10, 0.6, 0.6, 'metal', '#8a8e96', false); }); }
   function haystack(S, dc, lx, r) { S.place(dc, lx, 8, 8, 0, 4, () => { S.cyl(dc, lx, 0, 2.4, 3.4, 'col:' + pick(r, ['#d8b860', '#c8a850']), undefined, 10, 2.4, false); }); }
@@ -209,7 +217,7 @@
   const flowerTemplate = () => _ft || (_ft = (() => {
     // parts : 0 tige (3 sommets), 1 petales (7 x 3), 2 coeur (4 x 3) ; aBC = (partie * 100 + indice, coin)
     const rows = []; for (let c = 0; c < 3; c++) rows.push([0, c]);
-    for (let q = 0; q < 7; q++) for (let c = 0; c < 3; c++) rows.push([100 + q, c]);
+    for (let q = 0; q < 7; q++) for (let c = 0; c < 9; c++) rows.push([100 + q, c]);   // v263 : petale arrondi : 3 triangles
     for (let q = 0; q < 4; q++) for (let c = 0; c < 3; c++) rows.push([200 + q, c]);
     const bc = new Float32Array(rows.length * 3); rows.forEach((r, k) => { bc[k * 3] = r[0]; bc[k * 3 + 1] = r[1]; bc[k * 3 + 2] = 1; });
     return { position: new THREE.BufferAttribute(new Float32Array(rows.length * 3), 3), aBC: new THREE.BufferAttribute(bc, 3), color: null };
@@ -255,15 +263,17 @@
       float e1x = fz, e1z = - fx, e2x = fx * 0.62, e2y = 0.78, e2z = fz * 0.62;
       float nP = daisy > 0.5 ? 7.0 : 5.0, sw = hgt * 0.6, rcn = R * 0.46, on = 1.0, a = 0.0, rad = 0.0;
       vec3 pt = vec3( aPos.x, aPos.y, aPos.z ); float swayV = 0.0;
-      if ( part < 0.5 ) { if ( c < 0.5 ) pt = aPos; else if ( c < 1.5 ) pt = aPos + vec3( 0.03, 0.0, 0.0 ); else { pt = vec3( cx, cy - R * 0.55, cz ); swayV = sw; } }
-      else if ( part < 1.5 ) { on = step( q + 0.5, nP ); float h2 = 3.1416 / nP; a = q / nP * 6.2832 + th; rad = R; if ( c < 0.5 ) { a -= h2; rad = R * 0.3; } else if ( c < 1.5 ) { a += h2; rad = R * 0.3; }
+      if ( part < 0.5 ) { if ( c < 0.5 ) pt = aPos; else if ( c < 1.5 ) pt = aPos + vec3( 0.045, 0.0, 0.0 ); else { pt = vec3( cx, cy - R * 0.55, cz ); swayV = sw; } }
+      else if ( part < 1.5 ) { on = step( q + 0.5, nP ); float h2 = 3.1416 / nP; a = q / nP * 6.2832 + th; rad = R;
+        float ci = floor( c + 0.5 );
+        if ( ci < 0.5 ) { a -= h2 * 0.9; rad = R * 0.3; } else if ( ci < 1.5 || ci < 3.5 && ci > 2.5 ) { a += h2 * 0.9; rad = R * 0.3; } else if ( ci < 2.5 || ci > 4.5 && ci < 5.5 || ci > 5.5 && ci < 6.5 ) { a -= h2 * 0.85; rad = R * 0.8; } else if ( ci < 4.5 || ci > 6.5 && ci < 7.5 ) { a += h2 * 0.85; rad = R * 0.8; } else { rad = R * 1.04; }
         pt = vec3( cx + e1x * cos( a ) * rad + e2x * sin( a ) * rad, cy + e2y * sin( a ) * rad, cz + e1z * cos( a ) * rad + e2z * sin( a ) * rad ); pt = mix( vec3( aPos.x, aPos.y - 1.0, aPos.z ), pt, on ); swayV = sw * on; }
       else { vec3 off = vec3( - fx * 0.03, 0.03, - fz * 0.03 ); if ( c < 0.5 ) pt = vec3( cx, cy, cz ) + off; else { a = ( q + ( c > 1.5 ? 1.0 : 0.0 ) ) / 4.0 * 6.2832; pt = vec3( cx + e1x * cos( a ) * rcn + e2x * sin( a ) * rcn, cy + e2y * sin( a ) * rcn, cz + e1z * cos( a ) * rcn + e2z * sin( a ) * rcn ) + off; } swayV = sw; }
       vec3 transformed = pt;
       vec3 gw = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;
       transformed += gWind( gw, swayV, far );`,
-    `vec3 stem = vec3( 0.2705, 0.5529, 0.2392 ) * 0.9; vec3 yel = vec3( 1.0, 0.8235, 0.2275 );
-      float pr = floor( aBC.x / 100.0 + 0.001 ); vColor = pr < 0.5 ? stem : ( pr < 1.5 ? aCol : ( aF1.z > 0.5 ? yel : aCol ) );`, 'grassFlower'));
+    `vec3 stem = vec3( 0.2705, 0.5529, 0.2392 ) * 0.9; vec3 yel = vec3( 1.0, 0.76, 0.18 );
+      float pr = floor( aBC.x / 100.0 + 0.001 ); vColor = pr < 0.5 ? stem : ( pr < 1.5 ? aCol * ( aBC.y > 7.5 ? 1.0 : ( abs( aBC.y ) < 0.5 || abs( aBC.y - 1.0 ) < 0.5 || abs( aBC.y - 3.0 ) < 0.5 ? 0.68 : 0.86 ) ) : yel );   // v263 : petales plus clairs vers le bout, coeur dore`, 'grassFlower'));
 
   Z.flushGrass = function (ctx) {
     if (ctx.swayBuf && ctx.swayBuf.pos.length) { const B = ctx.swayBuf; ctx.swayBuf = null; const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(B.pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(B.nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(B.col, 3)); g.setAttribute('aSway', new THREE.Float32BufferAttribute(B.sway, 1)); g.setAttribute('aFar', new THREE.Float32BufferAttribute(B.far, 1)); g.computeBoundingSphere(); g.boundingSphere.radius += 6;
@@ -311,7 +321,7 @@
           const ang = hsh(ci + k * 1.7, d * 0.3) * 6.2832, rr0 = rc * Math.sqrt(hsh(k * 2.9, ci + d * 0.11)), dd = cd + Math.cos(ang) * rr0, lx = cl + Math.sin(ang) * rr0; if (dd < d || dd >= e || dd < 175 || wet && wet(dd, lx, sc, T)) continue;   // pas de fleurs pres du lanceur
           const p = T.at(dd, lx, 0); if (nearPad(p[0], p[2])) continue; gcol(p[0], p[2], _gc); if (gf) gf(dd, lx, _gc, sc); if (!(_gc.g > _gc.b * 1.5 && _gc.g >= _gc.r * 0.82) || solidAt(b, p[0], p[1], p[2])) continue;
           const flay = hsh(k * 2.1, ci + d * 0.7) < 0.4 ? 0 : 1, fa = flay ? 100 : 170, G = grp(Math.floor(dd / 100), flay); relN(p[0], p[2], cn, 0, 1, 0);
-          const kind = hsh(k * 6.1, ci + d) < 0.8 ? main : pickF(hsh(k * 8.3, ci * 1.9 + d)), daisy = kind[2] === 1, hgt = 0.6 + 0.5 * hsh(k * 1.3, ci + d), R = (daisy ? 0.38 : 0.29) * (0.8 + 0.5 * hsh(k * 9.1, ci)) * 1.0, th = hsh(k * 3.3, ci) * 6.2832;
+          const kind = hsh(k * 6.1, ci + d) < 0.8 ? main : pickF(hsh(k * 8.3, ci * 1.9 + d)), daisy = kind[2] === 1, hgt = 0.7 + 0.55 * hsh(k * 1.3, ci + d), R = (daisy ? 0.38 : 0.29) * (0.8 + 0.5 * hsh(k * 9.1, ci)) * 1.12, th = hsh(k * 3.3, ci) * 6.2832;
           _fc.set(kind[1]).multiplyScalar(SK);
           G.flowers.push([p[0], p[1], p[2], G.fp.length, 0]);
           G.fp.push(p[0], p[1] - 0.03, p[2]); G.fa.push(hgt, R, daisy ? 1 : 0, th); G.fb.push(fx, fz, fa); G.fcol.push(_fc.r, _fc.g, _fc.b); G.fn.push(cn[0], cn[2]);
@@ -405,6 +415,16 @@
     const dm = (S.c0 + S.c1) / 2, hc = hillH(dm, s, 40) * 0.8; if (hc > 3) S.bx(dm, s * (T.vol(dm) + 8 + 40 + 45), hc / 2, 90, hc, S.c1 - S.c0, 'col:#5c9a38', undefined, true, { render: false });
   }
 
+  // v263 : le ciel n'est plus vide : montgolfieres a toutes les altitudes (le plafond invisible est supprime) ; elles sont solides
+  function skyBalloons(S) {
+    const COL = ['#d8442c', '#2f6fb0', '#e8b82a', '#3a9a5a', '#c0488a', '#e8e4d8']; let i = 0;
+    S.rows(S.d0 + 30, S.d1 - 20, 60, 0.7, (dc) => { const k = i++; S.item(dc, (r) => {
+      const b = [[34, 54], [62, 98], [106, 152]][k % 3], yy = r.between(b), rad = r.between([6, 9]), Lc = S.lane(dc).lx, lx = Lc + r.between([-1, 1]) * Math.min(S.vol(dc) - 12, 40), c1 = pick(r, COL), c2 = pick(r, COL);
+      S.ball(dc, lx, yy, rad, 'col:' + c1, undefined, true, 1.18);
+      S.cyl(dc, lx, yy - rad * 1.12 - 0.5, 1.5, rad * 0.55, 'col:' + c2, undefined, 12, rad * 0.6, false);
+      S.bx(dc, lx, yy - rad * 1.12 - 1.9, 2.2, 1.5, 2.2, 'planks', '#9a6e38', false);
+    }); });
+  }
   const campagne = { signature: 'rampe', scenes: {}, dress(S) {
     if (S.sc.name === 'riviere') { const dr = S.d0 + S.len * 0.5, p = S.T.at(dr, 0, 0); const q = S.T.at(dr + 10, 0, 0), q2 = S.T.at(dr - 10, 0, 0), l = Math.hypot(q[0] - q2[0], q[2] - q2[2]) || 1; S.b.water = [{ x: p[0], z: p[2], ux: (q[0] - q2[0]) / l, uz: (q[2] - q2[2]) / l, hw: S.vol(dr) + 70, hd: S.len * 0.3 + 6 }]; }   // v206 : plan d'eau de la riviere (trees.js l'evite)
 
@@ -412,6 +432,7 @@
     if (/^(ville|noyau)$/.test(S.sc.name)) return;   // v208 : ni collines, ni rochers, ni arbres dans la mine, le train, la gare et la ville
     // collines : bandes de relief continues de chaque cote (hillStrip)
     for (const sd of [-1, 1]) hillStrip(S, sd);
+    if (/^(rampe|camp|riviere|foret|route|vallee|falaise|entrepots|base)$/.test(S.sc.name)) skyBalloons(S);
     if (!/^(rampe|camp|riviere|foret|route)$/.test(S.sc.name)) return;   // forteresse et fuite : decor propre a la scene
     // petits blocs de pierre posés dans l'herbe : des reliefs à frôler
     const onSite = (dc, lx) => S.sc.name === 'camp' && (Z.campSites || [[70, 50, 50], [232, 48, 42], [340, 52, 56], [470, 80, 30], [570, 52, 66]]).some(([d, hd, hl]) => Math.abs(dc - (S.d0 + d)) < hd && Math.abs(lx) < hl);   // v214
