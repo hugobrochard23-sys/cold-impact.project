@@ -40,7 +40,7 @@
         const r = el.getBoundingClientRect();
         const x = (e.clientX - r.left) * (el.width / r.width), y = (e.clientY - r.top) * (el.height / r.height) - ((game.ui && game.ui.offsetY) || 0);
         if (this.uiPress(x, y, e.button)) return;
-        if (!this.locked && !game.testMode && !(CC.EVO && CC.EVO.on)) this.requestLock();
+        if (!this.locked && !game.testMode) this.requestLock();
         if (e.button === 0) this.fireEdge = true;
         if (e.button === 2) { this.grappleHeld = true; this.grappleEdge = true; }
       });
@@ -117,7 +117,7 @@
       const turnRight = k.ArrowRight || k.KeyD;
       const pitchUp = k.ArrowUp || k.KeyW || k.KeyZ;       // Z sur AZERTY, W sur QWERTY
       const pitchDown = k.ArrowDown || k.KeyS;
-      const evoJoy = !!(CC.EVO && CC.EVO.on);   // v267 : EVO : plus de fleches, le mini joystick (souris / doigt) pilote
+      const evoJoy = false;   // v267 : EVO : plus de fleches, le mini joystick (souris / doigt) pilote
       if (evoJoy) { if (CC.Joy) CC.Joy.apply(dt, this, this.game); } else {
       if (turnLeft) this.addAim(ar, 0);
       if (turnRight) this.addAim(-ar, 0);
