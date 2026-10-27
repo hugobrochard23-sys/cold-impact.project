@@ -424,17 +424,28 @@
       balloon(S, dc, lx, yy, rad, c1, c2);
     }); });
   }
-  // montgolfiere detaillee : enveloppe, bandes de couleur, couronne, jupe, bruleur qui brille, quatre montants, nacelle en osier avec rebord
+  // v267 : montgolfiere : enveloppe en fuseaux verticaux bombes (couleurs alternees, plus large vers le haut, goulot en bas), bande de bouche, cordes jusqu'au goulot, nacelle en osier
+  const GORE = [['#d8442c', '#f1d9a8'], ['#2f6fb0', '#f2e6c8'], ['#e8b82a', '#d8442c'], ['#3a9a5a', '#f2e6c8'], ['#c0488a', '#f6e0b0'], ['#6a4ab0', '#f0d070'], ['#e8793a', '#f4ecd6']];
+  function balloonEnv(S, dc, lx, yb, R, cols, r0) {
+    if (!S.inClip(dc)) return;
+    const H = 2.3 * R, G = 12, K = 12, pos = [], col = [], uv = [], idx = [], c3 = cols.map((h) => new THREE.Color(h));
+    const prof = (t) => (1 - t) * r0 + R * Math.pow(Math.sin(Math.PI * Math.pow(t, 1.3)), 0.7);
+    for (let g = 0; g < G; g++) { const cc = c3[g % cols.length], b0 = pos.length / 3;
+      for (let j = 0; j <= K; j++) { const t = j / K, y = t * H, rr = prof(t), sh = 0.8 + 0.2 * Math.sin(t * 1.6 + 0.3);
+        for (let i = 0; i < 3; i++) { const a = (g + i / 2) * 6.2832 / G, bg = 1 + 0.075 * Math.sin(Math.PI * i / 2) * Math.min(1, t * 6); pos.push(Math.cos(a) * rr * bg, y, Math.sin(a) * rr * bg); col.push(cc.r * sh, cc.g * sh, cc.b * sh); uv.push(i * 0.9 + g * 1.8, t * R * 0.5); } }
+      for (let j = 0; j < K; j++) for (let i = 0; i < 2; i++) { const a = b0 + j * 3 + i, b = a + 1, c = a + 3, d = a + 4; idx.push(a, c, b, b, c, d); } }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); geo.setIndex(idx); geo.computeVertexNormals();
+    const p = S.T.at(dc, lx, yb); S.b.addGeometry(geo, new THREE.Vector3(p[0], p[1], p[2]), new THREE.Quaternion(), null, 'fabric', undefined); geo.dispose();
+    S.bx(dc, lx, yb + H * 0.52, R * 1.5, H * 0.9, R * 1.5, 'col:#ffffff', undefined, true, { render: false });   // solide
+  }
   function balloon(S, dc, lx, yy, rad, c1, c2) {
-    const sy = 1.18, bot = yy - rad * sy * 0.98, sk = bot - rad * 0.38, rope = 2.6 + rad * 0.14, by = sk - rope - 1.5;   // sk : bas de la jupe ; rope : longueur des cordes
-    S.ball(dc, lx, yy, rad, 'fabric', c1, true, sy, [8, rad * 0.45]);
-    for (const [k, h] of [[0, 0.3], [0.52, 0.22], [-0.52, 0.22]]) S.cyl(dc, lx, yy + k * rad * sy - h * rad * 0.5, rad * 1.035 * Math.sqrt(1 - Math.pow(Math.max(0, Math.abs(k) - h * 0.42), 2)), h * rad, 'fabric', c2, 18, undefined, false);
-    S.cyl(dc, lx, yy + rad * sy * 0.96, rad * 0.22, rad * 0.2, 'fabric', c2, 12, rad * 0.12, false);                 // couronne
-    const rb = Math.max(rad * 0.3, 1.9);   // la jupe descend jusqu'au rayon des cordes : elles y sont attachees
-    S.cyl(dc, lx, sk, rb, rad * 0.5, 'fabric', '#e8e0cc', 14, rad * 0.62, false);                       // jupe
-    S.bx(dc, lx, sk - 1.1, 0.9, 0.4, 0.9, 'emis:#ffb050', undefined, false); S.glow(dc, lx, sk - 1.1, '#ffb050', 10);   // bruleur
-    for (const a of [-1, 1]) for (const b of [-1, 1]) S.bx(dc + a * 1.0, lx + b * 1.0, by + 1.5, 0.16, rope + 1.6, 0.16, 'col:#5a4630', undefined, false);   // cordes : du coin de la nacelle jusqu'a la jupe
-    S.bx(dc, lx, by, 2.5, 1.5, 2.5, 'planks', '#a87a40', false); S.bx(dc, lx, by + 0.85, 2.8, 0.22, 2.8, 'planks', '#7a5428', false);   // nacelle + rebord
+    const H = 2.3 * rad, yb = yy - H / 2, r0 = Math.max(0.16 * rad, 1.75), rope = 2.4 + rad * 0.14, bt = yb - rope, by = bt - 1.5;   // yb : bas de l'enveloppe ; bt : haut de la nacelle
+    const pal = GORE.find((q) => q[0] === c1) || GORE[Math.floor(Math.abs(c1.charCodeAt(2) + c2.charCodeAt(3)) % GORE.length)];
+    balloonEnv(S, dc, lx, yb, rad, pal, r0);
+    S.cyl(dc, lx, yb - 0.5, r0 + 0.05, 0.9, 'fabric', '#e8923e', 14, r0 + 0.3, false);   // bande de bouche
+    S.bx(dc, lx, yb - 1.2, 0.9, 0.4, 0.9, 'emis:#ffb050', undefined, false); S.glow(dc, lx, yb - 1.2, '#ffb050', 10);   // bruleur
+    for (const a of [-1, 1]) for (const b of [-1, 1]) S.bx(dc + a * 1.0, lx + b * 1.0, (bt + yb) / 2 + 0.1, 0.16, rope + 0.8, 0.16, 'col:#4a3a28', undefined, false);   // cordes : du coin de la nacelle jusque dans le goulot
+    S.cyl(dc, lx, by, 1.55, 1.5, 'planks', '#b98a52', 10, 1.7, false); S.cyl(dc, lx, bt - 0.2, 1.8, 0.28, 'planks', '#8a5e34', 10, 1.8, false);   // nacelle en osier + rebord
   }
   // v264 : GRANDES FALAISES de chaque cote (a la place des limites invisibles) : tres hautes, quasi infinies ; plus personne ne sort de la carte
   function skyCliffs(S) {

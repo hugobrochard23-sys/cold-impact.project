@@ -362,7 +362,7 @@
     if (!ev.preview) {
       const dry = r.tier >= 2 && rk.fuel <= 0.01; ev.dryK = U.clamp((ev.dryK || 0) + (dry ? dt : -dt * 2) / 0.6, 0, 1); rk.cfg.dragK = r.drag * (1 + 2 * ev.dryK); rk.cfg.gripEngineOff = r.gripOff * (1 - 0.45 * ev.dryK);
       if (r.wing > 0) { const aL = C.physics.gravity * r.wing * (dry ? 0.25 : 0.62) * U.clamp((sp - TU('ls')) / TU('lw'), 0, 1.1), vy = sp > 1 ? rk.vel.y / sp : 0, vx = sp > 1 ? rk.vel.x / sp : 0, vz = sp > 1 ? rk.vel.z / sp : 0; rk.vel.x -= aL * vy * vx * dt; rk.vel.y += aL * (1 - vy * vy) * dt; rk.vel.z -= aL * vy * vz * dt; }
-      if (sp > 1 && rk.vel.y > 0) rk.vel.y -= C.physics.gravity * 1.6 * U.clamp(rk.vel.y / sp, 0, 1) * (1 + 1.5 * ev.dryK) * dt;
+      if (sp > 1 && rk.vel.y > 0) rk.vel.y -= C.physics.gravity * (r.wing > 0 ? 0.45 : 0.8) * U.clamp(rk.vel.y / sp, 0, 1) * (1 + 1.5 * ev.dryK) * dt;   // v267 : montee moins punie (surtout en planeur)
     }
     if (r.wing > 0 && ev.preview) rk.vel.y += C.physics.gravity * r.wing * 0.62 * U.clamp((sp - TU('ls')) / TU('lw'), 0, 1.1) * dt;   // v125 : plus de carburant ou plus de vitesse = on pique   // v123 : lent = les ailes ne portent plus : elle pique, on peut redresser avec la vitesse reprise
     if (ev.preview) rk.vel.y += C.physics.gravity * 0.95 * U.clamp(sp / 17, 0, 1.1) * dt;

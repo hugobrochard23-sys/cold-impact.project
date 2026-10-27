@@ -146,7 +146,7 @@
       const t = (now - ch.t0) / 1000, pu = 0.5 + 0.5 * Math.sin(t * 3);
       glowAt(cx, cyc, S(430) + pu * S(40), 0.35 + 0.15 * pu); ctx.save(); ctx.translate(cx, cyc + S(180)); ctx.scale(1 + 0.025 * pu, 1 - 0.02 * pu); ctx.translate(-cx, -(cyc + S(180))); UI.artImg(ctx, 'chest', cx, cyc, S(580)); ctx.restore();
       UI.outlined(ctx, 'TOUCHE POUR OUVRIR', cx, Y(0.72), UI.fit(ctx, 'TOUCHE POUR OUVRIR', cw * 0.86, S(70)), '#FFFFFF', '#000000', { keep: true, ow: 0.12 });
-      hit(ui, 0, 0, W, H, () => { ch.st = 'shake'; ch.t1 = performance.now(); if (CC.Haptics) CC.Haptics.tick('touch'); }); ui.buttons[ui.buttons.length - 1].snd = 'mute';
+      hit(ui, 0, 0, W, H, () => { ch.st = 'shake'; ch.t1 = performance.now(); if (CC.Haptics) CC.Haptics.tick('touch'); }); ui.buttons[ui.buttons.length - 1].snd = 'chest';
     } else if (ch.st === 'shake') {
       const t = (now - ch.t1) / 1000, dur = 1.35, a = Math.sin(t * 70) * (0.03 + 0.07 * Math.min(1, t / 0.9)), sc = 1 + 0.1 * Math.min(1, t / dur), l = Math.max(0, (t - 0.6) / 0.75);
       glowAt(cx, cyc, S(430) + l * S(520), 0.4 + l * 0.6); ctx.save(); ctx.translate(cx, cyc + S(180)); ctx.rotate(a); ctx.scale(sc, sc); ctx.translate(-cx, -(cyc + S(180))); UI.artImg(ctx, 'chest', cx + Math.sin(t * 90) * S(5) * l, cyc, S(580)); ctx.restore();
@@ -208,7 +208,7 @@
       // (lueur du coffre pret : voir UI.chestFrame)
       if (unlocked && ready) { const ow = bs * 1.3, oh = S(78), ox2 = rx0 + bs / 2 - ow / 2, oy = y + bs - S(30), f = UI.greenButton(ctx, ox2, oy, ow, oh, { cat: 'la' }); UI.outlined(ctx, 'OUVRIR', ox2 + ow / 2, f.y + f.h * 0.5, UI.fit(ctx, 'OUVRIR', ow * 0.86, f.h * 0.5), '#FFFFFF'); }
       { const lab = !unlocked || ready ? '' : secFmt(wait); if (lab) UI.outlined(ctx, lab, rx0 + bs / 2, y + bs + S(34), UI.fit(ctx, lab, bs * 1.2, S(36)), '#F0EDE4'); }
-      if (unlocked) UI.tap(ui, rx0 - S(10), y, bs + S(20), bs + S(86), () => { if (!game.evoChest && E.chestReady(game)) { game.evoChest = { st: 'wait', t0: performance.now() }; } }); ui.buttons[ui.buttons.length - 1].snd = 'chest';   // v265 : un seul son, celui du coffre
+      if (unlocked) UI.tap(ui, rx0 - S(10), y, bs + S(20), bs + S(86), () => { if (!game.evoChest && E.chestReady(game)) { game.evoChest = { st: 'wait', t0: performance.now() }; } }); ui.buttons[ui.buttons.length - 1].snd = 'mute';   // v267 : le son du coffre n'arrive qu'au 2e toucher
       if (E.stage) { const y2 = T0 + S(176) + S(104) - S(100);
         if (game.evoLvPop) { const stg = E.stage(game), pw = S(420), rh = S(104), px0 = cx - pw / 2 + S(30), py0 = y2 + S(100); hit(ui, px0, py0, pw, rh * 2, () => {}); UI.panel(ctx, px0, py0 - S(10), pw, rh * 2 + S(20), { c: S(24), border: T.white });
           for (let nn = 1; nn <= 2; nn++) { const yy = py0 + (nn - 1) * rh, open = true, on = stg === nn; if (on) { ctx.fillStyle = 'rgba(255,230,0,0.14)'; ctx.fillRect(px0 + S(6), yy + S(4), pw - S(12), rh - S(8)); } UI.text(ctx, 'NIVEAU ' + nn, px0 + S(30), yy + rh / 2, S(44), open ? T.white : T.dim, { align: 'left', shadow: false }); if (!open) UI.glyph(ctx, 'lock', px0 + pw - S(50), yy + rh / 2, S(26), T.dim); hit(ui, px0, yy, pw, rh, () => { game.evoLvPop = false; if (open && !on) E.switchStage(game, nn); }); }

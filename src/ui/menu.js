@@ -85,6 +85,7 @@
       else if (this.overlay === 'shop') { this.buttons = []; if (!this.shop) this.shop = new CC.Shop(this); this.shop.draw(ctx, game, W, H); }
       else if (this.overlay === 'ad' && game.ads) { this.buttons = []; game.ads.draw(ctx, game, W, H, this); }
       if (game.state === 'MENU' && !this.overlay && game.ads && CC.CONFIG.ads.banner && !game.padMode) this.drawMenuBanner(ctx, game, W, H);
+      if (CC.Joy && game.state === 'FLIGHT') CC.Joy.draw(ctx, game, this);   // v267 : mini joystick
       if (this.reveal && CC.Home.drawReveal) CC.Home.drawReveal(this, ctx, game, W, H);   // v086 : ouverture animée des caisses et coffres
       if (game.notice) {   // v031 : message passager (achat confirmé au retour du paiement)
         const T = -(this.offsetY || 0), HH = this.fullH || H, px = this.fitPx([game.notice], W * 0.86, HH * 0.004);

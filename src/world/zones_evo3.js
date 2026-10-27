@@ -41,6 +41,13 @@
       });
       S.reserve(dr, 0, 2 * (v + 30), 20);
       for (let i = 0; i < 14; i++) { const dc = S.d0 + 10 + S.sr() * (L - 20), s = S.sr() < 0.5 ? -1 : 1, lx = s * S.sr.between([30, v - 8]); if (Math.abs(dc - dr) < 50 || (dc > S.d0 + L * 0.2 && dc < S.d0 + L * 0.8)) continue; S.item(dc, (r) => { const p = S.at(dc, lx, 0); if (r() < 0.55) TR.broadleaf(S.b, p[0], p[1], p[2], r.between([9, 17]), r, {}); else TR.conifer(S.b, p[0], p[1], p[2], r.between([14, 26]), r, {}); }); }
+      // v267 : avant le lac, une enorme masse rocheuse en deux murs decales (chicane) : il faut passer a droite puis a gauche (le vol tout droit s'y ecrase)
+      [[0.07, 1], [0.17, -1]].forEach(([u, sg]) => S.item(S.d0 + L * u, (r) => {
+        const dc = S.d0 + L * u, Lc = S.lane(dc).lx, vv = S.vol(dc) + 70, g = sg * Math.min(15, Math.max(8, S.vol(dc) - 18)), hw = 11, tn = pk(r, ['#a39f94', '#9d9c96', '#aeaaa0']), shade = (k) => '#' + new THREE.Color(tn).multiplyScalar(k).getHexString();
+        const parts = sg > 0 ? [[-vv, g - hw], [g + hw, vv]] : [[-vv, g - hw], [g + hw, vv]];   // [bord gauche, bord droit] de chaque mur ; le passage est entre les deux
+        for (const [a, b] of parts) { S.bx(dc, Lc + (a + b) / 2, 130 - 20, b - a, 260, 16, 'col:' + tn, undefined, true);
+          for (let k = 0; k < 5; k++) { const side = (a < g - hw) ? b : a; const sgn = (a < g - hw) ? -1 : 1; S.bx(dc + r.between([-2, 2]), Lc + side + sgn * r.between([1, 3]), 6 + k * 34 + r.between([0, 14]), r.between([4, 9]), r.between([9, 22]), r.between([18, 24]), 'col:' + shade(r.between([0.78, 1.1])), undefined, true); } }
+      }));
       const yW = WY - fl + 0.35;   // hauteur locale de la surface (au creux de la tranchée)
       foe(S, 'boat', S.d0 + L * 0.42, -12, yW, { name: 'VEDETTE', path: 60, speed: 9 });
       foe(S, 'sub', S.d0 + L * 0.56, 12, yW - 3.0, { name: 'SOUS-MARIN', hp: 2 });

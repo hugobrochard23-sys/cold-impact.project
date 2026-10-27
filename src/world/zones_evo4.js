@@ -116,7 +116,6 @@
         S.cyl(d2, lx - s * 4, 11.7, 0.5, 5, 'col:#6a6e74', undefined, 8, 0.5, false);
         if (i < 2) S.bx(d2 + 14, lx, 1.4, 1.0, 1.0, 20, 'metal', '#9a7a58', false);   // tuyau entre deux réservoirs
       }
-      for (const s of [-1, 1]) S.ball(dc, s * 47, 0, 16, 'col:#7a8a58', undefined, false, 0.45);   // talus de terre
       S.bx(dc, 0, 0.34, 1.1, 0.05, 60, 'col:#d8c860', undefined, false, { shadow: false });
       for (let i = 0; i < 6; i++) drum(S, dc + r.between([-38, 38]), (r() < 0.5 ? -1 : 1) * r.between([14, 22]), r);
       S.cyl(dc + 30, 18, 0, 0.5, 9, 'metal', '#9a9a96', 8, 0.4, false); lamp(S, dc + 30, 18, 9.3);
