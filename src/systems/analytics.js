@@ -51,7 +51,7 @@
     const body = JSON.stringify({ id: D.id, ver: (window.CC_V || ''), ev: Q.slice() });
     try {
       if (beacon && navigator.sendBeacon) { if (navigator.sendBeacon(url, body)) { Q.length = 0; wr(QKEY, Q); } return; }
-      fetch(url, { method: 'POST', body, headers: { 'Content-Type': 'text/plain' }, keepalive: true }).then(() => { Q.splice(0, JSON.parse(body).ev.length); wr(QKEY, Q); }).catch(() => {});
+      fetch(url, { method: 'POST', body, mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, keepalive: true })   /* v271 : no-cors : Apps Script ne renvoie pas d'en-tete CORS, sans cela l'envoi semblait echouer et les lignes partaient en double */.then(() => { Q.splice(0, JSON.parse(body).ev.length); wr(QKEY, Q); }).catch(() => {});
     } catch (e) { /* ignore */ }
   }
   setInterval(() => flush(false), 30000);
