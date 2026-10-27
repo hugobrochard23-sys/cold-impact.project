@@ -182,7 +182,7 @@
     topBar(ui, ctx, game, F, S0, E);
     if (anim && !(anim.ui !== undefined && anim.t > anim.ui)) { const a = U.clamp(anim.t / 0.4, 0, 1) * (1 - U.smooth(anim.dur - 0.6, anim.dur, anim.t)), name = anim.label + ' !'; ctx.save(); ctx.globalAlpha = a; UI.text(ctx, name, cx, Y(0.2), UI.fit(ctx, name, cw * 0.9, S(130)), T.yellow, { outline: true }); UI.text(ctx, anim.sub || 'NOUVELLE PIÈCE', cx, Y(0.27), S(52), T.white, { outline: true }); ctx.restore(); return; }
     // (v227 : plus de bande sombre derriere les cartes)
-    { const r0 = E.rocket(S0.rk), nm = (E.isS2() ? TIERNAME2 : TIERNAME)[r0.tier], sp = nm.indexOf(' '), l1 = nm.slice(0, sp), l2 = nm.slice(sp + 1), bw = S(380), bh = S(104), bx = cx - bw / 2 + S(30), by = T0 + S(172), bd = Math.max(2, S(4)), rd = S(12);
+    { const r0 = E.rocket(S0.rk), nm = CC.I18n.t((E.isS2() ? TIERNAME2 : TIERNAME)[r0.tier]), sp = nm.indexOf(' '), l1 = nm.slice(0, sp), l2 = nm.slice(sp + 1), bw = S(380), bh = S(104), bx = cx - bw / 2 + S(30), by = T0 + S(172), bd = Math.max(2, S(4)), rd = S(12);
       rr0(ctx, bx - bd, by - bd, bw + bd * 2, bh + bd * 2, rd + bd); ctx.fillStyle = '#05080C'; ctx.fill(); rr0(ctx, bx, by, bw, bh, rd); ctx.fillStyle = '#26394B'; ctx.fill();
       ctx.save(); rr0(ctx, bx, by, bw, bh, rd); ctx.clip(); ctx.fillStyle = '#1B2A38'; ctx.fillRect(bx, by + bh - S(9), bw, S(9)); ctx.restore();
       ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowOffsetY = S(6); ctx.shadowOffsetX = S(3); ctx.shadowBlur = 0; UI.icon(ctx, 'missile_ogive', bx + S(6), by + bh / 2 - S(4), S(128)); ctx.restore();
@@ -273,7 +273,7 @@
     for (const ln of last.lines) if (/^PUB/.test(ln[0])) rows.push({ kind: 'ad', lab: 'BONUS PUBLICITÉ  ' + ln[0].replace('PUB ', ''), val: ln[1], t: ln[2] || 0 });
     const STEP = 0.36, tRow = (i) => 0.34 + i * STEP, nBase = rows.filter((r) => r.kind !== 'ad').length, tTot = tRow(nBase) + 0.04, tMul = tTot + 0.78, tNext = tMul + 0.36;
     const tk = U.clamp(tt / 0.3, 0, 1);
-    { const TS = 'RAPPORT DE MISSION', tp = UI.fit(ctx, TS, cw * 0.92, S(104)), ty0 = Y(0.17), w0 = UI.tw(ctx, TS, tp), x0 = cx - w0 / 2;   // v263 : les lettres grossissent l'une apres l'autre, vite
+    { const TS = CC.I18n ? CC.I18n.t('RAPPORT DE MISSION') : 'RAPPORT DE MISSION', tp = UI.fit(ctx, TS, cw * 0.92, S(104)), ty0 = Y(0.17), w0 = UI.tw(ctx, TS, tp), x0 = cx - w0 / 2;   // v263 : les lettres grossissent l'une apres l'autre, vite
       for (let k = 0; k < TS.length; k++) { const ch = TS[k]; if (ch === ' ') continue; const q = U.clamp((tt - 0.03 - k * 0.04) / 0.2, 0, 1); if (q <= 0) continue; const sc = 1 + 2.7 * Math.pow(q - 1, 3) + 1.7 * Math.pow(q - 1, 2), pre = UI.tw(ctx, TS.slice(0, k), tp), cwd = UI.tw(ctx, ch, tp);
         ctx.save(); ctx.translate(x0 + pre + cwd / 2, ty0); ctx.scale(sc, sc); UI.text(ctx, ch, 0, 0, tp, T.yellow, { outline: true }); ctx.restore(); }
       const kk = (((tt - 1.3) % 5 + 5) % 5) / 0.8; if (tt > 1.3 && kk < 1) { const p = x0 - w0 * 0.2 + w0 * 1.4 * kk, g = ctx.createLinearGradient(p, 0, p + w0 * 0.2, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.95)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.save(); UI.setFont(ctx, tp); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = g; ctx.fillText(TS, cx, ty0); ctx.restore(); } }
@@ -375,6 +375,7 @@
       ['MUSIQUE', 'sound', s.music > 0, s.music > 0 ? 'OUI' : 'NON', () => ui.toggleVolume(game, 'music')],
       ['VIBRATION', 'vibrate', vibV > 0, vib[vibV], () => { s.vibration = (vibV + 1) % 4; if (CC.Haptics) { CC.Haptics.setLevel(s.vibration); CC.Haptics.tick('fire'); } game.applySettings(); }],
       ['SENSIBILITÉ', null, true, ['DOUCE', 'NORMALE', 'VIVE'][s.touchSens !== undefined ? s.touchSens : 1], () => { s.touchSens = ((s.touchSens !== undefined ? s.touchSens : 1) + 1) % 3; game.applySettings(); }],
+      ['LANGUE', null, true, CC.I18n && CC.I18n.lang === 'en' ? 'ENGLISH' : 'FRANÇAIS', () => { if (CC.I18n) CC.I18n.set(CC.I18n.lang === 'en' ? 'fr' : 'en'); }],   // v266
       ['RÉINITIALISER', null, false, ui._rst && now - ui._rst < 4000 ? 'SÛR ?' : 'GO', () => { if (ui._rst && performance.now() - ui._rst < 4000) { try { localStorage.removeItem('coldimpact.save'); localStorage.removeItem('closecall.save'); } catch (e) { /* ignore */ } location.reload(); } else ui._rst = performance.now(); }],
     ];
     const gap = S(14), rh = Math.min(S(124), (HH * 0.72) / rows.length - gap), y0 = Y(0.125), x0 = ox + S(40), w = cw - S(80);
