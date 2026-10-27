@@ -305,10 +305,10 @@
       if (!this.inClip(dc)) return null;
       return this.b.cylinder({ p: this.T.at(dc, lx, y0 + h / 2), rBot: rad, rTop: rTop === undefined ? rad : rTop, h, seg: seg || 10, mat, tint, collide: collide !== false || (rad >= 0.8 && h >= 1.2 && !(typeof mat === 'string' && /^(emis|glass|water|hazard|basic)/.test(mat))), colSize: [rad * 1.7, h, rad * 1.7] });
     }
-    ball(dc, lx, yc, rad, mat, tint, collide, sy) {
+    ball(dc, lx, yc, rad, mat, tint, collide, sy, uvs) {
       if (!this.inClip(dc)) return;
       const p = this.T.at(dc, lx, yc), g = new THREE.SphereGeometry(rad, 12, 9);
-      this.b.addGeometry(g, new V(p[0], p[1], p[2]), new THREE.Quaternion(), new V(1, sy || 1, 1), mat, tint); g.dispose();
+      this.b.addGeometry(g, new V(p[0], p[1], p[2]), new THREE.Quaternion(), new V(1, sy || 1, 1), mat, tint, uvs); g.dispose();
       if (collide !== false) this.b.box({ p, s: [rad * 1.5, rad * 1.5 * (sy || 1), rad * 1.5], r: [0, 0, 0], render: false });
     }
     // anneau-portique : quatre boîtes autour d'une ouverture (w × h) centrée en (lx, yc)

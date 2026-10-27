@@ -118,7 +118,7 @@
     const cs = U.formatInt(cost), gemMode = !can && cost !== null && game.evoGemOffer === id, gc = E.gemCost(game, id), haveG = (S0.gems || 0) >= gc;
     const offId = game.evoGemOffer, offerOn = !!offId && E.nextCost(game, offId) !== null && S0.coins < E.nextCost(game, offId), dim = !can && !gemMode && cost !== null;   // v261 : bouton trop cher = 50 % plus clair ; si une gemme est proposee ailleurs : chiffre rouge + pubs a regarder
     if (dim) { rr0(ctx, bx, by, bw, bh, bh * 0.07); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.save(); ctx.globalAlpha = 0.65; }   // v264 : un rectangle blanc a 100 % derriere, exactement de la taille du bouton ; le bouton passe a 65 %
-    const face = UI.greenButton(ctx, bx, by, bw, bh, { disabled: false, cat: gemMode ? 'gem' : id });
+    const face = UI.greenButton(ctx, bx, by, bw, bh, { disabled: false, cat: gemMode ? 'gem' : id, flat: dim });
     if (gemMode) {   // plus assez de pieces : le bouton propose une GEMME (violet, reflet toutes les 1,5 s)
       const gy = face.y + face.h * 0.5, gs = face.h * 0.52, px = face.h * 0.4, tw = UI.tw(ctx, String(gc), px), tot = gs + face.h * 0.12 + tw, gx0 = bx + bw / 2 - tot / 2;   // meme taille de texte que « AMELIORER »
       ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowOffsetY = S(3); ctx.shadowBlur = 0; UI.icon(ctx, 'gem', gx0 + gs / 2, gy, gs); ctx.restore();
@@ -146,7 +146,7 @@
       const t = (now - ch.t0) / 1000, pu = 0.5 + 0.5 * Math.sin(t * 3);
       glowAt(cx, cyc, S(430) + pu * S(40), 0.35 + 0.15 * pu); ctx.save(); ctx.translate(cx, cyc + S(180)); ctx.scale(1 + 0.025 * pu, 1 - 0.02 * pu); ctx.translate(-cx, -(cyc + S(180))); UI.artImg(ctx, 'chest', cx, cyc, S(580)); ctx.restore();
       UI.outlined(ctx, 'TOUCHE POUR OUVRIR', cx, Y(0.72), UI.fit(ctx, 'TOUCHE POUR OUVRIR', cw * 0.86, S(70)), '#FFFFFF', '#000000', { keep: true, ow: 0.12 });
-      hit(ui, 0, 0, W, H, () => { ch.st = 'shake'; ch.t1 = performance.now(); game.audio.play('padArm'); if (CC.Haptics) CC.Haptics.tick('touch'); });
+      hit(ui, 0, 0, W, H, () => { ch.st = 'shake'; ch.t1 = performance.now(); if (CC.Haptics) CC.Haptics.tick('touch'); }); ui.buttons[ui.buttons.length - 1].snd = 'mute';
     } else if (ch.st === 'shake') {
       const t = (now - ch.t1) / 1000, dur = 1.35, a = Math.sin(t * 70) * (0.03 + 0.07 * Math.min(1, t / 0.9)), sc = 1 + 0.1 * Math.min(1, t / dur), l = Math.max(0, (t - 0.6) / 0.75);
       glowAt(cx, cyc, S(430) + l * S(520), 0.4 + l * 0.6); ctx.save(); ctx.translate(cx, cyc + S(180)); ctx.rotate(a); ctx.scale(sc, sc); ctx.translate(-cx, -(cyc + S(180))); UI.artImg(ctx, 'chest', cx + Math.sin(t * 90) * S(5) * l, cyc, S(580)); ctx.restore();
@@ -169,7 +169,7 @@
         const dbl = !!ch.doubled; UI.btnSecondary(ctx, bx0, by, bw, bh, '', {}); ctx.save(); if (dbl) ctx.globalAlpha = 0.45; UI.outlined(ctx, 'X2', bx0 + bw * 0.4, by + bh * 0.42, S(70), '#FFFFFF'); UI.artImg(ctx, 'ticket', bx0 + bw * 0.74, by + bh * 0.42, S(84)); ctx.restore();
         UI.btnPrimary(ctx, bx1, by, bw, bh, 'RÉCLAMER', { px: S(56) });
         hit(ui, bx0, by, bw, bh, () => { if (ch.doubled) return; const go = () => { ch.doubled = true; const S0 = E.save(game); S0.coins += ch.coins; ch.coins *= 2; game.evoHold = { c: ch.coins, g: ch.gems }; game.writeSave(); game.audio.play('coinPing'); game.flash = 0.25; game.flashColor = '#FFF2C0'; }; if (game.ads && game.ads.enabled && game.ads.enabled() && game.ads.rewarded) game.ads.rewarded(go, null, 'chestx2', 'COFFRE X2'); else go(); });
-        hit(ui, bx1, by, bw, bh, () => { const c0 = ch.coins, g0 = ch.gems; game.evoChest = null; game.audio.play('uiTick'); game.evoHold = { c: 0, g: 0 }; Home.evoFly(game, c0, g0, 30, Y(0.5) + S(205), cx); }); }
+        hit(ui, bx1, by, bw, bh, () => { const c0 = ch.coins, g0 = ch.gems; game.evoChest = null; game.evoHold = { c: 0, g: 0 }; Home.evoFly(game, c0, g0, 30, Y(0.5) + S(205), cx); }); }
       ctx.restore();
       hit(ui, 0, 0, W, H, () => {});
     }
@@ -206,9 +206,9 @@
       UI.chestFrame(ctx, rx0, y, bs, ready, unlocked, now);
 
       // (lueur du coffre pret : voir UI.chestFrame)
-      if (unlocked && ready) { const ow = bs * 1.3, oh = S(78), ox2 = rx0 + bs / 2 - ow / 2, oy = y + bs + S(10), f = UI.greenButton(ctx, ox2, oy, ow, oh, { cat: 'la' }); UI.outlined(ctx, 'OUVRIR', ox2 + ow / 2, f.y + f.h * 0.5, UI.fit(ctx, 'OUVRIR', ow * 0.86, f.h * 0.5), '#FFFFFF'); }
+      if (unlocked && ready) { const ow = bs * 1.3, oh = S(78), ox2 = rx0 + bs / 2 - ow / 2, oy = y + bs - S(30), f = UI.greenButton(ctx, ox2, oy, ow, oh, { cat: 'la' }); UI.outlined(ctx, 'OUVRIR', ox2 + ow / 2, f.y + f.h * 0.5, UI.fit(ctx, 'OUVRIR', ow * 0.86, f.h * 0.5), '#FFFFFF'); }
       { const lab = !unlocked || ready ? '' : secFmt(wait); if (lab) UI.outlined(ctx, lab, rx0 + bs / 2, y + bs + S(34), UI.fit(ctx, lab, bs * 1.2, S(36)), '#F0EDE4'); }
-      if (unlocked) UI.tap(ui, rx0 - S(10), y, bs + S(20), bs + S(86), () => { if (!game.evoChest && E.chestReady(game)) { game.evoChest = { st: 'wait', t0: performance.now() }; game.audio.play('uiTick'); } });
+      if (unlocked) UI.tap(ui, rx0 - S(10), y, bs + S(20), bs + S(86), () => { if (!game.evoChest && E.chestReady(game)) { game.evoChest = { st: 'wait', t0: performance.now() }; } }); ui.buttons[ui.buttons.length - 1].snd = 'chest';   // v265 : un seul son, celui du coffre
       if (E.stage) { const y2 = T0 + S(176) + S(104) - S(100);
         if (game.evoLvPop) { const stg = E.stage(game), pw = S(420), rh = S(104), px0 = cx - pw / 2 + S(30), py0 = y2 + S(100); hit(ui, px0, py0, pw, rh * 2, () => {}); UI.panel(ctx, px0, py0 - S(10), pw, rh * 2 + S(20), { c: S(24), border: T.white });
           for (let nn = 1; nn <= 2; nn++) { const yy = py0 + (nn - 1) * rh, open = true, on = stg === nn; if (on) { ctx.fillStyle = 'rgba(255,230,0,0.14)'; ctx.fillRect(px0 + S(6), yy + S(4), pw - S(12), rh - S(8)); } UI.text(ctx, 'NIVEAU ' + nn, px0 + S(30), yy + rh / 2, S(44), open ? T.white : T.dim, { align: 'left', shadow: false }); if (!open) UI.glyph(ctx, 'lock', px0 + pw - S(50), yy + rh / 2, S(26), T.dim); hit(ui, px0, yy, pw, rh, () => { game.evoLvPop = false; if (open && !on) E.switchStage(game, nn); }); }

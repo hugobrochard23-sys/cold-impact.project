@@ -54,7 +54,14 @@
     return m + ':' + String(s).padStart(2, '0') + ',' + String(c).padStart(2, '0');
   };
   // "1.315" — MESURÉ (séparateur des milliers)
-  U.formatInt = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  // v265 : jamais plus de 3 chiffres : 60606 -> "60,6K", 160606 -> "160K", 1234567 -> "1,23M" (K, M, B, T)
+  U.formatInt = (n) => {
+    n = Math.round(n); if (!isFinite(n)) return '0'; const neg = n < 0; let v = Math.abs(n); if (v < 1000) return (neg ? '-' : '') + v;
+    const sfx = ['K', 'M', 'B', 'T']; let i = 0; v /= 1000;
+    const rd = (x) => x < 10 ? Math.floor(x * 100) / 100 : x < 100 ? Math.floor(x * 10) / 10 : Math.floor(x);   // on tronque : 160606 -> 160K
+    let r = rd(v); while (r >= 1000 && i < 3) { v /= 1000; i++; r = rd(v); }
+    return (neg ? '-' : '') + String(r).replace('.', ',') + sfx[i];
+  };
   // "2,9" — MESURÉ (virgule décimale)
   U.formatDec = (v, d) => v.toFixed(d === undefined ? 1 : d).replace('.', ',');
 

@@ -37,6 +37,12 @@
   UI.CARDBG = { la: ['#5CB87C', '#3A6D4B'], rk: ['#5D6D7E', '#2C3E50'], cm: ['#F39C12', '#A16E34'] };   // [haut, bas]
   UI.greenButton = (ctx, x, y, w, h, o) => {   // bouton plat avec une tranche (relief) sous la face ; plus clair quand on ne peut pas acheter
     o = o || {}; const r = h * (o.r || 0.07), dis = !!o.disabled, lip = Math.max(S(5), h * (o.lip || 0.075)), hh = h - lip, c = o.solid ? [o.solid[1], o.solid[0], o.solid[1], o.solid[0]] : (BTN[o.cat] || BTN.la), bk = o.bright || 1;   // o.r / o.lip : coins plus ronds, relief plus haut ; o.solid : [tranche, face] en aplat (fond clair sous un bouton estompe)
+    if (o.flat) {   // v265 : bouton estompe : face + tranche dessinees opaques sur un calque, puis posees d'un bloc a l'opacite courante (sinon la face se superpose a la tranche et fonce)
+      const t = ctx.getTransform(), sc = Math.sqrt(t.a * t.a + t.b * t.b) || 1, cw = Math.ceil(w * sc) + 2, ch = Math.ceil(h * sc) + 2, cv = UI._flatCv || (UI._flatCv = document.createElement('canvas'));
+      if (cv.width < cw || cv.height < ch) { cv.width = Math.max(cv.width, cw); cv.height = Math.max(cv.height, ch); }
+      const c2 = cv.getContext('2d'); c2.setTransform(1, 0, 0, 1, 0, 0); c2.clearRect(0, 0, cv.width, cv.height); c2.setTransform(sc, 0, 0, sc, 0, 0);
+      UI.greenButton(c2, 0, 0, w, h, Object.assign({}, o, { flat: false })); ctx.drawImage(cv, 0, 0, cw, ch, x, y, cw / sc, ch / sc); return { x, y, w, h: hh };
+    }
     rr(ctx, x, y + lip, w, hh, r); ctx.fillStyle = dis ? c[3] : (bk > 1 ? brightC(c[1], bk) : c[1]); ctx.fill();
     rr(ctx, x, y, w, hh, r); ctx.fillStyle = dis ? c[2] : (bk > 1 ? brightC(c[0], bk) : c[0]); ctx.fill();
     return { x, y, w, h: hh };

@@ -117,6 +117,8 @@
         if (u < 0.28 && r() < 0.5) { const s = r() < 0.5 ? -1 : 1; lamp(S, m, Lc + s * (hf - 2), 14 + r.between([0, 18]), '#ffd89a', 14); }
         S.bx(m, Lc, top + 7, 2 * (hf + 28), 14, 13.8, 'col:' + pk(r, CAVE), undefined, true);   // toit de roche
       });
+      // v265 : la falaise entoure l'entree de la mine : une montagne immense avec une seule ouverture, aux dimensions de la carriere (on ne peut plus passer au-dessus)
+      S.item(d(0.03) - 10, () => { const m = d(0.03) - 10, Lc = S.lane(m).lx; S.wall(m, Lc - 1200, Lc + 1200, -120, 1500, 14, 'col:#8a8272', undefined, { lx: Lc, yc: 38.5, w: 2 * (halfAt(0.03) + 28), h: 237 }); });
       // ---- carrière : excavatrice à roue, convoyeur au-dessus de la piste, tas de gravier, chemin d'engins
       S.item(d(0.1), (r) => {
         const g = new T3.Group(), body = mat('#c8a028'), dk = mat('#33363a');

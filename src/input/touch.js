@@ -47,7 +47,7 @@
     const boostOn = () => { T.thrust = true; if (Hap) Hap.boostStart(); };   // v034 : le son du boost est joué par Game.onBoostStart
     document.addEventListener('touchstart', (e) => {
       wake();
-      if (game.evoAim && game.state === 'LAUNCH' && e.target !== pause) { e.preventDefault(); { const t0 = e.changedTouches[0], p = input.uiCoords(t0.clientX, t0.clientY), b = game.evoBackRect; if (b && p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) { game.audio.play('back'); game.evoAim = null; game.goHome({}); return; } } if (game.evoAim.auto) CC.EVO.lock(game); else CC.EVO.holdStart(game); return; }   // v122 : la barre de visee se verrouille au toucher, n'importe ou
+      if (game.evoAim && game.state === 'LAUNCH' && e.target !== pause) { e.preventDefault(); { const t0 = e.changedTouches[0], p = input.uiCoords(t0.clientX, t0.clientY), b = game.evoBackRect; if (b && p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) { game.audio.play('back'); game.audio.hush(900); game.evoAim = null; game.goHome({}); return; } } if (game.evoAim.auto) CC.EVO.lock(game); else CC.EVO.holdStart(game); return; }   // v122 : la barre de visee se verrouille au toucher, n'importe ou
       // v034 : au lanceur, le lancement part dès que le doigt TOUCHE (pas au relâchement) — sauf sur une icône de l'interface
       if (game.state === 'MENU' && game.padMode && !game.ui.overlay && !game.pendingHome && e.target !== pause) {
         const t0 = e.changedTouches[0], p = input.uiCoords(t0.clientX, t0.clientY);

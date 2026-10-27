@@ -86,6 +86,9 @@
     return Math.round(3619 * Math.pow(1.35, L - 11)); };
   EVO.SCORE_K = (g) => (EVO.stage && EVO.stage(g) === 2 ? 1 : 8450 / 6910);   // la reference compte 1 piece par metre sur une carte de 8 450 m ; la notre mesure 6 910 m : meme total de pieces sur la carte
   EVO.COST2 = 1.4;   // le niveau 2 est plus long : ses ameliorations coutent un peu plus (reglage a affiner en jeu)
+  // v265 : les paquets de pieces valent N x la moyenne du prix des 3 ameliorations (x1 gratuit, x4 / x10 / x20 payants), arrondis a 3 chiffres
+  EVO.COINPACK = { free: 1, coins12k: 4, coins40k: 10, coins100k: 20 };
+  EVO.coinPack = (g, key) => { const v = ['rk', 'la', 'cm'].map((id) => EVO.nextCost(g, id)).filter((c) => c !== null), avg = v.length ? v.reduce((a, c) => a + c, 0) / v.length : 1000, n = Math.max(1, Math.round(avg * (EVO.COINPACK[key] || 1))), p = Math.pow(10, Math.max(0, String(n).length - 3)); return Math.round(n / p) * p; };
   EVO.nextCost = (g, id) => { const S = EVO.save(g), n = S[id]; return n >= MAXN[id] ? null : Math.round(EVO.cost(id, n) * (EVO.isS2() ? EVO.COST2 : 1)); };
   EVO.dmgNow = (g) => { const r = EVO.rocket(EVO.save(g).rk), sp = g.rocket && g.rocket.active ? g.rocket.vel.length() : 38; return r.dmg * U.clamp(sp / 38, 0.9, 1.5); };
   EVO.canKill = (g, t) => !!(g.evo && g.evo.preview) || !t.evoHp || EVO.dmgNow(g) + 0.001 >= t.evoHp;
@@ -354,10 +357,17 @@
     const CH = EVO.chapters;   // v123 : bandeau et prime à chaque nouveau chapitre franchi
     if (CH && !ev.preview) while (ev.chap < CH.length && run.dist >= CH[ev.chap].d) { const c = CH[ev.chap++], b = Math.round(40 * c.i * EVO.mult(S.cm)); ev.chapCoins += 0; CC.L1.msg(g, c.name, 1.6, '#ffe9a0'); g.audio.play('levelUp'); if (EVO.onChapter) EVO.onChapter(g, c, S); }
     // planeur : les ailes portent (elles annulent une partie de la gravité tant que la vitesse est suffisante)
-    if (r.wing > 0 && !ev.preview) rk.vel.y += C.physics.gravity * r.wing * (r.tier >= 2 && rk.fuel <= 0.01 ? 0.25 : 0.62) * U.clamp((sp - TU('ls')) / TU('lw'), 0, 1.1) * dt;   // v125 : plus de carburant ou plus de vitesse = on pique   // v123 : lent = les ailes ne portent plus : elle pique, on peut redresser avec la vitesse reprise
+    // v265 : physique d'energie. La portance est perpendiculaire a la trajectoire (elle ne donne plus d'energie quand on monte), monter coute de la vitesse meme moteur allume (poids),
+    // et sans carburant la fusee n'est plus aerodynamique (trainee x3, moins de prise) : on ne peut plus monter ni boucler ses descentes pour gagner de la vitesse a l'infini.
+    if (!ev.preview) {
+      const dry = r.tier >= 2 && rk.fuel <= 0.01; ev.dryK = U.clamp((ev.dryK || 0) + (dry ? dt : -dt * 2) / 0.6, 0, 1); rk.cfg.dragK = r.drag * (1 + 2 * ev.dryK); rk.cfg.gripEngineOff = r.gripOff * (1 - 0.45 * ev.dryK);
+      if (r.wing > 0) { const aL = C.physics.gravity * r.wing * (dry ? 0.25 : 0.62) * U.clamp((sp - TU('ls')) / TU('lw'), 0, 1.1), vy = sp > 1 ? rk.vel.y / sp : 0, vx = sp > 1 ? rk.vel.x / sp : 0, vz = sp > 1 ? rk.vel.z / sp : 0; rk.vel.x -= aL * vy * vx * dt; rk.vel.y += aL * (1 - vy * vy) * dt; rk.vel.z -= aL * vy * vz * dt; }
+      if (sp > 1 && rk.vel.y > 0) rk.vel.y -= C.physics.gravity * 1.6 * U.clamp(rk.vel.y / sp, 0, 1) * (1 + 1.5 * ev.dryK) * dt;
+    }
+    if (r.wing > 0 && ev.preview) rk.vel.y += C.physics.gravity * r.wing * 0.62 * U.clamp((sp - TU('ls')) / TU('lw'), 0, 1.1) * dt;   // v125 : plus de carburant ou plus de vitesse = on pique   // v123 : lent = les ailes ne portent plus : elle pique, on peut redresser avec la vitesse reprise
     if (ev.preview) rk.vel.y += C.physics.gravity * 0.95 * U.clamp(sp / 17, 0, 1.1) * dt;
     // v264 : en chute libre (nez vers le bas) la fusee accelere jusqu'a sa vitesse maximale (plus de plafond a 100 km/h)
-    if (!ev.preview && rk.vel.y < -1 && rk.fwd.y < -0.25) { const vm = (r.tier >= 2 ? r.vmax : EVO.launcher(S.la).speed) || 60; if (sp < vm) rk.vel.addScaledVector(rk.fwd, 34 * U.clamp(-rk.fwd.y * 1.3, 0, 1) * (1 - sp / vm) * dt); }
+    if (!ev.preview && rk.vel.y < -1 && rk.fwd.y < -0.25) { const vm = (r.tier >= 2 ? r.vmax : EVO.launcher(S.la).speed) || 60; if (sp < vm) rk.vel.addScaledVector(rk.fwd, 18 * U.clamp(-rk.fwd.y * 1.3, 0, 1) * (1 - sp / vm) * dt); }
     // filet de sécurité : la fusée ne s'enfonce jamais dans le sol (elle roule dessus, le glissement la fait s'écraser)
     { const gyy = run.T.base(Math.max(0, run.dist)) + 0.32; if (rk.pos.y < gyy) { rk.pos.y = gyy; if (rk.vel.y < 0) rk.vel.y = 0; rk.sliding = Math.max(rk.sliding || 0, 0.03); } }
     // sans réacteur ou sans carburant : la fusée tombe ; au sol, le vol est fini
@@ -629,7 +639,7 @@
   EVO.openChest = (g) => {
     const S = EVO.save(g); if (!EVO.chestReady(g) || g.evoChest) return;
     const coins = Math.max(150, Math.round(EVO.cost('rk', S.rk) * 0.7)); S.coins += coins; S.gems = (S.gems || 0) + 1; S.chestAt = Date.now() + 2 * 3600 * 1000; g.writeSave();
-    g.evoChest = { t0: performance.now(), coins, gems: 1 }; g.audio.play('levelUp'); g.audio.play('target'); if (CC.Haptics) CC.Haptics.tick('warn'); g.telemetry.event('evoChest', { coins });
+    g.evoChest = { t0: performance.now(), coins, gems: 1 }; if (CC.Haptics) CC.Haptics.tick('warn'); g.telemetry.event('evoChest', { coins });
   };
   EVO.start = (g) => { if (g.evoAnim || g.evoAim) return; EVO.startAim(g); };
   EVO.buy = (g, id, free) => {

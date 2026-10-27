@@ -64,7 +64,7 @@
     // v087 : un appui sur les menus (souris OU toucher direct) ; renvoie vrai si on est dans un menu
     uiPress(x, y, button) {
       const game = this.game;
-      if (game.evoAim && game.state === 'LAUNCH') { const b = game.evoBackRect; if (b && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) { game.audio.play('back'); game.evoAim = null; game.goHome({}); return true; } if (game.evoAim.auto) CC.EVO.lock(game); else CC.EVO.holdStart(game); return true; }   // v159 : on maintient pour charger le piston
+      if (game.evoAim && game.state === 'LAUNCH') { const b = game.evoBackRect; if (b && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) { game.audio.play('back'); game.audio.hush(900); game.evoAim = null; game.goHome({}); return true; } if (game.evoAim.auto) CC.EVO.lock(game); else CC.EVO.holdStart(game); return true; }   // v159 : on maintient pour charger le piston
       if (!(game.ui && (game.state === 'MENU' || game.state === 'RESULTS' || game.state === 'REVIVE' || game.paused || game.ui.overlay))) return false;
       if (game.ui.click(x, y)) return true;
       if (game.state === 'MENU' && game.padMode && !game.ui.overlay && button === 0) { game.beginLaunch(); return true; }   // v034 : un clic sur le lanceur = lancer

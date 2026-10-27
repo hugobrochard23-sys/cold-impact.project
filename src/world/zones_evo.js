@@ -294,7 +294,7 @@
       const bands = [[0, 14, 17, 10, 13, 1.85], [14, 34, 12, 6, 8, 2.1], [34, 62, 6, 4, 5, 2.7]];
       let bi = 0;
       for (const [lo, hi, dens, nbLo, nbHi, wk] of bands) {
-        const area = 2 * (hi - lo), n = Math.max(2, Math.round(len * area * dens * 0.78 / 28 * (d < 150 ? 1.8 : 1))); bi++;   // v208 : pres du lanceur, herbe plus fine et plus fournie
+        const area = 2 * (hi - lo), n = Math.max(2, Math.round(len * area * dens * 0.42 / 28 * (d < 150 ? 1.3 : 1))); bi++;   // v265 : herbe plus espacee (environ moitie moins de touffes : le jeu ramait sur telephone)
         for (let i = 0; i < n; i++) {
           const dd = d + len * hsh(d + i * 0.37 + lo, i * 1.9 + bi), lx = (hsh(i * 1.7 + hi, d * 0.13 + bi) < 0.5 ? -1 : 1) * (lo + (hi - lo) * hsh(i * 2.9 + bi, d * 0.7 + hi));
           if (hsh(i * 9.7, d + bi) > 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(dd * 0.07 + lx * 0.09 + Math.sin(lx * 0.05) * 2))) continue;   // plaques un peu moins denses (test peu couteux d'abord)
@@ -312,7 +312,7 @@
       // FLEURS SAUVAGES en parterres irreguliers : marguerites (petales blancs, coeur jaune), boutons d'or, quelques bleues, violettes, roses ; inclinees vers la camera
       const FW = [[0.42, '#fffdf4', 1], [0.76, '#f6d34b', 0], [0.88, '#76b5f4', 0], [0.96, '#a58ae0', 0], [1.01, '#e9a0c4', 0]];
       const pickF = (r) => { for (const f of FW) if (r < f[0]) return f; return FW[0]; };
-      const ncl = Math.max(3, Math.round(len * 0.8)), SK = 0.9, _fc = new THREE.Color();
+      const ncl = Math.max(3, Math.round(len * 0.55)), SK = 0.9, _fc = new THREE.Color();
       for (let ci = 0; ci < ncl; ci++) {
         const cd = d + len * hsh(d + ci * 0.91, ci * 1.3), cl = (hsh(ci * 5.1, d * 0.17) < 0.5 ? -1 : 1) * (3.5 + 34 * Math.pow(hsh(ci * 2.3, d * 0.31), 1.5)), main = pickF(hsh(ci * 3.7, d * 0.53)), rc = 1.4 + 2.4 * hsh(ci * 7.7, d), nfl = 9 + Math.floor(hsh(ci * 4.3, d * 0.9) * 12);
         if (Math.sin(cd * 0.021 + cl * 0.033 + 1.7) + Math.sin(cd * 0.047 - cl * 0.029) < -0.5) continue;   // zones sans fleurs : parterres separes par de l'herbe seule
@@ -426,14 +426,15 @@
   }
   // montgolfiere detaillee : enveloppe, bandes de couleur, couronne, jupe, bruleur qui brille, quatre montants, nacelle en osier avec rebord
   function balloon(S, dc, lx, yy, rad, c1, c2) {
-    const sy = 1.18, bot = yy - rad * sy * 0.98;
-    S.ball(dc, lx, yy, rad, 'col:' + c1, undefined, true, sy);
-    for (const [k, h] of [[0, 0.3], [0.52, 0.22], [-0.52, 0.22]]) S.cyl(dc, lx, yy + k * rad * sy - h * rad * 0.5, rad * 1.035 * Math.sqrt(1 - Math.pow(Math.max(0, Math.abs(k) - h * 0.42), 2)), h * rad, 'col:' + c2, undefined, 18, undefined, false);
-    S.cyl(dc, lx, yy + rad * sy * 0.96, rad * 0.22, rad * 0.2, 'col:' + c2, undefined, 12, rad * 0.12, false);                 // couronne
-    S.cyl(dc, lx, bot - rad * 0.38, rad * 0.3, rad * 0.5, 'col:#e8e0cc', undefined, 14, rad * 0.62, false);                       // jupe
-    S.bx(dc, lx, bot - rad * 0.55, 0.9, 0.4, 0.9, 'emis:#ffb050', undefined, false); S.glow(dc, lx, bot - rad * 0.55, '#ffb050', 10);   // bruleur
-    for (const a of [-1, 1]) for (const b of [-1, 1]) S.bx(dc + a * 0.95, lx + b * 0.95, bot - rad * 0.55 - 1.4, 0.14, 2.6, 0.14, 'col:#5a4630', undefined, false);   // montants
-    const by = bot - rad * 0.55 - 3.4; S.bx(dc, lx, by, 2.4, 1.5, 2.4, 'planks', '#a87a40', false); S.bx(dc, lx, by + 0.85, 2.7, 0.22, 2.7, 'planks', '#7a5428', false);   // nacelle + rebord
+    const sy = 1.18, bot = yy - rad * sy * 0.98, sk = bot - rad * 0.38, rope = 2.6 + rad * 0.14, by = sk - rope - 1.5;   // sk : bas de la jupe ; rope : longueur des cordes
+    S.ball(dc, lx, yy, rad, 'fabric', c1, true, sy, [8, rad * 0.45]);
+    for (const [k, h] of [[0, 0.3], [0.52, 0.22], [-0.52, 0.22]]) S.cyl(dc, lx, yy + k * rad * sy - h * rad * 0.5, rad * 1.035 * Math.sqrt(1 - Math.pow(Math.max(0, Math.abs(k) - h * 0.42), 2)), h * rad, 'fabric', c2, 18, undefined, false);
+    S.cyl(dc, lx, yy + rad * sy * 0.96, rad * 0.22, rad * 0.2, 'fabric', c2, 12, rad * 0.12, false);                 // couronne
+    const rb = Math.max(rad * 0.3, 1.9);   // la jupe descend jusqu'au rayon des cordes : elles y sont attachees
+    S.cyl(dc, lx, sk, rb, rad * 0.5, 'fabric', '#e8e0cc', 14, rad * 0.62, false);                       // jupe
+    S.bx(dc, lx, sk - 1.1, 0.9, 0.4, 0.9, 'emis:#ffb050', undefined, false); S.glow(dc, lx, sk - 1.1, '#ffb050', 10);   // bruleur
+    for (const a of [-1, 1]) for (const b of [-1, 1]) S.bx(dc + a * 1.0, lx + b * 1.0, by + 1.5, 0.16, rope + 1.6, 0.16, 'col:#5a4630', undefined, false);   // cordes : du coin de la nacelle jusqu'a la jupe
+    S.bx(dc, lx, by, 2.5, 1.5, 2.5, 'planks', '#a87a40', false); S.bx(dc, lx, by + 0.85, 2.8, 0.22, 2.8, 'planks', '#7a5428', false);   // nacelle + rebord
   }
   // v264 : GRANDES FALAISES de chaque cote (a la place des limites invisibles) : tres hautes, quasi infinies ; plus personne ne sort de la carte
   function skyCliffs(S) {

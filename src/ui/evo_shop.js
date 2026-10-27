@@ -81,17 +81,17 @@
     // --- pieces : fond #09b4ff
     head(ctx, mx, y, mw, S(100), 'PIÈCES', '#FFB800', '#C98400', (x, yy, r) => UI.icon(ctx, 'coin', x, yy, r)); y += S(122);
     { const B = E.saveBase(game), day = new Date().toISOString().slice(0, 10); if (!B.coinFree || B.coinFree.day !== day) B.coinFree = { day, n: 0 }; const cfree = Math.max(0, 3 - B.coinFree.n);
-      const tiles = [{ n: '3K', ico: 'coin', art: true, k: 0.4, free: true }, { n: '12K', ico: 'coins_stack', k: 0.6, id: 'coins12k', p: '0,99 €' }, { n: '40K', ico: 'coins_bag', art: true, k: 0.82, id: 'coins40k', p: '3,69 €' }];
+      const pk = (k) => E.coinPack(game, k), tiles = [{ n: U.formatInt(pk('free')), ico: 'coin', art: true, k: 0.4, free: true }, { n: U.formatInt(pk('coins12k')), ico: 'coins_stack', k: 0.6, id: 'coins12k', p: '0,99 €' }, { n: U.formatInt(pk('coins40k')), ico: 'coins_bag', art: true, k: 0.82, id: 'coins40k', p: '3,69 €' }];
       const gp = S(20), tw0 = (mw - gp * 2) / 3, th = S(410);
       tiles.forEach((t, i) => { const x = mx + i * (tw0 + gp), yy = y; card(ctx, x, yy, tw0, th, '#09B4FF', '#0678B8');
         ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowOffsetY = S(9); ctx.shadowOffsetX = S(3); ctx.shadowBlur = S(5); if (t.art) UI.artImg(ctx, t.ico, x + tw0 / 2, yy + th * 0.37, tw0 * t.k); else UI.icon(ctx, t.ico, x + tw0 / 2, yy + th * 0.37, tw0 * t.k); ctx.restore(); numTxt(ctx, t.n, x + tw0 / 2, yy + th * 0.68, S(54), '#04456B');
         const bw = tw0 * 0.9, bh = S(92), bx = x + (tw0 - bw) / 2, by = yy + th - bh - S(20);
-        if (t.free) { adBtn(ctx, bx, by, bw, bh, cfree > 0 ? 'GRATUIT ' + cfree + '/3' : '0/3', now); tapS(bx, by, bw, bh, () => { if (cfree <= 0) { Home.toast(ui, 'REVIENS DEMAIN !'); return; } if (game.ads && game.ads.rewarded) game.ads.rewarded(() => { B.coinFree.n++; E.save(game).coins += 3000; game.writeSave(); game.audio.play('coinPing'); Home.evoFly(game, 3000, 0, 30); }, null, 'coins', '3 000 PIÈCES'); }); }
+        if (t.free) { adBtn(ctx, bx, by, bw, bh, cfree > 0 ? 'GRATUIT ' + cfree + '/3' : '0/3', now); tapS(bx, by, bw, bh, () => { if (cfree <= 0) { Home.toast(ui, 'REVIENS DEMAIN !'); return; } if (game.ads && game.ads.rewarded) game.ads.rewarded(() => { B.coinFree.n++; const n0 = pk('free'); E.save(game).coins += n0; game.writeSave(); game.audio.play('coinPing'); Home.evoFly(game, n0, 0, 30); }, null, 'coins', U.formatInt(pk('free')) + ' PIÈCES'); }); }
         else { priceBtn(ctx, bx, by, bw, bh, price(t.id, t.p)); tapS(bx, by, bw, bh, () => buy(t.id)); } });
       y += th + gp;
       const h = S(330); card(ctx, mx, y, mw, h, '#09B4FF', '#0678B8'); ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowOffsetY = S(10); ctx.shadowBlur = S(6); UI.artImg(ctx, 'coins_chest', mx + mw * 0.3, y + h * 0.5, S(360)); ctx.restore();
-      bestBadge(ctx, mx + S(95), y + S(80), S(165)); rr(ctx, mx + mw * 0.58, y + h * 0.1, mw * 0.38, h * 0.8, S(22)); ctx.fillStyle = 'rgba(4,69,107,0.45)'; ctx.fill(); numTxt(ctx, '100K', mx + mw * 0.77, y + h * 0.3, S(80), '#04456B');
-      { const bw = mw * 0.32, bh = S(104), bx = mx + mw * 0.77 - bw / 2, by = y + h * 0.56; priceBtn(ctx, bx, by, bw, bh, price('coins100k', '6,49 €')); tapS(bx, by, bw, bh, () => buy('coins100k')); }
+      bestBadge(ctx, mx + S(95), y + S(80), S(165)); rr(ctx, mx + mw * 0.58, y + h * 0.1, mw * 0.38, h * 0.8, S(22)); ctx.fillStyle = 'rgba(4,69,107,0.45)'; ctx.fill(); numTxt(ctx, U.formatInt(E.coinPack(game, 'coins100k')), mx + mw * 0.77, y + h * 0.3, S(80), '#04456B');
+      { const bw = mw * 0.32, bh = S(104), bx = mx + mw * 0.77 - bw / 2, by = y + h * 0.46; priceBtn(ctx, bx, by, bw, bh, price('coins100k', '6,49 €')); tapS(bx, by, bw, bh, () => buy('coins100k')); }
       y += h + S(60); }
     ctx.restore();
     SC.max = Math.max(0, y + S(30) - (T0 + HH)); SC.y = cl(SC.y, 0, SC.max);
