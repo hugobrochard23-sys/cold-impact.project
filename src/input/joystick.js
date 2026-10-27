@@ -8,14 +8,14 @@
   J.move = (x, y) => { if (!J.on) return; const r = R(), dx = x - J.ax, dy = y - J.ay, l = Math.hypot(dx, dy); if (l > r) { J.kx = J.ax + dx / l * r; J.ky = J.ay + dy / l * r; } else { J.kx = x; J.ky = y; } };
   J.end = () => { J.on = false; };
   // vitesse de rotation (rad/s) a pleine deflexion, avant reglage de sensibilite
-  const RATE = 0.85;   // v268 : beaucoup moins sensible : un petit coup de doigt ne fait presque rien, il faut maintenir pour que la fusee tourne
+  const RATE = 1.3;   // v268 : beaucoup moins sensible : un petit coup de doigt ne fait presque rien, il faut maintenir pour que la fusee tourne
   J.apply = (dt, input, game) => {
     if (!J.on || !evo() || game.state !== 'FLIGHT' || game.paused) return;
     const r = R(); let nx = (J.kx - J.ax) / r, ny = (J.ky - J.ay) / r; const m = Math.hypot(nx, ny);
     if (m < 0.08) { J.held = 0; return; }
-    J.held = (J.held || 0) + dt; const ramp = 0.3 + 0.7 * Math.min(1, J.held / 0.9);   // la rotation monte doucement pendant la 1re seconde
-    const k = ramp * Math.pow((m - 0.08) / 0.92, 1.5) / m, sens = [0.7, 1, 1.4][game.settings.touchSens !== undefined ? game.settings.touchSens : 1] * (game.settings.invertY ? 1 : 1);
-    input.addAim(-nx * k * RATE * sens * dt, -ny * k * RATE * sens * dt * (game.settings.invertY ? -1 : 1));
+    J.held = (J.held || 0) + dt; const ramp = 0.65 + 0.35 * Math.min(1, J.held / 0.4);   // la rotation monte doucement pendant la 1re seconde
+    const k = ramp * Math.pow((m - 0.08) / 0.92, 1.2) / m, sens = [0.7, 1, 1.4][game.settings.touchSens !== undefined ? game.settings.touchSens : 1] * (game.settings.invertY ? 1 : 1);
+    input.addAim(-nx * k * RATE * sens * dt, -ny * k * RATE * sens * dt * (game.settings.invertY ? -1 : 1) * (ny < 0 ? 1.3 : 1));   // monter (doigt vers le haut) un peu plus vif
   };
   J.draw = (ctx, game, ui) => {
     if (!evo() || game.state !== 'FLIGHT') { J.on = false; return; }
