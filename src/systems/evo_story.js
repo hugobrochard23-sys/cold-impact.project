@@ -135,12 +135,6 @@
         F.draw(ctx, shown, px * 6, by + bh / 2 - px * 4.2, Math.min(px * 1.35, (W * 0.92 - px * 6) / Math.max(1, F.measure(R.txt, 1))), '#e8f6ff', {}); ctx.restore();
       }
     }
-    // évacuation : barre de progression vers la sortie
-    const E = g.evoEscape; if (E && E.on) {
-      const pct = U.clamp((g.endlessRun.dist - E.d0) / Math.max(1, E.d1 - E.d0), 0, 1), bw = W * 0.6, bx = (W - bw) / 2, by = top + px * 9;
-      ctx.save(); ctx.fillStyle = 'rgba(10,6,6,0.7)'; ctx.fillRect(bx - 3, by - 3, bw + 6, px * 2.4 + 6); ctx.fillStyle = Math.sin(now / 110) > 0 ? '#ff5a2a' : '#ffb03a'; ctx.fillRect(bx, by, bw * pct, px * 2.4); ctx.restore();
-      F.draw(ctx, 'EVACUATION', W / 2, by - px * 5.6, px * 1.0, Math.sin(now / 110) > 0 ? '#ff7a4a' : '#ffd23a', { align: 'center' });
-    }
   };
 
   // ---------- cinématique d'intro ----------

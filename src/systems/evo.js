@@ -665,6 +665,14 @@
     g.telemetry.event('evoBuy', { id, lvl: S[id] }); return true;
   };
   // boss vaincu : on vole un instant dans la zone suivante
+  // v276 : barriere invisible : on ne peut pas depasser la distance dB (boss, noyau) tant qu'ils ne sont pas detruits ; la fusee est repoussee et un message le dit
+  EVO.holdAt = (g, dB, msg) => {
+    const run = g.endlessRun, rk = g.rocket; if (!run || !rk || !rk.active || run.dist <= dB) return false;
+    const T = run.T, rd = run.dist, a = T.at(rd, 0, 0), b = T.at(rd + 6, 0, 0); let tx = b[0] - a[0], tz = b[2] - a[2]; const l = Math.hypot(tx, tz) || 1; tx /= l; tz /= l;
+    const over = rd - dB; rk.pos.x -= tx * over; rk.pos.z -= tz * over; const vd = rk.vel.x * tx + rk.vel.z * tz; if (vd > 0) { rk.vel.x -= tx * vd * 1.4; rk.vel.z -= tz * vd * 1.4; }
+    const now = performance.now(); if (!g._holdT || now - g._holdT > 2500) { g._holdT = now; if (msg && CC.L1) CC.L1.msg(g, msg, 1.8, '#ffe9a0'); g.audio.play('clunk'); g.rig.shake = Math.max(g.rig.shake, 0.5); }
+    return true;
+  };
   EVO.onClear = (g) => { const S = EVO.save(g); EVO.mark(g, 'boss'); S.cleared = (S.cleared || 0) + 1; S.coins += 600; g.writeSave(); g.evoPreview = true; g.evoClearBonus = 600; g.goHome({ autoLaunch: true }); };
 
   // ---------- affichage en vol : distance, PV des blindés ----------

@@ -137,6 +137,7 @@
         const fk = this.fallK || 0;
         if (CC.EVO && CC.EVO.on && rk.active) { const tp = _evoD.copy(rk.pos).addScaledVector(this.camDir, 2.2); cam.up.set(0, 1, 0); cam.lookAt(tp); }   // la fusée reste au centre de l'écran
         else if (fk > 0.01) this.orient(_t2.copy(this.camDir).lerp(_down, 0.5 * fk).normalize(), this.roll, this.camRight, this.camUp); else this.orient(this.camDir, this.roll, this.camRight, this.camUp);
+        { const FH = this.game.evoFinish; if (FH && FH.hold && rk.active) { if (!FH.camPos) FH.camPos = cam.position.clone(); cam.position.copy(FH.camPos); cam.up.set(0, 1, 0); cam.lookAt(rk.pos); } }   // v276 : fin de niveau : la camera reste a la ligne d'arrivee
       } else if (this.mode === 'impact') {
         const back = _t1.subVectors(this.pos, this.focus).normalize();
         this.pos.addScaledVector(back, dt * 1.5);

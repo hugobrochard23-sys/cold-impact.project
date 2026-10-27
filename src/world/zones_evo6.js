@@ -140,13 +140,14 @@
   };
 
   // ============================== LA FUITE ==============================
+  const FIN_U = 0.86;   // v276 : la ligne d'arrivee est au bout du couloir (86 % de la scene de fuite)
   EVO.escEvents = []; EVO.debris = [];
-  const _br = EVO.beginRun; EVO.beginRun = (g) => { _br(g); EVO.escEvents = []; EVO.debris = []; EVO.robot = null; g.evoEscape = null; g.evoFinish = null; };
+  const _br = EVO.beginRun; EVO.beginRun = (g) => { _br(g); EVO.escEvents = []; EVO.debris = []; EVO.robot = null; g.evoEscape = null; g.evoFinish = null; g._coreMsg = 0; };
   EVO.startEscape = (g, why) => {
     if (g.evoEscape) return; const run = g.endlessRun, E = EVO.scenePos('fuite'); if (!E) return;
-    g.evoEscape = { on: true, d0: run.dist, d1: E.d0 + E.len - 40, t0: performance.now(), fired: {} };
+    g.evoEscape = { on: true, d0: run.dist, d1: E.d0 - 80 + E.len * FIN_U, t0: performance.now(), fired: {} };
     g.audio.setZone('evoEscape', false); g.audio.play('reactorHit'); g.audio.play('robotAlarm'); g.rig.shake = 1.6; g.flash = 0.6; g.flashColor = '#ffffff';
-    EVO.radio(g, 'CENTRE : REACTEUR CRITIQUE ! LA BASE S EFFONDRE ! SORS DE LA !', 3.8); CC.L1.msg(g, 'EVACUATION !', 2.2, '#ff7a4a');
+    EVO.radio(g, 'CENTRE : REACTEUR CRITIQUE ! LA BASE S EFFONDRE ! SORS DE LA !', 3.8);
     if (why !== 'kill') g.audio.play('boom');
   };
   const _ok = EVO.onKill; EVO.onKill = (g, t) => { _ok(g, t); if (t.type === 'reactor') { EVO.startEscape(g, 'kill'); if (t.obb) EVO.coinBurst(g, t.obb.c, 40); } };
@@ -164,7 +165,10 @@
     const run = g.endlessRun, rk = g.rocket, fin = g.evoFinish;
     // le réacteur explose tout seul si on le dépasse sans le toucher
     const N = EVO.scenePos('noyau'), F = EVO.scenePos('fuite');
-    if (N && F && !g.evoEscape && run && run.dist > F.d0 + 6 && g.state === 'FLIGHT') EVO.startEscape(g, 'auto');
+    if (N && F && !g.evoEscape && run && g.state === 'FLIGHT' && rk.active) {   // v276 : il faut toucher le noyau : message en approche, et impossible de le depasser vivant
+      if (!g._coreMsg && run.dist > N.d0 - 80 + N.len * 0.45) { g._coreMsg = 1; CC.L1.msg(g, 'TOUCHE LE NOYAU !', 2.6, '#46e0ff'); EVO.radio(g, 'CENTRE : TOUCHE LE NOYAU DU REACTEUR !', 2.8); }
+      EVO.holdAt(g, N.d0 - 80 + N.len * 0.8 + 34, 'TOUCHE LE NOYAU !');
+    }
     const E = g.evoEscape;
     if (E && E.on && g.state === 'FLIGHT' && rk.active) {
       // la fusée garde de la vitesse et du carburant : on ne meurt pas de panne pendant la fuite
@@ -188,10 +192,10 @@
     }
   };
   EVO.finishRun = (g) => {
-    g.evoFinish = { t0: performance.now() }; const rk = g.rocket;
-    g.audio.play('finish'); g.flash = 0.8; g.flashColor = '#fff2c0'; g.hitStop = 0.25; g.hitScale = 0.3; g.rig.shake = 0.6; CC.L1.msg(g, 'MISSION ACCOMPLIE !', 3, '#ffe9a0');
+    g.evoFinish = { t0: performance.now(), hold: true }; const rk = g.rocket;   // v276 : la camera reste sur la ligne, la fusee continue
+    g.audio.play('finish'); g.flash = 0.8; g.flashColor = '#fff2c0'; g.hitStop = 0.25; g.hitScale = 0.3; g.rig.shake = 0.6; CC.L1.msg(g, 'NIVEAU TERMINE !', 2, '#ffe9a0');
     g.audio.setZone('evoDawn', false);
-    setTimeout(() => { if (g.state === 'FLIGHT' && g.endlessRun) { rk.active = false; rk.mesh.visible = false; rk.light.intensity = 0; rk.rope.visible = false; EVO.onClear(g); } }, 2600);
+    setTimeout(() => { if (g.state === 'FLIGHT' && g.endlessRun) { rk.active = false; rk.mesh.visible = false; rk.light.intensity = 0; rk.rope.visible = false; EVO.onClear(g); } }, 1900);
   };
 
   // un pilier qui bascule en travers de l'axe (le calendrier est calé pour qu'il touche l'axe juste après le passage de la fusée)
@@ -274,23 +278,22 @@
     } };
 
   // ----- FUITE (760 m) : couloir en ruines, flammes, chutes minutées ; l'arche d'arrivée est dehors, au soleil levant
-  D.scenes.fuite = { len: [760, 760], noDoor: true, noChaos: true, turns: [[0.18, 0.5, 20], [0.5, 0.8, -20]],
+  D.scenes.fuite = { len: [700, 700], noDoor: true, noChaos: true, turns: [[0.18, 0.5, 20], [0.5, 0.8, -20]],
     pin: (T, sc) => ({ lx: 0, y: 18, from: 24, to: sc.d1 - sc.d0 - 24 }),
     ground: (d, lx, c, sc) => { const u = (d - sc.d0) / (sc.d1 - sc.d0); c.lerp(new T3.Color(u < 0.86 ? '#2a2a2c' : '#6a7a52'), 0.96); },
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L, hw = 54, EVOnow = EVO;
       const ev = (dd, o) => { if (!EVOnow.escEvents.some((q) => Math.abs(q.d - dd) < 1 && q.kind === o.kind)) EVOnow.escEvents.push(Object.assign({ d: dd, done: false }, o)); };
       for (let dc = S.d0 + 10; dc < S.d1; dc += 20) S.item(dc, (r) => { const Lc = S.lane(dc).lx, u = (dc - S.d0) / L; S.bx(dc, Lc, 0.12, 2 * hw, 0.2, 20.4, u < 0.86 ? 'concreteDark' : 'concrete', u < 0.86 ? '#34363a' : '#70726e', false, { shadow: false }); if (r() < 0.5) S.bxr(dc + r.between([-8, 8]), Lc + r.between([-30, 30]), 0.3, r.between([2, 6]), 0.04, 0.5, 'col:#ff6a2a', undefined, r.between([-90, 90]), r.between([-40, 40]), false); });
-      const tEnd = d(0.86);
+      const tEnd = d(FIN_U);
       for (let dc = S.d0; dc < tEnd; dc += 16) S.item(dc + 8, (r) => { const m = dc + 8, Lc = S.lane(m).lx, hole = r() < 0.18; for (const sg of [-1, 1]) { S.bx(m, Lc + sg * (hw + 12), 50, 24, 110, 15.8, 'concreteDark', pk(r, BURN), true); if (r() < 0.55) { S.bx(m, Lc + sg * (hw - 0.4), r.between([10, 60]), 0.5, r.between([8, 30]), 6, 'emis:' + pk(r, FIRE), undefined, false); S.glow(m, Lc + sg * (hw - 2), 30, '#ff8a3a', 44); } } if (!hole) S.bx(m, Lc, 96, 2 * hw + 24, 12, 15.8, 'concreteDark', pk(r, BURN), true); });
       for (let dc = S.d0 + 30; dc < tEnd; dc += 44) S.item(dc, (r) => { const Lc = S.lane(dc).lx, sg = r() < 0.5 ? -1 : 1; fireAt(S, dc, Lc + sg * r.between([38, 50]), r); S.glow(dc, Lc + sg * 44, 12, '#ff6a2a', 52); });
-      // sortie : l'arche d'arrivée, la prairie et le soleil
-      S.item(d(0.95), (r) => { const dm = d(0.95), Lc = S.lane(dm).lx, w = 64; for (const sg of [-1, 1]) { S.bx(dm, Lc + sg * w / 2, 22, 5, 44, 5, 'concrete', '#e8e4d8', true); for (let k = 0; k < 8; k++) S.bx(dm, Lc + sg * w / 2, 3 + k * 5, 5.2, 2.5, 5.2, 'col:' + (k % 2 ? '#111' : '#fff'), undefined, false); } S.bx(dm, Lc, 46, w + 5, 5, 5, 'col:#fff', undefined, false); for (let k = 0; k < 14; k++) S.bx(dm, Lc - w / 2 + 2 + k * (w / 13.5), 46, 2.2, 5.2, 5.2, 'col:#111', undefined, false); S.glow(dm, Lc, 48, '#fff2c0', 80);
-        // v263 : toute l'ouverture de l'arche est couverte d'un motif de ligne d'arrivee a 30 % d'opacite (toute la largeur, toute la hauteur)
+      // v276 : plus de porte : la ligne d'arrivee est un immense mur a damiers (large, haut, a ras du sol), sans collision
+      S.item(d(FIN_U), (r) => { const dm = d(FIN_U), Lc = S.lane(dm).lx;
         if (EVO.placeGroup) { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const cx2 = cv.getContext('2d'); cx2.fillStyle = '#ffffff'; cx2.fillRect(0, 0, 64, 64); cx2.fillStyle = '#111111'; cx2.fillRect(0, 0, 32, 32); cx2.fillRect(32, 32, 32, 32);
-          const tx = new T3.CanvasTexture(cv); tx.wrapS = tx.wrapT = T3.RepeatWrapping; tx.repeat.set(w / 8, 48.5 / 8); tx.magFilter = T3.NearestFilter;
-          const grp = new T3.Group(), pl = new T3.Mesh(new T3.PlaneGeometry(w, 48.5), new T3.MeshBasicMaterial({ map: tx, transparent: true, opacity: 0.3, side: T3.DoubleSide, depthWrite: false, fog: false })); pl.position.set(0, 24.25, 0); grp.add(pl); EVO.placeGroup(S, grp, dm, Lc, 0, 0); } });
-      for (const sg of [-1, 1]) S.rows(d(0.88), S.d1, 18, 0.9, (dc) => S.item(dc, (r) => { const Lc = S.lane(dc).lx, p = S.at(dc, Lc + sg * r.between([30, 70]), 0); if (r() < 0.5) TR.conifer(S.b, p[0], p[1], p[2], r.between([14, 24]), r, {}); else TR.broadleaf(S.b, p[0], p[1], p[2], r.between([9, 15]), r, {}); }));
+          const W2 = 1600, H2 = 1000, sq = 14, tx = new T3.CanvasTexture(cv); tx.wrapS = tx.wrapT = T3.RepeatWrapping; tx.repeat.set(W2 / (2 * sq), H2 / (2 * sq)); tx.magFilter = T3.NearestFilter;
+          const grp = new T3.Group(), pl = new T3.Mesh(new T3.PlaneGeometry(W2, H2), new T3.MeshBasicMaterial({ map: tx, transparent: true, opacity: 0.55, side: T3.DoubleSide, depthWrite: false, fog: false })); pl.position.set(0, H2 / 2 - 60, 0); grp.add(pl); EVO.placeGroup(S, grp, dm, Lc, 0, 0); } });
+      for (const sg of [-1, 1]) S.rows(d(FIN_U + 0.02), S.d1, 18, 0.9, (dc) => S.item(dc, (r) => { const Lc = S.lane(dc).lx, p = S.at(dc, Lc + sg * r.between([30, 70]), 0); if (r() < 0.5) TR.conifer(S.b, p[0], p[1], p[2], r.between([14, 24]), r, {}); else TR.broadleaf(S.b, p[0], p[1], p[2], r.between([9, 15]), r, {}); }));
       // les chutes minutées : 3 plafonds, une chute lourde, deux piliers, quatre explosions, deux secousses
       const E = [[0.04, 'quake'], [0.08, 'ceil'], [0.14, 'fire', -22], [0.19, 'side'], [0.24, 'ceil'], [0.3, 'fire', 24], [0.35, 'big'], [0.41, 'ceil'], [0.46, 'fire', -26], [0.52, 'side'], [0.58, 'quake'], [0.63, 'ceil'], [0.69, 'fire', 22], [0.74, 'big'], [0.8, 'side'], [0.84, 'ceil']];
       for (const [u, kind, lx] of E) ev(d(u), { kind, lx: lx || 0, at: d(u) + 70 });

@@ -17,7 +17,8 @@
   EVO.onClear = (g) => {
     const S = EVO.save(g), st = EVO.stage(g); EVO.mark(g, 'boss' + (st > 1 ? st : '')); S.cleared = (S.cleared || 0) + 1; if (st === 1) S.clr1 = 1; const bonus = st === 1 ? 800 : 1500; S.coins += bonus; g.writeSave();
     g.evoWin = { stage: st, bonus, t0: 0, coins: S.coins };
-    g.evoNext = () => EVO.playCine(g, st === 1 ? 'win1' : 'win2', () => { g.ui.overlay = 'evoWin'; g.evoWin.t0 = performance.now(); g.audio.play('victory'); });
+    const toWin = () => { g.ui.overlay = 'evoWin'; g.evoWin.t0 = performance.now(); g.audio.play('victory'); };   // v276 : niveau 1 : pas de cinematique de fin, on va direct a la recompense
+    g.evoNext = st === 1 ? toWin : () => EVO.playCine(g, 'win2', toWin);
     g.goHome({});
   };
   EVO.goStage2 = (g) => {

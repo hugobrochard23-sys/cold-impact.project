@@ -49,7 +49,8 @@
   const _br = EVO.beginRun; EVO.beginRun = (g) => { _br(g); reset(g); };
 
   function create(g, T, P) {
-    const W = new T3.Group(), M = model(); M.scale.setScalar(SC); M.position.set(0, 0, 0); M.rotation.set(0, 0, 0); W.add(M);
+    const W = new T3.Group(), M = model(); M.visible = true; M.scale.setScalar(SC);   // v276 : la coque etait restee invisible apres une premiere destruction (modele partage)
+     M.position.set(0, 0, 0); M.rotation.set(0, 0, 0); W.add(M);
     const ud = M.userData, tur = ud.turret, gun = ud.gun, slide = ud.slide, muz = ud.muzzle, radar = tur.getObjectByName('radar');
     tur.rotation.set(0, 0, 0); gun.rotation.set(0, 0, 0); slide.position.set(0, 0, 0); tur.position.set(0, 4.0, -0.2);
     // deux faisceaux de projecteurs qui balaient le ciel : un phare pour le voir de tres loin
@@ -127,6 +128,7 @@
     if (near && g.camera.far < 1600) { TT.far0 = TT.far0 || g.camera.far; g.camera.far = 1600; g.camera.updateProjectionMatrix(); } else if (!near && TT.far0 && g.camera.far > TT.far0) { g.camera.far = TT.far0; g.camera.updateProjectionMatrix(); } for (const q of TT.towers) q.g.visible = rd > q.d - 700 && rd < q.d + 400;
     if (!near && TT.mode !== 'dash') return;
     place(g, T);
+    if (live && TT.hp > 0 && EVO.holdAt && EVO.holdAt(g, TT.d + 75, 'DETRUIS LE TITAN !')) { /* v276 : impossible de depasser le Titan vivant */ }
     if (TT.radar) TT.radar.rotation.y += dt * (TT.mode === 'sleep' ? 0.6 : 1.8);
     for (const b of TT.beams) { b.rotation.z = Math.sin(TT.t * 0.5 + b.userData.ph) * 0.35 * (b.position.x > 0 ? 1 : -1) + (b.position.x > 0 ? 0.25 : -0.25); b.rotation.x = Math.cos(TT.t * 0.4 + b.userData.ph) * 0.25; b.visible = TT.mode !== 'wreck' && TT.mode !== 'dying'; }
     TT.recoil = Math.max(0, TT.recoil - dt * 2.2); TT.slide.position.z = TT.recoil * 5;
