@@ -29,7 +29,7 @@
   // ---------- formes arrondies « jeu mobile » : pastilles, boutons 3D, jauges ----------
   // v038j : deux habillages — 'pixel' (par défaut : coins en escalier, aplats, police 5×7, icônes pixelisées) et 'glass' (?skin=glass : verre arrondi)
   const SKIN = (new URLSearchParams(location.search).get('skin') || CC.CONFIG.hud.skin || 'pixel');
-  const PIX = SKIN === 'pixel';
+  const PIX = SKIN === 'pixel' && !(CC.EVO && CC.EVO.on);   // v270 : plus d'habillage pixel dans le jeu EVO
   if (PIX) { CC.Font.skinPixel = true; const mark = () => document.body && document.body.classList.add('cc-skin-pixel'); if (document.body) mark(); else document.addEventListener('DOMContentLoaded', mark); }
   // forme à coins en escalier (deux marches) : c = taille d'une marche
   function stair(ctx, x, y, w, h, c) {

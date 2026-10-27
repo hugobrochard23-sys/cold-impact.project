@@ -88,7 +88,7 @@
   function card(ui, ctx, game, E, S0, id, x, y, w, h, now) {
     const n = S0[id], cost = E.nextCost(game, id), can = cost !== null && S0.coins >= cost;
     const name = id === 'la' ? 'PROPULSEUR' : id === 'rk' ? 'OGIVE' : 'REVENU', ico = id === 'la' ? 'missile_flame' : id === 'rk' ? 'missile_ogive' : 'coins_stack';
-    const full = id === 'rk' ? n >= 20 : id === 'la' ? n >= 10 : n >= 5, done = full ? 5 : id === 'rk' ? E.rocket(n).s : id === 'la' ? E.launcher(n).s : n;
+    const full = id === 'rk' ? n >= 20 : id === 'la' ? n >= 10 : n >= 5, done = n % 5;   // v270 : la barre repart de zero tous les 5 niveaux, a l'infini
     const shk = game.evoShake && game.evoShake.id === id && now - game.evoShake.t0 < 350 ? Math.sin((now - game.evoShake.t0) / 25) * S(10) : 0, bt = game.evoBought, bk = bt && bt.id === id ? U.clamp(1 - (now - bt.t0) / 520, 0, 1) : 0, k2 = 1 + 0.05 * Math.sin(bk * 3.1416);
     const rx = x + shk, ccx = rx + w / 2, ccy = y + h / 2;
     ctx.save(); ctx.translate(ccx, ccy); ctx.scale(k2, k2); ctx.translate(-ccx, -ccy);
