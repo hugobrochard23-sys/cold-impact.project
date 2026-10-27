@@ -269,8 +269,8 @@
   EVO.camHook = (g, rig, o) => {
     const A = g.evoAnim;
     // v152 : menu : la fusee est vue de trois quarts avant, en haut de l'ecran (les cartes sont dessous) ; la vue de dessus du tir revient pendant la visee
-    { const now = performance.now(), dtm = Math.min(0.1, (now - (g._mk0 || now)) / 1000); g._mk0 = now; const want = (g.ui && g.ui.overlay === 'evo' && !g.evoAim && !A) ? 1 : 0; g._mk = (g._mk || 0) + (want - (g._mk || 0)) * Math.min(1, dtm * 2.6);
-      if (g._mk > 0.003 && g.pad) { const e = g._mk * g._mk * (3 - 2 * g._mk), kf = 1 + 0.02 * Math.min(40, EVO.save(g).rk), dir = g.pad.dir, up = new V(0, 1, 0), right = new V().crossVectors(dir, up).normalize(), sw = Math.sin(now / 2600) * 0.45;
+    { const now = performance.now(), dtm = Math.min(0.1, (now - (g._mk0 || now)) / 1000); g._mk0 = now; const want = (g.ui && (g.ui.overlay === 'evo' || g.ui.overlay === 'evoShop') && !g.evoAim && !A) ? 1 : 0; g._mk = (g._mk || 0) + (want - (g._mk || 0)) * Math.min(1, dtm * 2.6);
+      if (g._mk > 0.003 && g.pad) { const e = g._mk * g._mk * (3 - 2 * g._mk), kf = 1 + 0.02 * Math.min(40, EVO.save(g).rk), dir = g.pad.dir, up = new V(0, 1, 0), right = new V().crossVectors(dir, up).normalize(), sw = 0;   // v261 : plus de balancement lateral de la camera
         const Lw = EVO.rocketLen(g), Dd = U.clamp(2.75 * Lw, 3.3, 8), rt = Math.min(0.8 * Dd, 4.4) + sw * 0.1, fw = Math.sqrt(Math.max(0.25 * Dd * Dd, Dd * Dd - rt * rt - 0.1 * Dd * Dd)) + sw * 0.1, p = new V().copy(o).addScaledVector(dir, fw).addScaledVector(right, rt).addScaledVector(up, 0.32 * Dd), look = new V().copy(o).addScaledVector(dir, 0.05 * Lw).addScaledVector(up, -0.02 * Lw);   // v237 : menu : trois quarts avant ; la distance suit la LONGUEUR de la fusee (on voit toujours son bout), elle est au milieu de l'ecran, sous « APPUYEZ POUR LANCER 
         rig.padPos.lerp(p, e); rig.padLook.lerp(look, e); rig.padFov += (50 - rig.padFov) * e; } }
     if (!A) return;
@@ -558,7 +558,7 @@
     if (!Tm.flag && (Tm.body.rest ? Tm.t > 0.9 : Tm.t > 9)) {
       const bp = Tm.body.m.position, p = new V(bp.x, bp.y - 0.2, bp.z), gh = EVO.groundY(g, bp);
       if (gh !== null && bp.y - gh < 1.2 && bp.y - gh > -0.5) p.y = gh; else { const sy = surfBelow(g, bp); if (sy !== null) p.y = sy; }   // le drapeau se pose TOUJOURS sur le sol reel sous la fusee
-      Tm.flag = plantFlag(g, p, Math.round(Math.max(0, run.dist))); Tm.flag.scale.y = 0.01; Tm.flagT = 0;
+      Tm.flag = plantFlag(g, p, Math.round(Math.max(0, run.dist))); Tm.flag.scale.y = 0.01; Tm.flagT = 0; g.audio.play('flag');
       g.effects.ring(p.clone().setY(p.y + 0.2), new V(0, 1, 0), 0.3, 4, 0.5, '#ffffff', 0.7); g.audio.play('clunk', p); g.rig.shake = Math.max(g.rig.shake, 0.3);
       for (let i = 0; i < 14; i++) g.effects.sparks.emit({ pos: p.clone().setY(p.y + 0.2), vel: new V(rr(-3, 3), rr(0.5, 2.5), rr(-3, 3)), life: rr(0.5, 1.1), s0: 0.1, s1: 0.2, s2: 0.3, cols: g.effects.pal.ember, drag: 2, grav: 1, a: 0.5, fout: 0.5 });
       Tm.dur = g.impactT + 1.7;   // le rapport de vol (SUIVANT, pieces gagnees) s'ouvre juste apres la plantation du drapeau
@@ -604,12 +604,12 @@
   // v150 : la pub de fin de vol multiplie les pieces du vol par le multiplicateur lu sur le curseur (x1,5 a x4)
   EVO.multiply = (g, m) => { const L = g.evoLast; if (!L || L.doubled || !L.total) return; const extra = Math.round(L.total * (m - 1)); L.doubled = m; L.lines.push(['PUB X' + m, extra, performance.now()]); EVO.save(g).coins += extra; L.total += extra; L.popT = performance.now(); L.fx = { t0: performance.now(), n: extra }; g.evoAdDone = true; g.writeSave(); g.audio.play('target'); (g.killPops = g.killPops || []).length; };
   // gemmes : 1 gemme = 1 amelioration offerte quand les pieces manquent ; la 2e fois sur la meme amelioration (meme session) coute 2, la 3e 3...
-  EVO.gemCost = (g, id) => ((g.evoGemUse && g.evoGemUse[id]) || 0) + 1;
+  EVO.gemCost = (g) => (g.evoGemN || 0) + 1;   // v261 : 1 gemme ; 2, 3... seulement apres avoir deja utilise une gemme avant de relancer une partie
   EVO.freeGemsUsed = (g) => { const S = EVO.save(g), d = new Date().toISOString().slice(0, 10); if (!S.gemFree || S.gemFree.day !== d) S.gemFree = { day: d, n: 0 }; return S.gemFree.n; };
-  EVO.gemAd = (g, free) => { if (!g.ads) return; if (free && EVO.freeGemsUsed(g) >= 3) return; g.ads.rewarded(() => { const S = EVO.save(g); S.gems = (S.gems || 0) + 1; if (free) { EVO.freeGemsUsed(g); S.gemFree.n++; } g.writeSave(); g.audio.play('levelUp'); g.evoGemFx = { t0: performance.now(), n: 1 }; }, null, 'gem', '1 GEMME'); };
+  EVO.gemAd = (g, free) => { if (!g.ads) return; if (free && EVO.freeGemsUsed(g) >= 3) return; g.ads.rewarded(() => { const S = EVO.save(g); S.gems = (S.gems || 0) + 1; if (free) { EVO.freeGemsUsed(g); S.gemFree.n++; } g.writeSave(); g.audio.play('levelUp'); if (CC.Home.evoFly) CC.Home.evoFly(g, 0, 1); }, null, 'gem', '1 GEMME'); };
   EVO.buyGem = (g, id) => {
     const S = EVO.save(g), c = EVO.nextCost(g, id), gc = EVO.gemCost(g, id); if (c === null || g.evoAnim) return;
-    const pay = () => { if ((S.gems || 0) < gc) return; S.gems -= gc; g.evoGemUse = g.evoGemUse || {}; g.evoGemUse[id] = (g.evoGemUse[id] || 0) + 1; EVO.buy(g, id, true); };
+    const pay = () => { if ((S.gems || 0) < gc) return; S.gems -= gc; g.evoGemN = (g.evoGemN || 0) + 1; EVO.buy(g, id, true); };
     if ((S.gems || 0) >= gc) pay(); else if (g.ads) g.ads.rewarded(() => { S.gems = (S.gems || 0) + 1; g.writeSave(); g.evoGemFx = { t0: performance.now(), n: 1 }; pay(); }, null, 'gem', '1 GEMME = 1 AMELIORATION');
   };
   // coffre : disponible des le 3e vol, puis toutes les 2 heures

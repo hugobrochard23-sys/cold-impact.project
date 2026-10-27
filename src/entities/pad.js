@@ -205,7 +205,7 @@
       rk.fwd.copy(this.dir);
       rk.mesh.visible = true;
       // flamme de veille : petite au repos, grandit avec la charge (cônes de la tuyère) — mise à jour du maillage (assiette fixe)
-      rk.thrustK = this.mode === 'charge' ? (this.manual ? (this.manualK || 0.06) + 0.04 * Math.sin(t * 9) : 0.12 + 0.75 * ch) : this.mode === 'idle' ? 0.05 + 0.03 * Math.sin(t * 9) : 0;
+      rk.thrustK = this.mode === 'charge' ? (this.manual ? (this.manualK || 0.06) + 0.04 * Math.sin(t * 9) : 0.12 + 0.75 * ch) : this.mode === 'idle' ? (CC.EVO && CC.EVO.on ? 0 : 0.05 + 0.03 * Math.sin(t * 9)) : 0;   // v261 : pas de flamme ni de fumee avant le boost
       rk.flick = 0.3 + 0.7 * U.fx();
       const keep = rk.roll; rk.updateMesh(0); rk.roll = keep;   // dt = 0 : le roulis ne tourne pas
       rk.light.position.copy(rk.pos).addScaledVector(this.dir, -1.6);
@@ -216,7 +216,7 @@
     // caméra du lanceur : vue de 3/4 arrière ; dérive lente au repos, avance et tremble pendant la charge
     updateCamera(dt) {
       const C = this.cfg, rig = this.game.rig, o = this.origin, ch = this.charge;
-      const sway = Math.sin(this.t * 0.35) * 0.09, sway2 = Math.sin(this.t * 0.23 + 1) * 0.04;
+      const evoOn = CC.EVO && CC.EVO.on, sway = evoOn ? 0 : Math.sin(this.t * 0.35) * 0.09, sway2 = evoOn ? 0 : Math.sin(this.t * 0.23 + 1) * 0.04;   // v261 : evolution : camera immobile
       const p = this.camPos.set(C.cam[0], C.cam[1], C.cam[2]);
       const l = this.camLook.set(C.look[0], C.look[1], C.look[2]);
       // avance vers le point regardé pendant la charge (courbe douce : elle accélère juste avant l'allumage)

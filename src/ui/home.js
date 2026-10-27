@@ -429,7 +429,7 @@
   // ============================================================================================================
   function frame(ui, ctx, game, W, H, title, color) {
     const L = Home.layout(ui, W, H), { T, HH, u, Y } = L;
-    ui.dim(ctx, W, H, 0.9);
+    if (ui._moveBg && Home.movingBg) { ui._moveBg = false; Home.movingBg(ctx, ui, W, H, 0); } else ui.dim(ctx, W, H, 0.9);   // v261 : reglages : fond mouvant
     const px = ui.fitPx([title], W * 0.7, u * 0.011);
     text(ui, ctx, title, W / 2, Y(0.05), px, color || '#ffffff', { align: 'center', skew: -0.2 });
     ctx.fillStyle = color || '#ffffff'; ctx.globalAlpha = 0.5; ctx.fillRect(W * 0.2, Y(0.05) + px * 9.2, W * 0.6, Math.max(2, u * 0.006)); ctx.globalAlpha = 1;
@@ -498,7 +498,7 @@
 
   // REGLAGES : interrupteurs à gros boutons
   Home.drawSettings = function (ui, ctx, game, W, H) {
-    const L = frame(ui, ctx, game, W, H, 'REGLAGES', '#dfe6f0'), { HH, u, Y } = L, s = game.settings;
+    ui._moveBg = true; const L = frame(ui, ctx, game, W, H, 'REGLAGES', '#dfe6f0'), { HH, u, Y } = L, s = game.settings;
     const vib = ['NON', 'FAIBLE', 'MOYEN', 'FORT'], vibV = s.vibration !== undefined ? s.vibration : 2;
     const rows = [
       ['SON', s.sfx > 0 ? 'OUI' : 'NON', () => ui.toggleVolume(game, 'sfx')],

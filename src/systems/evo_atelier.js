@@ -109,7 +109,7 @@
   EVO.buy = (g, id, free) => {
     const S0 = EVO.save(g), before = S0[id], ok = _buy(g, id, free); if (!ok) return ok;
     const n = EVO.save(g)[id]; g.evoGemOffer = id;   // l'offre « gemme / pub » ne s'affiche que sur la carte qu'on vient d'acheter, quand il n'y a plus assez de pieces
-    if (id === 'la' && g.pad && n <= 10) { EVO.playBuild(g, n); } else if ((id === 'rk' && !g.evoAnim) || id === 'la') EVO.playUp(g, id);
+    if ((id === 'rk' && !g.evoAnim) || id === 'la') EVO.playUp(g, id);
     if (id === 'cm') { const d = EVO.mult(n) - EVO.mult(before); g.evoBought = { id, t0: performance.now(), delta: d, palier: Math.floor(EVO.mult(n)) > Math.floor(EVO.mult(before)) || d >= 0.5, mult: EVO.mult(n) }; if (CC.Haptics && g.evoBought.palier) CC.Haptics.pattern('levelUp'); if (g.evoBought.palier) g.audio.play('coinPing'); }
     return ok;
   };
@@ -127,8 +127,8 @@
   const dayKey = () => new Date().toISOString().slice(0, 10);
   EVO.miniTickets = (g) => { const B = EVO.saveBase(g), m = B.mini = B.mini || { d: dayKey(), t: 2, ads: 0 }; if (m.d !== dayKey()) { m.d = dayKey(); m.t = 2; m.ads = 0; } return m.t; };
   EVO.addMiniTicket = (g, n) => { EVO.miniTickets(g); const m = EVO.saveBase(g).mini; if (m.ads >= 3) return false; const go = () => { m.t += n; m.ads++; g.writeSave(); g.audio.play('levelUp'); }; if (g.ads && g.ads.rewarded) g.ads.rewarded(go, null, 'ticket', 'TICKET MINI-JEU'); else go(); return true; };
-  const _br = EVO.beginRun; EVO.beginRun = (g) => { g.evoGemOffer = null; _br(g); };
-  const _st = EVO.start; EVO.start = (g) => { g.evoGemOffer = null; return _st(g); };
+  const _br = EVO.beginRun; EVO.beginRun = (g) => { g.evoGemOffer = null; g.evoGemN = 0; _br(g); };
+  const _st = EVO.start; EVO.start = (g) => { g.evoGemOffer = null; g.evoGemN = 0; return _st(g); };
   const _ch = EVO.camHook;
   EVO.camHook = (g, rig, o) => {
     const A = g.evoAnim;

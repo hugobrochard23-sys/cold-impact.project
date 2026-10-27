@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *  Le jeu appelle AndroidBridge.xxx ; les reponses reviennent par window.__nat / __natPrices / __natPurchase. */
 public class NativeBridge {
     // IDs de TEST de Google par defaut (voir app/build.gradle : remplaces par ads.properties pour la production)
-    private static final String[] PRODUCTS = { "noads", "starter", "gems5", "gems10", "gems30", "gems100", "gems250" };
+    private static final String[] PRODUCTS = { "noads", "starter", "gems5", "gems10", "gems30", "gems100", "gems250", "coins12k", "coins40k", "coins100k" };
     private final Activity act;
     private final WebView web;
     private final String rewardedUnit, interstitialUnit;

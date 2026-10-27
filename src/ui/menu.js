@@ -326,6 +326,7 @@
     }
     drawPause(ctx, game, W, H) {
       this.dim(ctx, W, H, 0.7);
+      if (CC.EVO && CC.EVO.on && CC.UI2) { const UI = CC.UI2, T0 = -(this.offsetY || 0), HH = this.fullH || H, u2 = this.portrait ? W : Math.min(W, HH * 0.62), k = 1 + 0.03 * Math.sin(performance.now() / 380); UI.begin(u2, 1); UI.outlined(ctx, 'PAUSE', W / 2, T0 + HH * 0.42, UI.fit(ctx, 'PAUSE', W * 0.7, u2 * 0.16), '#F0EDE4', '#000000', { keep: true, ow: 0.1 }); ctx.save(); ctx.translate(W / 2, T0 + HH * 0.52); ctx.scale(k, k); UI.outlined(ctx, 'Appuyer pour continuer', 0, 0, UI.fit(ctx, 'Appuyer pour continuer', W * 0.8, u2 * 0.065), '#FFFFFF', '#000000', { keep: true, ow: 0.1 }); ctx.restore(); this.buttons.push({ x: 0, y: T0, w: W, h: HH, action: () => game.resume() }); return; }
       const touch = document.body.classList.contains('cc-touch'), s = game.settings, endless = !!game.endlessRun;
       const T = -(this.offsetY || 0), HH = this.fullH || H, u = this.portrait ? W : Math.min(W, HH * 0.62);
       if (!(CC.EVO && CC.EVO.on)) this.text(ctx, 'PAUSE', W / 2, T + HH * 0.09, this.fitPx(['PAUSE'], W * 0.6, u * 0.013), '#f4f4f4', { align: 'center', skew: -0.2 });
@@ -487,7 +488,7 @@
       for (const b of this.buttons) {
         if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
           const dir = x < b.x + b.w * 0.35 ? -1 : 1;
-          this.game.audio.play('ui');
+          this.game.audio.play(b.snd || 'ui');
           if (CC.Touch && CC.Touch.active && CC.Haptics) CC.Haptics.tick('button');   // v024 : chaque bouton vibre (mobile)
           b.action(dir);
           return true;

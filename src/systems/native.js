@@ -29,8 +29,8 @@
   CC.EVO.adDue = (g, S) => { const c = N.cfg; return !!(g.ads && g.ads.forced() && S.runs >= c.from && (S.runs - c.from) % Math.max(1, c.every) === 0 && g.ads.now() - g.ads.lastAd >= c.gap); };
   // ---------- achats ----------
   const grant = (pid) => {
-    const g = CC.game, E = CC.EVO, S = E.saveBase(g), gems = (n) => { S.gems = (S.gems || 0) + n; g.evoGemFx = { t0: performance.now(), n }; }, noAds = () => { g.meta.M.noAds = true; };
-    if (pid === 'noads') noAds(); else if (pid === 'starter') { noAds(); gems(10); } else if (/^gems\d+$/.test(pid)) gems(parseInt(pid.slice(4), 10));
+    const g = CC.game, E = CC.EVO, S = E.saveBase(g), H = CC.Home, gems = (n) => { S.gems = (S.gems || 0) + n; if (H.evoFly) H.evoFly(g, 0, n); }, coins = (n) => { E.save(g).coins += n; if (H.evoFly) H.evoFly(g, n, 0, 40); }, noAds = () => { g.meta.M.noAds = true; };
+    if (pid === 'noads') noAds(); else if (pid === 'starter') { noAds(); gems(10); } else if (/^gems\d+$/.test(pid)) gems(parseInt(pid.slice(4), 10)); else if (/^coins\d+k$/.test(pid)) coins(parseInt(pid.slice(5), 10) * 1000);
     g.writeSave(); if (g.audio) g.audio.play('levelUp');
   };
   window.__natPurchase = (pid, token) => {

@@ -34,16 +34,17 @@
     // l'ancien decor du lanceur est masque (le nouveau le remplace)
     for (const c of pad.group.children) c.visible = false;
     const L = pad.evoL = new T3.Group(); pad.group.add(L);
+    const lt = Math.floor((EVO.save(g).la || 0) / 5), RM = [['#B88F5E', '#8F6B3E'], ['#8A5B31', '#5E3C1E'], ['#6E7681', '#454C55'], ['#3F4A57', '#262D36'], ['#D2A82E', '#9A7A18']][Math.min(4, lt)], rampM = lam(RM[0]), rampD = lam(RM[1]);   // carton, bois, fer, acier, or
     const concrete = lam('#8a8c90'), concD = lam('#6e7074'), steel = lam('#4c5460'), dark = lam('#262a31'), light = lam('#c8ccd2'), red = lam('#c8352a'), white = lam('#eceef2');
     // v174 : un petit lanceur de roquette tout simple : dalle, rail incline, deux bras de maintien, bouclier de flamme, quelques cones
     box(L, 2.6, 0.3, 6.0, concrete, 0, -0.78, -0.2).userData.noShadow = true; L.userData.padSlabTop = -0.63;
     for (const s of [-1, 1]) box(L, 0.06, 0.05, 6.0, lam('#5C6670'), s * 1.24, -0.62, -0.2).userData.noShadow = true;   // v257 : fines lisses d'acier au lieu des bandes jaunes
     pad.deflMat = lam('#2a2d33', '#000000'); const defl = new T3.Mesh(new T3.BoxGeometry(0.9, 0.05, 1.3), pad.deflMat); defl.position.set(0, -0.6, 1.7); L.add(defl); pad.defl = defl; defl.userData.noBake = true; defl.userData.noShadow = true;
     const cradle = new T3.Group(); L.add(cradle); cradle.rotation.x = pad.pitch || 0; pad.cradle = cradle;
-    for (const s of [-1, 1]) box(cradle, 0.08, 0.1, 4.6, steel, s * 0.22, -0.3, -0.4);
-    for (const z of [-2.1, -0.6, 0.9, 1.9]) box(cradle, 0.56, 0.06, 0.1, dark, 0, -0.34, z);
+    for (const s of [-1, 1]) box(cradle, 0.08, 0.1, 4.6, rampM, s * 0.22, -0.3, -0.4);
+    for (const z of [-2.1, -0.6, 0.9, 1.9]) box(cradle, 0.56, 0.06, 0.1, rampD, 0, -0.34, z);
     if (EVO.isS2()) { box(cradle, 2.8, 0.3, 17, concrete, 0, -0.78, -8.2); for (const sx of [-1.3, 1.3]) box(cradle, 0.12, 0.04, 17, bas('#FFB347'), sx, -0.6, -8.2); for (let k = 0; k < 7; k++) box(cradle, 0.5, 0.04, 0.35, bas('#FFE08A'), 0, -0.6, -2.5 - k * 2); }   // niveau 2 : une rampe de beton dans le prolongement du rail
-    for (const z of [-1.4, 0.6]) for (const s of [-1, 1]) box(L, 0.07, 0.42, 0.07, steel, s * 0.22, -0.52, z);
+    for (const z of [-1.4, 0.6]) for (const s of [-1, 1]) box(L, 0.07, 0.42, 0.07, rampM, s * 0.22, -0.52, z);
     box(cradle, 0.46, 0.3, 0.14, dark, 0, -0.2, 2.2);   // butee arriere
     pad.clamps = []; for (const z of [-0.2]) for (const s of [-1, 1]) { const arm = new T3.Group(); arm.position.set(s * 0.2, -0.22, z); cradle.add(arm); box(arm, 0.045, 0.34, 0.1, steel, 0, 0.15, 0); box(arm, 0.1, 0.05, 0.1, lam('#e8eaee'), -s * 0.04, 0.33, 0); pad.clamps.push({ arm, s }); }
     pad.boosters = []; const nb = 0;
@@ -59,14 +60,11 @@
       const wall = new T3.MeshLambertMaterial({ map: tole }), floor = new T3.MeshLambertMaterial({ map: beton }), steel = lam('#2F3A42'), steelL = lam('#4A5862'), lampM = bas('#FFF2C8');
       if (DK) { box(H, 3.1, 0.12, 20, floor, -4.45, -0.7, -2); box(H, 3.1, 0.12, 20, floor, 4.45, -0.7, -2); box(H, 6, 0.12, 8.2, floor, 0, -0.7, 4.1); }   // niveau 2 : pas de sol sous la trajectoire de la fusee : on voit la pente en dessous
       else box(H, 12, 0.12, 20, floor, 0, -0.7, -2);                                   // dalle du hangar (le lanceur reste un peu plus haut)
-      for (const sx of [-5.6, 5.6]) { const b = new T3.Mesh(new T3.PlaneGeometry(0.5, 20), hz); b.rotation.x = -Math.PI / 2; b.position.set(sx, -0.63, -2); H.add(b); }   // bandes de securite le long des murs
       box(H, 0.3, 4.6, 20, wall, -6, 1.6, -2); box(H, 0.3, 4.6, 20, wall, 6, 1.6, -2);       // murs lateraux
       box(RF, 12.6, 0.4, 20.6, wall, 0, 4.1, -2);                                           // toit
-      for (let z = -11; z <= 7; z += 3) { box(RF, 12, 0.35, 0.35, steel, 0, 3.8, z); box(H, 0.35, 4.4, 0.35, steel, -5.8, 1.5, z); box(H, 0.35, 4.4, 0.35, steel, 5.8, 1.5, z); box(RF, 11.8, 0.18, 0.18, steelL, 0, 3.4, z); }   // fermes et poteaux
       for (const z of [-8, -3, 2]) for (const sx of [-2.5, 2.5]) { box(RF, 0.5, 0.08, 3.2, lampM, sx, 3.55, z); }   // plafonniers (emissifs)
       box(H, 12.6, 1.4, 0.4, wall, 0, 3.4, 9);                                              // linteau du fond ; la grande porte reste OUVERTE : on voit dehors
       box(H, 3.4, 4.6, 0.4, wall, -4.6, 1.6, 9); box(H, 3.4, 4.6, 0.4, wall, 4.6, 1.6, 9);
-      for (const sx of [-2.9, 2.9]) box(H, 0.3, 4.6, 0.5, steel, sx, 1.6, 9);              // montants de la porte
       if (DK) {   // DOCK : un canal d'eau le long du quai (a droite), des bollards, et la mer visible par la grande porte
         for (const z of [-11, -6, -1, 4]) { for (const sx of [-5.6, 5.6]) box(H, 1.1, 15, 1.1, steel, sx, -8.2, z); box(H, 11.4, 0.5, 0.7, steel, 0, -4.2, z); box(H, 11.4, 0.5, 0.7, steel, 0, -9.2, z); }   // jetee : le hangar est pose au bord de la pente, sur des pylones
         const wm = new T3.Mesh(new T3.PlaneGeometry(1.5, 18.6), new T3.MeshBasicMaterial({ color: '#2d86b4' })); wm.rotation.x = -Math.PI / 2; wm.position.set(3.35, -0.6, -2.2); H.add(wm); pad.dockWater = wm;
@@ -77,10 +75,7 @@
         ship(-150, 9 + 220, 90, '#46525e'); ship(120, 9 + 300, 120, '#3c4650'); ship(-30, 9 + 380, 70, '#4a5662');
       }
       { const pipeM = lam(DK ? '#7E8FA0' : '#6F7A70'), pipeD = lam('#2B3138'), ribM = lam(DK ? '#2A3F52' : '#3A4638');
-        for (const sx of [-1, 1]) { cyl(H, 0.1, 0.1, 19.4, pipeM, sx * 5.6, 3.0, -2, 10, true); cyl(H, 0.07, 0.07, 19.4, pipeM, sx * 5.6, 2.62, -2, 8, true); for (let z = -10; z <= 6; z += 4) { box(H, 0.14, 0.5, 0.18, pipeD, sx * 5.62, 2.8, z); } }   // tuyaux le long des murs (avec colliers)
-        for (let z = -10.5; z <= 7; z += 1.5) for (const sx of [-1, 1]) box(H, 0.06, 4.2, 0.1, ribM, sx * 5.84, 1.5, z);   // nervures verticales des murs
         for (let z = -9; z <= 5; z += 3.5) for (const sx of [-1, 1]) { box(H, 0.06, 0.55, 1.5, lam('#10161C'), sx * 5.82, 2.1, z); box(H, 0.04, 0.4, 1.3, bas(DK ? '#BFE6FF' : '#FFE9B0'), sx * 5.79, 2.1, z); }   // panneaux lumineux muraux
-        for (let z = -9; z <= 5; z += 3) { cyl(H, 0.012, 0.012, 1.4, pipeD, -2.4, 3.2, z, 4); cyl(H, 0.012, 0.012, 1.1, pipeD, 2.6, 3.3, z + 0.6, 4); }   // cables qui pendent du plafond
         for (const z of [-9.4, -8.6, -7.8]) { cyl(H, 0.28, 0.28, 0.8, lam(DK ? '#8A3A2A' : '#7A4A2A'), 5.0, -0.3, z, 12); cyl(H, 0.285, 0.285, 0.05, pipeD, 5.0, 0.05, z, 12); cyl(H, 0.285, 0.285, 0.05, pipeD, 5.0, -0.65, z, 12); }   // barils
         box(H, 0.7, 1.7, 1.2, lam(DK ? '#34495C' : '#3C4A3A'), 5.35, 0.2, -10.4); box(H, 0.04, 1.5, 1.0, lam('#1C242C'), 4.99, 0.2, -10.4); for (let k = 0; k < 4; k++) box(H, 0.03, 0.04, 0.9, bas('#8A98A6'), 4.97, -0.2 + k * 0.35, -10.4);   // armoire a outils
         for (const sx of [-1, 1]) for (let z = -10; z <= 6; z += 2) box(H, 0.1, 0.01, 0.9, bas('#D8DEE6'), sx * 2.0, -0.634, z);   // marquages blancs au sol
@@ -90,7 +85,7 @@
       // v237 : le HANGAR GRANDIT a chaque amelioration du propulseur (niveaux 1 a 10) : chaque niveau ajoute un equipement, qui se construit en direct (EVO.playBuild)
       // chaque equipement est un groupe pose au sol (y = -0.7) : userData = { lv, kind (drop / rise / slide / power / glowline / pop), side }
       pad.hItems = [];
-      const item = (lv, kind, x, z, side, fn) => { const o = new T3.Group(); o.position.set(x, -0.7, z); o.userData = { lv, kind, side: side || 1, bx: x, bz: z }; fn(o); o.visible = la.n >= lv; H.add(o); pad.hItems.push(o); return o; };
+      const item = () => null;   // v261 : plus d'equipement a construire : seule la rampe change de materiau (tous les 5 niveaux)
       const olive = lam(DK ? '#3b5a70' : '#4A5A3C'), crate = lam(DK ? '#2f4a5e' : '#3F4A3C'), amber = lam('#E0A31C'), blk = lam('#1C1F24'), scr = lam('#0F1B26'), pipe = lam('#7A8590');
       const rivet = (g, x, y, z) => { cyl(g, 0.045, 0.045, 0.03, lam('#9AA6B2'), x, y, z, 6, true); };
       item(1, 'drop', 4.4, -5.2, 1, (o) => { for (let k = 0; k < 4; k++) rivet(o, -0.55 + (k % 2) * 1.1, 0.12 + (k >> 1) * 0.75, 0.62); box(o, 1.24, 0.06, 0.04, blk, 0, 0.5, 0.62); box(o, 1.2, 1.0, 1.2, crate, 0, 0.5, 0); box(o, 1.2, 1.0, 1.2, olive, 1.3, 0.5, 0.2); box(o, 1.0, 0.9, 1.0, olive, 0.6, 1.45, 0.1); cyl(o, 0.38, 0.38, 1.0, lam('#B8452A'), -1.2, 0.5, 0.1, 12); cyl(o, 0.38, 0.38, 1.0, lam('#B8452A'), -1.2, 0.5, 1.0, 12); cyl(o, 0.4, 0.4, 0.08, blk, -1.2, 1.02, 0.1, 12); });

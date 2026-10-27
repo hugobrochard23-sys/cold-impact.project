@@ -9,7 +9,7 @@
   UI.C = C;
   // images d'habillage fournies (assets/ui/*.png) : boutique et fonds de cartes (bois, pierre, bois sombre)
   const ART = {}; UI.art = (n) => { let i = ART[n]; if (!i) { i = ART[n] = new Image(); i.src = 'assets/ui/' + n + '.png'; } return i.complete && i.naturalWidth ? i : null; };
-  ['shop', 'card_slate', 'gem', 'chest', 'chest_open', 'gear', 'close', 'coin', 'btn_green', 'ticket', 'fuel', 'bg_la', 'bg_rk', 'bg_cm', 'gems_crate', 'gems_rope', 'gems_bag', 'gems_belt', 'gems_chest', 'cmx_0', 'cmx_1', 'cmx_2', 'cmx_3', 'cmx_4', 'cmx_5', 'pin', 'speed_ring', 'speed_needle', 'bar'].forEach((n) => UI.art(n));
+  ['shop', 'card_slate', 'gem', 'chest', 'chest_open', 'gear', 'close', 'coin', 'btn_green', 'ticket', 'fuel', 'bg_la', 'bg_rk', 'bg_cm', 'gems_crate', 'gems_rope', 'gems_bag', 'gems_belt', 'gems_chest', 'cmx_0', 'cmx_1', 'cmx_2', 'cmx_3', 'cmx_4', 'cmx_5', 'pin', 'speed_ring', 'speed_needle', 'bar', 'badge_best', 'coins_bag', 'coins_chest'].forEach((n) => UI.art(n));
   const hexPath = (ctx, cx, cy, r, cut) => { const w = r * 2, c = r * (cut === undefined ? 0.5 : cut); ctx.beginPath(); ctx.moveTo(cx - r + c, cy - r); ctx.lineTo(cx + r - c, cy - r); ctx.lineTo(cx + r, cy - r + c); ctx.lineTo(cx + r, cy + r - c); ctx.lineTo(cx + r - c, cy + r); ctx.lineTo(cx - r + c, cy + r); ctx.lineTo(cx - r, cy + r - c); ctx.lineTo(cx - r, cy - r + c); ctx.closePath(); };
   const rr = (ctx, x, y, w, h, r) => { r = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r); ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath(); };
   const lg = (ctx, y0, y1, a, b, m) => { const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, a); if (m) g.addColorStop(0.5, m); g.addColorStop(1, b); return g; };
@@ -31,13 +31,14 @@
     return { x, y, w, h };
   };
   // --- bouton vert en relief (AMELIORER...) : retourne { x, y, w, h } de la face
-  const BTN = { la: ['#2ECC71', '#1F9A52', '#8FE3B3', '#6BC495'], rk: ['#1E90FF', '#1769C2', '#8FC8FF', '#6AA6DB'], cm: ['#FF8C00', '#C46A00', '#FFC47A', '#E5A25A'], mx: ['#3cc027', '#2A9418', '#9BDD8C', '#79B96B'] };
+  const BTN = { la: ['#2ECC71', '#1F9A52', '#8FE3B3', '#6BC495'], rk: ['#1E90FF', '#1769C2', '#8FC8FF', '#6AA6DB'], cm: ['#FF8C00', '#C46A00', '#FFC47A', '#E5A25A'], mx: ['#3cc027', '#2A9418', '#9BDD8C', '#79B96B'], gem: ['#ce19fa', '#9A0FC4', '#E59BFC', '#B86DD0'], ad: ['#b342fe', '#8A1FD6', '#D9A3FF', '#B98BDB'], buy: ['#64eb27', '#3DB510', '#B4F59A', '#8FD276'] };
+  const brightC = (hex, k) => { const n = parseInt(hex.slice(1), 16); const f = (v) => Math.min(255, Math.round(v * k)); return 'rgb(' + f(n >> 16) + ',' + f((n >> 8) & 255) + ',' + f(n & 255) + ')'; };
   UI.CARDCOL = { la: '#2ECC71', rk: '#1E90FF', cm: '#FF8C00' };
   UI.CARDBG = { la: ['#5CB87C', '#3A6D4B'], rk: ['#5D6D7E', '#2C3E50'], cm: ['#F39C12', '#A16E34'] };   // [haut, bas]
   UI.greenButton = (ctx, x, y, w, h, o) => {   // bouton plat avec une tranche (relief) sous la face ; plus clair quand on ne peut pas acheter
-    o = o || {}; const r = h * 0.07, dis = !!o.disabled, lip = Math.max(S(5), h * 0.075), hh = h - lip, c = BTN[o.cat] || BTN.la;
-    rr(ctx, x, y + lip, w, hh, r); ctx.fillStyle = dis ? c[3] : c[1]; ctx.fill();
-    rr(ctx, x, y, w, hh, r); ctx.fillStyle = dis ? c[2] : c[0]; ctx.fill();
+    o = o || {}; const r = h * 0.07, dis = !!o.disabled, lip = Math.max(S(5), h * 0.075), hh = h - lip, c = BTN[o.cat] || BTN.la, bk = o.bright || 1;
+    rr(ctx, x, y + lip, w, hh, r); ctx.fillStyle = dis ? c[3] : (bk > 1 ? brightC(c[1], bk) : c[1]); ctx.fill();
+    rr(ctx, x, y, w, hh, r); ctx.fillStyle = dis ? c[2] : (bk > 1 ? brightC(c[0], bk) : c[0]); ctx.fill();
     return { x, y, w, h: hh };
   };
   UI.outlined = (ctx, s, x, y, px, fill, edge, o) => {   // v223 : texte SANS contour (seul « APPUYEZ POUR LANCER » garde le sien : o.keep)
