@@ -130,7 +130,8 @@
       const aLat = speed * turned / dt;
       // --- forces ---
       if (this.thrusting) {
-        this.vel.addScaledVector(this.fwd, cfg.thrust * dt);
+        let tk = 1; if (game.evo && !game.evo.preview && this.fwd.y > 0.3) { const rr = game.endlessRun, h = rr ? Math.max(0, this.pos.y - rr.T.base(Math.max(0, rr.dist))) : 0; tk = 1 - 0.97 * U.clamp((this.fwd.y - 0.3) / 0.55, 0, 1) * U.clamp(0.5 + h / 40, 0, 1); }   // v275 : nez cabre = la poussee ne sert presque plus a monter (de moins en moins, plus on est haut)
+        this.vel.addScaledVector(this.fwd, cfg.thrust * tk * dt);
         if (!this.freeBoost) this.fuel = Math.max(0, this.fuel - dt * (this.game.endlessRun ? (CC.CONFIG.endless.fuelDrain || 1) * this.game.progress.drainK() : 1));
       }
       speed = this.vel.length();

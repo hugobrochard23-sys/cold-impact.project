@@ -362,7 +362,14 @@
     if (!ev.preview) {
       const dry = r.tier >= 2 && rk.fuel <= 0.01; ev.dryK = U.clamp((ev.dryK || 0) + (dry ? dt : -dt * 2) / 0.6, 0, 1); rk.cfg.dragK = r.drag * (1 + 2 * ev.dryK); rk.cfg.gripEngineOff = r.gripOff * (1 - 0.45 * ev.dryK);
       if (r.wing > 0) { const aL = C.physics.gravity * r.wing * (dry ? 0.25 * (1 - 0.9 * U.clamp((ev.dryT || 0) / 3, 0, 1)) : 0.62) * U.clamp((sp - TU('ls')) / TU('lw'), 0, 1.1), vy = sp > 1 ? rk.vel.y / sp : 0, vx = sp > 1 ? rk.vel.x / sp : 0, vz = sp > 1 ? rk.vel.z / sp : 0; rk.vel.x -= aL * vy * vx * dt; rk.vel.y += aL * (1 - vy * vy) * dt; rk.vel.z -= aL * vy * vz * dt; }
-      if (sp > 1 && rk.vel.y > 0) rk.vel.y -= C.physics.gravity * (r.wing > 0 ? 0.45 : 0.8) * U.clamp(rk.vel.y / sp, 0, 1) * (1 + 1.5 * ev.dryK) * dt;   // v267 : montee moins punie (surtout en planeur)
+      { const hh = Math.max(0, rk.pos.y - run.T.base(Math.max(0, run.dist))), st = U.clamp((rk.fwd.y - 0.4) / 0.4, 0, 1) * U.clamp(0.3 + hh / 50, 0, 1);   // v275 : nez trop cabre = decrochage : on tombe et la vitesse s'effondre
+        if (st > 0) { rk.vel.y -= C.physics.gravity * 3.5 * st * dt; const f = Math.exp(-0.8 * st * dt); rk.vel.x *= f; rk.vel.z *= f; } }
+      if (sp > 1 && rk.vel.y > 0) {   // v275 : monter est tres dur : le poids pese de plus en plus avec l'altitude, et le nez tres cabre fait decrocher (la vitesse verticale s'etouffe)
+        const c = U.clamp(rk.vel.y / sp, 0, 1), h = Math.max(0, rk.pos.y - run.T.base(Math.max(0, run.dist))), hk = 1 + h / 28;
+        rk.vel.y -= C.physics.gravity * (r.wing > 0 ? 0.9 : 1.3) * c * hk * (1 + 1.5 * ev.dryK) * dt;
+        rk.vel.y *= Math.exp(-(0.25 + 1.6 * c * c) * c * hk * 0.5 * dt);
+        const cap = Math.max(0, 22 * (1 - h / 75)); if (rk.vel.y > cap) rk.vel.y += (cap - rk.vel.y) * Math.min(1, 3 * dt);   // plafond souple : au-dela de ~75 m au-dessus du sol on ne gagne plus de hauteur
+      }   // v267 : montee moins punie (surtout en planeur)
       // v274 : sans carburant on DECROCHE : pesanteur en plus qui grandit avec le temps, portance qui s'eteint, vitesse qui s'erode, meme en montant (plus de vol quasi infini)
       ev.dryT = dry ? (ev.dryT || 0) + dt : Math.max(0, (ev.dryT || 0) - dt * 3);
       if (dry) { const k = U.clamp(ev.dryT / 3, 0, 1); rk.vel.y -= C.physics.gravity * (0.7 + 1.6 * k) * dt; const f = Math.exp(-(0.12 + 0.22 * k) * dt); rk.vel.x *= f; rk.vel.z *= f; if (rk.vel.y > 0) rk.vel.y *= Math.exp(-0.9 * k * dt); }
