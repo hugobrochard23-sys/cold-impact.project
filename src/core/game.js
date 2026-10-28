@@ -140,7 +140,7 @@
       this.ambient.color.set(env.ambient.color); this.ambient.intensity = env.ambient.intensity;
       this.sun.color.set(env.sun.color); this.sun.intensity = env.sun.intensity;
       this.sunDir = new V().fromArray(env.sun.dir).normalize();
-      this.sun.castShadow = CC.CONFIG.render.shadows && env.sun.shadow !== false && this.shadowsAllowed !== false;
+      this.sun.castShadow = CC.CONFIG.render.shadows && env.sun.shadow !== false && this.shadowsAllowed !== false && !(CC.EVO && CC.EVO.isS2 && CC.EVO.isS2());   // v299 : pas d'ombre portee en niveau 2
       this.postParams = Object.assign({}, CC.CONFIG.postfx, env.postfx || {});
       { const dk = env.dark || 0; this.postParams.bloomStrength = Math.min(this.postParams.bloomStrength, dk > 0.3 ? 0.4 : 0.14); this.postParams.bloomThreshold = Math.max(this.postParams.bloomThreshold, dk > 0.3 ? 0.7 : 0.93); }   // v116 : halo réduit partout (éblouissement)
       // v063 : CAUSE DES ECRANS NOIRS — un fondu entre deux ambiances laissait des réglages indéfinis (bloom…) : NaN dans le post-traitement = écran noir

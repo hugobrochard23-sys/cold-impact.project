@@ -8,6 +8,7 @@
   const D0 = -224, D1 = LA + 300, STEP = 8, SB = 110, S1 = 150, SMAX = 540, GRID = 32;
   const fr = (v) => v - Math.floor(v), hsh = (a, b) => fr(Math.sin(a * 127.1 + b * 311.7) * 43758.5453);
   const topAt = (d, sg) => R.topAt(d, sg);
+  setTimeout(() => { R.gcolor = gcolor; }, 0);   // v299 : la nappe de falaise (zones_river_cliffs.js) reprend exactement la couleur de l'herbe des terrasses
   const nz = (x, z) => 0.5 + 0.5 * (Math.sin(x * 0.0113 + z * 0.0171) * 0.5 + Math.sin(x * 0.0271 - z * 0.0131 + 1.3) * 0.3 + Math.sin(x * 0.0511 + z * 0.0433) * 0.2);
   const GR = ['#3a8a3e', '#448f40', '#357f38', '#4a9444'].map((h) => new T3.Color(h)), GD = new T3.Color('#2a6a30'), cTmp = new T3.Color();
   // couleur du sol, lissee et identique partout (terrasses et collines)
@@ -43,7 +44,7 @@
     for (const sg of [-1, 1]) {
       let prev = -1, nl = 0;
       for (let d = D0; d <= LA + 1; d += (d < 60 ? 14 : 10)) {
-        const lats = d < 67 ? [132, 141, 150] : (() => { const l0 = R.faceX(d) + 1.0, t = [0, 0.05, 0.15, 0.35, 0.65, 1]; return t.map((q) => l0 + (150 - l0) * q); })();
+        const lats = d < 67 ? [132, 141, 150] : (() => { const l0 = R.faceX(d) + 5.0, t = [0, 0.05, 0.15, 0.35, 0.65, 1]; return t.map((q) => l0 + (150 - l0) * q); })();
         if (prev >= 0 && lats.length !== nl) prev = -1;
         nl = lats.length; const b = row(d, sg, lats, d < 67 ? 0.35 : 0.04);
         if (prev >= 0) for (let j = 0; j < nl - 1; j++) { const a = prev + j, bb = a + 1, c = b + j, e = c + 1; const ay = (pos[3 * bb] - pos[3 * a]) * (pos[3 * c + 2] - pos[3 * a + 2]) - (pos[3 * bb + 2] - pos[3 * a + 2]) * (pos[3 * c] - pos[3 * a]); if (ay >= 0) ix.push(a, c, bb, bb, c, e); else ix.push(a, bb, c, bb, e, c); }   // enroulement : la face regarde toujours vers le haut

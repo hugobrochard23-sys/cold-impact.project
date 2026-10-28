@@ -132,7 +132,6 @@
         for (const sg of [-1, 1]) {
           const hwv = HW(dc), face = R.faceX(dc), top = R.topAt(dc, sg), bed = BED(dc), mid = (bed - 6 + top) / 2, hgt = top - bed + 6, wd = OUT - face;
           S.bx(dc, sg * (face + wd / 2), A(S, dc, mid), wd, hgt, 18, 'jrock', undefined, true, { render: false });   // v296 : collision seule ; la paroi visible est la falaise en blocs (zones_river_rock.js)
-          R.cliffFace(S, r, dc, sg);
           if (dc > 190 && dc < LA - 120 && hsh(dc, sg * 3.7) < 0.075 && !(dc > 330 && dc < 370) && !(dc > 510 && dc < 550) && !(dc > 980 && dc < 1020) && !(dc > 1100 && dc < 1140)) sideFall(S, dc, sg, hwv, top - 1, r);   // v296 : petits ruisseaux qui coulent de la falaise
           // rochers a la ligne d'eau, roseaux
           if (r() < 0.55) rockC(S, dc + r.between([-5, 5]), sg * (face - r.between([0.8, 3.2])), WY(dc) - 1.2, r.between([1.8, 4]), r, pk(r, STONE), true);
@@ -150,11 +149,9 @@
         const yy = S.yaw(dm), a0 = S.at(dm, 0, 0), a1 = S.at(dm, 1, 0), nx = a1[0] - a0[0], nz = a1[2] - a0[2], ix = Math.cos(yy) * Math.sign(dy), iz = -Math.sin(yy) * Math.sign(dy), sg = (nx * ix + nz * iz) >= 0 ? 1 : -1;
         S.item(dm, (r) => { const hwv = HW(dm), ins = Math.min(13, Math.max(3, hwv - 22)), L = (j) => hwv + 1 - ins - 3 * Math.abs(j), topS = WY(dm) + 36, bt = WY(dm) - 3;
           for (let j = -1; j <= 1; j++) { const dc = dm + j * 17, lmid = hwv + 6 - ins / 2 - 3 * Math.abs(j), w = ins + 10;
-            S.bx(dc, sg * lmid, A(S, dc, (BED(dc) + topS) / 2), w, topS - BED(dc), 17.5, 'jrock', undefined, true, { render: false }); S.bx(dc, sg * lmid, A(S, dc, topS + 0.3), w, 0.6, 17.5, 'evoGrass', pk(r, GREEN), true);   // v296 : collision seule, la roche est en blocs
-            R.faceAlong(S, r, dc - 8.75, dc + 8.75, sg * L(j), bt, topS, 40 + 7 * j + 3 * sg, { backBot: BED(dc) - 2, waterY: () => WY(dm) });
+            S.bx(dc, sg * lmid, A(S, dc, (BED(dc) + topS) / 2), w, topS - BED(dc), 17.5, 'jrock', undefined, true, { render: false }); S.bx(dc, sg * (lmid + 1.5), A(S, dc, topS - 0.13), w - 3, 0.6, 17.5, 'evoGrass', pk(r, GREEN), true);   // v296 : collision seule, la roche est en blocs
             plant(S, TR.jungle, dc, sg * (hwv - ins / 2 + 2), WY(dc) + 36.6, r.between([22, 30]), r, {}); }
-          R.faceAcross(S, r, dm - 25.75, sg * L(-1), sg * R.faceX(dm), 1, bt, topS, 61 + sg, { backBot: BED(dm) - 2, waterY: () => WY(dm) }); R.faceAcross(S, r, dm + 25.75, sg * L(1), sg * R.faceX(dm), -1, bt, topS, 67 + sg, { backBot: BED(dm) - 2, waterY: () => WY(dm) });
-          R.faceAcross(S, r, dm - 8.5, sg * L(-1), sg * L(0), -1, bt, topS, 71 + sg, { backBot: BED(dm) - 2, waterY: () => WY(dm) }); R.faceAcross(S, r, dm + 8.5, sg * L(1), sg * L(0), 1, bt, topS, 73 + sg, { backBot: BED(dm) - 2, waterY: () => WY(dm) }); });
+        });   // v299 : la roche visible des eperons est dans la nappe continue de zones_river_cliffs.js (collision et dessus d'herbe inchanges)
       }
       S.item(300, (r) => { const hwv = HW(300), top = WY(300) + 4.5, bot = WY(300) - 11; S.bx(300, 0, A(S, 300, (top + bot) / 2), 2 * (hwv + 8), top - bot, 9, 'jrock', undefined, true, { render: false }); S.bx(300, 0, A(S, 300, top + 0.25), 2 * (hwv + 8), 0.5, 9.4, 'evoGrass', '#3f8a3c', true);
         for (const [df, dr] of [[295.5, 1], [304.5, -1]]) R.faceAcross(S, r, df, -(hwv + 8), hwv + 8, dr, WY(300) - 3, top, 91 + dr, { backBot: bot, waterY: () => WY(300), veg: 2 });

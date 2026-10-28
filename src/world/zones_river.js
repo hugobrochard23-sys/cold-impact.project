@@ -90,8 +90,7 @@
       for (const [k, f] of [['_f1', F1], ['_f2', F2]]) if (!g[k] && d > f + 3 && d < f + 60) { g[k] = 1; g.rig.shake = Math.max(g.rig.shake, 0.9); g.audio.play('whoosh'); if (CC.L1) CC.L1.msg(g, 'CASCADE !', 1.3, '#bff4ff'); g.flash = Math.max(g.flash || 0, 0.12); g.flashColor = '#e8fbff'; } }; }
   // v286 : la plateforme de lancement est FERMEE : falaise de jungle derriere le lanceur et parois de chaque cote jusqu'au fleuve (plus de vide autour de la rampe)
   { const _tl = EVO.tick;
-    EVO.tick = (g, dt) => { _tl(g, dt); const run = g.endlessRun; if (!run || !EVO.isS2() || !g.evo || g.evo.preview) return;
-      if (g.sun && g.sun.castShadow) g.sun.castShadow = false;   // v298 : plus d'ombre portee des falaises sur la rampe, l'eau et la fusee (grande ombre en biais au lancement)
+    EVO.tick = (g, dt) => { _tl(g, dt); if (g.sun && g.sun.castShadow && EVO.isS2()) g.sun.castShadow = false; const run = g.endlessRun; if (!run || !EVO.isS2() || !g.evo || g.evo.preview) return;   // v298 : plus d'ombre portee des falaises sur la rampe, l'eau et la fusee (grande ombre en biais au lancement)
       if (g._lfRun !== run) { g._lfRun = run;   // v293 : la rampe de lancement (d = -50 a +12) n'avait pas de sol ; v294 : meme couleur, meme eclairage et meme materiau que le sol du fleuve (aucune coupure visible)
         if (g._lf) { g.scene.remove(g._lf); g._lf.geometry.dispose(); }
         const gf = Z.defs.ocean.scenes.rapides.ground, cc = new T3.Color(), nn = [0, 1, 0], pos = [], col = [], ix = [], ds = [], lxs = []; for (let d = -56; d <= 14.01; d += 3.5) ds.push(d); for (let lx = -126; lx <= 126.01; lx += 14) lxs.push(lx);
@@ -113,6 +112,7 @@
         g.scene.add(G); g._lc = G; EVO.addDyn(G, null, cols, { span: 600 }); }
       if (g._lc) g._lc.visible = g.state === 'FLIGHT' && run.dist < 360; };   // v298 : les falaises du depart ne sont plus dessinees une fois loin
   }
+  { const _fr = EVO.frame; EVO.frame = (g, dt) => { _fr(g, dt); if (g.sun && g.sun.castShadow && EVO.isS2()) g.sun.castShadow = false; }; }   // v299 : aucune ombre portee en niveau 2, meme avant le decollage
   EVO.riv.plant = plant; EVO.riv.slab = slab; EVO.riv.lampS = lampS; EVO.riv.water = water; EVO.riv.curtain = curtain; EVO.riv.hsh = hsh;
   EVO.riv.setBed2 = (f) => { BED2 = f; }; EVO.riv.setBed3 = (f) => { BED3 = f; };
   EVO.riv.GREEN = GREEN; EVO.riv.WALL = WALL; EVO.riv.STONE = STONE; EVO.riv.TEMPLE = TEMPLE; EVO.riv.rel = rel; EVO.riv.mixf = mixf;

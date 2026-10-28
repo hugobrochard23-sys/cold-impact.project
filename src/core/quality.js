@@ -28,7 +28,7 @@
       g.sun.shadow.mapSize.set(T.shadowMap, T.shadowMap);
       if (g.sun.shadow.map) { g.sun.shadow.map.dispose(); g.sun.shadow.map = null; }   // recréée à la nouvelle taille
       g.shadowsAllowed = T.shadows;
-      g.sun.castShadow = T.shadows && CC.CONFIG.render.shadows && !(g.level && g.level.env && g.level.env.sun && g.level.env.sun.shadow === false);
+      g.sun.castShadow = T.shadows && CC.CONFIG.render.shadows && !(g.level && g.level.env && g.level.env.sun && g.level.env.sun.shadow === false) && !(CC.EVO && CC.EVO.isS2 && CC.EVO.isS2());
       g.postfx.setSamples(T.msaa);
       g.postfx.bloom = T.bloom;
       g.effects.setDensity(T.particles);
