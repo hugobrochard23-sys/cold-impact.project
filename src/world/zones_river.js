@@ -89,6 +89,13 @@
   // v286 : la plateforme de lancement est FERMEE : falaise de jungle derriere le lanceur et parois de chaque cote jusqu'au fleuve (plus de vide autour de la rampe)
   { const _tl = EVO.tick;
     EVO.tick = (g, dt) => { _tl(g, dt); const run = g.endlessRun; if (!run || !EVO.isS2() || !g.evo || g.evo.preview) return;
+      if (g._lfRun !== run) { g._lfRun = run;   // v293 : la rampe de lancement (d = -50 a +12) n'avait pas de sol : le plateau finissait en falaise sur un vide de 60 m ; on pose un sol continu qui suit la pente de la rampe jusqu'au lit du fleuve
+        if (g._lf) { g.scene.remove(g._lf); g._lf.geometry.dispose(); }
+        const pos = [], col = [], ix = [], ds = [], lxs = []; for (let d = -56; d <= 14.01; d += 2) ds.push(d); for (let lx = -126; lx <= 126.01; lx += 14) lxs.push(lx);
+        for (const d of ds) for (const lx of lxs) { const p = run.T.at(d, lx, 0), n = hsh(d, lx); pos.push(p[0], A0(d) - 0.25, p[2]); const k = 0.9 + 0.1 * n, w = Math.abs(lx) < 9 ? 0.5 : 0; col.push((0.36 + 0.2 * w) * k, (0.7 - 0.12 * w) * k, (0.3 - 0.04 * w) * k); }
+        for (let i = 0; i < ds.length - 1; i++) for (let j = 0; j < lxs.length - 1; j++) { const a = i * lxs.length + j, b = a + 1, c = a + lxs.length, e = c + 1; ix.push(a, b, c, b, e, c); }
+        const fg = new T3.BufferGeometry(); fg.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); fg.setAttribute('color', new T3.Float32BufferAttribute(col, 3)); fg.setIndex(ix); fg.computeVertexNormals();
+        g._lf = new T3.Mesh(fg, new T3.MeshLambertMaterial({ vertexColors: true, side: T3.DoubleSide })); g.scene.add(g._lf); }
       if (g._lcRun !== run) { g._lcRun = run; if (g._lc) { g.scene.remove(g._lc); g._lc.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
         const cols = [], G = new T3.Group(), wm = new T3.MeshLambertMaterial({ color: '#5f7550' }), gm = new T3.MeshLambertMaterial({ color: '#3f8a3c' }), cm = [new T3.MeshLambertMaterial({ color: '#2f7a34' }), new T3.MeshLambertMaterial({ color: '#3a8a3c' })];
         const seg = (d, lx, w, dd, h) => { const a = run.T.at(d, lx, 0), b = run.T.at(d + 4, lx, 0), yaw = Math.atan2(b[0] - a[0], b[2] - a[2]), y0 = run.T.base(d) - 30; const m = new T3.Mesh(new T3.BoxGeometry(w, h + 30, dd), wm); m.position.set(a[0], y0 + (h + 30) / 2, a[2]); m.rotation.y = yaw; G.add(m); cols.push(EVO.colBox(m, w, h + 30, dd, 0, 0, 0)); const t = new T3.Mesh(new T3.BoxGeometry(w + 0.4, 0.6, dd + 0.4), gm); t.position.set(a[0], y0 + h + 30.3, a[2]); t.rotation.y = yaw; G.add(t);
