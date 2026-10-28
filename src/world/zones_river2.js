@@ -11,7 +11,7 @@
   for (const [k, m, a] of [['barrage', 'dam', 'evoDay'], ['lac', 'dam', 'evoDay'], ['conduite', 'pit', 'evoMine'], ['hall', 'pit', 'evoMine'], ['canal', 'dam', 'evoDusk']]) { EVO.SCENE_MOOD[k] = m; EVO.SCENE_AUDIO[k] = a; }
   // ---- cotes du barrage (u = distance depuis le debut de la zone 2)
   const U_DAM = 300, U_GAL = 360, U_HALL = 480, U_TURB = 700, U_TAIL = 780, U_MOUTH = 1010, U_FIN = 1500;
-  const FLOOR_GAL = -86, FLOOR_TAIL = -150, CREST = -40, H_GAL = 36, H_HALL = 40, H_TAIL = 38;
+  const FLOOR_GAL = -86, FLOOR_TAIL = -150, CREST = -10, H_GAL = 36, H_HALL = 40, H_TAIL = 38;
   const lakeDep = () => 38;
   const BED2 = (d) => {
     const u = d - LA;
@@ -130,6 +130,14 @@
       else { for (const sg of [-1, 1]) { slab(S, dc, sg * (hw - 4), A(S, dc, ce) - 0.5, 1.2, 0.5, 6, 'emis:#e8f4ff', undefined, false); } }
       for (const sg of [-1, 1]) for (let k = 1; k < 4; k++) S.bx(dc, sg * (hw - 0.6), A(S, dc, fl + k * H / 4 + 0.6 * (k % 2)), 0.7, 0.7, 12.4, 'metal', k === 2 ? '#c8362a' : k === 1 ? '#3a78b8' : '#8a9096', false);   // tuyauteries le long des parois
       if (u > U_HALL && u < U_TURB - 10 && u % 36 === 0) for (const sg of [-1, 1]) { S.cyl(dc, sg * (hw - 5), A(S, dc, fl), 2.2, H, 'metal', '#a8b0b8', 12, 2.2, true); S.bx(dc, sg * (hw - 5), A(S, dc, fl + H * 0.35), 5.4, 0.9, 5.4, 'hazard', undefined, false); }   // colonnes de conduites
+    });
+    // grosses conduites horizontales qui traversent le hall sous le plafond, et un pont roulant
+    for (let u = U_HALL + 30; u < U_TURB - 20; u += 72) S.item(d(u), (rr) => {
+      const dc = d(u), hw = HWt(u), ce = ceilAbs(dc), p = absAt(S, dc, 0, A(S, dc, ce - 7));
+      const g = new T3.CylinderGeometry(3.0, 3.0, 2 * hw, 14); g.rotateZ(Math.PI / 2); const q = new T3.Quaternion().setFromEuler(new T3.Euler(0, U.deg(S.yaw(dc)), 0, 'YXZ'));
+      S.b.addGeometry(g, new V(p[0], p[1], p[2]), q, null, 'metal', pk(rr, ['#3a78b8', '#c8362a', '#d8a828']), [2 * hw / 6, 1]); g.dispose();
+      for (const sg of [-1, 1]) S.bx(dc, sg * (hw - 3), A(S, dc, ce - 7), 1.2, 7, 4.2, 'metal', '#5a6068', false);
+      S.bx(dc, 0, A(S, dc, ce - 4.2), 2 * hw, 0.5, 5.4, 'hazard', undefined, false);
     });
     // cloison de fond de la prise d'eau (portes de vanne ouvertes)
     S.item(d(U_GAL + 10), (rr) => { const dc = d(U_GAL + 10); for (const sg of [-1, 1]) { S.bx(dc, sg * 17, A(S, dc, -68), 6, 36, 3, 'metal', '#4a5058', true); S.bx(dc, sg * 17, A(S, dc, -50), 7, 2, 3.4, 'hazard', undefined, false); } S.bx(dc, 0, A(S, dc, -49), 40, 3, 3, 'metal', '#4a5058', true); });

@@ -75,7 +75,7 @@
     S.bx(dc, 0, A(S, dc, yDeck) - 0.9, span, 1.8, 7.5, t, tint, true);                          // tablier
     S.bx(dc, 0, A(S, dc, yDeck) + 0.35, span, 0.7, 8.4, 'concreteWarm', '#a8a694', false);       // dalles
     for (const e of [-1, 1]) { S.bx(dc + e * 3.5, 0, A(S, dc, yDeck) + 1.2, span, 1.3, 0.7, 'jrock', '#9a9886', true); for (let k = 0; k <= 12; k++) S.bx(dc + e * 3.5, -span / 2 + k * span / 12, A(S, dc, yDeck) + 0.4, 0.8, 0.9, 0.9, 'jrock', '#7e7c6c', false); }
-    for (let k = 0; k < n; k++) { const x = (k - (n - 1) / 2) * (span / n) * 0.7; if (Math.abs(x) < hw - 4) { S.cyl(dc, x, A(S, dc, BED(dc) - 2), 2.3, yDeck - BED(dc) - 1, 'jrock', '#86847a', 9, 2.0, true); } }
+    for (const x of [-hw * 0.52, hw * 0.52]) S.cyl(dc, x, A(S, dc, BED(dc) - 2), 2.6, yDeck - BED(dc) - 1, 'jrock', '#86847a', 9, 2.2, true);   // deux piles : le centre du fleuve reste libre
     for (let k = 0; k < 3; k++) S.bx(dc, (k - 1) * (hw * 0.8), A(S, dc, yDeck) - 3, hw * 0.55, 1.6, 7.0, 'jrock', '#7e7c6c', false);   // intrados des arches
     for (let k = 0; k < 5; k++) plant(S, TR.fern, dc + r.between([-3, 3]), r.between([-span / 2 + 6, span / 2 - 6]), yDeck + 1.0, r.between([1.2, 2.2]), r);
   };
@@ -140,6 +140,13 @@
       foe(S, 'mine', 520, 8, WY(520) - BED(520) - 2.5, { name: 'MINE' });
       // --- LES GORGES : piliers, slalom de rochers, arche naturelle, le temple, son pont de pierre
       for (let dc = F1 + 52; dc < F2 - 70; dc += 46) S.item(dc, (r) => { const hwv = HW(dc), sg = hsh(dc, 3) < 0.5 ? -1 : 1; pillar(S, dc, sg * r.between([hwv * 0.25, hwv * 0.55]), WY(dc) + r.between([1.2, 4]), r.between([3, 5.2]), r); if (r() < 0.6) pillar(S, dc + 20, -sg * r.between([hwv * 0.2, hwv * 0.5]), WY(dc) + r.between([0.8, 3.2]), r.between([2.6, 4.2]), r); });
+      // vestiges immerges : colonnes couchees, blocs a hieroglyphes, tetes de pierre au fond (decor hors du couloir central)
+      for (let dc = 110; dc < LA - 80; dc += 38) S.item(dc, (r) => {
+        const hwv = HW(dc), sg = hsh(dc, 9) < 0.5 ? -1 : 1, lx = sg * r.between([Math.max(10, hwv * 0.45), Math.max(12, hwv - 4)]), bed = BED(dc), k = r();
+        if (k < 0.35) { for (let j = 0; j < 3; j++) S.cyl(dc + j * 4.2, lx + r.between([-1, 1]), A(S, dc, bed) - 0.6, 1.1, r.between([2, 5]), 'jrock', pk(r, TEMPLE), 9, 0.95, true); }
+        else if (k < 0.7) { const y = A(S, dc, bed) + 1.4; S.bx(dc, lx, y, 3.6, 2.8, 3.6, 'jrock', pk(r, TEMPLE), true); S.bx(dc - 1.85, lx, y + 0.2, 0.3, 1.8, 1.6, 'col:#2a3a30', undefined, false); S.bx(dc - 1.85, lx - 1.1, y + 0.8, 0.3, 0.5, 0.5, 'col:#101614', undefined, false); S.bx(dc - 1.85, lx + 1.1, y + 0.8, 0.3, 0.5, 0.5, 'col:#101614', undefined, false); }
+        else { rockC(S, dc, lx, bed, r.between([3, 6]), r, pk(r, STONE), false); rockC(S, dc + 5, lx + sg * 3, bed, r.between([1.6, 3]), r, pk(r, STONE), false); }
+      });
       S.item(760, (r) => { const hwv = HW(760); for (const sg of [-1, 1]) { S.bx(760, sg * (hwv + 3), A(S, 760, WY(760) + 8), 7, 24, 12, 'jrock', pk(r, WALL), true); } S.bx(760, 0, A(S, 760, WY(760) + 24), 2 * (hwv + 6), 9, 13, 'jrock', '#77806c', true); for (let k = 0; k < 6; k++) plant(S, TR.fern, 760 + r.between([-4, 4]), r.between([-hwv, hwv]), WY(760) + 28.6, r.between([1.4, 2.4]), r); for (let k = 0; k < 4; k++) S.bx(760 + r.between([-5, 5]), r.between([-hwv, hwv]), A(S, 760, WY(760) + 17), 0.14, r.between([5, 9]), 0.14, 'col:#2e4a24', undefined, false); });
       S.item(880, (r) => temple(S, 880, 1, WY(880) + 28, r));
       S.item(930, (r) => stoneBridge(S, 930, HW(930), WY(930) + 25, r));

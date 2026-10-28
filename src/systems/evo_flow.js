@@ -12,8 +12,9 @@
     if (!S.intro && !g.testMode && EVO.stage(g) === 1) EVO.startIntro(g); else g.ui.overlay = 'evo';
   };
   // v278 : plus de cinematique : 2 s de zoom sur la vraie fusee (la camera part de tres haut et arrive derriere elle), puis l'ecran de visee ; on peut deja viser
-  EVO.startIntro = (g) => {
-    EVO.save(g).intro = 1; g.writeSave(); g.evoDrop = { t0: 0, dur: 2 };
+  EVO.startIntro = (g) => { EVO.save(g).intro = 1; g.writeSave(); EVO.dropIn(g); };
+  EVO.dropIn = (g) => {
+    g.evoDrop = { t0: 0, dur: 2 };
     if (!EVO._dropHook) { EVO._dropHook = 1; const ch = EVO.camHook; EVO.camHook = (gg, rig, o) => { ch(gg, rig, o); const D = gg.evoDrop; if (!D) return; if (!D.t0) D.t0 = performance.now(); const t = (performance.now() - D.t0) / 1000 / D.dur; if (t >= 1) { gg.evoDrop = null; return; }
       const sm = (a, b, x) => { x = U.clamp((x - a) / (b - a), 0, 1); return x * x * (3 - 2 * x); }, eH = sm(0, 0.8, t), eV = sm(0.3, 1, t), dir = gg.pad.dir, fin = rig.padPos.clone(), fl = rig.padLook.clone();   // un seul mouvement fluide : la camera avance vers la fusee depuis l'arriere (meme axe), puis se releve jusqu'a l'angle de visee
       const back = new THREE.Vector3().copy(fin).addScaledVector(dir, -15), low = Math.max(o.y + 0.6, fin.y - 0.4); back.y = low;
@@ -32,7 +33,7 @@
   };
   EVO.goStage2 = (g) => {
     EVO.setStage(g, 2); g.evoWin = null;
-    g.evoNext = () => EVO.playCine(g, 'intro2', () => { g.ui.overlay = null; EVO.start(g); });
+    g.evoNext = () => EVO.dropIn(g);   // v282 : le niveau 2 demarre comme le niveau 1 : zoom de camera, puis la visee (plus de cinematique)
     g.goHome({});
   };
   EVO.backStage1 = (g) => { g.evoWin = null; g.ui.overlay = 'evo'; g.goHome({}); };   // après le niveau 2 : on reste sur le niveau 2 (rejouer, améliorer)
