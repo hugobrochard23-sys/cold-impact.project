@@ -387,9 +387,9 @@
     const out = (r.tier < 2 || rk.fuel <= 0.01) && !ev.preview;
     if (out && EVO.isS2() && g.flightTime > 1 && !((g._wsub || 0) > 0.5)) { ev.outT = (ev.outT || 0) + dt; rk.vel.y -= 38 * Math.min(1, ev.outT / 0.8) * dt; if (rk.fwd.y > -0.6) g.input.addAim(0, -2.2 * dt); } else ev.outT = 0;   // v249 : niveau 2 : sans carburant on pique et on accelere vers le bas (plus de longue glissade)
     if (out && !ev.preview && sp < 24 && rk.fwd.y > -0.55 && !((g._wsub || 0) > 0.5)) g.input.addAim(0, -1.5 * U.clamp((24 - sp) / 8, 0, 1) * dt);   // v125 : décrochage : sans poussée et sans vitesse, le nez plonge (on récupère en reprenant de la vitesse)
-    if (out && !(EVO.isS2() && run.dist < 130) && rk.sliding > 0 && (ev.slideT = (ev.slideT || 0) + dt) > 0.7) { ev.slideT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; }
+    if (out && !EVO.isS2() && rk.sliding > 0 && (ev.slideT = (ev.slideT || 0) + dt) > 0.7) { ev.slideT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; }
     if (!out || rk.sliding <= 0) ev.slideT = 0;
-    if (out && !(EVO.isS2() && run.dist < 130) && sp < TU('stall') && g.flightTime > 1 && rk.pos.y - run.T.base(Math.max(0, run.dist)) < 3) { if ((ev.lowT = (ev.lowT || 0) + dt) > TU('stallT')) { ev.lowT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; } } else ev.lowT = 0;   // v125 : immobile = fini
+    if (out && !EVO.isS2() && sp < TU('stall') && g.flightTime > 1 && rk.pos.y - run.T.base(Math.max(0, run.dist)) < 3) { if ((ev.lowT = (ev.lowT || 0) + dt) > TU('stallT')) { ev.lowT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; } } else ev.lowT = 0;   // v125 : immobile = fini
     if (r.tier >= 2 && !ev.fuelOut && !ev.preview && rk.fuel <= 0.01 && g.flightTime > 0.6) { ev.fuelOut = true; CC.L1.msg(g, 'PLUS DE CARBURANT', 1.3, '#ff8a5a'); }
     if (rk.fuel > 0.3) ev.fuelOut = false;
     // caméra de chute : on regarde vers le sol quand on tombe

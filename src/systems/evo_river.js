@@ -22,26 +22,24 @@
     g._wsub = sub;
     if (sub === 0 && run.dist < 130 && rk.sliding > 0) { const d1 = Math.max(0, run.dist), a1 = run.T.at(d1, 0, 0), b1 = run.T.at(d1 + 6, 0, 0), h1 = Math.hypot(b1[0] - a1[0], b1[2] - a1[2]) || 1; rk.vel.x += (b1[0] - a1[0]) / h1 * 14 * dt; rk.vel.z += (b1[2] - a1[2]) / h1 * 14 * dt; }   // v286 : la colline de la rampe est une pente : la fusee posee glisse jusqu'a l'eau
     const ev = g.evo;
+    // le sol (fond du fleuve, berge, mur) met fin au vol apres un contact prolonge ; sur la colline de la rampe la fusee glisse jusqu'a l'eau
+    if (rk.sliding > 0.02) { ev.gT = (ev.gT || 0) + dt; if (ev.gT > (run.dist < 130 && sub === 0 ? 99 : 0.4)) { ev.gT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; } } else ev.gT = 0;
     if (sub > 0) {
       // v286 : LE COURANT. Le fleuve entraine l'engin vers l'aval ; trainee, vitesse maximale et arret se mesurent par rapport a l'eau : meme la torpille de base avance
       const d0 = Math.max(0, run.dist), a = run.T.at(d0, 0, 0), b = run.T.at(d0 + 6, 0, 0), hl = Math.hypot(b[0] - a[0], b[2] - a[2]) || 1, cu = CUR(d0) * sub;
       const fx = (b[0] - a[0]) / hl * cu, fz = (b[2] - a[2]) / hl * cu; g._cur = cu;
       rk.vel.x -= fx; rk.vel.z -= fz;
-      const lowK = g.flightTime > 1.5 ? U.clamp(1 - sp / 24, 0, 1) : 0;
+      const lowK = g.flightTime > 1.5 && !(r.tier < 2 || rk.fuel <= 0.01) ? U.clamp(1 - sp / 24, 0, 1) : 0;   // (sans moteur : plus de flottabilite de secours, l'engin coule quand il ralentit)
       rk.vel.y += gr * (1 + 1.8 * lowK) * 0.94 * sub * dt;                       // poussee d'Archimede : le poids est quasi annule
       const vW = VW[Math.min(3, r.tier)] + (r.tier >= 2 ? 1.2 * r.s : 0), sr = rk.vel.length();
       const imp = r.tier < 2 ? Math.max(0.3, 1 - 0.1 * r.n) : 1;   // les ailerons et les ailes affinent l'engin : moins de trainee a chaque amelioration
-      rk.vel.multiplyScalar(Math.exp(-(rk.thrusting ? 0.07 : r.tier < 2 ? (0.03 + 0.0045 * sr) * imp : 0.2 + 0.019 * sr) * sub * dt));   // trainee de l'eau : forte quand on glisse, faible moteur allume (c'est le plafond de vitesse qui limite)
+      rk.vel.multiplyScalar(Math.exp(-(rk.thrusting ? 0.07 : r.tier < 2 ? (0.02 + 0.003 * sr) * imp : 0.2 + 0.019 * sr) * sub * dt));   // trainee de l'eau : forte quand on glisse, faible moteur allume (c'est le plafond de vitesse qui limite)
       if (sr > vW) rk.vel.multiplyScalar(1 - Math.min(1, (rk.thrusting ? 1.6 : 3.2) * dt * sub) * (1 - vW / sr));   // vitesse maximale du palier
       const dry = r.tier < 2 || rk.fuel <= 0.01, sr2 = rk.vel.length();
       if (rk.vel.y < 0) rk.vel.y *= Math.exp(-2.8 * sub * dt);   // l'eau amortit la plongee : l'engin se redresse au lieu de s'enfoncer jusqu'au fond
       rk.vel.x += fx; rk.vel.z += fz;
-      // sans moteur ou sans carburant : plus d'elan propre -> l'engin ne fait plus que deriver ; apres un temps d'avertissement le vol s'arrete (jamais d'un coup)
-      if (dry && sub > 0.6 && g.flightTime > 2) {
-        ev.sinkT = (sr2 < 5 ? (ev.sinkT || 0) + dt : Math.max(0, (ev.sinkT || 0) - 2 * dt));
-        if (ev.sinkT > 0.5 && !ev._warn) { ev._warn = 1; if (CC.L1) CC.L1.msg(g, r.tier < 2 ? 'PLUS D ELAN' : 'PLUS DE CARBURANT', 1.6, '#ffd070'); }
-        if (ev.sinkT > 2.4) { ev.sinkT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; }
-      } else { ev.sinkT = 0; if (sr2 > 8) ev._warn = 0; }
+      // v286 : JAMAIS de mort a cause de la vitesse. Sans moteur (ou sans carburant), a faible vitesse l'engin perd sa flottabilite : le nez plonge doucement, il coule jusqu'au fond ; c'est le contact avec le sol qui met fin au vol
+      if (dry && g.flightTime > 1.5) { const kk = U.clamp(1 - sr2 / 12, 0, 1); if (kk > 0) { rk.vel.y -= gr * 1.5 * kk * sub * dt; g.input.addAim(0, -0.7 * kk * dt); if (kk > 0.45 && !ev._warn) { ev._warn = 1; if (CC.L1) CC.L1.msg(g, r.tier < 2 ? 'PLUS D ELAN' : 'PLUS DE CARBURANT', 1.6, '#ffd070'); } } else if (sr2 > 10) ev._warn = 0; }
     } else {
       // a l'air libre : l'hydro-missile est un mauvais voilier : plus lourd, il perd de l'energie
       rk.vel.y -= gr * 0.32 * dt; rk.vel.multiplyScalar(Math.exp(-0.06 * dt)); ev.sinkT = 0;

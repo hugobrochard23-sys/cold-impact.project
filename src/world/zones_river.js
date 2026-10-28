@@ -51,7 +51,7 @@
   EVO.launchY = () => 40.9;
   EVO.padPitch = () => (EVO.isS2() ? -19 : null);
   EVO.SCENE_MOOD.rapides = 'jungle'; EVO.SCENE_AUDIO.rapides = 'evoDay'; EVO.SCENE_MOOD.arrivee = 'sea'; EVO.SCENE_AUDIO.arrivee = 'evoDay';
-  EVO.addMood('jungle', { top: '#3f86c8', hor: '#d6ead2', fog: '#a8cdb4', near: 160, far: 640, hemiS: '#e8f4e2', hemiG: '#3f6a46', hemiI: 0.92, amb: 0.22, sunC: '#fff0c8', sunI: 0.88, night: 0 });
+  EVO.addMood('jungle', { top: '#3f86c8', hor: '#d6ead2', fog: '#a8cdb4', near: 70, far: 400, hemiS: '#e8f4e2', hemiG: '#3f6a46', hemiI: 0.92, amb: 0.22, sunC: '#fff0c8', sunI: 0.88, night: 0 });
   EVO.addMood('dam', { top: '#4a7aa8', hor: '#cfd8da', fog: '#9fb0b4', near: 120, far: 560, hemiS: '#dde8ec', hemiG: '#4a5a60', hemiI: 0.9, amb: 0.22, sunC: '#ffe8c0', sunI: 0.8, night: 0 });
   EVO.addMood('pit', { top: '#1a2a38', hor: '#3a5666', fog: '#243844', near: 20, far: 300, hemiS: '#b4d8e8', hemiG: '#2a3c44', hemiI: 1.0, amb: 0.46, sunC: '#c8e4f0', sunI: 0.5, night: 0.2 });
 
@@ -84,6 +84,18 @@
   { const _br = EVO.beginRun; EVO.beginRun = (g) => { _br(g); g._f1 = g._f2 = 0; };
     const _tk = EVO.tick; EVO.tick = (g, dt) => { _tk(g, dt); const run = g.endlessRun; if (!run || !EVO.isS2() || !g.evo || g.evo.preview || g.state !== 'FLIGHT') return; const d = run.dist;
       for (const [k, f] of [['_f1', F1], ['_f2', F2]]) if (!g[k] && d > f + 3 && d < f + 60) { g[k] = 1; g.rig.shake = Math.max(g.rig.shake, 0.9); g.audio.play('whoosh'); if (CC.L1) CC.L1.msg(g, 'CASCADE !', 1.3, '#bff4ff'); g.flash = Math.max(g.flash || 0, 0.12); g.flashColor = '#e8fbff'; } }; }
+  // v286 : la plateforme de lancement est FERMEE : falaise de jungle derriere le lanceur et parois de chaque cote jusqu'au fleuve (plus de vide autour de la rampe)
+  { const _tl = EVO.tick;
+    EVO.tick = (g, dt) => { _tl(g, dt); const run = g.endlessRun; if (!run || !EVO.isS2() || !g.evo || g.evo.preview) return;
+      if (g._lcRun !== run) { g._lcRun = run; if (g._lc) { g.scene.remove(g._lc); g._lc.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
+        const G = new T3.Group(), wm = new T3.MeshLambertMaterial({ color: '#5f7550' }), gm = new T3.MeshLambertMaterial({ color: '#3f8a3c' }), cm = [new T3.MeshLambertMaterial({ color: '#2f7a34' }), new T3.MeshLambertMaterial({ color: '#3a8a3c' })];
+        const seg = (d, lx, w, dd, h) => { const a = run.T.at(d, lx, 0), b = run.T.at(d + 4, lx, 0), yaw = Math.atan2(b[0] - a[0], b[2] - a[2]), y0 = run.T.base(d) - 8; const m = new T3.Mesh(new T3.BoxGeometry(w, h + 8, dd), wm); m.position.set(a[0], y0 + (h + 8) / 2, a[2]); m.rotation.y = yaw; G.add(m); const t = new T3.Mesh(new T3.BoxGeometry(w + 0.4, 0.6, dd + 0.4), gm); t.position.set(a[0], y0 + h + 8.3, a[2]); t.rotation.y = yaw; G.add(t);
+          for (let k = 0; k < 2; k++) { const c = new T3.Mesh(new T3.SphereGeometry(7 + 6 * hsh(d, lx + k), 8, 6), cm[k]); c.scale.y = 0.7; c.position.set(a[0] + (hsh(lx, d + k) - 0.5) * w, y0 + h + 12, a[2] + (hsh(d + k, lx) - 0.5) * dd); G.add(c); } };
+        for (let d = -214; d < 78; d += 14) for (const sg of [-1, 1]) seg(d, sg * 148, 20, 14.9, 34 + 5 * Math.sin(d / 9 + sg));
+        for (let lx = -140; lx <= 140; lx += 16) seg(-214, lx, 16.6, 20, 36 + 6 * Math.sin(lx / 17));
+        g.scene.add(G); g._lc = G; }
+      if (g._lc) g._lc.visible = g.state === 'FLIGHT'; };
+  }
   EVO.riv.plant = plant; EVO.riv.slab = slab; EVO.riv.lampS = lampS; EVO.riv.water = water; EVO.riv.curtain = curtain; EVO.riv.hsh = hsh;
   EVO.riv.setBed2 = (f) => { BED2 = f; };
   EVO.riv.GREEN = GREEN; EVO.riv.WALL = WALL; EVO.riv.STONE = STONE; EVO.riv.TEMPLE = TEMPLE; EVO.riv.rel = rel; EVO.riv.mixf = mixf;
