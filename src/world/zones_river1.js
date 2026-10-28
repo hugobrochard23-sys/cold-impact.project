@@ -85,8 +85,9 @@
   const ruinGate = (S, dc, hw, yTop, r) => {
     for (const sg of [-1, 1]) { const x = sg * (hw - 5.5); S.cyl(dc, x, A(S, dc, BED(dc) - 2), 3.0, yTop - BED(dc) + 2, 'jrock', pk(r, TEMPLE), 9, 2.7, true); S.bx(dc, x, A(S, dc, yTop + 1), 7, 2.2, 7, 'jrock', '#bcbca8', true); for (let k = 0; k < 3; k++) S.bx(dc - 3.2, x, A(S, dc, yTop - 4 - k * 5), 0.4, 1.2, 4.2, 'jrock', '#8a8a78', false); }
     S.bx(dc, -hw * 0.55, A(S, dc, yTop + 3.4), hw * 0.9, 2.4, 6.4, 'jrock', pk(r, TEMPLE), true); S.bx(dc, hw * 0.62, A(S, dc, yTop + 3.0), hw * 0.76, 2.4, 6.4, 'jrock', pk(r, TEMPLE), true);   // linteau fendu : le centre est libre
-    for (let k = 0; k < 7; k++) S.bx(dc + r.between([-2, 2]), r.between([-hw, hw]), A(S, dc, yTop - r.between([0, 7])), 0.14, r.between([3, 9]), 0.14, 'col:#2e4a24', undefined, false);
-    for (let k = 0; k < 6; k++) plant(S, TR.fern, dc + r.between([-2, 2]), r.between([-hw + 4, hw - 4]), yTop + 4.7, r.between([1.2, 2.2]), r);
+    
+    for (let k = 0; k < 6; k++) { const lx = k % 2 ? r.between([-hw * 0.95, -hw * 0.15]) : r.between([hw * 0.28, hw * 0.95]); plant(S, TR.fern, dc + r.between([-2, 2]), lx, yTop + 4.7, r.between([1.2, 2.2]), r); }   // v300 : plantes seulement sur le linteau
+    for (let k = 0; k < 7; k++) { const lx = k % 2 ? r.between([-hw * 0.95, -hw * 0.15]) : r.between([hw * 0.28, hw * 0.95]); TR.vine(S.b, ...absAt(S, dc + r.between([-2, 2]), lx, yTop + 2.3), r.between([3, 7]), r); }   // v300 : lianes accrochees sous le linteau
     lampS(S, dc - 4, -(hw - 5.5), A(S, dc, yTop - 6), '#ff8a2a', 18); lampS(S, dc - 4, hw - 5.5, A(S, dc, yTop - 6), '#ff8a2a', 18);
   };
   // cascade laterale : un affluent qui se jette dans le fleuve du haut de la paroi
@@ -149,7 +150,7 @@
         const yy = S.yaw(dm), a0 = S.at(dm, 0, 0), a1 = S.at(dm, 1, 0), nx = a1[0] - a0[0], nz = a1[2] - a0[2], ix = Math.cos(yy) * Math.sign(dy), iz = -Math.sin(yy) * Math.sign(dy), sg = (nx * ix + nz * iz) >= 0 ? 1 : -1;
         S.item(dm, (r) => { const hwv = HW(dm), ins = Math.min(13, Math.max(3, hwv - 22)), L = (j) => hwv + 1 - ins - 3 * Math.abs(j), topS = WY(dm) + 36, bt = WY(dm) - 3;
           for (let j = -1; j <= 1; j++) { const dc = dm + j * 17, lmid = hwv + 6 - ins / 2 - 3 * Math.abs(j), w = ins + 10;
-            S.bx(dc, sg * lmid, A(S, dc, (BED(dc) + topS) / 2), w, topS - BED(dc), 17.5, 'jrock', undefined, true, { render: false }); S.bx(dc, sg * (lmid + 1.5), A(S, dc, topS - 0.13), w - 3, 0.6, 17.5, 'evoGrass', pk(r, GREEN), true);   // v296 : collision seule, la roche est en blocs
+            S.bx(dc, sg * lmid, A(S, dc, (BED(dc) + topS) / 2), w, topS - BED(dc), 17.5, 'jrock', undefined, true, { render: false }); S.bx(dc, sg * (lmid + 1.5), A(S, dc, topS - 0.13), w - 3, 0.6, 17.5, 'evoGrass', pk(r, GREEN), true, { render: false });   // v296 : collision seule, la roche est en blocs
             plant(S, TR.jungle, dc, sg * (hwv - ins / 2 + 2), WY(dc) + 36.6, r.between([22, 30]), r, {}); }
         });   // v299 : la roche visible des eperons est dans la nappe continue de zones_river_cliffs.js (collision et dessus d'herbe inchanges)
       }
@@ -157,7 +158,7 @@
         for (const [df, dr] of [[295.5, 1], [304.5, -1]]) R.faceAcross(S, r, df, -(hwv + 8), hwv + 8, dr, WY(300) - 3, top, 91 + dr, { backBot: bot, waterY: () => WY(300), veg: 2 });
         for (const sg of [-1, 1]) { S.bx(300, sg * (hwv + 3), A(S, 300, (BED(300) + bot) / 2), 7, bot - BED(300), 9, 'jrock', '#6a7460', true); plant(S, TR.fern, 300, sg * (hwv - 2), top + 0.4, 2, r); }
         for (let k = 0; k < 5; k++) TR.vine(S.b, ...absAt(S, 295.5, -hwv + 8 + k * (2 * hwv - 16) / 4, bot + 6.5), r.between([3, 6]), r); lampS(S, 296.4, -hwv + 4, A(S, 300, bot) - 0.2, '#ffcf6a', 16); lampS(S, 296.4, hwv - 4, A(S, 300, bot) - 0.2, '#ffcf6a', 16); });
-      S.item(820, (r) => { for (let dc = 790; dc <= 850; dc += 15) { const hwv = HW(dc); S.bx(dc, 0, A(S, dc, WY(dc) + 17.5), 2 * (hwv + 8), 9, 15.6, 'jrock', pk(r, WALL), true); S.bx(dc, 0, A(S, dc, WY(dc) + 22.3), 2 * (hwv + 8), 0.6, 15.6, 'evoGrass', '#3f8a3c', true); if (r() < 0.8) plant(S, TR.jungle, dc, r.between([-hwv, hwv]), WY(dc) + 23, r.between([20, 28]), r, {}); lampS(S, dc, -hwv + 3, A(S, dc, WY(dc) + 12), '#ffcf6a', 16); lampS(S, dc, hwv - 3, A(S, dc, WY(dc) + 12), '#ffcf6a', 16); for (let k = 0; k < 4; k++) S.bx(dc + r.between([-5, 5]), r.between([-hwv, hwv]), A(S, dc, WY(dc) + 10.5), 0.14, r.between([3, 6]), 0.14, 'col:#2e4a24', undefined, false); } });
+      S.item(820, (r) => { for (let dc = 790; dc <= 850; dc += 15) { const hwv = HW(dc); S.bx(dc, 0, A(S, dc, WY(dc) + 17.5), 2 * (hwv + 8), 9, 15.6, 'jrock', pk(r, WALL), true); S.bx(dc, 0, A(S, dc, WY(dc) + 22.3), 2 * (hwv + 8), 0.6, 15.6, 'evoGrass', '#3f8a3c', true); if (r() < 0.8) plant(S, TR.jungle, dc, r.between([-hwv, hwv]), WY(dc) + 23, r.between([20, 28]), r, {}); lampS(S, dc, -hwv + 3, A(S, dc, WY(dc) + 12), '#ffcf6a', 16); lampS(S, dc, hwv - 3, A(S, dc, WY(dc) + 12), '#ffcf6a', 16);  } });
       // --- LE CAMP (la colline de la rampe) : sol de jungle, piste de terre, cabanes sur pilotis, tours, mat radio, sacs de sable, caisses, futs, vegetation dense
       for (let dc = 4; dc < 104; dc += 10) S.item(dc, (r) => {
         for (let k = 0; k < 11; k++) { const sg = r() < 0.5 ? -1 : 1, lx = sg * (k < 4 ? r.between([4, 30]) : r.between([12, 110])), yy = BED(dc) + 0.5; const q = r(); if (q < 0.16 && Math.abs(lx) > 10) plant(S, TR.palm, dc + r.between([-5, 5]), lx, yy, r.between([8, 14]), r); else if (q < 0.34 && Math.abs(lx) > 13) rockC(S, dc + r.between([-5, 5]), lx, yy + 0.3, r.between([1.2, 3.2]), r, pk(r, STONE)); else plant(S, q < 0.7 ? TR.fern : TR.bigleaf, dc + r.between([-5, 5]), lx, yy, r.between([1.6, 3.0]), r); }
@@ -173,7 +174,7 @@
       // --- LE FLEUVE : ponts, embarcadere, ilot, tronc
       S.item(150, (r) => { for (const sg of [-1, 1]) for (let k = 0; k < 3; k++) hut(S, 150 + k * 16, sg * (HW(150) + 10 + r.between([0, 4])), WY(150) + 6, r, { stilt: 6 }); for (let k = 0; k < 4; k++) S.bx(150 + k * 9 - 12, (k % 2 ? 1 : -1) * (HW(150) - 4), A(S, 150, WY(150) + 0.1), 2.8, 0.5, 9, 'planks', '#6a4a2c', false); });
       S.item(250, (r) => ropeBridge(S, 250, HW(250), WY(250) + 14, r));
-      S.item(410, (r) => { cylH(S, 410, 0, WY(410) + 10, 2.3, 2 * (HW(410) + 8), 'bark', '#6a5238', true, 0.04); for (let k = 0; k < 9; k++) plant(S, TR.fern, 410 + r.between([-1.5, 1.5]), r.between([-HW(410), HW(410)]), WY(410) + 12.1, r.between([1.2, 2.2]), r); for (let k = 0; k < 6; k++) S.bx(410 + r.between([-1, 1]), r.between([-HW(410), HW(410)]), A(S, 410, WY(410) + 8), 0.12, r.between([3, 7]), 0.12, 'col:#2e4a24', undefined, false); });
+      S.item(410, (r) => { cylH(S, 410, 0, WY(410) + 10, 2.3, 2 * (HW(410) + 8), 'bark', '#6a5238', true, 0.04); for (let k = 0; k < 9; k++) plant(S, TR.fern, 410 + r.between([-1.5, 1.5]), r.between([-HW(410), HW(410)]), WY(410) + 12.1, r.between([1.2, 2.2]), r);  });
       S.item(480, (r) => { pillar(S, 480, -9, WY(480) + 3.5, 6.5, r); for (let k = 0; k < 3; k++) plant(S, TR.palm, 480 + r.between([-3, 3]), -9 + r.between([-3, 3]), WY(480) + 4.2, r.between([8, 12]), r); plant(S, TR.fern, 482, -6, WY(480) + 4.4, 2.0, r); S.bx(480, -9, A(S, 480, WY(480) + 4.8), 2.6, 1.6, 2.6, 'jrock', '#a8a694', true); });
       foe(S, 'gunboat', 330, -10, WY(330) + 0.5 - BED(330), { name: 'CANONNIERE', hp: 3, armed: true, keep: true });
       foe(S, 'mine', 520, 8, WY(520) - BED(520) - 2.5, { name: 'MINE' });
@@ -189,7 +190,7 @@
         else if (k < 0.7) { const y = A(S, dc, bed) + 1.4; S.bx(dc, lx, y, 3.6, 2.8, 3.6, 'jrock', pk(r, TEMPLE), true); S.bx(dc - 1.85, lx, y + 0.2, 0.3, 1.8, 1.6, 'col:#2a3a30', undefined, false); S.bx(dc - 1.85, lx - 1.1, y + 0.8, 0.3, 0.5, 0.5, 'col:#101614', undefined, false); S.bx(dc - 1.85, lx + 1.1, y + 0.8, 0.3, 0.5, 0.5, 'col:#101614', undefined, false); }
         else { rockC(S, dc, lx, bed, r.between([3, 6]), r, pk(r, STONE), false); rockC(S, dc + 5, lx + sg * 3, bed, r.between([1.6, 3]), r, pk(r, STONE), false); }
       });
-      S.item(760, (r) => { const hwv = HW(760); for (const sg of [-1, 1]) { S.bx(760, sg * (hwv + 3), A(S, 760, WY(760) + 8), 7, 24, 12, 'jrock', pk(r, WALL), true); } S.bx(760, 0, A(S, 760, WY(760) + 24), 2 * (hwv + 6), 9, 13, 'jrock', '#77806c', true); for (let k = 0; k < 6; k++) plant(S, TR.fern, 760 + r.between([-4, 4]), r.between([-hwv, hwv]), WY(760) + 28.6, r.between([1.4, 2.4]), r); for (let k = 0; k < 4; k++) S.bx(760 + r.between([-5, 5]), r.between([-hwv, hwv]), A(S, 760, WY(760) + 17), 0.14, r.between([5, 9]), 0.14, 'col:#2e4a24', undefined, false); });
+      S.item(760, (r) => { const hwv = HW(760); for (const sg of [-1, 1]) { S.bx(760, sg * (hwv + 3), A(S, 760, WY(760) + 8), 7, 24, 12, 'jrock', pk(r, WALL), true); } S.bx(760, 0, A(S, 760, WY(760) + 24), 2 * (hwv + 6), 9, 13, 'jrock', '#77806c', true); for (let k = 0; k < 6; k++) plant(S, TR.fern, 760 + r.between([-4, 4]), r.between([-hwv, hwv]), WY(760) + 28.6, r.between([1.4, 2.4]), r);  });
       S.item(880, (r) => temple(S, 880, 1, WY(880) + 28, r));
       S.item(930, (r) => stoneBridge(S, 930, HW(930), WY(930) + 25, r));
       foe(S, 'gunboat', 700, 6, WY(700) + 0.5 - BED(700), { name: 'CANONNIERE', hp: 3, armed: true, keep: true });
@@ -197,7 +198,7 @@
       foe(S, 'aaturret', 820, -(HW(820) + 6), A(S, 820, WY(820) + 14) , { name: 'TOURELLE', armed: true, keep: true, fixed: true });
       foe(S, 'heli', 1060, 0, WY(1060) + 22 - BED(1060), { name: 'HELICO', armed: true, patrol: (SS, dc, lx, y) => [SS.at(dc, -14, y), SS.at(dc + 24, 0, y + 5), SS.at(dc, 14, y), SS.at(dc - 24, 0, y + 5)], speed: 12 });
       // --- LA LAGUNE : pitons de roche couronnes de jungle, aqueduc, mines, brume ; le barrage au loin
-      for (let dc = F2 + 90; dc < LA - 40; dc += 58) S.item(dc, (r) => { const sg = hsh(dc, 5) < 0.5 ? -1 : 1, hwv = HW(dc); const x = sg * r.between([hwv * 0.25, hwv * 0.75]), top = WY(dc) + r.between([14, 30]); pillar(S, dc, x, top, r.between([4.5, 7.5]), r); plant(S, TR.palm, dc, x, top + 1, r.between([8, 13]), r); plant(S, TR.fern, dc + 2, x + 2, top + 0.8, 2, r); for (let k = 0; k < 2; k++) S.bx(dc + r.between([-2, 2]), x + r.between([-3, 3]), A(S, dc, top - r.between([3, 9])), 0.14, r.between([3, 7]), 0.14, 'col:#2e4a24', undefined, false); });
+      for (let dc = F2 + 90; dc < LA - 40; dc += 58) S.item(dc, (r) => { const sg = hsh(dc, 5) < 0.5 ? -1 : 1, hwv = HW(dc); const x = sg * r.between([hwv * 0.25, hwv * 0.75]), top = WY(dc) + r.between([14, 30]); pillar(S, dc, x, top, r.between([4.5, 7.5]), r); plant(S, TR.palm, dc, x, top + 1, r.between([8, 13]), r); plant(S, TR.fern, dc + 2, x + 2, top + 0.8, 2, r);  });
       S.item(1320, (r) => guardian(S, 1320, -1, WY(1320) + 27, r)); S.item(1390, (r) => guardian(S, 1390, 1, WY(1390) + 27, r)); S.item(1610, (r) => ruinGate(S, 1610, HW(1610), WY(1610) + 22, r));
       S.item(1500, (r) => aqueduct(S, 1500, HW(1500), WY(1500) + 34, r));
       for (let k = 0; k < 5; k++) { const dc = 1290 + k * 78; foe(S, 'mine', dc, (k % 2 ? 1 : -1) * 22, WY(dc) - BED(dc) - 2.5, { name: 'MINE', keep: k < 2 }); }
@@ -207,13 +208,18 @@
     } };
   const A0b = (d) => (d < -50 ? 40 : 40 - 0.344 * (d + 50));
 
-  // pont de lianes : deux poteaux par rive, tablier de planches qui s'affaisse, cordes et suspentes
+  const ROLL_SIGN = 1;
+  // pont de lianes (v300) : le tablier est une courbe (parabole) : planches jointives inclinees selon la pente (raides aux bouts, droites au milieu), cordes continues en arc, suspentes et noeuds
+  const tbox = (S, dc, lx, yAbs, w, h, dd, roll, mat, tint, col) => { if (!S.inClip(dc)) return; return S.b.box({ p: S.T.at(dc, lx, A(S, dc, yAbs)), s: [w, h, dd], r: [0, S.yaw(dc), roll], mat, tint, collide: !!col }); };
   function ropeBridge(S, dc, hw, y, r) {
-    const span = 2 * (hw + 9), n = 16;
-    for (const sg of [-1, 1]) { for (const e of [-1, 1]) S.cyl(dc + e * 1.6, sg * (hw + 5), A(S, dc, y) - 2, 0.42, 6.2, 'bark', '#5a4328', 7, 0.36, true); S.bx(dc, sg * (hw + 5), A(S, dc, y) + 3.9, 0.4, 0.3, 4.2, 'bark', '#4a3820', false); }
-    for (let k = 0; k < n; k++) { const x0 = -span / 2 + k * span / n, sag = -2.2 * Math.sin((k + 0.5) / n * Math.PI), yy = y + sag + 0.0;
-      S.bx(dc, x0 + span / n / 2, A(S, dc, yy), span / n * 0.86, 0.22, 2.7, 'planks', pk(r, ['#8a6a44', '#7a5a38']), k % 2 === 0);
-      for (const e of [-1, 1]) { S.bx(dc + e * 1.4, x0 + span / n / 2, A(S, dc, yy + 1.15), span / n * 1.02, 0.1, 0.1, 'col:#4a3a22', undefined, false); if (k % 2 === 0) S.bx(dc + e * 1.4, x0 + span / n / 2, A(S, dc, yy + 0.6), 0.07, 1.1, 0.07, 'col:#4a3a22', undefined, false); } }
+    const span = 2 * (hw + 9), n = 40, seg = span / n, sagD = 3.4, RS = ROLL_SIGN;
+    const yAt = (x) => y - sagD * (1 - Math.pow(2 * x / span, 2)), slopeAt = (x) => 8 * sagD * x / (span * span), rollAt = (x) => RS * Math.atan(slopeAt(x)) * 180 / Math.PI;
+    for (const sg of [-1, 1]) { for (const e of [-1, 1]) S.cyl(dc + e * 1.6, sg * (hw + 5), A(S, dc, y) - 2, 0.42, 6.6, 'bark', '#5a4328', 7, 0.36, true); S.bx(dc, sg * (hw + 5), A(S, dc, y) + 4.1, 0.4, 0.3, 4.2, 'bark', '#4a3820', false); }
+    for (let k = 0; k < n; k++) { const x = -span / 2 + (k + 0.5) * seg, yy = yAt(x), ro = rollAt(x), len = seg * Math.sqrt(1 + slopeAt(x) * slopeAt(x)) * 1.04;
+      tbox(S, dc, x, yy, len, 0.22, 2.7, ro, 'planks', pk(r, ['#8a6a44', '#7a5a38', '#836240']), k % 2 === 0);
+      for (const e of [-1, 1]) { tbox(S, dc + e * 1.4, x, yy + 1.15, len * 1.02, 0.1, 0.1, ro, 'col:#4a3a22', undefined, false); tbox(S, dc + e * 1.35, x, yy - 0.2, len * 1.02, 0.12, 0.12, ro, 'col:#3e301c', undefined, false);
+        if (k % 3 === 0) tbox(S, dc + e * 1.4, x, yy + 0.6, 0.07, 1.1, 0.07, 0, 'col:#4a3a22', undefined, false); }
+      if (k % 5 === 0) for (const e of [-1, 1]) tbox(S, dc + e * 1.4, x, yy + 1.18, 0.2, 0.2, 0.2, 0, 'col:#2e2414', undefined, false); }
   }
   // aqueduc : deux rangees d'arches de pierre superposees au-dessus de la lagune
   function aqueduct(S, dc, hw, yTop, r) {

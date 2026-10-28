@@ -220,9 +220,9 @@
     return m.geo();
   };
   // liane : simple fil courbe (2 segments)
-  T.vine = function (b, x, y, z, len, rnd, o) {
-    o = o || {}; const m = new Mesh(), dx = rr(rnd, -1, 1), dz = rr(rnd, -1, 1), p1 = [x + dx * 0.6, y - len * 0.5, z + dz * 0.6], p2 = [x + dx, y - len, z + dz];
-    m.tube([x, y, z], 0.08, p1, 0.07, hex('#3a5a2a'), hex('#33522a'), 3); m.tube(p1, 0.07, p2, 0.06, hex('#33522a'), hex('#2c4a22'), 3);
+  T.vine = function (b, x, y, z, len, rnd, o) {   // v300 : liane courbe (5 segments qui se balancent), toujours accrochee a son point de depart
+    o = o || {}; const m = new Mesh(), ph = rnd() * 6.28, sw = 0.5 + 0.5 * rnd(), n = 5; let prev = [x, y, z], pr = 0.11;
+    for (let i = 1; i <= n; i++) { const t = i / n, c = [x + Math.sin(ph + t * 3.2) * sw * t * 1.2, y - len * t, z + Math.cos(ph * 1.3 + t * 2.6) * sw * t * 0.9], rad = 0.11 - 0.05 * t; m.tube(prev, pr, c, rad, hex(i % 2 ? '#3a5a2a' : '#44682f'), hex('#33522a'), 3); prev = c; pr = rad; }
     const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff', o.tint); g.dispose();
   };
   T.jungle = function (b, x, y, z, h, rnd, o) {
@@ -253,7 +253,7 @@
       if (!far && rnd() < 0.5) vines.push([ex + dx * Rm * 0.8, ey - Rm * 0.1, ez + dz * Rm * 0.8]);
     }
     const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff', o.tint); g.dispose();
-    for (const v of vines.slice(0, 2)) T.vine(b, v[0], v[1], v[2], h * rr(rnd, 0.18, 0.32), rnd, o);
+    for (const v of vines.slice(0, 0)) T.vine(b, v[0], v[1], v[2], h * rr(rnd, 0.18, 0.32), rnd, o);
   };
 
   CC.Trees = T;

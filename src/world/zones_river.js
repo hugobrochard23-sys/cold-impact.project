@@ -53,7 +53,7 @@
   EVO.launchY = () => 40.9;
   EVO.padPitch = () => (EVO.isS2() ? -19 : null);
   EVO.SCENE_MOOD.rapides = 'jungle'; EVO.SCENE_AUDIO.rapides = 'evoDay'; EVO.SCENE_MOOD.arrivee = 'sea'; EVO.SCENE_AUDIO.arrivee = 'evoDay';
-  EVO.addMood('jungle', { top: '#2a76d6', hor: '#b4dcf6', fog: '#bcdcf0', near: 90, far: 460, hemiS: '#e6f2fb', hemiG: '#4a7a4c', hemiI: 0.74, amb: 0.2, sunC: '#fff0d0', sunI: 0.72, night: 0 });   // v296 : lumiere moins forte (le haut des arbres, des rochers et des collines n'est plus surexpose) ; v295 : vrai ciel bleu, brume bleutee (les collines lointaines passent au bleu)
+  EVO.addMood('jungle', { top: '#3c8ef0', hor: '#c8e8fc', fog: '#c6e4f6', near: 90, far: 460, hemiS: '#eaf5fd', hemiG: '#5a8a58', hemiI: 0.8, amb: 0.26, sunC: '#fff0d0', sunI: 0.72, night: 0 });   // v296 : lumiere moins forte (le haut des arbres, des rochers et des collines n'est plus surexpose) ; v295 : vrai ciel bleu, brume bleutee (les collines lointaines passent au bleu)
   EVO.addMood('dam', { top: '#4a7aa8', hor: '#cfd8da', fog: '#9fb0b4', near: 120, far: 560, hemiS: '#dde8ec', hemiG: '#4a5a60', hemiI: 0.9, amb: 0.22, sunC: '#ffe8c0', sunI: 0.8, night: 0 });
   EVO.addMood('pit', { top: '#1a2a38', hor: '#3a5666', fog: '#243844', near: 20, far: 300, hemiS: '#b4d8e8', hemiG: '#2a3c44', hemiI: 1.0, amb: 0.46, sunC: '#c8e4f0', sunI: 0.5, night: 0.2 });
 
@@ -63,7 +63,7 @@
   const rel = (sc, fn) => { let lo = 1e9, hi = -1e9; for (let d = sc.d0; d <= sc.d1; d += 4) { const v = fn(d); if (v < lo) lo = v; if (v > hi) hi = v; } sc.rlo = lo; sc.rhi = hi; return { fn, max: Math.max(Math.abs(lo), Math.abs(hi)) }; };
   const GREEN = ['#3a8a3e', '#448f40', '#357f38', '#4a9444'], WALL = ['#b4bca4', '#aab29a', '#bcc4ac', '#a0a890'], STONE = ['#c4c6b6', '#b8baaa', '#d0d0c0', '#aeb0a0'], TEMPLE = ['#d0d0bc', '#c4c4b0', '#d8d6c2', '#bcbca8'];
   // eau : surface a niveau constant sur [a, b] (cote absolue)
-  const water = (S, a, b, hw, yAbs, amp) => Z.evoWaves(S, a, b, hw, yAbs - SEAB, 'waterSurf', '#7fcfb8', amp === undefined ? 0.45 : amp, true);
+  const water = (S, a, b, hw, yAbs, amp) => Z.evoWaves(S, a, b, hw, yAbs - SEAB, 'waterSurf', '#74e2d0', amp === undefined ? 0.45 : amp, true);
   // rideau de cascade : nappe verticale blanche qui coule + embruns
   const curtain = (S, dc, hw, yTop, yBot) => {
     if (!S.inClip(dc)) return;

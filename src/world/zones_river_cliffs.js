@@ -12,8 +12,8 @@
   const hh = (a, b, c) => fr(Math.sin(a * 127.1 + b * 311.7 + (c || 0) * 74.7) * 43758.5453);
   const smooth = (e0, e1, x) => { const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t); };
   const col = (hex) => { const c = new T3.Color(hex); return [c.r, c.g, c.b]; };
-  const ROCK = ['#a49f8c', '#9a9784', '#aca58e', '#8f8c7a', '#9ea08a', '#a89a80', '#928f7d', '#b0a88e'].map(col);
-  const MOSS = col('#5a8a3e'), MOSS2 = col('#78a448'), SOIL = col('#6a5438'), ALGAE = col('#3d5a36'), DEEP = col('#3a4034'), GRASS1 = col('#4f9a40');
+  const ROCK = ['#c6bea0', '#bab69c', '#cdc4a4', '#b0ac92', '#bebe9e', '#cabb96', '#b2ae94', '#d2c8a6'].map(col);
+  const MOSS = col('#66a040'), MOSS2 = col('#84b44c'), SOIL = col('#6a5438'), ALGAE = col('#3d5a36'), DEEP = col('#3a4034'), GRASS1 = col('#4f9a40');
   const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
   const sc = (a, k) => [a[0] * k, a[1] * k, a[2] * k];
   const SPUR_U = [[0.06, 0.145], [0.16, 0.245], [0.26, 0.33], [0.4, 0.485], [0.5, 0.585], [0.72, 0.805], [0.83, 0.915]];

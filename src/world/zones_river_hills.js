@@ -80,7 +80,7 @@
       const rad = 9 + 8 * hsh(t, 3.1), y = out.y + rad * 0.5; Qn.setFromEuler(new T3.Euler(0, hsh(t, 6) * 6.28, 0)); Sc.set(rad * (0.9 + 0.3 * hsh(t, 2)), rad * (0.9 + 0.3 * hsh(t, 4)), rad * (0.9 + 0.3 * hsh(t, 9))); Pp.set(x, y, z);
       M.compose(Pp, Qn, Sc); inst.setMatrixAt(ni, M); Cc.setHSL(0.3 + 0.04 * hsh(t, 11), 0.42 + 0.12 * hsh(t, 12), 0.26 + 0.1 * hsh(t, 13)); inst.setColorAt(ni, Cc); ni++;
     }
-    inst.count = ni; inst.instanceMatrix.needsUpdate = true; if (inst.instanceColor) inst.instanceColor.needsUpdate = true; inst.frustumCulled = false; grp.add(inst);
+    inst.count = ni; inst.instanceMatrix.needsUpdate = true; if (inst.instanceColor) inst.instanceColor.needsUpdate = true; inst.frustumCulled = false; inst.count = 0;   // v300 : plus de domes d'arbres plats sur les collines (feuilles flottantes sans tronc)
     g.scene.add(grp); return { grp, H, mesh, st, inst };
   };
   EVO.hillAt = (g, x, z) => { const h = g._hill; if (!h) return null; probe(h.H, x, z, 0, h.H.n - 1); return out.ok ? { s: out.s, y: out.y, d: out.d } : null; };

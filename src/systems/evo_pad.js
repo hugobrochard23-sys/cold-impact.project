@@ -129,7 +129,7 @@
   };
   // v258 : VRAIES OMBRES au sol : chaque piece du lanceur et de la fusee est ecrasee sur la dalle suivant la direction de la lumiere (ombre a la forme exacte des rails, montants et de la fusee)
   const LD = new V(0.55, -1, 0.38), PM = new T3.Matrix4(), SM = new T3.Matrix4(), pool = [], shMat = new T3.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false, side: T3.DoubleSide, stencilWrite: true, stencilFunc: T3.NotEqualStencilFunc, stencilRef: 1, stencilZPass: T3.ReplaceStencilOp, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
-  let shGroup = null;
+  let shGroup = null; const BC = new V();
   const collect = (o, out) => { if (!o.visible || o.userData.noShadow || o.userData.isShadow) return; if (o.isMesh && o.geometry && !(o.material && (o.material.transparent || o.material.blending === T3.AdditiveBlending))) out.push(o); for (const k of o.children) collect(k, out); };
   EVO.shadowTick = (g) => {
     const pad = g.pad, L = pad && pad.evoL; if (!L) return;
@@ -140,6 +140,7 @@
     L.updateMatrixWorld(true);
     const out = []; for (const k of L.children) { if (k === pad.hangar) continue; collect(k, out); }
     if (g.rocket.mesh && g.rocket.mesh.visible) { g.rocket.mesh.updateMatrixWorld(true); collect(g.rocket.mesh, out); }
+    { const po = pad.origin; for (let i = out.length - 1; i >= 0; i--) { const o = out[i], gm = o.geometry; if (!gm.boundingBox) gm.computeBoundingBox(); const bb = gm.boundingBox; BC.copy(bb.max).add(bb.min).multiplyScalar(0.5).applyMatrix4(o.matrixWorld); if (Math.max(bb.max.x - bb.min.x, bb.max.y - bb.min.y, bb.max.z - bb.min.z) > 24 || BC.distanceTo(po) > 45) out.splice(i, 1); } }   // v300 : seules les pieces proches du lanceur projettent une ombre (le plan de ciel de 1400 m et les collines lointaines du decor etaient ecrases au sol : grand trapeze sombre devant la fusee)
     const y = new T3.Vector3(0, L.userData.padSlabTop + 0.004, 0).applyMatrix4(L.matrixWorld).y, dx = LD.x / LD.y, dz = LD.z / LD.y;
     PM.set(1, -dx, 0, dx * y, 0, 0, 0, y, 0, -dz, 1, dz * y, 0, 0, 0, 1);
     for (let i = 0; i < out.length; i++) {
