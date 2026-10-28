@@ -91,9 +91,12 @@
   };
   // cascade laterale : un affluent qui se jette dans le fleuve du haut de la paroi
   const sideFall = (S, dc, sg, hw, top, r) => {
-    const x = sg * (hw + 0.3), h = top - WY(dc);
-    S.bx(dc, x, A(S, dc, (top + WY(dc)) / 2), 0.4, h, 6.5, 'waterSurf', '#f4fbff', false); S.bx(dc, x - sg * 1.4, A(S, dc, top - 1), 3.4, 1.8, 7.5, 'jrock', '#9a9a86', true);
-    for (let k = 0; k < 4; k++) S.glow(dc, x - sg * 2, A(S, dc, WY(dc) + 0.6 + k * 2), '#ffffff', 16 - k * 2); S.ball(dc, x - sg * 3, A(S, dc, WY(dc) + 0.4), 3.2, 'waterSurf', '#e8f6ff', false, 0.5);
+    const x = sg * (hw + 0.8), h = top - WY(dc), wy = WY(dc);   // v296 : colle a la paroi en blocs ; ecume blanche, remous et vapeur au pied
+    S.bx(dc, x, A(S, dc, (top + wy) / 2), 0.4, h, 6.5, 'waterSurf', '#f4fbff', false); S.bx(dc, x - sg * 1.4, A(S, dc, top - 1), 3.4, 1.8, 7.5, 'jrock', '#9a9a86', true);
+    for (let k = 0; k < 5; k++) S.glow(dc, x - sg * 2, A(S, dc, wy + 0.6 + k * 2.6), '#ffffff', 18 - k * 2); S.ball(dc, x - sg * 3, A(S, dc, wy + 0.4), 3.6, 'waterSurf', '#e8f6ff', false, 0.5);
+    S.bx(dc, x - sg * 3.6, A(S, dc, wy + 0.14), 9, 0.05, 10, 'waterSurf', '#ffffff', false);           // nappe d'ecume
+    for (let k = 0; k < 4; k++) S.bx(dc + r.between([-4, 4]), x - sg * r.between([2, 8]), A(S, dc, wy + 0.18 + k * 0.01), r.between([2.4, 5]), 0.05, r.between([2.4, 5]), 'waterSurf', '#f4fbff', false);   // remous
+    for (let k = 0; k < 3; k++) S.glow(dc, x - sg * (2.5 + k * 2.4), A(S, dc, wy + 2.2 + k), '#f2fbff', 36 - k * 6);   // vapeur
   };
   // gardien colossal assis : socle, jambes, torse, bras sur les genoux, tete a diademe etage, yeux creux ; un par rive de la lagune
   const guardian = (S, dc, sg, yBase, r) => {
@@ -128,38 +131,36 @@
       // --- les rives : tranches de 14 m, paroi de roche, replats, couverture de jungle
       for (let dc = 74; dc < LA - 6; dc += 14) S.item(dc, (r) => {
         for (const sg of [-1, 1]) {
-          const hwv = HW(dc), face = hwv + r.between([-1.2, 2.2]), top = (dc < 140 ? mixf(74, WY(dc) + 26, ss(74, 140, dc)) : WY(dc) + 26) + 4 * Math.sin(dc / 53 + sg * 1.7) + 2 * Math.sin(dc / 17 + sg), bed = BED(dc), mid = (bed - 6 + top) / 2, hgt = top - bed + 6, wd = OUT - face;
-          S.bx(dc, sg * (face + wd / 2), A(S, dc, mid), wd, hgt, 18, 'jrock', pk(r, WALL), true);
-          S.bx(dc, sg * (face + wd / 2), A(S, dc, top + 0.25), wd, 0.5, 18, 'evoGrass', pk(r, GREEN), true);
-          // corniches moussues sur la paroi
-          const nl = 1 + Math.floor(r() * 2);
-          for (let k = 0; k < nl; k++) { const yl = WY(dc) + r.between([3, Math.max(4, top - WY(dc) - 3)]), th = r.between([1.1, 2.4]), ext = r.between([1.2, 3.2]); S.bx(dc + r.between([-4, 4]), sg * (face - ext / 2 + 0.2), A(S, dc, yl), ext, th, r.between([5, 11]), 'jrock', pk(r, STONE), true); S.bx(dc, sg * (face - ext / 2 + 0.2), A(S, dc, yl + th / 2 + 0.12), ext + 0.2, 0.26, 4.5, 'evoGrass', pk(r, GREEN), false); if (r() < 0.7) plant(S, TR.fern, dc + r.between([-3, 3]), sg * (face - ext / 2), yl + th / 2 + 0.2, r.between([1.1, 2]), r); }
-          // v295 : falaise plus naturelle : blocs de roche a facettes en saillie, coulees sombres et taches de mousse sur la paroi, levre de roche et d'herbe qui surplombe le bord
-          for (let k = 0, nr = 1 + (r() < 0.6 ? 1 : 0); k < nr; k++) rockC(S, dc + r.between([-6, 6]), sg * (face + r.between([-0.6, 0.8])), WY(dc) + r.between([5, Math.max(7, top - WY(dc) - 4)]), r.between([3.2, 6.5]), r, pk(r, ['#8c9482', '#80897a', '#969c88', '#7a8474']), true);
-          for (let k = 0; k < 2; k++) if (r() < 0.6) S.bx(dc + r.between([-6, 6]), sg * (face - 0.12), A(S, dc, top - r.between([4, 12])), 0.12, r.between([6, 14]), r.between([1, 2.8]), 'col:' + pk(r, ['#34482c', '#3e4a3a', '#2e3c28']), undefined, false);
-          for (let k = 0; k < 2; k++) if (r() < 0.6) S.bx(dc + r.between([-6, 6]), sg * (face - 0.14), A(S, dc, WY(dc) + r.between([4, Math.max(6, top - WY(dc) - 2)])), 0.16, r.between([1.4, 3]), r.between([2.5, 6]), 'col:' + pk(r, ['#4f8a3c', '#5a9a42', '#447a34']), undefined, false);
-          S.bx(dc, sg * (face - 0.8), A(S, dc, top - 0.7), 2.4, 1.5, 13.6, 'jrock', pk(r, WALL), true); S.bx(dc, sg * (face - 0.8), A(S, dc, top + 0.1), 2.5, 0.3, 13.7, 'evoGrass', pk(r, GREEN), false);
+          const hwv = HW(dc), face = R.faceX(dc), top = R.topAt(dc, sg), bed = BED(dc), mid = (bed - 6 + top) / 2, hgt = top - bed + 6, wd = OUT - face;
+          S.bx(dc, sg * (face + wd / 2), A(S, dc, mid), wd, hgt, 18, 'jrock', undefined, true, { render: false });   // v296 : collision seule ; la paroi visible est la falaise en blocs (zones_river_rock.js)
+          R.cliffFace(S, r, dc, sg);
+          if (dc > 190 && dc < LA - 120 && hsh(dc, sg * 3.7) < 0.075 && !(dc > 330 && dc < 370) && !(dc > 510 && dc < 550) && !(dc > 980 && dc < 1020) && !(dc > 1100 && dc < 1140)) sideFall(S, dc, sg, hwv, top - 1, r);   // v296 : petits ruisseaux qui coulent de la falaise
           // rochers a la ligne d'eau, roseaux
           if (r() < 0.55) rockC(S, dc + r.between([-5, 5]), sg * (face - r.between([0.8, 3.2])), WY(dc) - 1.2, r.between([1.8, 4]), r, pk(r, STONE), true);
           if (r() < 0.5) plant(S, TR.reeds, dc + r.between([-5, 5]), sg * (face - r.between([0.4, 2.4])), WY(dc) - 0.3, r.between([1.6, 2.6]), r);
           // vegetation du sommet : canopee, palmiers sur le bord, sous-bois
-          if (r() < 0.62) plant(S, TR.jungle, dc + r.between([-5, 5]), sg * (face + r.between([6, 22])), top + 0.2, r.between([20, 34]), r, {});
-          if (r() < 0.45) plant(S, TR.jungle, dc + r.between([-6, 6]), sg * (face + r.between([22, 70])), top + 0.2, r.between([22, 38]), r, { far: true });
+          if (r() < 0.55) plant(S, TR.jungle, dc + r.between([-5, 5]), sg * (face + r.between([6, 22])), top + 0.2, r.between([20, 34]), r, {});
+          if (r() < 0.35) plant(S, TR.jungle, dc + r.between([-6, 6]), sg * (face + r.between([22, 70])), top + 0.2, r.between([22, 38]), r, { far: true });
           if (r() < 0.5) plant(S, TR.palm, dc + r.between([-5, 5]), sg * (face + r.between([1.8, 7])), top + 0.2, r.between([9, 15]), r, {});
           for (let k = 0; k < 2; k++) if (r() < 0.7) plant(S, r() < 0.5 ? TR.fern : TR.bigleaf, dc + r.between([-6, 6]), sg * (face + r.between([0.8, 24])), top + 0.2, r.between([1.6, 2.8]), r);
-          // lianes qui pendent le long de la paroi
-          if (r() < 0.55) { const vx = sg * (face - 0.15), vy = top - 0.5, vl = r.between([6, 16]); S.bx(dc + r.between([-5, 5]), vx, A(S, dc, vy - vl / 2), 0.14, vl, 0.14, 'col:#2e4a24', undefined, false); }
-          // filets d'eau qui ruissellent sur la roche
-          if (r() < 0.12) S.bx(dc, sg * (face - 0.1), A(S, dc, (top + WY(dc)) / 2), 0.12, top - WY(dc) - 1, 1.1, 'emis:#cfeeff', undefined, false);
         }
       });
       // v286 : VIRAGES ET OBSTACLES A PASSER PAR LE HAUT OU PAR LE BAS. Un eperon de roche sur la rive interieure de chaque virage cache la suite ; un linteau de roche barre le fleuve au-dessus d'une fosse (on passe dessous en plongeant, ou dessus en sortant de l'eau) ; une grotte couvre le canyon
       for (const [u0, u1] of [[0.06, 0.145], [0.16, 0.245], [0.26, 0.33], [0.4, 0.485], [0.5, 0.585], [0.72, 0.805], [0.83, 0.915]]) {
         const dm = Math.round((u0 + u1) / 2 * L), y1 = S.yaw(dm - 30), y2 = S.yaw(dm + 30); let dy = y2 - y1; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI;
         const yy = S.yaw(dm), a0 = S.at(dm, 0, 0), a1 = S.at(dm, 1, 0), nx = a1[0] - a0[0], nz = a1[2] - a0[2], ix = Math.cos(yy) * Math.sign(dy), iz = -Math.sin(yy) * Math.sign(dy), sg = (nx * ix + nz * iz) >= 0 ? 1 : -1;
-        S.item(dm, (r) => { const hwv = HW(dm), ins = Math.min(13, Math.max(3, hwv - 22)); for (let j = -1; j <= 1; j++) { const dc = dm + j * 17; S.bx(dc, sg * (hwv + 6 - ins / 2 - 3 * Math.abs(j)), A(S, dc, (BED(dc) + WY(dc) + 36) / 2), ins + 10, WY(dc) + 36 - BED(dc), 17.5, 'jrock', pk(r, WALL), true); S.bx(dc, sg * (hwv + 6 - ins / 2 - 3 * Math.abs(j)), A(S, dc, WY(dc) + 36.3), ins + 10, 0.6, 17.5, 'evoGrass', pk(r, GREEN), true); plant(S, TR.jungle, dc, sg * (hwv - ins / 2 + 2), WY(dc) + 36.6, r.between([22, 30]), r, {}); } });
+        S.item(dm, (r) => { const hwv = HW(dm), ins = Math.min(13, Math.max(3, hwv - 22)), L = (j) => hwv + 1 - ins - 3 * Math.abs(j), topS = WY(dm) + 36, bt = WY(dm) - 3;
+          for (let j = -1; j <= 1; j++) { const dc = dm + j * 17, lmid = hwv + 6 - ins / 2 - 3 * Math.abs(j), w = ins + 10;
+            S.bx(dc, sg * lmid, A(S, dc, (BED(dc) + topS) / 2), w, topS - BED(dc), 17.5, 'jrock', undefined, true, { render: false }); S.bx(dc, sg * lmid, A(S, dc, topS + 0.3), w, 0.6, 17.5, 'evoGrass', pk(r, GREEN), true);   // v296 : collision seule, la roche est en blocs
+            R.faceAlong(S, r, dc - 8.75, dc + 8.75, sg * L(j), bt, topS, 40 + 7 * j + 3 * sg, { backBot: BED(dc) - 2, waterY: () => WY(dm) });
+            plant(S, TR.jungle, dc, sg * (hwv - ins / 2 + 2), WY(dc) + 36.6, r.between([22, 30]), r, {}); }
+          R.faceAcross(S, r, dm - 25.75, sg * L(-1), sg * R.faceX(dm), 1, bt, topS, 61 + sg, { backBot: BED(dm) - 2, waterY: () => WY(dm) }); R.faceAcross(S, r, dm + 25.75, sg * L(1), sg * R.faceX(dm), -1, bt, topS, 67 + sg, { backBot: BED(dm) - 2, waterY: () => WY(dm) });
+          R.faceAcross(S, r, dm - 8.5, sg * L(-1), sg * L(0), -1, bt, topS, 71 + sg, { backBot: BED(dm) - 2, waterY: () => WY(dm) }); R.faceAcross(S, r, dm + 8.5, sg * L(1), sg * L(0), 1, bt, topS, 73 + sg, { backBot: BED(dm) - 2, waterY: () => WY(dm) }); });
       }
-      S.item(300, (r) => { const hwv = HW(300), top = WY(300) + 4.5, bot = WY(300) - 11; S.bx(300, 0, A(S, 300, (top + bot) / 2), 2 * (hwv + 8), top - bot, 9, 'jrock', '#6f7a64', true); S.bx(300, 0, A(S, 300, top + 0.25), 2 * (hwv + 8), 0.5, 9.4, 'evoGrass', '#3f8a3c', true); for (const sg of [-1, 1]) { S.bx(300, sg * (hwv + 3), A(S, 300, (BED(300) + bot) / 2), 7, bot - BED(300), 9, 'jrock', '#6a7460', true); plant(S, TR.fern, 300, sg * (hwv - 2), top + 0.4, 2, r); } for (let k = 0; k < 5; k++) S.bx(300 - 4.7, -hwv + 8 + k * (2 * hwv - 16) / 4, A(S, 300, bot + 0.6), 0.14, r.between([3, 6]), 0.14, 'col:#2e4a24', undefined, false); lampS(S, 296.4, -hwv + 4, A(S, 300, bot) - 0.2, '#ffcf6a', 16); lampS(S, 296.4, hwv - 4, A(S, 300, bot) - 0.2, '#ffcf6a', 16); });
+      S.item(300, (r) => { const hwv = HW(300), top = WY(300) + 4.5, bot = WY(300) - 11; S.bx(300, 0, A(S, 300, (top + bot) / 2), 2 * (hwv + 8), top - bot, 9, 'jrock', undefined, true, { render: false }); S.bx(300, 0, A(S, 300, top + 0.25), 2 * (hwv + 8), 0.5, 9.4, 'evoGrass', '#3f8a3c', true);
+        for (const [df, dr] of [[295.5, 1], [304.5, -1]]) R.faceAcross(S, r, df, -(hwv + 8), hwv + 8, dr, WY(300) - 3, top, 91 + dr, { backBot: bot, waterY: () => WY(300), veg: 2 });
+        for (const sg of [-1, 1]) { S.bx(300, sg * (hwv + 3), A(S, 300, (BED(300) + bot) / 2), 7, bot - BED(300), 9, 'jrock', '#6a7460', true); plant(S, TR.fern, 300, sg * (hwv - 2), top + 0.4, 2, r); }
+        for (let k = 0; k < 5; k++) TR.vine(S.b, ...absAt(S, 295.5, -hwv + 8 + k * (2 * hwv - 16) / 4, bot + 6.5), r.between([3, 6]), r); lampS(S, 296.4, -hwv + 4, A(S, 300, bot) - 0.2, '#ffcf6a', 16); lampS(S, 296.4, hwv - 4, A(S, 300, bot) - 0.2, '#ffcf6a', 16); });
       S.item(820, (r) => { for (let dc = 790; dc <= 850; dc += 15) { const hwv = HW(dc); S.bx(dc, 0, A(S, dc, WY(dc) + 17.5), 2 * (hwv + 8), 9, 15.6, 'jrock', pk(r, WALL), true); S.bx(dc, 0, A(S, dc, WY(dc) + 22.3), 2 * (hwv + 8), 0.6, 15.6, 'evoGrass', '#3f8a3c', true); if (r() < 0.8) plant(S, TR.jungle, dc, r.between([-hwv, hwv]), WY(dc) + 23, r.between([20, 28]), r, {}); lampS(S, dc, -hwv + 3, A(S, dc, WY(dc) + 12), '#ffcf6a', 16); lampS(S, dc, hwv - 3, A(S, dc, WY(dc) + 12), '#ffcf6a', 16); for (let k = 0; k < 4; k++) S.bx(dc + r.between([-5, 5]), r.between([-hwv, hwv]), A(S, dc, WY(dc) + 10.5), 0.14, r.between([3, 6]), 0.14, 'col:#2e4a24', undefined, false); } });
       // --- LE CAMP (la colline de la rampe) : sol de jungle, piste de terre, cabanes sur pilotis, tours, mat radio, sacs de sable, caisses, futs, vegetation dense
       for (let dc = 4; dc < 104; dc += 10) S.item(dc, (r) => {

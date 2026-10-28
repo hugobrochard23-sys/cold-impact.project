@@ -53,7 +53,7 @@
   EVO.launchY = () => 40.9;
   EVO.padPitch = () => (EVO.isS2() ? -19 : null);
   EVO.SCENE_MOOD.rapides = 'jungle'; EVO.SCENE_AUDIO.rapides = 'evoDay'; EVO.SCENE_MOOD.arrivee = 'sea'; EVO.SCENE_AUDIO.arrivee = 'evoDay';
-  EVO.addMood('jungle', { top: '#2a76d6', hor: '#b4dcf6', fog: '#bcdcf0', near: 90, far: 460, hemiS: '#e6f2fb', hemiG: '#4a7a4c', hemiI: 0.95, amb: 0.22, sunC: '#fff2d2', sunI: 0.9, night: 0 });   // v295 : vrai ciel bleu, brume bleutee (les collines lointaines passent au bleu)
+  EVO.addMood('jungle', { top: '#2a76d6', hor: '#b4dcf6', fog: '#bcdcf0', near: 90, far: 460, hemiS: '#e6f2fb', hemiG: '#4a7a4c', hemiI: 0.74, amb: 0.2, sunC: '#fff0d0', sunI: 0.72, night: 0 });   // v296 : lumiere moins forte (le haut des arbres, des rochers et des collines n'est plus surexpose) ; v295 : vrai ciel bleu, brume bleutee (les collines lointaines passent au bleu)
   EVO.addMood('dam', { top: '#4a7aa8', hor: '#cfd8da', fog: '#9fb0b4', near: 120, far: 560, hemiS: '#dde8ec', hemiG: '#4a5a60', hemiI: 0.9, amb: 0.22, sunC: '#ffe8c0', sunI: 0.8, night: 0 });
   EVO.addMood('pit', { top: '#1a2a38', hor: '#3a5666', fog: '#243844', near: 20, far: 300, hemiS: '#b4d8e8', hemiG: '#2a3c44', hemiI: 1.0, amb: 0.46, sunC: '#c8e4f0', sunI: 0.5, night: 0.2 });
 
@@ -72,6 +72,9 @@
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const a = r * (cols + 1) + c, b = a + 1, q = a + cols + 1, e = q + 1; ix.push(a, q, b, b, q, e); }
     const g = new T3.BufferGeometry(); g.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new T3.Float32BufferAttribute(uv, 2)); g.setIndex(ix); const g2 = g.toNonIndexed(); g.dispose(); g2.computeVertexNormals();
     S.b.addGeometry(g2, new V(), new T3.Quaternion(), null, 'waterSurf', '#f4fbff', [1, 1]); g2.dispose();
+    S.bx(dc + 7, 0, A(S, dc, yBot + 0.13), 2 * hw * 0.97, 0.05, 16, 'waterSurf', '#ffffff', false);   // v296 : ecume blanche au pied de la chute, remous et vapeur
+    for (let k = 0; k < 7; k++) S.bx(dc + 3 + k * 2.6, (k % 2 ? 1 : -1) * hw * 0.35 * ((k * 37) % 5) / 4, A(S, dc, yBot + 0.17 + k * 0.01), hw * 0.5, 0.05, 6 + (k % 3) * 2, 'waterSurf', '#f6fcff', false);
+    for (let k = -2; k <= 2; k++) S.glow(dc + 6, k * hw / 2.4, A(S, dc, yBot + 3), '#ffffff', 44);
     for (let k = -3; k <= 3; k++) { S.glow(dc + 4, k * hw / 3.2, yBot - A(S, dc, 0) + A(S, dc, yBot) * 0 + 0, '#ffffff', 22); S.glow(dc + 2, k * hw / 3.4, A(S, dc, yBot + 3), '#eaf8ff', 30); }   // brume au pied
   };
   // pose un arbre/une plante sur la cote absolue y
