@@ -15,8 +15,10 @@
   EVO.startIntro = (g) => {
     EVO.save(g).intro = 1; g.writeSave(); g.evoDrop = { t0: 0, dur: 2 };
     if (!EVO._dropHook) { EVO._dropHook = 1; const ch = EVO.camHook; EVO.camHook = (gg, rig, o) => { ch(gg, rig, o); const D = gg.evoDrop; if (!D) return; if (!D.t0) D.t0 = performance.now(); const t = (performance.now() - D.t0) / 1000 / D.dur; if (t >= 1) { gg.evoDrop = null; return; }
-      const e = 1 - Math.pow(1 - U.clamp(t, 0, 1), 3), hi = new THREE.Vector3().copy(o).add(new THREE.Vector3(0, 70, 0)), lk = new THREE.Vector3().copy(o);   // part d'en haut, regarde la fusee, descend et passe derriere
-      rig.padPos.copy(hi).lerp(rig.padPos, e); rig.padLook.copy(lk).lerp(rig.padLook, e); rig.padFov = 36 + (rig.padFov - 36) * e; }; }
+      const sm = (a, b, x) => { x = U.clamp((x - a) / (b - a), 0, 1); return x * x * (3 - 2 * x); }, eH = sm(0, 0.8, t), eV = sm(0.3, 1, t), dir = gg.pad.dir, fin = rig.padPos.clone(), fl = rig.padLook.clone();   // un seul mouvement fluide : la camera avance vers la fusee depuis l'arriere (meme axe), puis se releve jusqu'a l'angle de visee
+      const back = new THREE.Vector3().copy(fin).addScaledVector(dir, -15), low = Math.max(o.y + 0.6, fin.y - 0.4); back.y = low;
+      const pos = new THREE.Vector3(back.x + (fin.x - back.x) * eH, low + (fin.y - low) * eV, back.z + (fin.z - back.z) * eH);
+      rig.padPos.copy(pos); rig.padLook.copy(o).lerp(fl, eV); rig.padFov = 44 + (rig.padFov - 44) * eV; }; }
     g.ui.overlay = null; EVO.start(g);
   };
   EVO.endIntro = (g) => { if (g.cine3d) EVO.stopCine(g); else { EVO.save(g).intro = 1; g.writeSave(); g.ui.overlay = 'evo'; } };
