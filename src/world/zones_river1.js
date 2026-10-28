@@ -111,7 +111,7 @@
   // ============================================== RAPIDES ==============================================
   SC.rapides = { len: [LA, LA], noDoor: true, noChaos: true, gw: 125, grass: false,
     sub: [{ u: 0, key: 'camp', name: 'LE CAMP' }, { u: 0.07, key: 'fleuve', name: 'LE FLEUVE' }, { u: 0.36, key: 'gorges', name: 'LES GORGES' }, { u: 0.7, key: 'lagune', name: 'LA LAGUNE' }],
-    turns: [[0.05, 0.2, 14], [0.2, 0.33, -26], [0.4, 0.55, 24], [0.58, 0.68, -20], [0.76, 0.9, 18]],
+    turns: [[0.06, 0.145, 34], [0.16, 0.245, -44], [0.26, 0.33, 38], [0.4, 0.485, -46], [0.5, 0.585, 40], [0.72, 0.805, 50], [0.83, 0.915, -38]],   // v286 : vrais virages : on ne voit plus la suite du fleuve
     pin: (T, sc) => ({ lx: 0, fy: (d) => (d < 100 ? A0b(d) - 4 : R.PATH(d)) - T.base(d), from: 24, to: sc.d1 - sc.d0 - 24 }),
     relief(T, sc) { return rel(sc, (d) => BED(d) - SEAB); },
     ground: (d, lx, c, sc) => {
@@ -128,8 +128,8 @@
       for (let dc = 74; dc < LA - 6; dc += 14) S.item(dc, (r) => {
         for (const sg of [-1, 1]) {
           const hwv = HW(dc), face = hwv + r.between([-1.2, 2.2]), top = (dc < 140 ? mixf(A0b(dc) + 10, WY(dc) + 26, ss(74, 140, dc)) : WY(dc) + 26) + 4 * Math.sin(dc / 53 + sg * 1.7) + 2 * Math.sin(dc / 17 + sg), bed = BED(dc), mid = (bed - 6 + top) / 2, hgt = top - bed + 6, wd = OUT - face;
-          S.bx(dc, sg * (face + wd / 2), A(S, dc, mid), wd, hgt, 14.9, 'jrock', pk(r, WALL), true);
-          S.bx(dc, sg * (face + wd / 2), A(S, dc, top + 0.25), wd, 0.5, 14.9, 'evoGrass', pk(r, GREEN), true);
+          S.bx(dc, sg * (face + wd / 2), A(S, dc, mid), wd, hgt, 18, 'jrock', pk(r, WALL), true);
+          S.bx(dc, sg * (face + wd / 2), A(S, dc, top + 0.25), wd, 0.5, 18, 'evoGrass', pk(r, GREEN), true);
           // corniches moussues sur la paroi
           const nl = 1 + Math.floor(r() * 2);
           for (let k = 0; k < nl; k++) { const yl = WY(dc) + r.between([3, Math.max(4, top - WY(dc) - 3)]), th = r.between([1.1, 2.4]), ext = r.between([1.2, 3.2]); S.bx(dc + r.between([-4, 4]), sg * (face - ext / 2 + 0.2), A(S, dc, yl), ext, th, r.between([5, 11]), 'jrock', pk(r, STONE), true); S.bx(dc, sg * (face - ext / 2 + 0.2), A(S, dc, yl + th / 2 + 0.12), ext + 0.2, 0.26, 4.5, 'evoGrass', pk(r, GREEN), false); if (r() < 0.7) plant(S, TR.fern, dc + r.between([-3, 3]), sg * (face - ext / 2), yl + th / 2 + 0.2, r.between([1.1, 2]), r); }
@@ -147,6 +147,14 @@
           if (r() < 0.12) S.bx(dc, sg * (face - 0.1), A(S, dc, (top + WY(dc)) / 2), 0.12, top - WY(dc) - 1, 1.1, 'emis:#cfeeff', undefined, false);
         }
       });
+      // v286 : VIRAGES ET OBSTACLES A PASSER PAR LE HAUT OU PAR LE BAS. Un eperon de roche sur la rive interieure de chaque virage cache la suite ; un linteau de roche barre le fleuve au-dessus d'une fosse (on passe dessous en plongeant, ou dessus en sortant de l'eau) ; une grotte couvre le canyon
+      for (const [u0, u1] of [[0.06, 0.145], [0.16, 0.245], [0.26, 0.33], [0.4, 0.485], [0.5, 0.585], [0.72, 0.805], [0.83, 0.915]]) {
+        const dm = Math.round((u0 + u1) / 2 * L), y1 = S.yaw(dm - 30), y2 = S.yaw(dm + 30); let dy = y2 - y1; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI;
+        const yy = S.yaw(dm), a0 = S.at(dm, 0, 0), a1 = S.at(dm, 1, 0), nx = a1[0] - a0[0], nz = a1[2] - a0[2], ix = Math.cos(yy) * Math.sign(dy), iz = -Math.sin(yy) * Math.sign(dy), sg = (nx * ix + nz * iz) >= 0 ? 1 : -1;
+        S.item(dm, (r) => { const hwv = HW(dm), ins = Math.min(13, Math.max(3, hwv - 22)); for (let j = -1; j <= 1; j++) { const dc = dm + j * 17; S.bx(dc, sg * (hwv + 6 - ins / 2 - 3 * Math.abs(j)), A(S, dc, (BED(dc) + WY(dc) + 36) / 2), ins + 10, WY(dc) + 36 - BED(dc), 17.5, 'jrock', pk(r, WALL), true); S.bx(dc, sg * (hwv + 6 - ins / 2 - 3 * Math.abs(j)), A(S, dc, WY(dc) + 36.3), ins + 10, 0.6, 17.5, 'evoGrass', pk(r, GREEN), true); plant(S, TR.jungle, dc, sg * (hwv - ins / 2 + 2), WY(dc) + 36.6, r.between([22, 30]), r, {}); } });
+      }
+      S.item(300, (r) => { const hwv = HW(300), top = WY(300) + 4.5, bot = WY(300) - 11; S.bx(300, 0, A(S, 300, (top + bot) / 2), 2 * (hwv + 8), top - bot, 9, 'jrock', '#6f7a64', true); S.bx(300, 0, A(S, 300, top + 0.25), 2 * (hwv + 8), 0.5, 9.4, 'evoGrass', '#3f8a3c', true); for (const sg of [-1, 1]) { S.bx(300, sg * (hwv + 3), A(S, 300, (BED(300) + bot) / 2), 7, bot - BED(300), 9, 'jrock', '#6a7460', true); plant(S, TR.fern, 300, sg * (hwv - 2), top + 0.4, 2, r); } for (let k = 0; k < 5; k++) S.bx(300 - 4.7, -hwv + 8 + k * (2 * hwv - 16) / 4, A(S, 300, bot + 0.6), 0.14, r.between([3, 6]), 0.14, 'col:#2e4a24', undefined, false); lampS(S, 296.4, -hwv + 4, A(S, 300, bot) - 0.2, '#ffcf6a', 16); lampS(S, 296.4, hwv - 4, A(S, 300, bot) - 0.2, '#ffcf6a', 16); });
+      S.item(820, (r) => { for (let dc = 790; dc <= 850; dc += 15) { const hwv = HW(dc); S.bx(dc, 0, A(S, dc, WY(dc) + 17.5), 2 * (hwv + 8), 9, 15.6, 'jrock', pk(r, WALL), true); S.bx(dc, 0, A(S, dc, WY(dc) + 22.3), 2 * (hwv + 8), 0.6, 15.6, 'evoGrass', '#3f8a3c', true); if (r() < 0.8) plant(S, TR.jungle, dc, r.between([-hwv, hwv]), WY(dc) + 23, r.between([20, 28]), r, {}); lampS(S, dc, -hwv + 3, A(S, dc, WY(dc) + 12), '#ffcf6a', 16); lampS(S, dc, hwv - 3, A(S, dc, WY(dc) + 12), '#ffcf6a', 16); for (let k = 0; k < 4; k++) S.bx(dc + r.between([-5, 5]), r.between([-hwv, hwv]), A(S, dc, WY(dc) + 10.5), 0.14, r.between([3, 6]), 0.14, 'col:#2e4a24', undefined, false); } });
       // --- LE CAMP (la colline de la rampe) : sol de jungle, piste de terre, cabanes sur pilotis, tours, mat radio, sacs de sable, caisses, futs, vegetation dense
       for (let dc = 4; dc < 104; dc += 10) S.item(dc, (r) => {
         for (let k = 0; k < 11; k++) { const sg = r() < 0.5 ? -1 : 1, lx = sg * (k < 4 ? r.between([4, 30]) : r.between([12, 110])), yy = BED(dc) + 0.5; const q = r(); if (q < 0.16 && Math.abs(lx) > 10) plant(S, TR.palm, dc + r.between([-5, 5]), lx, yy, r.between([8, 14]), r); else if (q < 0.34 && Math.abs(lx) > 13) rockC(S, dc + r.between([-5, 5]), lx, yy + 0.3, r.between([1.2, 3.2]), r, pk(r, STONE)); else plant(S, q < 0.7 ? TR.fern : TR.bigleaf, dc + r.between([-5, 5]), lx, yy, r.between([1.6, 3.0]), r); }

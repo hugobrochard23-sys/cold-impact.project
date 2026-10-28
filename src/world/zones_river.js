@@ -21,6 +21,7 @@
     let v = 17 + 2.5 * Math.sin(d / 47);
     v = mixf(v, 7, ss(470, 596, d)); v = mixf(v, 24, ss(F1 + 4, F1 + 34, d)); v = mixf(v, 10 + 2 * Math.sin(d / 19), ss(F1 + 90, F1 + 200, d));
     v = mixf(v, 7, ss(F2 - 110, F2 - 4, d)); v = mixf(v, 30, ss(F2 + 4, F2 + 40, d)); v = mixf(v, 38, ss(F2 + 140, F2 + 420, d));
+    v += 17 * Math.exp(-Math.pow((d - 300) / 55, 2)) + 20 * Math.exp(-Math.pow((d - 820) / 50, 2));   // v286 : deux fosses profondes (sous le linteau de roche, sous la grotte)
     return v;
   };
   // demi-largeur du fleuve (m) : large et calme, gorge etroite, lagune
@@ -40,7 +41,7 @@
     if (d < 100) return mixf(A0(d), bed, ss(40, 100, d));
     return bed;
   };
-  const PATH = (d) => WY(d) - 4.2 + 2.6 * ss(500, 590, d) * (1 - ss(F1 + 2, F1 + 16, d)) + 2.6 * ss(1070, F2 - 12, d) * (1 - ss(F2 + 2, F2 + 16, d));   // trajectoire guide : remonte pres de la surface avant les chutes
+  const PATH = (d) => WY(d) - 4.2 - 15 * Math.exp(-Math.pow((d - 292) / 42, 2)) + 2.6 * ss(500, 590, d) * (1 - ss(F1 + 2, F1 + 16, d)) + 2.6 * ss(1070, F2 - 12, d) * (1 - ss(F2 + 2, F2 + 16, d));   // trajectoire guide : remonte pres de la surface avant les chutes
   const A = (S, dc, y) => y - S.T.base(dc);        // cote absolue -> relative au sol (a la distance dc)
   const absAt = (S, dc, lx, y) => S.at(dc, lx, A(S, dc, y));   // point du monde pour une cote absolue
   EVO.riv = { WY, BED, HW, DEP, LA, LB, LF, F1, F2, EXIT, A, absAt, SEAB, PL, PATH };
@@ -88,12 +89,12 @@
   { const _tl = EVO.tick;
     EVO.tick = (g, dt) => { _tl(g, dt); const run = g.endlessRun; if (!run || !EVO.isS2() || !g.evo || g.evo.preview) return;
       if (g._lcRun !== run) { g._lcRun = run; if (g._lc) { g.scene.remove(g._lc); g._lc.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
-        const G = new T3.Group(), wm = new T3.MeshLambertMaterial({ color: '#5f7550' }), gm = new T3.MeshLambertMaterial({ color: '#3f8a3c' }), cm = [new T3.MeshLambertMaterial({ color: '#2f7a34' }), new T3.MeshLambertMaterial({ color: '#3a8a3c' })];
-        const seg = (d, lx, w, dd, h) => { const a = run.T.at(d, lx, 0), b = run.T.at(d + 4, lx, 0), yaw = Math.atan2(b[0] - a[0], b[2] - a[2]), y0 = run.T.base(d) - 8; const m = new T3.Mesh(new T3.BoxGeometry(w, h + 8, dd), wm); m.position.set(a[0], y0 + (h + 8) / 2, a[2]); m.rotation.y = yaw; G.add(m); const t = new T3.Mesh(new T3.BoxGeometry(w + 0.4, 0.6, dd + 0.4), gm); t.position.set(a[0], y0 + h + 8.3, a[2]); t.rotation.y = yaw; G.add(t);
-          for (let k = 0; k < 2; k++) { const c = new T3.Mesh(new T3.SphereGeometry(7 + 6 * hsh(d, lx + k), 8, 6), cm[k]); c.scale.y = 0.7; c.position.set(a[0] + (hsh(lx, d + k) - 0.5) * w, y0 + h + 12, a[2] + (hsh(d + k, lx) - 0.5) * dd); G.add(c); } };
-        for (let d = -214; d < 78; d += 14) for (const sg of [-1, 1]) seg(d, sg * 148, 20, 14.9, 34 + 5 * Math.sin(d / 9 + sg));
-        for (let lx = -140; lx <= 140; lx += 16) seg(-214, lx, 16.6, 20, 36 + 6 * Math.sin(lx / 17));
-        g.scene.add(G); g._lc = G; }
+        const cols = [], G = new T3.Group(), wm = new T3.MeshLambertMaterial({ color: '#5f7550' }), gm = new T3.MeshLambertMaterial({ color: '#3f8a3c' }), cm = [new T3.MeshLambertMaterial({ color: '#2f7a34' }), new T3.MeshLambertMaterial({ color: '#3a8a3c' })];
+        const seg = (d, lx, w, dd, h) => { const a = run.T.at(d, lx, 0), b = run.T.at(d + 4, lx, 0), yaw = Math.atan2(b[0] - a[0], b[2] - a[2]), y0 = run.T.base(d) - 30; const m = new T3.Mesh(new T3.BoxGeometry(w, h + 30, dd), wm); m.position.set(a[0], y0 + (h + 30) / 2, a[2]); m.rotation.y = yaw; G.add(m); cols.push(EVO.colBox(m, w, h + 30, dd, 0, 0, 0)); const t = new T3.Mesh(new T3.BoxGeometry(w + 0.4, 0.6, dd + 0.4), gm); t.position.set(a[0], y0 + h + 30.3, a[2]); t.rotation.y = yaw; G.add(t);
+          for (let k = 0; k < 2; k++) { const c = new T3.Mesh(new T3.SphereGeometry(7 + 6 * hsh(d, lx + k), 8, 6), cm[k]); c.scale.y = 0.7; c.position.set(a[0] + (hsh(lx, d + k) - 0.5) * w, y0 + h + 34, a[2] + (hsh(d + k, lx) - 0.5) * dd); G.add(c); } };
+        for (let d = -214; d < 78; d += 14) for (const sg of [-1, 1]) seg(d, sg * 121, 22, 14.9, 34 + 5 * Math.sin(d / 9 + sg));
+        for (let lx = -128; lx <= 128; lx += 16) seg(-214, lx, 16.6, 20, 36 + 6 * Math.sin(lx / 17));
+        g.scene.add(G); g._lc = G; EVO.addDyn(G, null, cols, { span: 600 }); }
       if (g._lc) g._lc.visible = g.state === 'FLIGHT'; };
   }
   EVO.riv.plant = plant; EVO.riv.slab = slab; EVO.riv.lampS = lampS; EVO.riv.water = water; EVO.riv.curtain = curtain; EVO.riv.hsh = hsh;
