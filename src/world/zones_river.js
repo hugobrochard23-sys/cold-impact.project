@@ -19,8 +19,8 @@
   // profondeur du fleuve
   const DEP = (d) => {
     let v = 17 + 2.5 * Math.sin(d / 47);
-    v = mixf(v, 4, ss(470, 596, d)); v = mixf(v, 24, ss(F1 + 4, F1 + 34, d)); v = mixf(v, 10 + 2 * Math.sin(d / 19), ss(F1 + 90, F1 + 200, d));
-    v = mixf(v, 4, ss(F2 - 110, F2 - 4, d)); v = mixf(v, 30, ss(F2 + 4, F2 + 40, d)); v = mixf(v, 38, ss(F2 + 140, F2 + 420, d));
+    v = mixf(v, 7, ss(470, 596, d)); v = mixf(v, 24, ss(F1 + 4, F1 + 34, d)); v = mixf(v, 10 + 2 * Math.sin(d / 19), ss(F1 + 90, F1 + 200, d));
+    v = mixf(v, 7, ss(F2 - 110, F2 - 4, d)); v = mixf(v, 30, ss(F2 + 4, F2 + 40, d)); v = mixf(v, 38, ss(F2 + 140, F2 + 420, d));
     return v;
   };
   // demi-largeur du fleuve (m) : large et calme, gorge etroite, lagune
@@ -40,9 +40,10 @@
     if (d < 100) return mixf(A0(d), bed, ss(40, 100, d));
     return bed;
   };
+  const PATH = (d) => WY(d) - 4.2 + 2.6 * ss(500, 590, d) * (1 - ss(F1 + 2, F1 + 16, d)) + 2.6 * ss(1070, F2 - 12, d) * (1 - ss(F2 + 2, F2 + 16, d));   // trajectoire guide : remonte pres de la surface avant les chutes
   const A = (S, dc, y) => y - S.T.base(dc);        // cote absolue -> relative au sol (a la distance dc)
   const absAt = (S, dc, lx, y) => S.at(dc, lx, A(S, dc, y));   // point du monde pour une cote absolue
-  EVO.riv = { WY, BED, HW, DEP, LA, LB, LF, F1, F2, EXIT, A, absAt, SEAB, PL };
+  EVO.riv = { WY, BED, HW, DEP, LA, LB, LF, F1, F2, EXIT, A, absAt, SEAB, PL, PATH };
   // le niveau 2 est ce nouveau fleuve : liste des scenes, fonction d'eau, plateau de depart plat
   EVO.SCENES2 = ['rapides', 'barrage', 'arrivee'];
   EVO.waterFn = (d) => WY(d);
@@ -52,7 +53,7 @@
   EVO.SCENE_MOOD.rapides = 'jungle'; EVO.SCENE_AUDIO.rapides = 'evoDay'; EVO.SCENE_MOOD.arrivee = 'sea'; EVO.SCENE_AUDIO.arrivee = 'evoDay';
   EVO.addMood('jungle', { top: '#3f86c8', hor: '#d6ead2', fog: '#a8cdb4', near: 160, far: 640, hemiS: '#e8f4e2', hemiG: '#3f6a46', hemiI: 0.92, amb: 0.22, sunC: '#fff0c8', sunI: 0.88, night: 0 });
   EVO.addMood('dam', { top: '#4a7aa8', hor: '#cfd8da', fog: '#9fb0b4', near: 120, far: 560, hemiS: '#dde8ec', hemiG: '#4a5a60', hemiI: 0.9, amb: 0.22, sunC: '#ffe8c0', sunI: 0.8, night: 0 });
-  EVO.addMood('pit', { top: '#1a2a38', hor: '#3a5666', fog: '#243844', near: 20, far: 300, hemiS: '#9ac0d0', hemiG: '#1a2a30', hemiI: 0.78, amb: 0.3, sunC: '#a8d0e0', sunI: 0.3, night: 0.3 });
+  EVO.addMood('pit', { top: '#1a2a38', hor: '#3a5666', fog: '#243844', near: 20, far: 300, hemiS: '#b4d8e8', hemiG: '#2a3c44', hemiI: 1.0, amb: 0.46, sunC: '#c8e4f0', sunI: 0.5, night: 0.2 });
 
   // ============================================== OUTILS ==============================================
   const hsh = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };

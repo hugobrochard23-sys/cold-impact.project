@@ -411,7 +411,7 @@
     if (tm > 4.2) E_next(g, W_);
     ui.buttons.push({ x: 0, y: T0, w: W, h: HH, action: () => { if (tm > 2.2) E_next(g, W_); } });
   }
-  function E_next(g, W_) { if (W_._go) return; W_._go = 1; CC.EVO.goStage2(g); }
+  function E_next(g, W_) { if (W_._go) return; W_._go = 1; if (W_.stage === 1) CC.EVO.goStage2(g); else CC.EVO.backStage1(g); }
   Home.drawEvoWin = function (ui, ctx, g, W, H) {
     const W_ = g.evoWin; if (!W_) return; const F = frame(ui, ctx, W, H), { HH, Y, T0, cw, cx } = F, E = CC.EVO, t = (performance.now() - (W_.t0 || performance.now())) / 1000;
     if (W_.mphase) { multAnim(ui, ctx, g, W_, F); return; }
@@ -420,7 +420,7 @@
     for (let k = 0; k < 3; k++) { const s = Math.min(1, Math.max(0, (t - 0.3 - k * 0.45) / 0.35)), e = s < 1 ? 1 + 0.5 * Math.sin(s * 3.1416) : 1; Home.evoUI.star(ctx, cx + (k - 1) * S(250), Y(0.22) - (k === 1 ? S(50) : 0), S(120) * (k === 1 ? 1.3 : 1) * s * e); }
     const k2 = Math.min(1, Math.max(0, (t - 1.8) / 1.2)), cs = '+' + U.formatInt(Math.round(W_.bonus * k2)), fs = UI.fit(ctx, cs, cw * 0.6, S(150)); UI.icon(ctx, 'coins_stack', cx - UI.tw(ctx, cs, fs) / 2 - S(110), Y(0.4), S(200)); UI.text(ctx, cs, cx + S(40), Y(0.4), fs, T.yellow, { outline: true });
     UI.text(ctx, 'TOTAL ' + U.formatInt(W_.coins), cx, Y(0.5), S(70), T.white, { shadow: false });
-    if (t > 3.2) { const bw = cw * 0.6, bh = S(160), bx = cx - bw / 2, by = Y(0.8), pulse = 1 + 0.03 * Math.sin(t * 5); ctx.save(); ctx.translate(cx, by + bh / 2); ctx.scale(pulse, pulse); ctx.translate(-cx, -(by + bh / 2)); UI.btnPrimary(ctx, bx, by, bw, bh, 'SUIVANT'); ctx.restore(); UI.tap(ui, bx, by, bw, bh, () => { if (W_.stage === 1) { if (W_.mult) { W_.mphase = performance.now(); } else E.goStage2(g); } else E.backStage1(g); }); }
+    if (t > 3.2) { const bw = cw * 0.6, bh = S(160), bx = cx - bw / 2, by = Y(0.8), pulse = 1 + 0.03 * Math.sin(t * 5); ctx.save(); ctx.translate(cx, by + bh / 2); ctx.scale(pulse, pulse); ctx.translate(-cx, -(by + bh / 2)); UI.btnPrimary(ctx, bx, by, bw, bh, 'SUIVANT'); ctx.restore(); UI.tap(ui, bx, by, bw, bh, () => { if (W_.mult) { W_.mphase = performance.now(); } else if (W_.stage === 1) E.goStage2(g); else E.backStage1(g); }); }
   };
 
   // ---------- HUD DE VOL : pause (element de page), jauge de carburant, progression, quelques reperes ----------

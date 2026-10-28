@@ -28,10 +28,7 @@
   EVO.onClear = (g) => {
     const S = EVO.save(g), st = EVO.stage(g), first = st === 1 ? !S.clr1 : !S.clr2, m0 = EVO.mult(S.cm); EVO.mark(g, 'boss' + (st > 1 ? st : '')); S.cleared = (S.cleared || 0) + 1; if (st === 1) S.clr1 = 1; else S.clr2 = 1; const bonus = st === 1 ? 800 : 1500; S.coins += bonus; g.writeSave(); EVO.save(g);
     g.evoWin = { stage: st, bonus, t0: performance.now(), coins: S.coins, mult: first ? { old: m0, now: EVO.mult(S.cm) } : null };
-    if (st === 1) { g.ui.overlay = 'evoWin'; g.audio.play('victory'); return; }   // niveau 1 : on reste sur la scene finale (camera fixe a la ligne d'arrivee), les recompenses s'affichent par-dessus
-    const toWin = () => { g.ui.overlay = 'evoWin'; g.evoWin.t0 = performance.now(); g.audio.play('victory'); };
-    g.evoNext = () => EVO.playCine(g, 'win2', toWin);
-    g.goHome({});
+    g.ui.overlay = 'evoWin'; g.audio.play('victory');   // on reste sur la scene finale (camera fixe a la ligne d'arrivee), les recompenses s'affichent par-dessus ; pas de cinematique de fin
   };
   EVO.goStage2 = (g) => {
     EVO.setStage(g, 2); g.evoWin = null;

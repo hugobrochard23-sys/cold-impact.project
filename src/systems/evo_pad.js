@@ -20,7 +20,7 @@
   function backdrop() {
     const G = new T3.Group(), dark = bas('#2a2128', { fog: false }), dark2 = bas('#3a2c30', { fog: false });
     const rnd = (() => { let s = 7; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; })();
-    if (EVO.isS2()) { const sea = new T3.Mesh(new T3.PlaneGeometry(1400, 600), bas('#2a7aa6', { fog: false })); sea.rotation.x = -Math.PI / 2; sea.position.set(0, -1.2, -700); G.add(sea); for (const [x, z, l] of [[-160, -520, 90], [60, -600, 120], [220, -480, 80]]) { box(G, 16, 8, l, dark, x, 3, z); box(G, 10, 8, l * 0.25, dark2, x, 10, z + l * 0.1); box(G, 3, 10, 3, dark, x, 17, z + l * 0.1); } }
+    if (EVO.isS2()) { const sea = new T3.Mesh(new T3.PlaneGeometry(1400, 600), bas('#2a5a30', { fog: false })); sea.rotation.x = -Math.PI / 2; sea.position.set(0, -1.2, -700); G.add(sea); for (const [x, z, l] of [[-160, -520, 90], [60, -600, 120], [220, -480, 80]]) { box(G, 16, 8, l, dark, x, 3, z); box(G, 10, 8, l * 0.25, dark2, x, 10, z + l * 0.1); box(G, 3, 10, 3, dark, x, 17, z + l * 0.1); } }
     else for (let i = 0; i < 38; i++) { const w = 14 + rnd() * 26, h = 22 + rnd() * 90 * (0.4 + 0.6 * Math.abs(Math.sin(i * 0.7))), x = -300 + i * 16 + rnd() * 6, z = -430 - rnd() * 90; box(G, w, h, w * 0.8, rnd() < 0.5 ? dark : dark2, x, h / 2 - 8, z); if (rnd() < 0.3) box(G, w * 0.2, 14, w * 0.2, dark, x, h + 5, z); }
     const crane = (x, z, h, s) => { const k = new T3.Group(); box(k, 3, h, 3, dark, 0, h / 2, 0); box(k, 90 * s, 2.6, 2.6, dark, 24 * s, h, 0); box(k, 26 * s, 2.6, 2.6, dark, -16 * s, h, 0); box(k, 8, 10, 8, dark, -24 * s, h - 6, 0); box(k, 0.7, 40 * s, 0.7, dark, 56 * s, h - 20 * s, 0); box(k, 4, 4, 4, dark, 0, h + 5, 0); k.position.set(x, -8, z); G.add(k); };
     // v227 : plus de grues en arriere-plan
@@ -54,8 +54,8 @@
     // v234 : HANGAR MILITAIRE (menu seulement) : dalle de beton a bandes de securite, murs de tole ondulee vert-de-gris, fermes metalliques, plafonniers, grande porte ouverte au fond
     { const DK = EVO.isS2(), H = pad.hangar = new T3.Group(), RF = H.userData.roof = new T3.Group(); H.add(RF);   // RF : le toit (masque au lancement du niveau 2 : la fusee sort du hangar)
       const tex = (w, h, draw, rx, ry) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const q = new T3.CanvasTexture(c); q.wrapS = q.wrapT = T3.RepeatWrapping; q.magFilter = T3.NearestFilter; q.minFilter = T3.NearestFilter; q.repeat.set(rx, ry); return q; };
-      const tole = tex(32, 32, (x, w, h) => { x.fillStyle = DK ? '#38546e' : '#6F7C70'; x.fillRect(0, 0, w, h); for (let i = 0; i < 8; i++) { x.fillStyle = i % 2 ? (DK ? '#2c445a' : '#5E6A5F') : (DK ? '#44627f' : '#7C8A7D'); x.fillRect(i * 4, 0, 4, h); } x.fillStyle = 'rgba(0,0,0,0.12)'; x.fillRect(0, h - 2, w, 2); }, 12, 3);
-      const beton = tex(64, 64, (x, w, h) => { x.fillStyle = DK ? '#7b8a98' : '#8A8E94'; x.fillRect(0, 0, w, h); for (let i = 0; i < 160; i++) { x.fillStyle = 'rgba(' + (i % 2 ? '255,255,255' : '0,0,0') + ',0.06)'; x.fillRect(Math.random() * w | 0, Math.random() * h | 0, 2, 2); } x.fillStyle = 'rgba(0,0,0,0.28)'; x.fillRect(0, 0, w, 1); x.fillRect(0, 0, 1, h); }, 6, 8);
+      const tole = tex(32, 32, (x, w, h) => { x.fillStyle = DK ? '#4a5a3e' : '#6F7C70'; x.fillRect(0, 0, w, h); for (let i = 0; i < 8; i++) { x.fillStyle = i % 2 ? (DK ? '#38482e' : '#5E6A5F') : (DK ? '#5a6c4a' : '#7C8A7D'); x.fillRect(i * 4, 0, 4, h); } x.fillStyle = 'rgba(0,0,0,0.12)'; x.fillRect(0, h - 2, w, 2); }, 12, 3);
+      const beton = tex(64, 64, (x, w, h) => { x.fillStyle = DK ? '#8a8c7e' : '#8A8E94'; x.fillRect(0, 0, w, h); for (let i = 0; i < 160; i++) { x.fillStyle = 'rgba(' + (i % 2 ? '255,255,255' : '0,0,0') + ',0.06)'; x.fillRect(Math.random() * w | 0, Math.random() * h | 0, 2, 2); } x.fillStyle = 'rgba(0,0,0,0.28)'; x.fillRect(0, 0, w, 1); x.fillRect(0, 0, 1, h); }, 6, 8);
       const hz = hazMat(14);
       const wall = new T3.MeshLambertMaterial({ map: tole }), floor = new T3.MeshLambertMaterial({ map: beton }), steel = lam('#2F3A42'), steelL = lam('#4A5862'), lampM = bas('#FFF2C8');
       if (DK) { box(H, 3.1, 0.12, 20, floor, -4.45, -0.7, -2); box(H, 3.1, 0.12, 20, floor, 4.45, -0.7, -2); box(H, 6, 0.12, 8.2, floor, 0, -0.7, 4.1); }   // niveau 2 : pas de sol sous la trajectoire de la fusee : on voit la pente en dessous
@@ -70,23 +70,24 @@
         const wm = new T3.Mesh(new T3.PlaneGeometry(1.5, 18.6), new T3.MeshBasicMaterial({ color: '#2d86b4' })); wm.rotation.x = -Math.PI / 2; wm.position.set(3.35, -0.6, -2.2); H.add(wm); pad.dockWater = wm;
         for (const cx of [2.55, 4.15]) box(H, 0.18, 0.12, 18.6, lam('#9aa6b2'), cx, -0.58, -2.2);
         for (let z = -10; z <= 6; z += 4) { cyl(H, 0.14, 0.18, 0.4, lam('#2b2f36'), 4.35, -0.45, z, 10); box(H, 0.34, 0.06, 0.34, lam('#d9a441'), 4.35, -0.24, z); }
-        const sea = new T3.Mesh(new T3.PlaneGeometry(900, 700), new T3.MeshBasicMaterial({ color: '#2a7aa6', fog: false })); sea.rotation.x = -Math.PI / 2; sea.position.set(0, -0.9, 9 + 340); H.add(sea);
-        const ship = (x, z, l, c) => { const g = new T3.Group(); box(g, 14, 7, l, lam(c), 0, 3, 0); box(g, 10, 6, l * 0.22, lam('#5a6672'), 0, 9, -l * 0.15); box(g, 3, 8, 3, lam('#3a424c'), 0, 14, -l * 0.15); g.position.set(x, -0.6, z); H.add(g); };
-        ship(-150, 9 + 220, 90, '#46525e'); ship(120, 9 + 300, 120, '#3c4650'); ship(-30, 9 + 380, 70, '#4a5662');
+        const sea = new T3.Mesh(new T3.PlaneGeometry(900, 700), new T3.MeshBasicMaterial({ color: '#2a5a30', fog: false })); sea.rotation.x = -Math.PI / 2; sea.position.set(0, -0.9, 9 + 340); H.add(sea);
+        { let sd = 11; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647, gm = ['#1f5a2c', '#2a6a34', '#255e30', '#347a3c'];   // canopee a perte de vue : masses vertes
+          for (let k = 0; k < 90; k++) { const rad = 18 + rnd() * 34, o = new T3.Mesh(new T3.SphereGeometry(rad, 8, 6), lam(gm[k % gm.length])); o.scale.y = 0.55; o.position.set((rnd() - 0.5) * 760, 4 + rnd() * 10, 9 + 120 + rnd() * 520); H.add(o); }
+          const rv = new T3.Mesh(new T3.PlaneGeometry(46, 560), new T3.MeshBasicMaterial({ color: '#4aa088', fog: false })); rv.rotation.x = -Math.PI / 2; rv.position.set(0, -0.5, 9 + 330); H.add(rv); }
       }
-      { const pipeM = lam(DK ? '#7E8FA0' : '#6F7A70'), pipeD = lam('#2B3138'), ribM = lam(DK ? '#2A3F52' : '#3A4638');
-        for (let z = -9; z <= 5; z += 3.5) for (const sx of [-1, 1]) { box(H, 0.06, 0.55, 1.5, lam('#10161C'), sx * 5.82, 2.1, z); box(H, 0.04, 0.4, 1.3, bas(DK ? '#BFE6FF' : '#FFE9B0'), sx * 5.79, 2.1, z); }   // panneaux lumineux muraux
+      { const pipeM = lam(DK ? '#8a9684' : '#6F7A70'), pipeD = lam('#2B3138'), ribM = lam(DK ? '#2f3e28' : '#3A4638');
+        for (let z = -9; z <= 5; z += 3.5) for (const sx of [-1, 1]) { box(H, 0.06, 0.55, 1.5, lam('#10161C'), sx * 5.82, 2.1, z); box(H, 0.04, 0.4, 1.3, bas(DK ? '#FFE9B0' : '#FFE9B0'), sx * 5.79, 2.1, z); }   // panneaux lumineux muraux
         for (const z of [-9.4, -8.6, -7.8]) { cyl(H, 0.28, 0.28, 0.8, lam(DK ? '#8A3A2A' : '#7A4A2A'), 5.0, -0.3, z, 12); cyl(H, 0.285, 0.285, 0.05, pipeD, 5.0, 0.05, z, 12); cyl(H, 0.285, 0.285, 0.05, pipeD, 5.0, -0.65, z, 12); }   // barils
-        box(H, 0.7, 1.7, 1.2, lam(DK ? '#34495C' : '#3C4A3A'), 5.35, 0.2, -10.4); box(H, 0.04, 1.5, 1.0, lam('#1C242C'), 4.99, 0.2, -10.4); for (let k = 0; k < 4; k++) box(H, 0.03, 0.04, 0.9, bas('#8A98A6'), 4.97, -0.2 + k * 0.35, -10.4);   // armoire a outils
+        box(H, 0.7, 1.7, 1.2, lam(DK ? '#3c4a32' : '#3C4A3A'), 5.35, 0.2, -10.4); box(H, 0.04, 1.5, 1.0, lam('#1C242C'), 4.99, 0.2, -10.4); for (let k = 0; k < 4; k++) box(H, 0.03, 0.04, 0.9, bas('#8A98A6'), 4.97, -0.2 + k * 0.35, -10.4);   // armoire a outils
         for (const sx of [-1, 1]) for (let z = -10; z <= 6; z += 2) box(H, 0.1, 0.01, 0.9, bas('#D8DEE6'), sx * 2.0, -0.634, z);   // marquages blancs au sol
       }
-      for (let k = 0; k < 3; k++) { box(H, 0.9, 0.9, 0.9, lam(DK ? '#2f4a5e' : '#3F4A3C'), -5.1, -0.2, -6 + k * 1.1); box(H, 0.92, 0.07, 0.92, lam('#1E262E'), -5.1, -0.2, -6 + k * 1.1); box(H, 0.07, 0.92, 0.92, lam('#1E262E'), -5.1, -0.2, -6 + k * 1.1); box(H, 0.3, 0.12, 0.02, lam('#B8C2CC'), -5.1, -0.05, -6 + k * 1.1 + 0.46); }   // caisses militaires le long du mur (renforts et poignees)
-      box(H, 0.9, 0.9, 0.9, lam(DK ? '#3b5a70' : '#4A5A3C'), -5.1, 0.7, -5.45);
+      for (let k = 0; k < 3; k++) { box(H, 0.9, 0.9, 0.9, lam(DK ? '#3c4a32' : '#3F4A3C'), -5.1, -0.2, -6 + k * 1.1); box(H, 0.92, 0.07, 0.92, lam('#1E262E'), -5.1, -0.2, -6 + k * 1.1); box(H, 0.07, 0.92, 0.92, lam('#1E262E'), -5.1, -0.2, -6 + k * 1.1); box(H, 0.3, 0.12, 0.02, lam('#B8C2CC'), -5.1, -0.05, -6 + k * 1.1 + 0.46); }   // caisses militaires le long du mur (renforts et poignees)
+      box(H, 0.9, 0.9, 0.9, lam(DK ? '#4a5a3c' : '#4A5A3C'), -5.1, 0.7, -5.45);
       // v237 : le HANGAR GRANDIT a chaque amelioration du propulseur (niveaux 1 a 10) : chaque niveau ajoute un equipement, qui se construit en direct (EVO.playBuild)
       // chaque equipement est un groupe pose au sol (y = -0.7) : userData = { lv, kind (drop / rise / slide / power / glowline / pop), side }
       pad.hItems = [];
       const item = () => null;   // v261 : plus d'equipement a construire : seule la rampe change de materiau (tous les 5 niveaux)
-      const olive = lam(DK ? '#3b5a70' : '#4A5A3C'), crate = lam(DK ? '#2f4a5e' : '#3F4A3C'), amber = lam('#E0A31C'), blk = lam('#1C1F24'), scr = lam('#0F1B26'), pipe = lam('#7A8590');
+      const olive = lam(DK ? '#4a5a3c' : '#4A5A3C'), crate = lam(DK ? '#3c4a32' : '#3F4A3C'), amber = lam('#E0A31C'), blk = lam('#1C1F24'), scr = lam('#0F1B26'), pipe = lam('#7A8590');
       const rivet = (g, x, y, z) => { cyl(g, 0.045, 0.045, 0.03, lam('#9AA6B2'), x, y, z, 6, true); };
       item(1, 'drop', 4.4, -5.2, 1, (o) => { for (let k = 0; k < 4; k++) rivet(o, -0.55 + (k % 2) * 1.1, 0.12 + (k >> 1) * 0.75, 0.62); box(o, 1.24, 0.06, 0.04, blk, 0, 0.5, 0.62); box(o, 1.2, 1.0, 1.2, crate, 0, 0.5, 0); box(o, 1.2, 1.0, 1.2, olive, 1.3, 0.5, 0.2); box(o, 1.0, 0.9, 1.0, olive, 0.6, 1.45, 0.1); cyl(o, 0.38, 0.38, 1.0, lam('#B8452A'), -1.2, 0.5, 0.1, 12); cyl(o, 0.38, 0.38, 1.0, lam('#B8452A'), -1.2, 0.5, 1.0, 12); cyl(o, 0.4, 0.4, 0.08, blk, -1.2, 1.02, 0.1, 12); });
       item(2, 'glowline', 5.5, -2, 1, (o) => { for (const y of [0.7, 2.4]) { const q = cyl(o, 0.09, 0.09, 12, pipe, 0, y, 0, 8, true); } for (let k = 0; k < 4; k++) { box(o, 0.2, 2.0, 0.2, steel, 0, 1.2, -5.5 + k * 3.4); cyl(o, 0.17, 0.17, 0.16, amber, 0, 1.55, -5.5 + k * 3.4, 10); } });

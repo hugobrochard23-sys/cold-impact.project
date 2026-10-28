@@ -172,7 +172,7 @@
   };
   T.fern = function (b, x, y, z, s, rnd) {
     if (inWater(b, x, z)) return; const m = new Mesh(), pal = LEAF[Math.floor(rnd() * LEAF.length)], K = 7 + Math.floor(rnd() * 3), ph = rnd() * 6.28;
-    for (let k = 0; k < K; k++) frond(m, x, y + 0.1, z, ph + k / K * 6.2832 + rr(rnd, -0.2, 0.2), s * rr(rnd, 0.9, 1.25), s * rr(rnd, 0.5, 0.9), s * rr(rnd, 0.3, 0.6), s * 0.18, mul(hex(pal[0]), 0.9), hex(pal[1]), 4);
+    for (let k = 0; k < K; k++) frond(m, x, y + 0.1, z, ph + k / K * 6.2832 + rr(rnd, -0.2, 0.2), s * rr(rnd, 0.9, 1.25), s * rr(rnd, 0.5, 0.9), s * rr(rnd, 0.3, 0.6), s * 0.18, mul(hex(pal[0]), 0.9), hex(pal[1]), 3);
     const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
   };
   // grande feuille (bananier / philodendron) : petiole + limbe ovale qui s'arque
@@ -180,7 +180,7 @@
     if (inWater(b, x, z)) return; const m = new Mesh(), pal = LEAF[Math.floor(rnd() * LEAF.length)], K = 5 + Math.floor(rnd() * 2), ph = rnd() * 6.28;
     for (let k = 0; k < K; k++) {
       const a = ph + k / K * 6.2832 + rr(rnd, -0.2, 0.2), h = s * rr(rnd, 0.9, 1.5), ca = Math.cos(a), sa = Math.sin(a), out = s * rr(rnd, 0.5, 0.9), top = [x + ca * out * 0.5, y + h, z + sa * out * 0.5];
-      m.tube([x, y - 0.1, z], 0.07 * s, top, 0.04 * s, hex('#4a8a3a'), hex('#6aa84a'), 5); frond(m, top[0], top[1], top[2], a, s * rr(rnd, 1.1, 1.6), s * 0.25, s * 0.5, s * 0.52, mul(hex(pal[0]), 0.85), hex(pal[1]), 4);
+      m.tube([x, y - 0.1, z], 0.07 * s, top, 0.04 * s, hex('#4a8a3a'), hex('#6aa84a'), 5); frond(m, top[0], top[1], top[2], a, s * rr(rnd, 1.1, 1.6), s * 0.25, s * 0.5, s * 0.52, mul(hex(pal[0]), 0.85), hex(pal[1]), 3);
     }
     const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
   };
@@ -211,7 +211,7 @@
     for (let i = 0; i < nc; i++) {
       const c = crown[i], cx = x + lean[0] + c[0] * h * 0.9, cz = z + lean[1] + c[2] * h * 0.9, cy = topY + c[1] * h * 0.9 + h * 0.12, rad = c[3] * h * rr(rnd, 0.88, 1.12);
       m.tube([x + lean[0], topY - h * 0.05, z + lean[1]], r0 * 0.34, [cx, cy - rad * 0.2, cz], r0 * 0.2, mul(bark, 0.9), mul(bark, 1.0), 6);
-      blob(m, cx, cy, cz, rad, 0.5 + 0.12 * rnd(), rnd, mul(hex(pal[0]), 0.55), mul(hex(pal[1]), 0.95), seed + i * 7.1, i > 1);
+      blob(m, cx, cy, cz, rad, 0.5 + 0.12 * rnd(), rnd, mul(hex(pal[0]), 0.55), mul(hex(pal[1]), 0.95), seed + i * 7.1, i > 0 || !!o.far);
     }
     for (let k = 0; k < 4; k++) {   // lianes pendantes
       const a = rnd() * 6.28, rd = h * rr(rnd, 0.12, 0.24), vx = x + lean[0] + Math.cos(a) * rd, vz = z + lean[1] + Math.sin(a) * rd, vy0 = topY + h * 0.06, L = h * rr(rnd, 0.22, 0.4);
