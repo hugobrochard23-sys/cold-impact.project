@@ -17,7 +17,8 @@
     if (collide !== false) S.b.box({ p, s: [len, r * 2.1, r * 2.1], r: [0, S.yaw(dc), 0], render: false });
   };
   // rocher pose sur une cote absolue, avec collision
-  const rockC = (S, dc, lx, yAbs, s, r, gray, moss) => { const p = absAt(S, dc, lx, yAbs); TR.rock(S.b, p[0], p[1], p[2], s, r, { gray: gray || pk(r, STONE), noMoss: !moss }); S.b.box({ p: [p[0], p[1] + s * 0.55, p[2]], s: [s * 1.6, s * 1.1, s * 1.6], render: false }); };
+  const rockC = (S, dc, lx, yAbs, s, r, gray, moss) => { const p = absAt(S, dc, lx, yAbs); TR.rock(S.b, p[0], p[1], p[2], s, r, { gray: gray || pk(r, STONE), noMoss: !moss }); S.b.box({ p: [p[0], p[1] + s * 0.55, p[2]], s: [s * 1.6, s * 1.1, s * 1.6], render: false });
+    if (yAbs < WY(dc) + 1 && S.inClip(dc)) { const bd = BED(dc) - 1, hm = yAbs + s * 0.45 - bd; if (hm > 0.8) S.cyl(dc, lx, A(S, dc, bd), s * 1.25, hm, 'jrock', '#566652', 8, s * 0.78, false); } };   // v301 : le rocher a la ligne d'eau repose sur un socle en tertre qui descend jusqu'au fond (plus de caillou qui flotte)
   // pilier de roche : du fond jusqu'a hTop (cote absolue), chapeau de roche moussue
   const pillar = (S, dc, lx, hTop, rad, r) => { const bed = BED(dc); S.cyl(dc, lx, A(S, dc, bed - 3), rad, hTop - bed + 3, 'jrock', pk(r, WALL), 8, rad * 0.8, true); rockC(S, dc, lx, hTop - 0.4, rad * 1.1, r, pk(r, STONE), true); };
   // cabane sur pilotis : plancher, murs de planches, toit de tole ou de chaume, porte, fenetre, echelle

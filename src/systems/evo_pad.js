@@ -136,7 +136,7 @@
     const on = pad.group.visible && g.rocket && !g.rocket.active && g.state !== 'FLIGHT' && g.state !== 'DEAD';
     if (!shGroup) { shGroup = new T3.Group(); shGroup.frustumCulled = false; }
     if (shGroup.parent !== g.scene) g.scene.add(shGroup);
-    shGroup.visible = !!on; if (!on) return;
+    shGroup.visible = !!on && !EVO.isS2(); if (!on || EVO.isS2()) return;   // v301 : niveau 2 : aucune ombre au sol du lanceur (grand pan sombre sur la rampe)
     L.updateMatrixWorld(true);
     const out = []; for (const k of L.children) { if (k === pad.hangar) continue; collect(k, out); }
     if (g.rocket.mesh && g.rocket.mesh.visible) { g.rocket.mesh.updateMatrixWorld(true); collect(g.rocket.mesh, out); }
