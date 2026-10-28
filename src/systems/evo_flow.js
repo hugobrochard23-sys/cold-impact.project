@@ -11,7 +11,14 @@
     const S = EVO.save(g);
     if (!S.intro && !g.testMode && EVO.stage(g) === 1) EVO.startIntro(g); else g.ui.overlay = 'evo';
   };
-  EVO.startIntro = (g) => { EVO.playCine(g, 'intro1', () => { EVO.save(g).intro = 1; g.writeSave(); g.ui.overlay = 'evo'; EVO.start(g); }); };
+  // v278 : plus de cinematique : 2 s de zoom sur la vraie fusee (la camera part de tres haut et arrive derriere elle), puis l'ecran de visee ; on peut deja viser
+  EVO.startIntro = (g) => {
+    EVO.save(g).intro = 1; g.writeSave(); g.evoDrop = { t0: 0, dur: 2 };
+    if (!EVO._dropHook) { EVO._dropHook = 1; const ch = EVO.camHook; EVO.camHook = (gg, rig, o) => { ch(gg, rig, o); const D = gg.evoDrop; if (!D) return; if (!D.t0) D.t0 = performance.now(); const t = (performance.now() - D.t0) / 1000 / D.dur; if (t >= 1) { gg.evoDrop = null; return; }
+      const e = 1 - Math.pow(1 - U.clamp(t, 0, 1), 3), hi = new THREE.Vector3().copy(o).add(new THREE.Vector3(0, 70, 0)), lk = new THREE.Vector3().copy(o);   // part d'en haut, regarde la fusee, descend et passe derriere
+      rig.padPos.copy(hi).lerp(rig.padPos, e); rig.padLook.copy(lk).lerp(rig.padLook, e); rig.padFov = 36 + (rig.padFov - 36) * e; }; }
+    g.ui.overlay = null; EVO.start(g);
+  };
   EVO.endIntro = (g) => { if (g.cine3d) EVO.stopCine(g); else { EVO.save(g).intro = 1; g.writeSave(); g.ui.overlay = 'evo'; } };
   // --- victoire : récompense, cinématique, écran de bilan
   EVO.onClear = (g) => {
