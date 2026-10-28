@@ -44,12 +44,13 @@
     return S;
   };
   // v239 : NIVEAU 2 : progression separee. EVO.save(g) renvoie la sauvegarde de base au niveau 1 et une VUE au niveau 2 : ces champs vont dans save.evo.s2, le reste (gemmes, coffre, apparences, reglages) reste commun.
-  const S2K = { coins: 1, rk: 1, la: 1, cm: 1, best: 1, runs: 1, kills: 1, cleared: 1, t0: 1, marks: 1, seen: 1 };
+  const S2K = { rk: 1, la: 1, cm: 1, best: 1, runs: 1, kills: 1, cleared: 1, t0: 1, marks: 1, seen: 1 };
   EVO.stage2 = (B) => (B.s2 = B.s2 || { coins: 0, rk: 0, la: 0, cm: 0, best: 0, runs: 0, kills: 0, cleared: 0, t0: 0, marks: {}, seen: {} });
   EVO.save = (g) => {
     const B = EVO.saveBase(g), m = /[?&]lv=(\d)/.exec(location.search), st = m ? +m[1] : (B.stage || 1);
     if (st !== 2) return B;
-    const s2 = EVO.stage2(B); if (EVO._px && EVO._px.B === B && EVO._px.s2 === s2) return EVO._px.p;
+    const s2 = EVO.stage2(B); if (s2.coins) { B.coins += s2.coins; s2.coins = 0; }   // v286 : une seule bourse pour les deux niveaux (anciennes pieces du niveau 2 reversees)
+    if (EVO._px && EVO._px.B === B && EVO._px.s2 === s2) return EVO._px.p;
     const p = new Proxy({}, { get: (t, k) => (S2K[k] ? s2[k] : B[k]), set: (t, k, v) => { if (S2K[k]) s2[k] = v; else B[k] = v; return true; }, has: (t, k) => (S2K[k] ? k in s2 : k in B) });
     EVO._px = { B, s2, p }; return p;
   };
@@ -84,12 +85,14 @@
     if (L <= 6) return Math.round(180 * Math.pow(1.1, L - 1));
     if (L <= 10) return Math.round(996 * Math.pow(1.33, L - 7));
     return Math.round(3619 * Math.pow(1.35, L - 11)); };
-  EVO.SCORE_K = (g) => (EVO.stage && EVO.stage(g) === 2 ? 1 : 8450 / 6910);   // la reference compte 1 piece par metre sur une carte de 8 450 m ; la notre mesure 6 910 m : meme total de pieces sur la carte
-  EVO.COST2 = 1.4;   // le niveau 2 est plus long : ses ameliorations coutent un peu plus (reglage a affiner en jeu)
+  EVO.SCORE_K = (g) => (EVO.stage && EVO.stage(g) === 2 ? EVO.LV2K : 8450 / 6910);   // la reference compte 1 piece par metre sur une carte de 8 450 m ; la notre mesure 6 910 m : meme total de pieces sur la carte
+  // v286 : NIVEAU 2 : les prix repartent des memes bases (180 / 180 / 100) mais montent beaucoup plus vite (x2,15 / x1,9 / x2 par amelioration : ~400 000 a la 11e), et les gains sont multiplies par EVO.LV2K (distance et ennemis)
+  EVO.LV2K = 6;
+  EVO.cost2 = (id, n) => Math.round((id === 'cm' ? 100 : 180) * Math.pow(id === 'rk' ? 2.15 : id === 'la' ? 1.9 : 2, n));
   // v265 : les paquets de pieces valent N x la moyenne du prix des 3 ameliorations (x1 gratuit, x4 / x10 / x20 payants), arrondis a 3 chiffres
   EVO.COINPACK = { free: 1, coins12k: 4, coins40k: 10, coins100k: 20 };
   EVO.coinPack = (g, key) => { const v = ['rk', 'la', 'cm'].map((id) => EVO.nextCost(g, id)).filter((c) => c !== null), avg = v.length ? v.reduce((a, c) => a + c, 0) / v.length : 1000, n = Math.max(1, Math.round(avg * (EVO.COINPACK[key] || 1))), p = Math.pow(10, Math.max(0, String(n).length - 3)); return Math.round(n / p) * p; };
-  EVO.nextCost = (g, id) => { const S = EVO.save(g), n = S[id]; return n >= MAXN[id] ? null : Math.round(EVO.cost(id, n) * (EVO.isS2() ? EVO.COST2 : 1)); };
+  EVO.nextCost = (g, id) => { const S = EVO.save(g), n = S[id]; return n >= MAXN[id] ? null : (EVO.isS2() ? EVO.cost2(id, n) : EVO.cost(id, n)); };
   EVO.dmgNow = (g) => { const r = EVO.rocket(EVO.save(g).rk), sp = g.rocket && g.rocket.active ? g.rocket.vel.length() : 38; return r.dmg * U.clamp(sp / 38, 0.9, 1.5); };
   EVO.canKill = (g, t) => !!(g.evo && g.evo.preview) || !t.evoHp || EVO.dmgNow(g) + 0.001 >= t.evoHp;
 
@@ -384,9 +387,9 @@
     const out = (r.tier < 2 || rk.fuel <= 0.01) && !ev.preview;
     if (out && EVO.isS2() && g.flightTime > 1 && !((g._wsub || 0) > 0.5)) { ev.outT = (ev.outT || 0) + dt; rk.vel.y -= 38 * Math.min(1, ev.outT / 0.8) * dt; if (rk.fwd.y > -0.6) g.input.addAim(0, -2.2 * dt); } else ev.outT = 0;   // v249 : niveau 2 : sans carburant on pique et on accelere vers le bas (plus de longue glissade)
     if (out && !ev.preview && sp < 24 && rk.fwd.y > -0.55 && !((g._wsub || 0) > 0.5)) g.input.addAim(0, -1.5 * U.clamp((24 - sp) / 8, 0, 1) * dt);   // v125 : décrochage : sans poussée et sans vitesse, le nez plonge (on récupère en reprenant de la vitesse)
-    if (out && rk.sliding > 0 && (ev.slideT = (ev.slideT || 0) + dt) > 0.7) { ev.slideT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; }
+    if (out && !(EVO.isS2() && run.dist < 130) && rk.sliding > 0 && (ev.slideT = (ev.slideT || 0) + dt) > 0.7) { ev.slideT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; }
     if (!out || rk.sliding <= 0) ev.slideT = 0;
-    if (out && sp < TU('stall') && g.flightTime > 1 && rk.pos.y - run.T.base(Math.max(0, run.dist)) < 3) { if ((ev.lowT = (ev.lowT || 0) + dt) > TU('stallT')) { ev.lowT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; } } else ev.lowT = 0;   // v125 : immobile = fini
+    if (out && !(EVO.isS2() && run.dist < 130) && sp < TU('stall') && g.flightTime > 1 && rk.pos.y - run.T.base(Math.max(0, run.dist)) < 3) { if ((ev.lowT = (ev.lowT || 0) + dt) > TU('stallT')) { ev.lowT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; } } else ev.lowT = 0;   // v125 : immobile = fini
     if (r.tier >= 2 && !ev.fuelOut && !ev.preview && rk.fuel <= 0.01 && g.flightTime > 0.6) { ev.fuelOut = true; CC.L1.msg(g, 'PLUS DE CARBURANT', 1.3, '#ff8a5a'); }
     if (rk.fuel > 0.3) ev.fuelOut = false;
     // caméra de chute : on regarde vers le sol quand on tombe
@@ -406,7 +409,7 @@
   // chaque ennemi détruit : pièces, souffle qui pousse la fusée, carburant (réacteur)
   EVO.onKill = (g, t) => {
     const ev = g.evo; if (!ev || ev.preview) return;
-    const S = EVO.save(g), r = EVO.rocket(S.rk), rk = g.rocket, m = EVO.mult(S.cm), c = Math.round((t.evoVal || (t.evoHp ? 200 : 80)) * m * EVO.COIN_K);
+    const S = EVO.save(g), r = EVO.rocket(S.rk), rk = g.rocket, m = EVO.mult(S.cm), c = Math.round((t.evoVal || (t.evoHp ? 200 : 80)) * m * EVO.COIN_K * (EVO.isS2() ? EVO.LV2K : 1));
     ev.kills++; ev.coins += c;
     rk.vel.addScaledVector(rk.fwd, r.kick); rk.vel.y += 1.5;
     g.rig.punch = 1;
@@ -618,7 +621,7 @@
     if (g.crashKind === 'weak') EVO.mark(g, 'weak');
     if (record) S.best = dist; S.coins += total; S.runs++; S.kills += ev.kills;
     const r = EVO.rocket(S.rk);
-    g.evoLast = { dist, kills: ev.kills, lines, total, record, cause: g.crashKind === 'stalled' ? (r.tier >= 2 && g.rocket.fuel <= 0.5 ? 'PLUS DE CARBURANT' : 'ELLE EST TOMBEE') : g.causeOf(g.crashKind), doubled: false, t0: 0, crash: g.crashKind,
+    g.evoLast = { dist, kills: ev.kills, lines, total, record, cause: g.crashKind === 'stalled' ? (r.tier >= 2 && g.rocket.fuel <= 0.5 ? 'PLUS DE CARBURANT' : EVO.isS2() ? 'PLUS D ELAN' : 'ELLE EST TOMBEE') : g.causeOf(g.crashKind), doubled: false, t0: 0, crash: g.crashKind,
       detail: g.crashKind === 'weak' && g.evoWeak ? 'ENNEMI ' + g.evoWeak.hp + ' PV : TES DEGATS ' + g.evoWeak.dmg.toFixed(1) : g.crashKind === 'stalled' ? (r.tier >= 2 ? 'DETRUIS DES ENNEMIS POUR RECHARGER' : 'AMELIORE LA FUSEE : ELLE IRA PLUS LOIN') : 'GLISSE LE DOIGT POUR ESQUIVER' };
     g.writeSave();
     g.telemetry.event('evoEnd', { dist, kills: ev.kills, coins: total, rk: S.rk, la: S.la, cm: S.cm, cause: g.crashKind });
@@ -648,7 +651,7 @@
   EVO.chestReady = (g) => { const S = EVO.save(g); return S.runs >= 3 && Date.now() >= (S.chestAt || 0); };
   EVO.openChest = (g) => {
     const S = EVO.save(g); if (!EVO.chestReady(g) || g.evoChest) return;
-    const coins = Math.max(150, Math.round(EVO.cost('rk', S.rk) * 0.7)); S.coins += coins; S.gems = (S.gems || 0) + 1; S.chestAt = Date.now() + 2 * 3600 * 1000; g.writeSave();
+    const coins = Math.max(150, Math.round((EVO.isS2() ? EVO.cost2('rk', S.rk) : EVO.cost('rk', S.rk)) * 0.7)); S.coins += coins; S.gems = (S.gems || 0) + 1; S.chestAt = Date.now() + 2 * 3600 * 1000; g.writeSave();
     g.evoChest = { t0: performance.now(), coins, gems: 1 }; if (CC.Haptics) CC.Haptics.tick('warn'); g.telemetry.event('evoChest', { coins });
   };
   EVO.start = (g) => { if (g.evoAnim || g.evoAim) return; EVO.startAim(g); };

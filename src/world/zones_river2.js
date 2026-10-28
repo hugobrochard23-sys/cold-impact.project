@@ -168,6 +168,13 @@
       EVO.addDyn(g, (t) => { const b = ce - 19 + 11 * Math.sin(t * 0.95 + ph), low = b - fl < 17; g.position.y = b + 15; lampM.color.set(low ? '#ff3a2a' : '#4aff6a'); }, cols, { near: 420, span: 20 });
     }));
     S.item(T0 - 16, () => { for (const sg of [-1, 1]) S.bx(T0 - 16, sg * 31, A(S, T0, BED(T0) + 20), 4, 40, 6, 'concreteDark', '#6a6e70', true); });
+    // v286 : defenses du barrage : mines dans la galerie et le canal, tourelles de paroi sur consoles dans le hall et le canal de fuite
+    for (const [u, sg, y] of [[392, -1, 13], [412, 1, 19], [432, -1, 16], [452, 1, 12], [840, 1, 11], [872, -1, 15], [900, 1, 9], [950, -1, 12], [980, 1, 15]]) foe(S, 'mine', d(u), sg * (u < 470 ? 9 : 11), y, { name: 'MINE', keep: true });
+    for (const [u, sg] of [[535, 1], [585, -1], [635, 1], [675, -1], [850, -1], [925, 1], [995, -1]]) {
+      const dc = d(u), hw = HWt(u), ry = u < U_TAIL ? 13 : 11;
+      S.item(dc, () => { S.bx(dc, sg * (hw - 1.6), A(S, dc, BED(dc) + ry - 2), 3.4, 1.2, 4.2, 'metal', '#4a5058', false); S.bx(dc, sg * (hw - 0.9), A(S, dc, BED(dc) + ry - 4), 1.8, 5, 1.8, 'metal', '#3a4046', false); lampS(S, dc, sg * (hw - 3.2), A(S, dc, BED(dc)) + ry + 3.4, '#ff5a3a', 12); });
+      foe(S, 'aaturret', dc, sg * (hw - 4.2), ry + 1.6, { name: 'TOURELLE', armed: true, keep: true, fixed: true });
+    }
     // sortie du canal de fuite : portail d'arche dans la paroi du canyon
     S.item(d(U_MOUTH), (rr) => { const dc = d(U_MOUTH); S.wall(dc, -OUT, OUT, A(S, dc, BED(dc) - 8), A(S, dc, -112 + 52), 18, 'concreteDark', '#8a8e90', { lx: 0, yc: A(S, dc, BED(dc) + 18), w: 54, h: 40 }); for (const sg of [-1, 1]) { S.bx(dc - 9.4, sg * 28, A(S, dc, BED(dc) + 20), 3, 44, 2, 'hazard', undefined, false); lampS(S, dc - 10.6, sg * 28, A(S, dc, BED(dc) + 36), '#ffd23a', 24); } });
   }

@@ -1058,7 +1058,7 @@
             if (rk.pos.y < killY || (rk.pos.length() > 4000 && !this.endlessRun)) this.onRocketCrash('outOfBounds', rk.pos.clone(), null);   // v033 : le couloir infini n'a pas de bord
             // v032 : roquette immobilisée (posée en glissant sur un toit, sans essence) → comptée comme un crash, sinon
             // la partie ne peut plus avancer
-            const stuck = rk.speed < 6 && this.flightTime > 1 && (!this.evo || rk.sliding > 0);   // v123 : évolution : lent en l'air = on retombe, pas d'explosion
+            const stuck = !(this.evo && CC.EVO.isS2() && this.endlessRun && this.endlessRun.dist < 130) && rk.speed < 6 && this.flightTime > 1 && (!this.evo || rk.sliding > 0);   // v123 : évolution : lent en l'air = on retombe, pas d'explosion
             if (false && stuck && this.endlessRun && rk.fuel > 0.3) {   // v105 : DESACTIVE — plus de boost automatique quand la fusée ralentit (v072) : de l'essence mais presque immobile (posée sur un toit, en l'air) : boost de secours qui relance la fusée
               this.stallT = (this.stallT || 0) + dt;
               if (this.stallT > 0.5) { this.stallT = 0; rk.fbTime = Math.max(rk.fbTime, rk.age - rk.cfg.ignitionDelay + 1.4); rk.vel.addScaledVector(rk.fwd, 24); rk.vel.y += 8; if (rk.sliding > 0) rk.sliding = 0; }
