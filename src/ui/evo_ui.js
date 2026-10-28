@@ -390,14 +390,37 @@
   };
 
   // ---------- MISSION ACCOMPLIE (fin du niveau) ----------
+
+  // v280 : apres SUIVANT : la carte REVENU (grande) montre le multiplicateur qui double : l'icone se retourne et change, le X change, puis le niveau 2 demarre
+  function multAnim(ui, ctx, g, W_, F) {
+    const { HH, Y, T0, cw, cx } = F, E = CC.EVO, tm = (performance.now() - W_.mphase) / 1000, W = ctx.canvas.width;
+    ctx.fillStyle = 'rgba(8,10,14,0.66)'; ctx.fillRect(0, T0, W, HH);
+    const tier = (m) => (m < 2 ? 0 : m < 3 ? 1 : m < 4 ? 3 : m < 6 ? 2 : m < 9 ? 4 : 5), flipAt = 1.1, fd = 0.55, k = U.clamp((tm - flipAt) / fd, 0, 1), showNew = k >= 0.5, sx = tm < flipAt ? 1 : Math.max(0.04, Math.abs(Math.cos(k * 3.1416)));
+    if (!W_._fl && k >= 0.5) { W_._fl = 1; g.audio.play('levelUp'); }
+    const m = showNew ? W_.mult.now : W_.mult.old, w = Math.min(cw * 0.86, HH * 0.6), h = w * 1.12, x = cx - w / 2, y = Y(0.47) - h / 2, a = ease(tm / 0.4), pd = w * 0.045;
+    ctx.save(); ctx.globalAlpha = a; ctx.translate(cx, y + h / 2); ctx.scale(0.9 + 0.1 * a, 0.9 + 0.1 * a); ctx.translate(-cx, -(y + h / 2));
+    rr0(ctx, x, y, w, h, w * 0.05); ctx.fillStyle = '#26394B'; ctx.fill();
+    UI.outlined(ctx, 'REVENU', x + pd, y + h * 0.075, UI.fit(ctx, 'REVENU', w * 0.6, h * 0.075), '#F0EDE4', null, { align: 'left' });
+    const ix = x + pd, iy = y + h * 0.14, iw = w - pd * 2, ih = h * 0.6; ctx.save(); rr0(ctx, ix, iy, iw, ih, w * 0.03); ctx.clip();
+    const im = UI.art('bg_cm'); if (im) { const s = Math.max(iw / im.naturalWidth, ih / im.naturalHeight); ctx.drawImage(im, ix + (iw - im.naturalWidth * s) / 2, iy + (ih - im.naturalHeight * s) / 2, im.naturalWidth * s, im.naturalHeight * s); } else { ctx.fillStyle = '#3a5873'; ctx.fillRect(ix, iy, iw, ih); }
+    ctx.restore();
+    { const pop = k >= 1 ? Math.max(0, 1 - (tm - flipAt - fd) / 0.5) : 0, ic = ix + iw / 2, icy = iy + ih * 0.5; ctx.save(); ctx.translate(ic, icy); ctx.scale(sx * (1 + 0.25 * pop), 1 + 0.25 * pop); ctx.translate(-ic, -icy); UI.artImg(ctx, 'cmx_' + tier(m), ic, icy, ih * 0.82); ctx.restore();
+      if (k >= 1 && tm - flipAt - fd < 0.9) { const e = ease((tm - flipAt - fd) / 0.9); ctx.save(); ctx.globalAlpha = 1 - e; ctx.strokeStyle = '#FFF2B0'; ctx.lineWidth = Math.max(2, S(6) * (1 - e)); ctx.beginPath(); ctx.arc(ic, icy, ih * (0.2 + 0.7 * e), 0, 6.2832); ctx.stroke(); ctx.restore(); } }
+    { const pop = k >= 1 ? Math.max(0, 1 - (tm - flipAt - fd) / 0.5) : 0; UI.outlined(ctx, 'X' + f1(m), cx, y + h * 0.88, h * 0.16 * (1 + 0.3 * pop), showNew ? T.yellow : T.white, '#000000', { keep: true, ow: 0.16 }); }
+    ctx.restore();
+    if (tm > 4.2) E_next(g, W_);
+    ui.buttons.push({ x: 0, y: T0, w: W, h: HH, action: () => { if (tm > 2.2) E_next(g, W_); } });
+  }
+  function E_next(g, W_) { if (W_._go) return; W_._go = 1; CC.EVO.goStage2(g); }
   Home.drawEvoWin = function (ui, ctx, g, W, H) {
     const W_ = g.evoWin; if (!W_) return; const F = frame(ui, ctx, W, H), { HH, Y, T0, cw, cx } = F, E = CC.EVO, t = (performance.now() - (W_.t0 || performance.now())) / 1000;
-    ctx.fillStyle = 'rgba(14,15,18,0.94)'; ctx.fillRect(0, T0, W, HH);
+    if (W_.mphase) { multAnim(ui, ctx, g, W_, F); return; }
+    ctx.fillStyle = 'rgba(8,10,14,0.55)'; ctx.fillRect(0, T0, W, HH);   // v280 : la scene finale reste visible derriere
     { const a = Math.min(1, t / 0.5); ctx.save(); ctx.globalAlpha = a; UI.text(ctx, 'MISSION ACCOMPLIE !', cx, Y(0.1), UI.fit(ctx, 'MISSION ACCOMPLIE !', cw * 0.92, S(110)), T.yellow, { outline: true }); ctx.restore(); }
     for (let k = 0; k < 3; k++) { const s = Math.min(1, Math.max(0, (t - 0.3 - k * 0.45) / 0.35)), e = s < 1 ? 1 + 0.5 * Math.sin(s * 3.1416) : 1; Home.evoUI.star(ctx, cx + (k - 1) * S(250), Y(0.22) - (k === 1 ? S(50) : 0), S(120) * (k === 1 ? 1.3 : 1) * s * e); }
     const k2 = Math.min(1, Math.max(0, (t - 1.8) / 1.2)), cs = '+' + U.formatInt(Math.round(W_.bonus * k2)), fs = UI.fit(ctx, cs, cw * 0.6, S(150)); UI.icon(ctx, 'coins_stack', cx - UI.tw(ctx, cs, fs) / 2 - S(110), Y(0.4), S(200)); UI.text(ctx, cs, cx + S(40), Y(0.4), fs, T.yellow, { outline: true });
     UI.text(ctx, 'TOTAL ' + U.formatInt(W_.coins), cx, Y(0.5), S(70), T.white, { shadow: false });
-    if (t > 3.2) { const bw = cw * 0.6, bh = S(160), bx = cx - bw / 2, by = Y(0.8), pulse = 1 + 0.03 * Math.sin(t * 5); ctx.save(); ctx.translate(cx, by + bh / 2); ctx.scale(pulse, pulse); ctx.translate(-cx, -(by + bh / 2)); UI.btnPrimary(ctx, bx, by, bw, bh, 'SUIVANT'); ctx.restore(); UI.tap(ui, bx, by, bw, bh, () => { if (W_.stage === 1) E.goStage2(g); else E.backStage1(g); }); }
+    if (t > 3.2) { const bw = cw * 0.6, bh = S(160), bx = cx - bw / 2, by = Y(0.8), pulse = 1 + 0.03 * Math.sin(t * 5); ctx.save(); ctx.translate(cx, by + bh / 2); ctx.scale(pulse, pulse); ctx.translate(-cx, -(by + bh / 2)); UI.btnPrimary(ctx, bx, by, bw, bh, 'SUIVANT'); ctx.restore(); UI.tap(ui, bx, by, bw, bh, () => { if (W_.stage === 1) { if (W_.mult) { W_.mphase = performance.now(); } else E.goStage2(g); } else E.backStage1(g); }); }
   };
 
   // ---------- HUD DE VOL : pause (element de page), jauge de carburant, progression, quelques reperes ----------

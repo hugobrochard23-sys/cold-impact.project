@@ -56,11 +56,13 @@
     // deux faisceaux de projecteurs qui balaient le ciel : un phare pour le voir de tres loin
     const beams = []; for (let i = 0; i < 2; i++) { const cone = new T3.Mesh(new T3.CylinderGeometry(16, 1.5, 320, 12, 1, true), new T3.MeshBasicMaterial({ color: '#cfe4ff', transparent: true, opacity: 0.2, depthWrite: false, blending: T3.AdditiveBlending, side: T3.DoubleSide, fog: false })); cone.position.y = 160; const b = new T3.Group(); b.add(cone); b.position.set(i ? 26 : -26, 48, 6); b.userData.ph = i * 2.1; W.add(b); beams.push(b); }
     const col = EVO.colBox(W, 11.6 * SC, 7.4 * SC, 15.4 * SC, 0, 3.7 * SC, -0.5 * SC);
+    // v280 : le canon a aussi une collision (elle suit son orientation : il est enfant de la tourelle)
+    let gcol = null; { W.updateWorldMatrix(true, true); const gb = new T3.Box3().setFromObject(gun), gs = gb.getSize(new V()), gc = gun.worldToLocal(gb.getCenter(new V())); if (isFinite(gs.x) && gs.x > 0.1) gcol = EVO.colBox(gun, gs.x / SC, gs.y / SC, gs.z / SC, gc.x, gc.y, gc.z); }
     const dB = P.d0 - 10;
     TT = EVO.titan = { debris: [], ball: null, burst: 0, disp: 1, W, M, tur, gun, slide, muz, radar, beams, d: dB, d0: dB, lx: T.laneX(dB), hp: HP, mode: 'sleep', cool: 0, recoil: 0, shells: [], towers: [], ev: {}, fireT: 2, podT: 4, t: 0, dash: null, dying: 0, aim: 0, el: 0, smokeT: 0 };
     for (const [k, off, side] of [['A', 330, -1], ['B', 235, 1]]) { const tg = buildTower(); tg.rotation.order = 'YXZ'; TT.towers.push({ k, g: tg, d: dB - off, side, state: 'up', t: 0, ang: 0 }); }
     g.scene.add(W); W.visible = false;
-    EVO.addDyn(W, (t, dt, gg) => upd(gg, dt), [col], { near: 1e7, span: 1e7, hit: (gg) => hit(gg) });
+    EVO.addDyn(W, (t, dt, gg) => upd(gg, dt), gcol ? [col, gcol] : [col], { near: 1e7, span: 1e7, hit: (gg) => hit(gg) });
     place(g, T);
     for (const q of TT.towers) { const p = T.at(q.d, T.laneX(q.d) + q.side * 42, 0); q.g.position.set(p[0], p[1], p[2]); q.g.rotation.y = heading(T, q.d); q.g.visible = false; g.scene.add(q.g); }
   }

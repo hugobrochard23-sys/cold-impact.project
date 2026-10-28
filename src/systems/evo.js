@@ -469,7 +469,7 @@
       else { ch.quaternion.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(rr(-0.5, 0.5), rr(-0.3, 0.3), rr(-0.4, 0.4)))); } }   // propulseurs, volets : de travers
     for (const m of rk.mesh.children) if (m.isMesh && m.geometry && m.geometry.attributes.position && !m.userData.bent) {   // fuselage : coude
       const og = m.geometry, g2 = og.clone(), pa = g2.attributes.position, z0 = -0.1, ax = Math.random() < 0.5 ? 0.9 : -0.9, ay = rr(-0.4, 0.5);
-      for (let i = 0; i < pa.count; i++) { const t = pa.getZ(i) - z0; if (t > 0) { pa.setX(i, pa.getX(i) + ax * t * t * 0.55); pa.setY(i, pa.getY(i) + ay * t * t * 0.55); pa.setZ(i, pa.getZ(i) - 0.12 * t * t); } }
+      for (let i = 0; i < pa.count; i++) { const t0 = pa.getZ(i) - z0, t = Math.min(t0, 0.4); if (t0 > 0) { pa.setX(i, pa.getX(i) + ax * t * t * 0.55); pa.setY(i, pa.getY(i) + ay * t * t * 0.55); pa.setZ(i, pa.getZ(i) - 0.12 * t * t); } }   // v280 : le coude est plafonne : la tete des fusees longues se decale d'un bloc au lieu de s'etirer
       pa.needsUpdate = true; g2.computeVertexNormals(); m.userData._og = og; m.userData.bent = true; m.geometry = g2; }
     const body = { m: rk.mesh, v: v0.clone().multiplyScalar(0.75), w: new V(0, 0, Math.random() < 0.5 ? 3.5 : -3.5), r: 0.2, rest: false, isBody: true };
     P.push(body); rk.mesh.visible = true;

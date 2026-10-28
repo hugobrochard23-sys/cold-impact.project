@@ -23,11 +23,14 @@
   };
   EVO.endIntro = (g) => { if (g.cine3d) EVO.stopCine(g); else { EVO.save(g).intro = 1; g.writeSave(); g.ui.overlay = 'evo'; } };
   // --- victoire : récompense, cinématique, écran de bilan
+  // v280 : chaque niveau termine DOUBLE le multiplicateur de pieces (x2 -> x4 ...) : EVO.stageMult, relu a chaque lecture de la sauvegarde
+  { const _sv = EVO.save, _ml = EVO.mult; EVO.save = (g) => { const S = _sv(g); EVO.stageMult = (S.clr1 ? 2 : 1) * (S.clr2 ? 2 : 1); return S; }; EVO.mult = (n) => _ml(n) * (EVO.stageMult || 1); }
   EVO.onClear = (g) => {
-    const S = EVO.save(g), st = EVO.stage(g); EVO.mark(g, 'boss' + (st > 1 ? st : '')); S.cleared = (S.cleared || 0) + 1; if (st === 1) S.clr1 = 1; const bonus = st === 1 ? 800 : 1500; S.coins += bonus; g.writeSave();
-    g.evoWin = { stage: st, bonus, t0: 0, coins: S.coins };
-    const toWin = () => { g.ui.overlay = 'evoWin'; g.evoWin.t0 = performance.now(); g.audio.play('victory'); };   // v276 : niveau 1 : pas de cinematique de fin, on va direct a la recompense
-    g.evoNext = st === 1 ? toWin : () => EVO.playCine(g, 'win2', toWin);
+    const S = EVO.save(g), st = EVO.stage(g), first = st === 1 ? !S.clr1 : !S.clr2, m0 = EVO.mult(S.cm); EVO.mark(g, 'boss' + (st > 1 ? st : '')); S.cleared = (S.cleared || 0) + 1; if (st === 1) S.clr1 = 1; else S.clr2 = 1; const bonus = st === 1 ? 800 : 1500; S.coins += bonus; g.writeSave(); EVO.save(g);
+    g.evoWin = { stage: st, bonus, t0: performance.now(), coins: S.coins, mult: first ? { old: m0, now: EVO.mult(S.cm) } : null };
+    if (st === 1) { g.ui.overlay = 'evoWin'; g.audio.play('victory'); return; }   // niveau 1 : on reste sur la scene finale (camera fixe a la ligne d'arrivee), les recompenses s'affichent par-dessus
+    const toWin = () => { g.ui.overlay = 'evoWin'; g.evoWin.t0 = performance.now(); g.audio.play('victory'); };
+    g.evoNext = () => EVO.playCine(g, 'win2', toWin);
     g.goHome({});
   };
   EVO.goStage2 = (g) => {
