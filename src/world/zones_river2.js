@@ -26,7 +26,7 @@
   const HWc = (d) => 40 + 5 * Math.sin(d / 57);                                                                                                  // demi-largeur du canyon aval
   const Hroof = (u) => (u < U_HALL ? H_GAL : u < U_TAIL ? H_HALL : H_TAIL);
   const ceilAbs = (d) => { const u = d - LA; return u < U_HALL ? FLOOR_GAL + H_GAL : BED2(d) + Hroof(u); };
-  const pathY = (d) => { const u = d - LA; if (u < U_DAM - 60) return WY(d) - 5; if (u < U_MOUTH + 40) return BED2(d) + 18; return WY(d) - 4.5; };
+  const pathY = (d) => { const u = d - LA; if (u < U_DAM - 60) return WY(d) - 5; if (u < U_MOUTH + 40) return BED2(d) + mixf(18, 5.5, ss(U_TAIL - 70, U_TAIL - 20, u)); return WY(d) - 4.5; };
 
   EVO.riv.pathY = (d) => (d >= LA ? pathY(d) : R.PATH(d));
   SC.barrage = { len: [LB, LB], noDoor: true, noChaos: true, gw: 125, grass: false,
@@ -155,6 +155,18 @@
         lampS(S, dc - 6, lx, A(S, dc, BED(dc) + 20), '#ff8a2a', 30);
       });
     }
+    // vannes de garde du canal de fuite : trois grandes lames suspendues au plafond qui montent et descendent ; elles ne ferment jamais tout : une fente reste toujours au ras du sol (8 m)
+    [[835, 0.0], [910, 2.1], [985, 4.2]].forEach(([u, ph]) => S.item(d(u), () => {
+      const dc = d(u), hw = HWt(u), ce = ceilAbs(dc), fl = BED(dc), g = new T3.Group(), body = lam('#d8a828'), dk = lam('#2c3036'), lampM = new T3.MeshBasicMaterial({ color: '#4aff6a' }), cols = [];
+      g.add(new T3.Mesh(new T3.BoxGeometry(2 * hw - 1, 30, 3), body)); for (let k = -4; k <= 4; k++) { const st = new T3.Mesh(new T3.BoxGeometry(2.4, 30.2, 3.1), dk); st.position.x = k * (hw * 0.22); st.rotation.z = 0.0; g.add(st); }
+      for (const sg of [-1, 1]) { const lp = new T3.Mesh(new T3.BoxGeometry(1.2, 1.2, 3.4), lampM); lp.position.set(sg * (hw - 3), 14, 0); g.add(lp); }
+      cols.push(EVO.colBox(g, 2 * hw - 1, 30, 3, 0, 0, 0));
+      const p = absAt(S, dc, 0, A(S, dc, ce)); g.position.set(p[0], ce - 19 + 15, p[2]); g.rotation.y = U.deg(S.yaw(dc)); S.b.root.add(g);
+      // guides lateraux et carter au plafond
+      for (const sg of [-1, 1]) S.bx(dc, sg * (hw - 0.4), A(S, dc, (fl + ce) / 2), 1.4, ce - fl, 4.4, 'metal', '#3a4046', false);
+      S.bx(dc, 0, A(S, dc, ce - 1), 2 * hw, 2, 5, 'hazard', undefined, false);
+      EVO.addDyn(g, (t) => { const b = ce - 19 + 11 * Math.sin(t * 0.95 + ph), low = b - fl < 17; g.position.y = b + 15; lampM.color.set(low ? '#ff3a2a' : '#4aff6a'); }, cols, { near: 420, span: 20 });
+    }));
     S.item(T0 - 16, () => { for (const sg of [-1, 1]) S.bx(T0 - 16, sg * 31, A(S, T0, BED(T0) + 20), 4, 40, 6, 'concreteDark', '#6a6e70', true); });
     // sortie du canal de fuite : portail d'arche dans la paroi du canyon
     S.item(d(U_MOUTH), (rr) => { const dc = d(U_MOUTH); S.wall(dc, -OUT, OUT, A(S, dc, BED(dc) - 8), A(S, dc, -112 + 52), 18, 'concreteDark', '#8a8e90', { lx: 0, yc: A(S, dc, BED(dc) + 18), w: 54, h: 40 }); for (const sg of [-1, 1]) { S.bx(dc - 9.4, sg * 28, A(S, dc, BED(dc) + 20), 3, 44, 2, 'hazard', undefined, false); lampS(S, dc - 10.6, sg * 28, A(S, dc, BED(dc) + 36), '#ffd23a', 24); } });
