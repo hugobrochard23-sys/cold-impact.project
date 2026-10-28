@@ -4,16 +4,16 @@
   const U = CC.U, Z = CC.Zones, EVO = CC.EVO, T3 = THREE, V = T3.Vector3, foe = Z.evoFoe, TR = CC.Trees, R = EVO && EVO.riv;
   if (!R || !Z.evoFoe) return;
   const SC = Z.defs.ocean.scenes, { pk, ss } = EVO.oc;
-  const { WY, LA, LB, A, absAt, plant, slab, lampS, water, hsh, GREEN, WALL, STONE, rel, mixf } = R;
+  const { WY, LA, LB, A, absAt, plant, slab, lampS, water, curtain, hsh, GREEN, WALL, STONE, rel, mixf } = R;
   const OUT = 150, D3 = LA + LB, LD = 800, LP = 700, D4 = D3 + LD + LP;
-  const WYS = -112, SEAB = R.SEAB;
+  const WYS = -112 - R.DROP, SEAB = R.SEAB;
   R.D3 = D3; R.D4 = D4; R.LD = LD; R.LP = LP;
   // lit des zones 3 et 4 (la partie profonde est definie dans zones_river4) : delta et port = 24 a 32 m de fond
   const shallow = (d) => WYS - (24 + 5 * Math.sin(d / 53) + 3 * Math.sin(d / 17));
   R.shallow = shallow;
   let deep = null; R.setDeep = (f) => { deep = f; };
   const w2 = (d) => -112 - (26 + 3 * Math.sin(d / 41));
-  R.setBed3((d) => (d >= D4 && deep ? deep(d) : mixf(w2(d), shallow(d), ss(D3, D3 + 60, d))));
+  R.setBed3((d) => (d >= D4 && deep ? deep(d) : mixf(w2(d), shallow(d), ss(D3 + 18, D3 + 80, d))));
   const BED = R.BED;
   for (const [k, m, a] of [['delta', 'sea', 'evoDay'], ['mangrove', 'sea', 'evoDay'], ['havre', 'sea', 'evoDusk'], ['quais', 'sea', 'evoDusk'], ['rade', 'sea', 'evoDusk']]) { EVO.SCENE_MOOD[k] = m; EVO.SCENE_AUDIO[k] = a; }
   const HWd = (u) => 46 + 6 * Math.sin(u / 61), HWp = (u) => 50 + 4 * Math.sin(u / 47) + 18 * ss(LP - 160, LP - 20, u);
@@ -74,17 +74,18 @@
   SC.delta = { len: [LD, LD], noDoor: true, noChaos: true, gw: 125, grass: false,
     sub: [{ u: 0, key: 'delta', name: 'LE DELTA' }, { u: 0.55, key: 'mangrove', name: 'LA MANGROVE' }],
     turns: [[0.1, 0.24, -38], [0.34, 0.46, 34], [0.58, 0.72, -42], [0.78, 0.9, 30]],
-    pin: (T, sc) => ({ lx: 0, fy: (d) => WYS - 5 - T.base(d), from: 24, to: sc.d1 - sc.d0 - 24 }),
+    pin: (T, sc) => ({ lx: 0, fy: (d) => mixf(-117, WYS - 5, ss(D3 + 28, D3 + 120, d)) - T.base(d), from: 24, to: sc.d1 - sc.d0 - 24 }),
     relief(T, sc) { return rel(sc, (d) => BED(d) - SEAB); },
     ground: (d, lx, c) => { c.set('#6a5c3e').lerp(new T3.Color('#4f7a3c'), 0.45 + 0.4 * Math.sin(d * 0.04 + lx * 0.06)); c.multiplyScalar(0.8 + 0.1 * Math.sin(lx * 0.2 + d * 0.11)); },
     build(S) {
       const d0 = S.d0, d = (u) => d0 + u;
-      water(S, d0, d0 + LD, 80, WYS);
+      water(S, d0, d0 + 32, 80, -112); water(S, d0 + 32, d0 + LD, 80, WYS);
+      S.item(d0 + 33, (r) => { curtain(S, d0 + 34, 56, -112, WYS); for (let k = -3; k <= 3; k++) S.glow(d0 + 40, k * 16, fl(S, d0, WYS + 4), '#eaf8ff', 46); });   // v304 : la grande chute
       // rives de mangrove : parois de roche basses, racines, roseaux, palmiers
       for (let u = 6; u < LD - 6; u += 14) S.item(d(u), (r) => {
         const dc = d(u);
         for (const sg of [-1, 1]) {
-          const hwv = HWd(u) + r.between([-1.2, 2]), top = WYS + 9 + 3 * Math.sin(dc / 41 + sg), bed = BED(dc), wd = OUT - hwv;
+          const hwv = HWd(u) + r.between([-1.2, 2]), top = mixf(-84, WYS + 9 + 3 * Math.sin(dc / 41 + sg), ss(24, 120, u)), bed = BED(dc), wd = OUT - hwv;
           S.bx(dc, sg * (hwv + wd / 2), fl(S, dc, (bed - 6 + top) / 2), wd, top - bed + 6, 18, 'jrock', pk(r, WALL), true); S.bx(dc, sg * (hwv + wd / 2), fl(S, dc, top + 0.25), wd, 0.5, 18, 'evoGrass', pk(r, GREEN), true);
           for (let k = 0; k < 3; k++) S.cyl(dc + r.between([-6, 6]), sg * (hwv - r.between([0.2, 2.6])), fl(S, dc, WYS - 1), 0.28, r.between([2.4, 4.4]), 'bark', '#4a3820', 5, 0.18, false);
           if (r() < 0.7) plant(S, TR.reeds, dc + r.between([-5, 5]), sg * (hwv - r.between([0.4, 2.6])), WYS - 0.3, r.between([1.6, 2.8]), r);

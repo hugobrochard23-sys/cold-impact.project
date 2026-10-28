@@ -6,7 +6,7 @@
   if (!R || !R.setDeep || !Z.evoFoe) return;
   const SC = Z.defs.ocean.scenes, { pk, ss } = EVO.oc;
   const { LA, LB, A, lampS, water, rel, mixf } = R;
-  const OUT = 150, WYS = -112, SEAB = R.SEAB, D4 = R.D4, LFo = 1000, LBa = 1000, D5 = D4 + LFo, DEND = D5 + LBa, BEDB = -430;
+  const OUT = 150, WYS = -112 - R.DROP, SEAB = R.SEAB, D4 = R.D4, LFo = 1000, LBa = 1000, D5 = D4 + LFo, DEND = D5 + LBa, BEDB = -430 - R.DROP;
   R.D5 = D5; R.DEND = DEND;
   const BED = R.BED;
   R.setDeep((d) => { const u = d - D4; if (u >= LFo) return BEDB; const dpt = 28 + 160 * ss(40, 420, u) + 130 * ss(420, 800, u) + 7 * Math.sin(u / 31) * ss(100, 300, u) * (1 - ss(700, 800, u)); return mixf(R.shallow(d), WYS - dpt, ss(0, 40, u)); });

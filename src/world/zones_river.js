@@ -14,8 +14,8 @@
 
   // ============================================== COTES ABSOLUES ==============================================
   // surface de l'eau : 0 en amont, -24 apres la 1re chute, -54 dans la lagune ; dans le barrage elle reste a -54 (le conduit est noye) puis tombe a -112 a la sortie du canal de fuite
-  const EXIT = LA + 1010;
-  const WY = (d) => -24 * ss(F1, F1 + 20, d) - 30 * ss(F2, F2 + 22, d) - 58 * ss(EXIT, EXIT + 6, d);
+  const EXIT = LA + 1010, DROP = 64, DROPD = LA + LB + 30;   // v304 : la GRANDE CHUTE a l'entree du delta : l'eau tombe de 64 m
+  const WY = (d) => -24 * ss(F1, F1 + 20, d) - 30 * ss(F2, F2 + 22, d) - 58 * ss(EXIT, EXIT + 6, d) - DROP * ss(DROPD, DROPD + 6, d);
   // profondeur du fleuve
   const DEP = (d) => {
     let v = 17 + 2.5 * Math.sin(d / 47);
@@ -45,7 +45,7 @@
   const PATH = (d) => WY(d) - 4.2 - 15 * Math.exp(-Math.pow((d - 292) / 42, 2)) + 2.6 * ss(500, 590, d) * (1 - ss(F1 + 2, F1 + 16, d)) + 2.6 * ss(1070, F2 - 12, d) * (1 - ss(F2 + 2, F2 + 16, d));   // trajectoire guide : remonte pres de la surface avant les chutes
   const A = (S, dc, y) => y - S.T.base(dc);        // cote absolue -> relative au sol (a la distance dc)
   const absAt = (S, dc, lx, y) => S.at(dc, lx, A(S, dc, y));   // point du monde pour une cote absolue
-  EVO.riv = { WY, BED, HW, DEP, LA, LB, LF, F1, F2, EXIT, A, absAt, SEAB, PL, PATH };
+  EVO.riv = { DROP, DROPD, WY, BED, HW, DEP, LA, LB, LF, F1, F2, EXIT, A, absAt, SEAB, PL, PATH };
   // le niveau 2 est ce nouveau fleuve : liste des scenes, fonction d'eau, plateau de depart plat
   EVO.SCENES2 = ['rapides', 'barrage', 'delta', 'havre', 'gouffre', 'sousmarin'];
   EVO.waterFn = (d) => WY(d);
