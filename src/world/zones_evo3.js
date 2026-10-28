@@ -12,18 +12,18 @@
 
   // ---------- eau 3D : grille de facettes ondulées (la houle est figée, la texture coule dessus) ; yAbs = cote absolue de la surface (suit T.rel) ----------
   const wv = (x, z) => 0.5 * Math.sin(x * 0.31 + z * 0.17) + 0.32 * Math.sin(x * 0.17 - z * 0.43 + 1.7) + 0.18 * Math.sin(x * 0.7 + z * 0.55 + 4);
-  Z.evoWaves = function (S, d0, d1, hw, yAbs, mat, tint, amp) {
-    const cols = Math.max(2, Math.round(2 * hw / 9)), step = 12, rows = 4;
-    for (let dc = d0; dc < d1; dc += step) S.item(dc + step / 2, () => {
+  Z.evoWaves = function (S, d0, d1, hw, yAbs, mat, tint, amp, fade) {   // v298 : tuiles de largeur egale qui tombent exactement sur [d0, d1] (ni recouvrement ni bande vide) ; fade : la houle s'aplatit aux deux bouts pour se raccorder au plan d'eau voisin
+    const cols = Math.max(2, Math.round(2 * hw / 9)), nT = Math.max(1, Math.ceil((d1 - d0) / 12 - 1e-6)), step = (d1 - d0) / nT, rows = 4;
+    for (let ti = 0; ti < nT; ti++) { const dc = d0 + ti * step; S.item(dc + step / 2, () => {
       const pos = [], uv = [], ix = [];
       for (let r = 0; r <= rows; r++) { const dd = dc + step * r / rows, fl = S.T.rel(dd);
-        for (let c = 0; c <= cols; c++) { const lx = -hw + 2 * hw * c / cols, edge = Math.min(1, Math.min(c, cols - c) / 2), p = S.at(dd, lx, yAbs - fl + wv(lx, dd) * (amp || 0.4) * edge); pos.push(p[0], p[1], p[2]); uv.push(lx, dd); } }
+        for (let c = 0; c <= cols; c++) { const lx = -hw + 2 * hw * c / cols, edge = Math.min(1, Math.min(c, cols - c) / 2) * (fade ? Math.min(1, (dd - d0) / 6, (d1 - dd) / 6) : 1), p = S.at(dd, lx, yAbs - fl + wv(lx, dd) * (amp || 0.4) * edge); pos.push(p[0], p[1], p[2]); uv.push(lx, dd); } }
       for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const a = r * (cols + 1) + c, b = a + 1, q = a + cols + 1, e = q + 1; ix.push(a, q, b, b, q, e); }
       { const A = new THREE.Vector3(pos[0], pos[1], pos[2]), B = new THREE.Vector3(pos[3 * (cols + 1)], pos[3 * (cols + 1) + 1], pos[3 * (cols + 1) + 2]), C2 = new THREE.Vector3(pos[3], pos[4], pos[5]); if (B.sub(A).cross(C2.sub(A)).y < 0) for (let i = 0; i < ix.length; i += 3) { const t = ix[i + 1]; ix[i + 1] = ix[i + 2]; ix[i + 2] = t; } }
       let g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(ix);
       const g2 = g.toNonIndexed(); g.dispose(); g2.computeVertexNormals();
       S.b.addGeometry(g2, ZERO, QI, null, mat, tint, [1 / 15, 1 / 15]); g2.dispose();
-    });
+    }); }
   };
 
   // ===== RIVIERE : une tranchée de 12 m en travers du couloir, remplie d'eau translucide (on plonge dedans) ; un bateau en surface, un sous-marin dont on devine la forme, le pont au-dessus

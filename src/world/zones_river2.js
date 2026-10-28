@@ -49,7 +49,6 @@
           if (r() < 0.5) plant(S, TR.reeds, dc + r.between([-5, 5]), sg * (face - r.between([0.4, 2.4])), WY(dc) - 0.3, r.between([1.6, 2.6]), r);
         }
       });
-      for (let k = 0; k < 9; k++) { const u = 30 + k * 28; S.glow(d(u), (k % 2 ? 1 : -1) * 18, A(S, d(u), -50), '#e8f6f0', 80); }
       for (let k = 0; k < 7; k++) { const u = 40 + k * 34; foe(S, 'mine', d(u), (k % 2 ? 1 : -1) * 24, WY(d(u)) - BED(d(u)) - 2.5, { name: 'MINE', keep: k < 2 }); }
       // bouees de balisage et barrage flottant (billes de bois)
       S.item(d(150), (r) => { for (let k = -5; k <= 5; k++) { if (Math.abs(k) < 1.5) continue; const x = k * 11; S.cyl(d(150), x, A(S, d(150), -54.5), 0.9, 1.2, 'col:#d8c070', undefined, 8, 0.9, true); S.cyl(d(150), x, A(S, d(150), -53.5), 0.2, 2.6, 'metal', '#4a4e54', 5, 0.2, false); S.bx(d(150), x, A(S, d(150), -50.9), 0.5, 0.5, 0.5, 'emis:#ff3a2a', undefined, false); } for (const [a, b] of [[-6.5, -52], [1.5, 6.5], [52, 66]]) S.bx(d(150), (a + b) / 2, A(S, d(150), -54.2), Math.abs(b - a), 1.0, 1.2, 'bark', '#5e4630', false); });
@@ -69,7 +68,7 @@
         S.bx(f - 0.2, 0, A(S, dc, FLOOR_GAL + H_GAL + 2.6), portW + 6, 5.2, 1.2, 'hazard', undefined, false);
         // crete : route, garde-corps, lampadaires, tour de controle, portique de vannes
         S.bx(dc, 0, A(S, dc, CREST + 0.5), 2 * OUT, 1.0, 20, 'asphalt', '#46484c', true); for (const sg of [-1, 1]) S.bx(dc + sg * 9.6, 0, A(S, dc, CREST + 1.7), 2 * OUT, 1.4, 0.5, 'concrete', '#c0c4c6', true);
-        for (let k = -8; k <= 8; k++) { S.cyl(dc - 8.5, k * 14, A(S, dc, CREST + 1), 0.22, 9, 'metal', '#7a8088', 6, 0.16, false); lampS(S, dc - 8.5, k * 14, A(S, dc, CREST + 10), '#fff1c8', 20); }
+        for (let k = -8; k <= 8; k++) { S.cyl(dc - 8.5, k * 14, A(S, dc, CREST + 1), 0.22, 9, 'metal', '#7a8088', 6, 0.16, false); lampS(S, dc - 8.5, k * 14, A(S, dc, CREST + 10), '#fff1c8', 7); }
         S.bx(dc + 4, -44, A(S, dc, CREST + 14), 18, 26, 12, 'concrete', '#c8ccce', true); S.bx(dc - 2.2, -44, A(S, dc, CREST + 20), 18.2, 6, 0.4, 'glass', undefined, false); S.bx(dc + 4, -44, A(S, dc, CREST + 28.5), 20, 1.2, 14, 'concrete', '#9aa0a2', true); S.cyl(dc + 4, -44, A(S, dc, CREST + 29), 0.3, 18, 'metal', '#8a9096', 5, 0.15, false); lampS(S, dc + 4, -44, A(S, dc, CREST + 47), '#ff3a2a', 16);
         for (let k = -3; k <= 3; k++) { if (Math.abs(k) < 1) continue; S.bx(dc, k * 24, A(S, dc, CREST + 5), 5, 8, 6, 'concrete', '#a8acae', true); S.bx(dc, k * 24, A(S, dc, CREST + 9.5), 7, 1.0, 20, 'metal', '#c8362a', false); }
         S.bx(dc, 56, A(S, dc, CREST + 3), 12, 5, 8, 'corrugated', '#7a8a6a', true);

@@ -63,7 +63,7 @@
   const rel = (sc, fn) => { let lo = 1e9, hi = -1e9; for (let d = sc.d0; d <= sc.d1; d += 4) { const v = fn(d); if (v < lo) lo = v; if (v > hi) hi = v; } sc.rlo = lo; sc.rhi = hi; return { fn, max: Math.max(Math.abs(lo), Math.abs(hi)) }; };
   const GREEN = ['#3a8a3e', '#448f40', '#357f38', '#4a9444'], WALL = ['#b4bca4', '#aab29a', '#bcc4ac', '#a0a890'], STONE = ['#c4c6b6', '#b8baaa', '#d0d0c0', '#aeb0a0'], TEMPLE = ['#d0d0bc', '#c4c4b0', '#d8d6c2', '#bcbca8'];
   // eau : surface a niveau constant sur [a, b] (cote absolue)
-  const water = (S, a, b, hw, yAbs, amp) => Z.evoWaves(S, a, b, hw, yAbs - SEAB, 'waterSurf', '#7fcfb8', amp === undefined ? 0.45 : amp);
+  const water = (S, a, b, hw, yAbs, amp) => Z.evoWaves(S, a, b, hw, yAbs - SEAB, 'waterSurf', '#7fcfb8', amp === undefined ? 0.45 : amp, true);
   // rideau de cascade : nappe verticale blanche qui coule + embruns
   const curtain = (S, dc, hw, yTop, yBot) => {
     if (!S.inClip(dc)) return;
@@ -91,11 +91,14 @@
   // v286 : la plateforme de lancement est FERMEE : falaise de jungle derriere le lanceur et parois de chaque cote jusqu'au fleuve (plus de vide autour de la rampe)
   { const _tl = EVO.tick;
     EVO.tick = (g, dt) => { _tl(g, dt); const run = g.endlessRun; if (!run || !EVO.isS2() || !g.evo || g.evo.preview) return;
+      if (g.sun && g.sun.castShadow) g.sun.castShadow = false;   // v298 : plus d'ombre portee des falaises sur la rampe, l'eau et la fusee (grande ombre en biais au lancement)
       if (g._lfRun !== run) { g._lfRun = run;   // v293 : la rampe de lancement (d = -50 a +12) n'avait pas de sol ; v294 : meme couleur, meme eclairage et meme materiau que le sol du fleuve (aucune coupure visible)
         if (g._lf) { g.scene.remove(g._lf); g._lf.geometry.dispose(); }
         const gf = Z.defs.ocean.scenes.rapides.ground, cc = new T3.Color(), nn = [0, 1, 0], pos = [], col = [], ix = [], ds = [], lxs = []; for (let d = -56; d <= 14.01; d += 3.5) ds.push(d); for (let lx = -126; lx <= 126.01; lx += 14) lxs.push(lx);
         for (const d of ds) for (const lx of lxs) { const p = run.T.at(d, lx, 0); pos.push(p[0], A0(d) - 0.25, p[2]); Z.evoGcol(p[0], p[2], cc); gf(d, lx, cc, null); col.push(cc.r, cc.g, cc.b); }
         for (let i = 0; i < ds.length - 1; i++) for (let j = 0; j < lxs.length - 1; j++) { const a = i * lxs.length + j, b = a + 1, c = a + lxs.length, e = c + 1; ix.push(a, c, b, b, c, e); }
+        { const q0 = [pos[3 * ix[0]], pos[3 * ix[0] + 1], pos[3 * ix[0] + 2]], q1 = [pos[3 * ix[1]], pos[3 * ix[1] + 1], pos[3 * ix[1] + 2]], q2 = [pos[3 * ix[2]], pos[3 * ix[2] + 1], pos[3 * ix[2] + 2]];   // v298 : sens des triangles vers le haut (avec le materiau du sol a une seule face, la rampe etait invisible vue d'en haut : le trou du lanceur)
+          if ((q1[2] - q0[2]) * (q2[0] - q0[0]) - (q1[0] - q0[0]) * (q2[2] - q0[2]) < 0) for (let i = 0; i < ix.length; i += 3) { const t = ix[i + 1]; ix[i + 1] = ix[i + 2]; ix[i + 2] = t; } }
         const fg = new T3.BufferGeometry(); fg.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); fg.setAttribute('color', new T3.Float32BufferAttribute(col, 3)); fg.setIndex(ix); fg.computeVertexNormals();
         const na = fg.attributes.normal, po = fg.attributes.position; for (let i = 0; i < na.count; i++) { Z.evoRelN(po.getX(i), po.getZ(i), nn, na.getX(i), na.getY(i), na.getZ(i)); na.setXYZ(i, nn[0], nn[1], nn[2]); }
         g._lf = new T3.Mesh(fg, new T3.MeshLambertMaterial({ vertexColors: true, side: T3.DoubleSide })); g._lfMat = false; g.scene.add(g._lf); }
@@ -106,8 +109,9 @@
           for (let k = 0; k < 2; k++) { const c = new T3.Mesh(new T3.SphereGeometry(7 + 6 * hsh(d, lx + k), 8, 6), cm[k]); c.scale.y = 0.7; c.position.set(a[0] + (hsh(lx, d + k) - 0.5) * w, y0 + h + 34, a[2] + (hsh(d + k, lx) - 0.5) * dd); G.add(c); } };
         for (let d = -214; d < 78; d += 14) for (const sg of [-1, 1]) seg(d, sg * 121, 22, 14.9, 74 + 2 * Math.sin(d / 9 + sg) - run.T.base(d));
         for (let lx = -128; lx <= 128; lx += 16) seg(-214, lx, 16.6, 20, 76 + 3 * Math.sin(lx / 17) - run.T.base(-214));
+        wm.visible = gm.visible = cm[0].visible = cm[1].visible = false; if (EVO.riv.launchCliffs) G.add(EVO.riv.launchCliffs(run));   // v298 : la collision reste celle des boites, la vue est celle des falaises
         g.scene.add(G); g._lc = G; EVO.addDyn(G, null, cols, { span: 600 }); }
-      if (g._lc) g._lc.visible = g.state === 'FLIGHT'; };
+      if (g._lc) g._lc.visible = g.state === 'FLIGHT' && run.dist < 360; };   // v298 : les falaises du depart ne sont plus dessinees une fois loin
   }
   EVO.riv.plant = plant; EVO.riv.slab = slab; EVO.riv.lampS = lampS; EVO.riv.water = water; EVO.riv.curtain = curtain; EVO.riv.hsh = hsh;
   EVO.riv.setBed2 = (f) => { BED2 = f; }; EVO.riv.setBed3 = (f) => { BED3 = f; };

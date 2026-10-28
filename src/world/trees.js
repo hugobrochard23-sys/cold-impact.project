@@ -203,20 +203,20 @@
     const rim = [], inner = [], ph = rnd() * 6.2832;
     for (let k = 0; k < K; k++) {
       const a = ph + k / K * 6.2832 + rr(rnd, -0.1, 0.1), lobe = k % 2 === 0, ro = R * (lobe ? rr(rnd, 0.97, 1.16) : rr(rnd, 0.66, 0.82)), droop = -0.16 * ro * (Math.cos(a) * dx + Math.sin(a) * dz);
-      rim.push([cx + Math.cos(a) * ro, cy + T * (lobe ? -0.04 : 0.1) + rr(rnd, -0.05, 0.05) * T + droop, cz + Math.sin(a) * ro]);
-      const ri = R * rr(rnd, 0.44, 0.58); inner.push([cx + Math.cos(a + 0.16) * ri, cy + T * rr(rnd, 0.8, 0.96) + droop * 0.3, cz + Math.sin(a + 0.16) * ri]);
+      rim.push([cx + Math.cos(a) * ro, cy + T * (lobe ? -0.2 : 0.0) + rr(rnd, -0.05, 0.05) * T + droop, cz + Math.sin(a) * ro]);
+      const ri = R * rr(rnd, 0.44, 0.58); inner.push([cx + Math.cos(a + 0.16) * ri, cy + T * rr(rnd, 0.95, 1.12) + droop * 0.3, cz + Math.sin(a + 0.16) * ri]);
     }
-    const apex = [cx, cy + T * 1.1, cz], under = [cx, cy - T * 0.55, cz];
+    const apex = [cx, cy + T * 1.3, cz], under = [cx, cy - T * 0.4, cz];
     for (let k = 0; k < K; k++) {
       const j = (k + 1) % K, lobe = k % 2 === 0, ct = mul(cTop, 0.92 + 0.16 * rnd()), cr = mul(cRim, lobe ? 0.94 : 1.06);
       if (full) { m.tri(apex, inner[k], inner[j], mul(ct, 1.04), ct, ct); m.quad(inner[k], rim[k], rim[j], inner[j], ct, cr, cr, ct); } else m.tri(apex, rim[k], rim[j], mul(ct, 1.05), cr, cr);
-      m.tri(under, rim[j], rim[k], cUnder, mul(cUnder, 1.2), mul(cUnder, 1.2));
+      { const bu = (c, k) => [c[0] * k, c[1] * k, c[2] * k]; m.tri(under, rim[j], rim[k], bu(cUnder, 2.1), bu(cRim, 1.75), bu(cRim, 1.75)); }   // v298 : le dessous n'est presque pas eclaire : on le remonte (couleur de sommet > 1) pour qu'il reste d'un vert franc, sans gros contraste avec le dessus
     }
   }
   // geometrie d'un arbre lointain (2 etages) pour les collines : instanciee, teintee par instance
   T.padGeometry = function (K) {
     const m = new Mesh(), rnd = (() => { let s = 7; const f = () => (s = (s * 16807) % 2147483647) / 2147483647; f.between = (r) => r[0] + (r[1] - r[0]) * f(); return f; })();
-    pad(m, 0, 0, 0, 1, 0.3, rnd, [1, 1, 1], [0.82, 0.82, 0.82], [0.42, 0.42, 0.42], K || 9, 0, 0, true); pad(m, 0.05, 0.22, 0.03, 0.66, 0.28, rnd, [1, 1, 1], [0.84, 0.84, 0.84], [0.5, 0.5, 0.5], K || 9, 0, 0, false);
+    pad(m, 0, 0, 0, 1, 0.42, rnd, [1, 1, 1], [0.84, 0.84, 0.84], [0.72, 0.72, 0.72], K || 9, 0, 0, true); pad(m, 0.05, 0.28, 0.03, 0.66, 0.38, rnd, [1, 1, 1], [0.86, 0.86, 0.86], [0.74, 0.74, 0.74], K || 9, 0, 0, false);
     return m.geo();
   };
   // liane : simple fil courbe (2 segments)
@@ -247,9 +247,9 @@
       const ex = top0[0] + ms[0] + lean[0] * 0.3, ey = topY + ms[1], ez = top0[2] + ms[2] + lean[1] * 0.3, Rm = ms[3] * rr(rnd, 0.9, 1.1), od = Math.hypot(ms[0], ms[2]) || 1, dx = ms[0] / od, dz = ms[2] / od;
       const mid = [(top0[0] + ex) / 2, (topY + ey) / 2 - Rm * 0.08, (top0[2] + ez) / 2];   // branche maitresse courbe, epaisse
       m.tube([top0[0], topY - h * 0.05, top0[2]], r0 * 0.5, mid, r0 * 0.36, mul(bark, 0.9), mul(bark, 0.95), 4); m.tube(mid, r0 * 0.36, [ex, ey - Rm * 0.12, ez], r0 * 0.24, mul(bark, 0.95), mul(bark, 1.0), 4);
-      const dark = hex(pal[0]), light = lerp3(hex(pal[1]), hex(JUN[Math.floor(rnd() * JUN.length)][1]), 0.25), cTop = lerp3(dark, light, 0.86), cRim = lerp3(dark, light, 0.5), cUnder = mul(dark, 0.78);
+      const dark = hex(pal[0]), light = lerp3(hex(pal[1]), hex(JUN[Math.floor(rnd() * JUN.length)][1]), 0.25), cTop = lerp3(dark, light, 0.86), cRim = lerp3(dark, light, 0.5), cUnder = lerp3(dark, light, 0.6);
       const tiers = far ? 1 : ms[4];
-      for (let t = 0; t < tiers; t++) pad(m, ex + rr(rnd, -0.2, 0.2) * Rm * t, ey + t * Rm * 0.34, ez + rr(rnd, -0.2, 0.2) * Rm * t, Rm * (1 - 0.3 * t), Rm * (0.34 - 0.03 * t), rnd, cTop, cRim, cUnder, K, dx, dz, t === 0);
+      for (let t = 0; t < tiers; t++) pad(m, ex + rr(rnd, -0.2, 0.2) * Rm * t, ey + t * Rm * 0.42, ez + rr(rnd, -0.2, 0.2) * Rm * t, Rm * (1 - 0.3 * t), Rm * (0.46 - 0.04 * t), rnd, cTop, cRim, cUnder, K, dx, dz, t === 0);
       if (!far && rnd() < 0.5) vines.push([ex + dx * Rm * 0.8, ey - Rm * 0.1, ez + dz * Rm * 0.8]);
     }
     const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff', o.tint); g.dispose();

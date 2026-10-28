@@ -41,7 +41,7 @@
     const Wp = (u, off, y, vv) => { const p = W(u, off, y); return [p[0], p[1], p[2], u / 6 + sd * 0.31, (vv === undefined ? y : vv) / 6]; };   // avec coordonnees de texture
     // profils d'une strate (pures fonctions de la strate k et de u : se raccordent d'une tranche a l'autre)
     const sm = (u, k, n) => Math.sin(u / (9 + 7 * hh(k, sd, 80 + n)) + hh(k, sd, 90 + n) * 6.28);
-    const but = (k, u) => { const c = Math.floor(u / 17), cu = (c + 0.2 + 0.6 * hh(k, c, sd + 14)) * 17, w = 2.6 + 3.4 * hh(k, c, sd + 15), t = (u - cu) / w; return (hh(k, c, sd + 16) > 0.5 ? 1 : 0) * Math.exp(-t * t) * (0.45 + 0.8 * hh(k, c, sd + 17)); };   // saillie arrondie
+    const but = (k, u) => { const c = Math.floor(u / 17), kk = Math.floor(k / 3), cu = (c + 0.2 + 0.6 * hh(kk, c, sd + 14)) * 17, w = 4.5 + 4 * hh(kk, c, sd + 15), t = (u - cu) / w; return (hh(kk, c, sd + 16) > 0.55 ? 1 : 0) * Math.exp(-t * t) * (0.35 + 0.5 * hh(kk, c, sd + 17)); };   // saillie arrondie ; v298 : contreforts larges et doux, communs a 3 strates (plus de blocs etroits decales qui laissent des fentes sombres)
     const offB = (k, u) => Math.max(-0.35, 0.6 + 0.9 * hh(k, sd, 11) + 0.46 * sm(u, k, 1) + 0.24 * sm(u * 2.3, k, 2) - but(k, u));
     const offT = (k, u, last) => last ? offB(k, u) + 0.6 : Math.max(offB(k, u) + 0.35 + 0.35 * hh(k, sd, 12), offB(k + 1, u) + 0.28);
     const bulge = (k) => 0.12 + 0.25 * hh(k, sd, 13);
@@ -74,8 +74,8 @@
       }
     }
     // fond sombre derriere la paroi (sous la ligne d'eau on voit a travers l'eau)
-    const bk = o.backBot === undefined ? bot - 6 : o.backBot, tpk = topf(um) + 0.2, uL = clamp ? uA : uA - 1, uR = clamp ? uB : uB + 1;
-    quad(Wp(uL, 3.0, bk), Wp(uR, 3.0, bk), Wp(uR, 3.0, tpk), Wp(uL, 3.0, tpk), mulc(DARK, 0.7), mulc(DARK, 0.7), mulc(DARK, 1.0), mulc(DARK, 1.0), outV);
+    const bk = o.backBot === undefined ? bot - 6 : o.backBot, tpk = Math.max(topf(uA), topf(um), topf(uB)) + 0.2, uL = clamp ? uA : uA - 1.5, uR = clamp ? uB : uB + 1.5, BKC = mixc(ROCKC[3], DARK, 0.3);   // v298 : le fond est de la roche (meme texture), plus un plan noir : un raccord entrouvert ne montre jamais de vide
+    quad(Wp(uL, 3.0, bk), Wp(uR, 3.0, bk), Wp(uR, 3.0, tpk), Wp(uL, 3.0, tpk), mulc(BKC, 0.62), mulc(BKC, 0.62), mulc(BKC, 0.9), mulc(BKC, 0.9), outV);
     if (!P.length) return 0;
     const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(P, 3)); geo.setAttribute('normal', new T3.Float32BufferAttribute(N, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(C, 3)); geo.setAttribute('uv', new T3.Float32BufferAttribute(U, 2));
     S.b.addGeometry(geo, new V(), Qi, null, 'rockface', undefined, [1, 1]); geo.dispose();
@@ -84,7 +84,7 @@
   // falaise de la berge, tranche [dc - 7, dc + 7[, cote sg (-1 / +1)
   R.cliffFace = (S, r, dc, sg) => {
     const F = (d) => R.faceX(d), W = (d, off, y) => absAt(S, d, sg * (F(d) + off), y);
-    const n = R.rockWall(S, r, W, { uA: dc - 7, uB: dc + 7, topf: (d) => R.topAt(d, sg), bot: WY(dc) - 3, backBot: BED(dc) - 2, seed: sg, waterY: (d) => WY(d) });
+    const n = R.rockWall(S, r, W, { uA: dc - 7, uB: dc + 7, topf: (d) => R.topAt(d, sg), bot: Math.min(WY(dc - 21), WY(dc), WY(dc + 21)) - 3, backBot: BED(dc) - 2, seed: sg, waterY: (d) => WY(d) });
     if (TR && TR.vine) for (let k = 0; k < 1; k++) if (r() < 0.6) { const d = dc + r.between([-6, 6]), p = W(d, 0.6, R.topAt(d, sg) - 0.5); TR.vine(S.b, p[0], p[1], p[2], r.between([5, 14]), r); }
     return n;
   };
@@ -97,5 +97,26 @@
   R.faceAlong = (S, r, d0, d1, lFix, yBot, yTop, seed, opt) => {
     const sg = lFix >= 0 ? 1 : -1, W = (u, off, y) => absAt(S, d0 + u, lFix + sg * off, y);
     return R.rockWall(S, r, W, Object.assign({ uA: 0, uB: d1 - d0, topf: () => yTop, bot: yBot, seed, clamp: true, veg: 1 }, opt || {}));
+  };
+
+  // v298 : falaises de la plateforme de lancement (d = -214 a 69) : memes strates que le fleuve, fermees derriere le lanceur et en travers au bout (plus de mur plat, ni de boules, ni de vide) ; geometrie unique, posee par le tick de zones_river.js
+  R.launchCliffs = (run) => {
+    const geos = [], SB = { b: { addGeometry: (geo) => { geos.push(geo.clone()); } } }, P = (d, lat, y) => { const p = run.T.at(d, lat, 0); return [p[0], y, p[2]]; };
+    for (const sg of [-1, 1]) {
+      for (let a = -214; a < 69; a += 36) { const b = Math.min(69, a + 36), bot = Math.max(-30, R.BED(b) - 6), lat = sg * 110.3;
+        R.rockWall(SB, null, (u, off, y) => P(u, lat + sg * off, y), { uA: a, uB: b, topf: (u) => 74 + 2 * Math.sin(u / 9 + sg), bot, backBot: bot - 4, seed: 11 + sg, veg: 0 }); }
+      const l0 = sg * (R.faceX(68) - 0.3), l1 = sg * 110.3, lo = Math.min(l0, l1), w = Math.abs(l1 - l0), bot = R.BED(68) - 6;
+      R.rockWall(SB, null, (u, off, y) => P(67.6 + off, lo + u, y), { uA: 0, uB: w, topf: () => 74.6, bot, backBot: bot - 4, seed: 31 + sg, clamp: true, veg: 0 });
+    }
+    R.rockWall(SB, null, (u, off, y) => P(-204.4 - off, u, y), { uA: -128, uB: 128, topf: () => 76, bot: 28, backBot: 24, seed: 21, clamp: true, veg: 0 });
+    const n = geos.reduce((t, g) => t + g.attributes.position.count, 0), pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3), uv = new Float32Array(n * 2); let o = 0;
+    for (const g of geos) { const c = g.attributes.position.count; pos.set(g.attributes.position.array, o * 3); nor.set(g.attributes.normal.array, o * 3); col.set(g.attributes.color.array, o * 3); uv.set(g.attributes.uv.array, o * 2); o += c; g.dispose(); }
+    const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(pos, 3)); geo.setAttribute('normal', new T3.BufferAttribute(nor, 3)); geo.setAttribute('color', new T3.BufferAttribute(col, 3)); geo.setAttribute('uv', new T3.BufferAttribute(uv, 2));
+    const m = new T3.Mesh(geo, new T3.MeshLambertMaterial({ map: CC.Textures.get('rockface'), vertexColors: true })); 
+    const cp = [], cc = [], gcol = new T3.Color('#5a9a42');   // dessus : un replat d'herbe au ras de la falaise (rien derriere)
+    for (const sg of [-1, 1]) for (let d = -214; d < 69; d += 6) { const d2 = Math.min(69, d + 6); for (const [dd, lt] of [[d, 110.3], [d, 150], [d2, 150], [d, 110.3], [d2, 150], [d2, 110.3]]) { const p = run.T.at(dd, sg * lt, 0); cp.push(p[0], 74 + 2 * Math.sin(dd / 9 + sg) + 0.08, p[2]); cc.push(gcol.r, gcol.g, gcol.b); } }
+    const cg = new T3.BufferGeometry(); cg.setAttribute('position', new T3.Float32BufferAttribute(cp, 3)); cg.setAttribute('color', new T3.Float32BufferAttribute(cc, 3)); cg.computeVertexNormals();
+    const na = cg.attributes.normal; for (let i = 0; i < na.count; i++) na.setXYZ(i, 0, 1, 0);
+    const out = new T3.Group(); out.add(m); out.add(new T3.Mesh(cg, new T3.MeshLambertMaterial({ vertexColors: true, side: T3.DoubleSide }))); return out;
   };
 })();
