@@ -194,33 +194,50 @@
     }
     const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
   };
-  // arbre de la canopee : tronc elance a contreforts, couronne de masses plates, lianes pendantes, quelques fleurs
+  // v295 : arbre de la canopee, trois silhouettes (parasol etage, couronne ronde, banian a racines aeriennes) : tronc evase a racines qui rampent, branches qui portent chaque masse de feuillage,
+  // masses doubles (grosse boule + calotte plus claire + lambeaux de feuilles qui retombent sur le bord), epiphytes, lianes a feuilles, fleurs
+  const LEAFLO = [['#2f6a2a', '#9acb4e'], ['#356e2c', '#b4d85a'], ['#2a6030', '#86c452']];
   T.jungle = function (b, x, y, z, h, rnd, o) {
-    if (inWater(b, x, z)) return; o = o || {}; const m = new Mesh(), pal = JUNGLE[Math.floor(rnd() * JUNGLE.length)], bark = hex(['#6a5238', '#5a4632', '#7a6044'][Math.floor(rnd() * 3)]), seed = rnd() * 100;
-    const lean = [rr(rnd, -0.06, 0.06) * h, rr(rnd, -0.06, 0.06) * h], r0 = h * 0.03 + 0.55, topY = y + h * 0.66;
-    m.tube([x, y - 0.6, z], r0 * 1.5, [x + lean[0] * 0.3, y + h * 0.14, z + lean[1] * 0.3], r0 * 0.78, mul(bark, 0.6), mul(bark, 0.8), 8);
-    m.tube([x + lean[0] * 0.3, y + h * 0.14, z + lean[1] * 0.3], r0 * 0.78, [x + lean[0], topY, z + lean[1]], r0 * 0.5, mul(bark, 0.8), mul(bark, 1.0), 8);
-    const nb = 4 + Math.floor(rnd() * 2), ph = rnd() * 6.28;
-    for (let k = 0; k < nb; k++) {   // contreforts : triangles plats qui naissent du tronc
-      const a = ph + k / nb * 6.2832, fw = h * rr(rnd, 0.1, 0.16), fh = h * rr(rnd, 0.16, 0.26), ca = Math.cos(a), sa = Math.sin(a), px = -sa, pz = ca, bx = x + ca * r0 * 1.2, bz = z + sa * r0 * 1.2, tx = x + ca * (r0 * 1.2 + fw), tz = z + sa * (r0 * 1.2 + fw);
-      const wd = r0 * 0.28, cb = mul(bark, 0.65), ct = mul(bark, 0.95);
+    if (inWater(b, x, z)) return; o = o || {}; const far = !!o.far, m = new Mesh(), pal = JUNGLE[Math.floor(rnd() * JUNGLE.length)], bark = hex(['#6a5238', '#5a4632', '#7a6044', '#625040'][Math.floor(rnd() * 4)]), seed = rnd() * 100, style = rnd() < 0.42 ? 0 : rnd() < 0.62 ? 1 : 2;
+    const moss = hex('#4a6a34'), lean = [rr(rnd, -0.05, 0.05) * h, rr(rnd, -0.05, 0.05) * h], r0 = h * 0.03 + 0.55, topY = y + h * (style === 0 ? 0.6 : style === 1 ? 0.55 : 0.5);
+    const tb = (t) => [x + lean[0] * t * t + 0.5 * Math.sin(t * 3 + seed) * r0 * 0.5, y + (topY - y) * t, z + lean[1] * t * t + 0.5 * Math.cos(t * 2.4 + seed) * r0 * 0.5];
+    { let prev = [x, y - 0.7, z]; for (let i = 1; i <= 4; i++) { const t = i / 4, c = tb(t), rad = r0 * (1.55 - 0.9 * t) * (i === 1 ? 1.15 : 1); m.tube(prev, i === 1 ? r0 * 1.9 : r0 * (1.55 - 0.9 * (i - 1) / 4), c, rad, lerp3(mul(bark, 0.62), moss, i === 1 ? 0.35 : 0.12), mul(bark, 0.7 + 0.12 * t), i < 3 ? 9 : 7); prev = c; } }
+    const nb = far ? 4 : 5 + Math.floor(rnd() * 3), ph = rnd() * 6.28;
+    for (let k = 0; k < nb; k++) {   // contreforts en voile et racines qui rampent sur le sol
+      const a = ph + k / nb * 6.2832 + rr(rnd, -0.2, 0.2), fw = h * rr(rnd, 0.1, 0.19), fh = h * rr(rnd, 0.14, 0.26), ca = Math.cos(a), sa = Math.sin(a), px = -sa, pz = ca, bx = x + ca * r0 * 1.1, bz = z + sa * r0 * 1.1, tx = x + ca * (r0 * 1.1 + fw), tz = z + sa * (r0 * 1.1 + fw), wd = r0 * 0.3, cb = mul(bark, 0.6), ct = mul(bark, 0.95);
       m.quad([bx - px * wd, y + fh, bz - pz * wd], [bx + px * wd, y + fh, bz + pz * wd], [tx + px * wd * 0.6, y - 0.3, tz + pz * wd * 0.6], [tx - px * wd * 0.6, y - 0.3, tz - pz * wd * 0.6], ct, ct, cb, cb);
+      if (!far) { const L2 = fw * rr(rnd, 1.2, 1.9), a2 = a + rr(rnd, -0.3, 0.3); m.tube([tx, y + 0.25, tz], r0 * 0.24, [x + Math.cos(a2) * (r0 * 1.1 + L2), y - 0.1, z + Math.sin(a2) * (r0 * 1.1 + L2)], r0 * 0.1, mul(bark, 0.7), mul(bark, 0.55), 5); }
     }
-    const crown = [[0, 0, 0, 0.34], [0.26, 0.04, 0.1, 0.27], [-0.2, 0.1, 0.18, 0.28], [0.1, 0.08, -0.26, 0.26], [-0.24, 0.0, -0.16, 0.25], [0.02, 0.22, 0.02, 0.26]];
-    const nc = o.far ? 4 : 5 + Math.floor(rnd() * 2);
+    // masses de feuillage : (dx, dy, dz) en fraction de h, rayon en fraction de h
+    const CR = style === 0 ? [[0, 0.16, 0, 0.27], [0.34, 0.03, 0.04, 0.22], [-0.3, 0.05, 0.14, 0.23], [0.06, 0.04, -0.34, 0.22], [-0.12, 0.05, 0.3, 0.2], [0.24, 0.05, 0.28, 0.19], [-0.27, 0.03, -0.24, 0.2]]
+      : style === 1 ? [[0, 0.24, 0, 0.3], [0.22, 0.1, 0.06, 0.24], [-0.2, 0.12, 0.12, 0.25], [0.06, 0.1, -0.24, 0.23], [-0.08, 0.16, 0.22, 0.21], [0.16, 0.3, -0.08, 0.2]]
+      : [[0, 0.1, 0, 0.26], [0.3, 0.02, 0.08, 0.21], [-0.28, 0.04, 0.0, 0.22], [0.04, 0.03, 0.3, 0.2], [-0.04, 0.05, -0.3, 0.2], [0.2, 0.14, -0.2, 0.18]];
+    const nc = far ? 3 : Math.min(CR.length, 6), top0 = tb(1);
     for (let i = 0; i < nc; i++) {
-      const c = crown[i], cx = x + lean[0] + c[0] * h * 0.9, cz = z + lean[1] + c[2] * h * 0.9, cy = topY + c[1] * h * 0.9 + h * 0.12, rad = c[3] * h * rr(rnd, 0.88, 1.12);
-      m.tube([x + lean[0], topY - h * 0.05, z + lean[1]], r0 * 0.34, [cx, cy - rad * 0.2, cz], r0 * 0.2, mul(bark, 0.9), mul(bark, 1.0), 6);
-      blob(m, cx, cy, cz, rad, 0.5 + 0.12 * rnd(), rnd, mul(hex(pal[0]), 0.55), mul(hex(pal[1]), 0.95), seed + i * 7.1, i > 0 || !!o.far);
+      const c = CR[i], rad = c[3] * h * rr(rnd, 0.9, 1.12), cx = top0[0] + c[0] * h, cz = top0[2] + c[2] * h, cy = topY + c[1] * h + rad * 0.2, flat = style === 0 ? 0.42 : 0.55;
+      const cl = lerp3(mul(hex(pal[0]), 0.5), mul(hex(pal[1]), 0.55), 0.2 * rnd()), ch = mul(lerp3(hex(pal[1]), hex(LEAFLO[Math.floor(rnd() * 3)][1]), 0.3 * rnd()), 0.92 + 0.2 * rnd());
+      m.tube([top0[0], topY - h * 0.04, top0[2]], r0 * 0.36, [cx, cy - rad * 0.3, cz], r0 * 0.16, mul(bark, 0.9), mul(bark, 1.0), 5);   // branche maitresse
+      blob(m, cx, cy, cz, rad, flat + 0.1 * rnd(), rnd, cl, ch, seed + i * 7.1, i > 0 || far);
+      if (!far) {
+        if (i < 3) blob(m, cx + rr(rnd, -0.3, 0.3) * rad, cy + rad * flat * 0.8, cz + rr(rnd, -0.3, 0.3) * rad, rad * rr(rnd, 0.5, 0.65), 0.5, rnd, mul(ch, 0.8), mul(ch, 1.15), seed + i * 3.3, true);   // calotte claire
+        const nf = 5; for (let k = 0; k < nf; k++) {   // lambeaux de feuilles qui retombent sur le bord : silhouette dechiree
+          const a = k / nf * 6.2832 + rnd() * 0.6 + i, ca = Math.cos(a), sa = Math.sin(a), bx = cx + ca * rad * 0.92, bz = cz + sa * rad * 0.92, by = cy - rad * flat * 0.25, ll = rad * rr(rnd, 0.28, 0.5), wd = rad * rr(rnd, 0.2, 0.32), c1 = mul(cl, 1.05), c2 = mul(ch, 0.85);
+          m.tri([bx - sa * wd, by, bz + ca * wd], [bx + sa * wd, by, bz - ca * wd], [bx + ca * ll * 0.5, by - ll, bz + sa * ll * 0.5], c2, c2, c1);
+        }
+      }
     }
-    for (let k = 0; k < 4; k++) {   // lianes pendantes
-      const a = rnd() * 6.28, rd = h * rr(rnd, 0.12, 0.24), vx = x + lean[0] + Math.cos(a) * rd, vz = z + lean[1] + Math.sin(a) * rd, vy0 = topY + h * 0.06, L = h * rr(rnd, 0.22, 0.4);
-      m.tube([vx, vy0, vz], 0.09, [vx + rr(rnd, -0.6, 0.6), vy0 - L, vz + rr(rnd, -0.6, 0.6)], 0.05, hex('#3a5a2a'), hex('#2a4a22'), 4);
-      if (rnd() < 0.7) { const ly = vy0 - L, tp = [vx, ly - 1.4, vz]; m.tri([vx - 0.7, ly, vz], [vx + 0.7, ly, vz], tp, hex('#3c8a3a'), hex('#3c8a3a'), hex('#6cc050')); }
+    if (!far) {
+      for (let k = 0; k < 3; k++) { const a = rnd() * 6.28, bx = top0[0] + Math.cos(a) * r0 * 0.7, bz = top0[2] + Math.sin(a) * r0 * 0.7, by = topY - h * rr(rnd, 0.03, 0.14); frond(m, bx, by, bz, a, h * 0.05, h * 0.03, h * 0.04, h * 0.022, hex('#2a6a30'), hex('#7ac85a'), 3); }   // epiphytes sur les branches
+      if (style === 2) for (let k = 0; k < 4; k++) { const a = rnd() * 6.28, rd = h * rr(rnd, 0.14, 0.3), ex = top0[0] + Math.cos(a) * rd, ez = top0[2] + Math.sin(a) * rd, gx = x + Math.cos(a) * rd * 1.1, gz = z + Math.sin(a) * rd * 1.1; m.tube([ex, topY + h * 0.02, ez], 0.22, [(ex + gx) / 2 + rr(rnd, -0.5, 0.5), y + (topY - y) * 0.45, (ez + gz) / 2 + rr(rnd, -0.5, 0.5)], 0.17, mul(bark, 0.75), mul(bark, 0.7), 5); m.tube([(ex + gx) / 2, y + (topY - y) * 0.45, (ez + gz) / 2], 0.17, [gx, y - 0.3, gz], 0.24, mul(bark, 0.7), mul(bark, 0.55), 5); }   // banian : racines aeriennes
+      for (let k = 0; k < 5; k++) {   // lianes pendantes a feuilles
+        const a = rnd() * 6.28, rd = h * rr(rnd, 0.1, 0.28), vx = top0[0] + Math.cos(a) * rd, vz = top0[2] + Math.sin(a) * rd, vy0 = topY + h * 0.04, L = h * rr(rnd, 0.2, 0.42);
+        m.tube([vx, vy0, vz], 0.1, [vx + rr(rnd, -0.6, 0.6), vy0 - L, vz + rr(rnd, -0.6, 0.6)], 0.05, hex('#3a5a2a'), hex('#2a4a22'), 4);
+        for (let q = 0; q < 2; q++) if (rnd() < 0.75) { const ly = vy0 - L * (0.35 + 0.45 * q), tp = [vx + rr(rnd, -0.5, 0.5), ly - 1.3, vz + rr(rnd, -0.5, 0.5)]; m.tri([vx - 0.65, ly, vz], [vx + 0.65, ly, vz], tp, hex('#3c8a3a'), hex('#3c8a3a'), hex('#7acc58')); }
+      }
     }
     if (rnd() < 0.5) {
-      const fc = ['#ff6a8a', '#ffd23a', '#ff8a3a'][Math.floor(rnd() * 3)];
-      for (let k = 0; k < 4; k++) { const a = rnd() * 6.28, rd = h * rr(rnd, 0.08, 0.3), fx = x + lean[0] + Math.cos(a) * rd, fz = z + lean[1] + Math.sin(a) * rd, fy = topY + h * rr(rnd, 0.14, 0.3), q = 0.55; m.tri([fx - q, fy, fz], [fx + q, fy, fz], [fx, fy + q * 1.3, fz], hex(fc), hex(fc), mul(hex(fc), 1.15)); }
+      const fc = ['#ff6a8a', '#ffd23a', '#ff8a3a', '#f4f0ff'][Math.floor(rnd() * 4)];
+      for (let k = 0; k < 5; k++) { const a = rnd() * 6.28, rd = h * rr(rnd, 0.08, 0.32), fx = top0[0] + Math.cos(a) * rd, fz = top0[2] + Math.sin(a) * rd, fy = topY + h * rr(rnd, 0.16, 0.34), q = 0.6; m.tri([fx - q, fy, fz], [fx + q, fy, fz], [fx, fy + q * 1.3, fz], hex(fc), hex(fc), mul(hex(fc), 1.15)); }
     }
     const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff', o.tint); g.dispose();
   };

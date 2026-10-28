@@ -53,7 +53,7 @@
   EVO.launchY = () => 40.9;
   EVO.padPitch = () => (EVO.isS2() ? -19 : null);
   EVO.SCENE_MOOD.rapides = 'jungle'; EVO.SCENE_AUDIO.rapides = 'evoDay'; EVO.SCENE_MOOD.arrivee = 'sea'; EVO.SCENE_AUDIO.arrivee = 'evoDay';
-  EVO.addMood('jungle', { top: '#3f86c8', hor: '#d6ead2', fog: '#a8cdb4', near: 70, far: 400, hemiS: '#e8f4e2', hemiG: '#3f6a46', hemiI: 0.92, amb: 0.22, sunC: '#fff0c8', sunI: 0.88, night: 0 });
+  EVO.addMood('jungle', { top: '#2a76d6', hor: '#b4dcf6', fog: '#bcdcf0', near: 90, far: 460, hemiS: '#e6f2fb', hemiG: '#4a7a4c', hemiI: 0.95, amb: 0.22, sunC: '#fff2d2', sunI: 0.9, night: 0 });   // v295 : vrai ciel bleu, brume bleutee (les collines lointaines passent au bleu)
   EVO.addMood('dam', { top: '#4a7aa8', hor: '#cfd8da', fog: '#9fb0b4', near: 120, far: 560, hemiS: '#dde8ec', hemiG: '#4a5a60', hemiI: 0.9, amb: 0.22, sunC: '#ffe8c0', sunI: 0.8, night: 0 });
   EVO.addMood('pit', { top: '#1a2a38', hor: '#3a5666', fog: '#243844', near: 20, far: 300, hemiS: '#b4d8e8', hemiG: '#2a3c44', hemiI: 1.0, amb: 0.46, sunC: '#c8e4f0', sunI: 0.5, night: 0.2 });
 

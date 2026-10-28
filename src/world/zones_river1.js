@@ -4,8 +4,9 @@
   const U = CC.U, Z = CC.Zones, EVO = CC.EVO, T3 = THREE, V = T3.Vector3, foe = Z.evoFoe, TR = CC.Trees, R = EVO && EVO.riv;
   if (!R) return;
   const OC = Z.defs.ocean, SC = OC.scenes, { pk, ss } = EVO.oc;
-  const { WY, BED, HW, DEP, LA, F1, F2, A, absAt, SEAB, plant, slab, lampS, water, curtain, hsh, GREEN, WALL, STONE, TEMPLE, rel, mixf } = R;
+  const { WY, BED, HW, DEP, LA, F1, F2, A, absAt, SEAB, plant, slab, lampS: lampS0, water, curtain, hsh, GREEN, WALL, STONE, TEMPLE, rel, mixf } = R;
   const OUT = 150;
+  const lampS = (S, dc, lx, yRel, col, size) => lampS0(S, dc, lx, yRel, col, (size || 10) * 0.3);   // v295 : de jour, plus de halos lumineux autour des lampes, tours et mats (ils ressemblaient a des phares)
   const WOOD = ['#7a5a38', '#6e5232', '#86643e'], THATCH = ['#8f7a3c', '#7e6b34', '#9a8644'], RUST = ['#8a4a2a', '#7a4226', '#94562e'];
   const DRY = ['#6a7a4a', '#5e6e42'];
 
@@ -133,6 +134,11 @@
           // corniches moussues sur la paroi
           const nl = 1 + Math.floor(r() * 2);
           for (let k = 0; k < nl; k++) { const yl = WY(dc) + r.between([3, Math.max(4, top - WY(dc) - 3)]), th = r.between([1.1, 2.4]), ext = r.between([1.2, 3.2]); S.bx(dc + r.between([-4, 4]), sg * (face - ext / 2 + 0.2), A(S, dc, yl), ext, th, r.between([5, 11]), 'jrock', pk(r, STONE), true); S.bx(dc, sg * (face - ext / 2 + 0.2), A(S, dc, yl + th / 2 + 0.12), ext + 0.2, 0.26, 4.5, 'evoGrass', pk(r, GREEN), false); if (r() < 0.7) plant(S, TR.fern, dc + r.between([-3, 3]), sg * (face - ext / 2), yl + th / 2 + 0.2, r.between([1.1, 2]), r); }
+          // v295 : falaise plus naturelle : blocs de roche a facettes en saillie, coulees sombres et taches de mousse sur la paroi, levre de roche et d'herbe qui surplombe le bord
+          for (let k = 0, nr = 1 + (r() < 0.6 ? 1 : 0); k < nr; k++) rockC(S, dc + r.between([-6, 6]), sg * (face + r.between([-0.6, 0.8])), WY(dc) + r.between([5, Math.max(7, top - WY(dc) - 4)]), r.between([3.2, 6.5]), r, pk(r, ['#8c9482', '#80897a', '#969c88', '#7a8474']), true);
+          for (let k = 0; k < 2; k++) if (r() < 0.6) S.bx(dc + r.between([-6, 6]), sg * (face - 0.12), A(S, dc, top - r.between([4, 12])), 0.12, r.between([6, 14]), r.between([1, 2.8]), 'col:' + pk(r, ['#34482c', '#3e4a3a', '#2e3c28']), undefined, false);
+          for (let k = 0; k < 2; k++) if (r() < 0.6) S.bx(dc + r.between([-6, 6]), sg * (face - 0.14), A(S, dc, WY(dc) + r.between([4, Math.max(6, top - WY(dc) - 2)])), 0.16, r.between([1.4, 3]), r.between([2.5, 6]), 'col:' + pk(r, ['#4f8a3c', '#5a9a42', '#447a34']), undefined, false);
+          S.bx(dc, sg * (face - 0.8), A(S, dc, top - 0.7), 2.4, 1.5, 13.6, 'jrock', pk(r, WALL), true); S.bx(dc, sg * (face - 0.8), A(S, dc, top + 0.1), 2.5, 0.3, 13.7, 'evoGrass', pk(r, GREEN), false);
           // rochers a la ligne d'eau, roseaux
           if (r() < 0.55) rockC(S, dc + r.between([-5, 5]), sg * (face - r.between([0.8, 3.2])), WY(dc) - 1.2, r.between([1.8, 4]), r, pk(r, STONE), true);
           if (r() < 0.5) plant(S, TR.reeds, dc + r.between([-5, 5]), sg * (face - r.between([0.4, 2.4])), WY(dc) - 0.3, r.between([1.6, 2.6]), r);
@@ -200,7 +206,7 @@
       for (let k = 0; k < 5; k++) { const dc = 1290 + k * 78; foe(S, 'mine', dc, (k % 2 ? 1 : -1) * 22, WY(dc) - BED(dc) - 2.5, { name: 'MINE', keep: k < 2 }); }
       foe(S, 'gunboat', 1380, 0, WY(1380) + 0.5 - BED(1380), { name: 'CANONNIERE', hp: 4, armed: true, keep: true });
       foe(S, 'gunboat', 1620, 12, WY(1620) + 0.5 - BED(1620), { name: 'CANONNIERE', hp: 4, armed: true, keep: true });
-      for (let k = 0; k < 24; k++) { const dc = F2 + 60 + k * 24; S.glow(dc, (k % 2 ? 1 : -1) * 20, A(S, dc, WY(dc) + 3), '#e8f6f0', 70); }
+      for (let k = 0; k < 24; k++) { const dc = F2 + 60 + k * 24; S.glow(dc, (k % 2 ? 1 : -1) * 20, A(S, dc, WY(dc) + 3), '#e8f6f0', 44); }
     } };
   const A0b = (d) => (d < -50 ? 40 : 40 - 0.344 * (d + 50));
 
