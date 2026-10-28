@@ -33,6 +33,21 @@
     for (const x of piers) { S.cyl(dc, x, fl(S, dc, bed - 1), big ? 3.4 : 2.7, deck - bed - th / 2 + 0.6, 'concrete', '#8e908c', 10, big ? 2.1 : 1.7, true); tb(S, dc, x, yAt(x) - th / 2 - 0.5, 6.4, 1.1, wd - 1, 0, 'concrete', '#7e807c', false); }
     for (let k = -4; k <= 4; k++) lampS(S, dc - wd / 2 - 0.5, k * (span / 9), fl(S, dc, yAt(k * (span / 9)) + th / 2) + 5, '#fff1c8', 14);
   }
+  // petit ponton de pecheur (v302b) : quai de planches sur pilotis avec cordes, tonneaux, caisses, lanterne et cabane au toit incline
+  function fishDock(S, dc, sg, hwv, top, r) {
+    const yw = WYS + 1.7, L = r.between([8, 12]), x0 = sg * (hwv + 1), x1 = sg * (hwv - L);
+    for (let k = 0; k < 8; k++) S.bx(dc, x0 + (x1 - x0) * (k + 0.5) / 8, fl(S, dc, yw), Math.abs(x1 - x0) / 8 * 0.94, 0.22, 3.2, 'planks', pk(r, ['#8a6a44', '#7a5a38', '#6a4a2c']), false);
+    for (let k = 0; k <= 4; k++) for (const e of [-1, 1]) { const x = x0 + (x1 - x0) * k / 4; S.cyl(dc + e * 1.4, x, fl(S, dc, WYS - 4), 0.26, 6.6, 'bark', '#4a3820', 6, 0.22, false); if (k > 0) S.bx(dc + e * 1.4, x - sg * 1.2, fl(S, dc, yw + 1.0), 2.4, 0.08, 0.08, 'col:#4a3a22', undefined, false); }
+    S.cyl(dc, x1, fl(S, dc, yw), 0.12, 3.2, 'metal', '#3a3e46', 5, 0.1, false); lampS(S, dc, x1, fl(S, dc, yw + 3.3), '#ffcf6a', 10);
+    for (let k = 0; k < 2; k++) S.cyl(dc + r.between([-1, 1]), x0 + sg * 0 - sg * (1.5 + k * 1.3), fl(S, dc, yw + 0.1), 0.5, 1.0, 'planks', '#8a3a22', 8, 0.5, false);
+    S.bx(dc - 1.2, x0 - sg * 4.4, fl(S, dc, yw + 0.7), 1.1, 1.1, 1.1, 'planks', '#8a6a44', false);
+    const sx = sg * (hwv + 7), sy = top + 0.2;
+    for (const e of [-1, 1]) for (const f of [-1, 1]) S.cyl(dc + f * 2.4, sx + e * 2.8, fl(S, dc, sy - 0.2), 0.22, 1.4, 'bark', '#4a3820', 6, 0.2, false);
+    S.bx(dc, sx, fl(S, dc, sy + 1.55), 6.4, 0.25, 5.6, 'planks', '#6a4a2c', true);
+    S.bx(dc, sx, fl(S, dc, sy + 3.1), 5.8, 2.8, 5.0, 'planks', pk(r, ['#8a6a44', '#7a5a38']), true); S.bx(dc - 2.52, sx, fl(S, dc, sy + 2.7), 1.2, 1.8, 0.2, 'col:#2a1e14', undefined, false); S.bx(dc + 2.52, sx + 1.4, fl(S, dc, sy + 3.3), 1.0, 0.9, 0.2, 'emis:#ffcf6a', undefined, false);
+    if (S.inClip(dc)) for (const e of [-1, 1]) S.b.box({ p: S.T.at(dc, sx + e * 1.75, fl(S, dc, sy + 5.15)), s: [3.6, 0.2, 5.9], r: [0, S.yaw(dc), e * 28], mat: 'corrugated', tint: pk(r, ['#7a8a6a', '#8a7a62']), collide: false });
+    for (let k = 0; k < 2; k++) plant(S, TR.fern, dc + r.between([-3, 3]), sx + sg * r.between([3, 6]), sy + 0.1, r.between([1.4, 2.2]), r);
+  }
   // grue de quai : portique rouge a quatre pieds, fleche
   function crane(S, dc, lx, r) {
     const y0 = fl(S, dc, WYS + 6.5), sg = lx > 0 ? 1 : -1;
@@ -86,6 +101,7 @@
         for (let k = 0; k < 4; k++) plant(S, TR.fern, dc + r.between([-dd / 3, dd / 3]), lx + r.between([-w / 3, w / 3]), top + 0.4, r.between([1.4, 2.4]), r);
         S.cyl(dc - dd / 2 - 1, lx + r.between([-5, 5]), fl(S, dc, WYS - 1), 0.3, 4, 'bark', '#4a3820', 5, 0.2, false);
       });
+      for (const [u, sg] of [[560, 1], [610, -1], [655, 1], [735, -1], [775, 1]]) S.item(d(u), (r) => { const hwv = HWd(u), top = WYS + 9 + 3 * Math.sin(d(u) / 41 + sg); fishDock(S, d(u), sg, hwv, top, r); });   // v302b : petites installations de pecheurs avant le port
       // trois ponts : un pont de chemin de fer bas (on passe entre les piles ou on saute), un pont routier haut, un pont a deux piles
       S.item(d(210), (r) => bridge(S, d(210), HWd(210), WYS + 4.5, [-36, -12, 12, 36], r, false));
       S.item(d(530), (r) => bridge(S, d(530), HWd(530), WYS + 17, [0], r, true));

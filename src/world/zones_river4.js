@@ -18,9 +18,7 @@
   { const _p = EVO.riv.pathY; EVO.riv.pathY = (d) => (d >= R.D3 + 1500 && d >= D4 ? Math.max(BED(d) + 16, WYS - 300) : d >= R.D3 ? WYS - 5 : _p(d)); }
   EVO.riv.finishD = DEND - 20;
   { const _ld = EVO.levelDef2, NM = { rapides: 'LE CAMP', barrage: 'LE LAC', delta: 'LE DELTA', havre: 'LE PORT', gouffre: 'LA FOSSE', sousmarin: 'LA BASE' }; EVO.levelDef2 = (g) => { const r = _ld(g); for (const c of EVO.chapters || []) if (NM[c.key]) c.name = NM[c.key]; return r; }; }
-  // plafond : la fosse et la base sont sous la mer ; on ne remonte pas a l'air libre
-  { const _tk = EVO.tick; EVO.tick = (g, dt) => { _tk(g, dt); const run = g.endlessRun; if (!run || !EVO.isS2() || !g.evo || g.evo.preview || g.state !== 'FLIGHT' || !g.rocket.active) return;
-      if (run.dist > D4 + 60 && g.rocket.pos.y > WYS + 5) { g.rocket.pos.y = WYS + 5; if (g.rocket.vel.y > 0) g.rocket.vel.y = 0; if (!g._dvMsg || performance.now() - g._dvMsg > 3000) { g._dvMsg = performance.now(); if (CC.L1) CC.L1.msg(g, 'PLONGE !', 1.6, '#bff4ff'); } } }; }
+  // v302b : plus aucun plafond de hauteur (on peut remonter librement)
 
   // ============================================== LA FOSSE ==============================================
   SC.gouffre = { len: [LFo, LFo], noDoor: true, noChaos: true, gw: 125, grass: false,
@@ -28,24 +26,23 @@
     turns: [[0.2, 0.34, 28], [0.45, 0.6, -36], [0.7, 0.84, 30]],
     pin: (T, sc) => ({ lx: 0, fy: (d) => EVO.riv.pathY(d) - T.base(d), from: 24, to: sc.d1 - sc.d0 - 24 }),
     relief(T, sc) { return rel(sc, (d) => BED(d) - SEAB); },
-    ground: (d, lx, c) => { c.set('#4a4a46').lerp(new T3.Color('#7a5a36'), 0.25 + 0.25 * Math.sin(d * 0.05 + lx * 0.09)); c.multiplyScalar(0.7 + 0.12 * Math.sin(lx * 0.23 + d * 0.13)); },
+    ground: (d, lx, c) => { c.set('#6a6a64').lerp(new T3.Color('#9a7a50'), 0.25 + 0.25 * Math.sin(d * 0.05 + lx * 0.09)); c.multiplyScalar(0.95 + 0.1 * Math.sin(lx * 0.23 + d * 0.13)); },
     build(S) {
-      const d0 = S.d0, d = (u) => d0 + u, DK = ['#6c7682', '#64707c', '#727c88', '#68727e'];
+      const d0 = S.d0, d = (u) => d0 + u, DK = ['#8896a6', '#7e8c9c', '#909eae', '#8492a2'];
       water(S, d0, d0 + LFo, 90, WYS);
       for (let u = 6; u < LFo - 6; u += 14) S.item(d(u), (r) => {
         const dc = d(u);
         for (const sg of [-1, 1]) {
-          const hwv = HWf(u) + r.between([-1.4, 2]), top = WYS + 14, bed = BED(dc), wd = OUT - hwv;
+          const hwv = HWf(u) + 2.2 * Math.sin(u / 41 + sg), top = WYS + 14, bed = BED(dc), wd = OUT - hwv;
           S.bx(dc, sg * (hwv + wd / 2), fl(S, dc, (bed - 8 + top) / 2), wd, top - bed + 8, 18, 'jrock', pk(r, DK), true);
-          if (r() < 0.55) { const yl = bed + r.between([6, Math.max(8, top - bed - 20)]), th = r.between([2, 5]), ext = r.between([2, 7]); S.bx(dc + r.between([-4, 4]), sg * (hwv - ext / 2 + 0.2), fl(S, dc, yl), ext, th, r.between([6, 14]), 'jrock', pk(r, DK), true); }
           if (r() < 0.12) S.bx(dc, sg * (hwv - 0.2), fl(S, dc, bed + 4), 0.2, r.between([6, 14]), 1, 'emis:#5ff0ff', undefined, false);
-          for (let k = 0; k < 2; k++) if (S.inClip(dc)) { const sz = r.between([5, 11]), yy = bed + r.between([2, Math.max(6, top - bed - 6)]); S.b.box({ p: S.T.at(dc + r.between([-5, 5]), sg * (hwv - sz * 0.15 + r.between([-1, 3])), A(S, dc, yy)), s: [sz, sz * r.between([0.7, 1.4]), sz * r.between([1, 1.8])], r: [r.between([-18, 18]), S.yaw(dc) + r.between([-12, 12]), r.between([-22, 22])], mat: 'jrock', tint: pk(r, DK), collide: true }); }   // v302 : blocs de roche inclines devant la paroi : plus de mur droit
+          for (let k = 0; k < 1; k++) if (r() < 0.4 && S.inClip(dc)) { const sz = r.between([8, 14]), yy = bed + r.between([2, Math.max(6, top - bed - 6)]); S.b.box({ p: S.T.at(dc + r.between([-5, 5]), sg * (hwv - sz * 0.15 + r.between([-1, 3])), A(S, dc, yy)), s: [sz, sz * r.between([0.7, 1.4]), sz * r.between([1, 1.8])], r: [r.between([-18, 18]), S.yaw(dc) + r.between([-12, 12]), r.between([-22, 22])], mat: 'jrock', tint: pk(r, DK), collide: true }); }   // v302 : blocs de roche inclines devant la paroi : plus de mur droit
         }
       });
       // surplombs en quinconce : la trajectoire serpente
       for (let k = 0; k < 9; k++) { const u = 90 + k * 100, sg = k % 2 ? 1 : -1; S.item(d(u), (r) => { const dc = d(u), hwv = HWf(u), bed = BED(dc), y = bed + 26 + 18 * hsh(u, 2), ext = hwv * 1.05; S.bx(dc, sg * (hwv - ext / 2 + 3), fl(S, dc, y), ext, 6, 22, 'jrock', pk(r, DK), true); S.bx(dc, sg * (hwv - ext + 3), fl(S, dc, y - 5), 4, 12, 20, 'jrock', pk(r, DK), true); S.glow(dc - 12, sg * (hwv - ext + 2), fl(S, dc, y - 2), '#5ff0ff', 20); }); }
       // stalagmites : on passe entre
-      for (let u = 60; u < LFo - 40; u += 38) S.item(d(u), (r) => { const dc = d(u), hwv = HWf(u), bed = BED(dc); for (let k = 0; k < 2; k++) { const lx = r.between([-hwv * 0.6, hwv * 0.6]), h = r.between([14, 46]); S.cyl(dc + r.between([-5, 5]), lx, fl(S, dc, bed - 1), r.between([3.4, 6]), h, 'jrock', pk(r, DK), 8, 0.9, true); } });
+      for (let u = 60; u < LFo - 40; u += 62) S.item(d(u), (r) => { const dc = d(u), hwv = HWf(u), bed = BED(dc); for (let k = 0; k < 1; k++) { const lx = r.between([-hwv * 0.6, hwv * 0.6]), h = r.between([14, 46]); S.cyl(dc + r.between([-5, 5]), lx, fl(S, dc, bed - 1), r.between([3.4, 6]), h, 'jrock', pk(r, DK), 8, 0.9, true); } });
       // arches de roche : deux piliers et un linteau en travers de la fosse
       for (const u of [300, 560, 840]) S.item(d(u), (r) => { const dc = d(u), hwv = HWf(u), bed = BED(dc), yb = bed + 38; for (const sg of [-1, 1]) S.bx(dc, sg * (hwv - 8), fl(S, dc, (bed + yb) / 2), 18, yb - bed, 20, 'jrock', pk(r, DK), true); S.bx(dc, 0, fl(S, dc, yb + 4), 2 * hwv, 8, 22, 'jrock', pk(r, DK), true); S.glow(dc - 12, 0, fl(S, dc, yb - 1), '#ffcf6a', 40); });
       // epaves couchees sur le fond (cargo coupe en deux, mats, conteneurs), cheminees hydrothermales
@@ -63,6 +60,7 @@
       for (const u of [90, 190]) foe(S, 'gunboat', d(u), (u === 90 ? -8 : 8), WYS + 0.5 - BED(d(u)), { name: 'CANONNIERE', hp: 4, armed: true, keep: true });
       for (const [u, sg] of [[140, -1], [260, 1], [380, -1], [500, 1], [620, -1], [740, 1], [860, -1], [960, 1]]) foe(S, 'aaturret', d(u), sg * (HWf(u) - 4), BED(d(u)) < WYS - 60 ? 24 : WYS - BED(d(u)) - 6, { name: 'TOURELLE', armed: true, keep: true, fixed: true });
       for (let k = 0; k < 14; k++) { const u = LFo - 330 + k * 24; for (const sg of [-1, 1]) S.glow(d(u), sg * (HWf(u) - 3), fl(S, d(u), BED(d(u)) + 22), '#7be8ff', 30); }   // v302 : balises de l'entonnoir
+      for (let k = 0; k < 40; k++) { const u = 20 + k * 25; S.glow(d(u), (k % 2 ? 1 : -1) * 22, fl(S, d(u), BED(d(u)) + 9), '#9ff6ff', 44); }   // v302b : balises de guidage tout au long de la fosse
       for (let k = 0; k < 22; k++) { const u = 20 + k * 44; S.glow(d(u), (k % 2 ? 1 : -1) * 16, fl(S, d(u), BED(d(u)) + 18 + 10 * (k % 3)), '#5ff0ff', 36); }
     } };
   const r5 = (k) => 0.15 + 0.5 * hsh(k, 3);

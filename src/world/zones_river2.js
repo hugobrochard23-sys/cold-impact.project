@@ -69,8 +69,8 @@
           for (let y = FLOOR_GAL + 4; y < FLOOR_GAL + H_GAL; y += 6) { const m = new T3.Mesh(new T3.BoxGeometry(portW, 0.6, 0.5), bm); m.position.set(0, y, zf); door.add(m); }
           gp.add(door);
           for (const sx of [-1, 1]) for (const yy of [FLOOR_GAL + 10, FLOOR_GAL + 22, FLOOR_GAL + 34]) { const m = new T3.Mesh(new T3.BoxGeometry(1.6, 1.6, 1.0), lampR); m.position.set(sx * (portW / 2 + 1.6), yy, zf - 0.2); gp.add(m); }
-          gp.position.y = 0; EVO.placeGroup(S, gp, dc, 0, A(S, dc, 0), 0); let said = false;
-          EVO.addDyn(gp, (t, dt, g) => { const run = g.endlessRun, dist = run ? run.dist : 0, k = ss(f - 210, f - 100, dist); door.position.y = k * (H_GAL - 0.5); lampR.color.set(k > 0.08 ? '#4aff6a' : '#ff3a2a'); if (k > 0.04 && !said && g.state === 'FLIGHT') { said = true; if (CC.L1) CC.L1.msg(g, 'GRILLE OUVERTE', 1.5, '#9dffb4'); } if (k < 0.01) said = false; }, [], { near: 420, span: 140 });
+          gp.position.y = 0; EVO.placeGroup(S, gp, dc, 0, A(S, dc, 0), 0);
+          EVO.addDyn(gp, (t, dt, g) => { const run = g.endlessRun, dist = run ? run.dist : 0, k = ss(f - 210, f - 100, dist); door.position.y = k * (H_GAL - 0.5); lampR.color.set(k > 0.08 ? '#4aff6a' : '#ff3a2a'); }, [], { near: 420, span: 140 });
         }
         S.bx(f - 0.2, 0, A(S, dc, FLOOR_GAL + H_GAL + 2.6), portW + 6, 5.2, 1.2, 'hazard', undefined, false);
         // crete : route, garde-corps, lampadaires, tour de controle, portique de vannes
@@ -122,7 +122,7 @@
   }
   EVO.riv.finishD = 1e9; EVO.riv.finishLine = finishLine; EVO.riv.lam = lam; EVO.riv.HWc = HWc;   // v287 : l'arrivee est maintenant au bout de la base sous-marine (zones_river4)
   const _tkf = EVO.tick;
-  EVO.tick = (g, dt) => { _tkf(g, dt); const run = g.endlessRun; if (run && EVO.isS2() && g.evo && !g.evo.preview && g.state === 'FLIGHT' && g.rocket.active) { const uu = run.dist - LA; if (uu > U_DAM - 25 && uu < U_MOUTH && g.rocket.pos.y > CREST + 5) { g.rocket.pos.y = CREST + 5; if (g.rocket.vel.y > 0) g.rocket.vel.y = 0; if (!g._dmMsg || performance.now() - g._dmMsg > 3000) { g._dmMsg = performance.now(); if (CC.L1) CC.L1.msg(g, 'PAR LA CONDUITE !', 1.6, '#ffe9a0'); } } } if (EVO.isS2() && g.evo && !g.evo.preview && run && !g.evoFinish && g.state === 'FLIGHT' && g.rocket.active && run.dist > EVO.riv.finishD && EVO.finishRun) EVO.finishRun(g); };
+  EVO.tick = (g, dt) => { _tkf(g, dt); const run = g.endlessRun; if (run && EVO.isS2() && g.evo && !g.evo.preview && g.state === 'FLIGHT' && g.rocket.active) { } if (EVO.isS2() && g.evo && !g.evo.preview && run && !g.evoFinish && g.state === 'FLIGHT' && g.rocket.active && run.dist > EVO.riv.finishD && EVO.finishRun) EVO.finishRun(g); };
 
   // ---- le tunnel : galerie d'entree, hall en descente, canal de fuite ; boucles de 12 m
   function tunnel(S, d) {
