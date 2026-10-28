@@ -9,7 +9,7 @@
     facadeDark: [12, 14], facadeGlass: [12, 14], facadeSand: [12, 14], facadeBrick: [12, 14], facadeMint: [12, 14], facadeNavy: [12, 14], facadeLilac: [12, 14], facadeWhite: [12, 14], facadeOchre: [12, 14], storefront: [8, 4.2], brick: [2.6, 2.6], planks: [2, 2], grass: [4, 4], rock: [6, 6], hazard: [1.2, 1.2],
     metal: [2, 2], tankGreen: [2, 2], camo: [3, 3], blueFloor: [2, 2], cream: [2, 2], bark: [1.2, 2.4],
     houseWall: [2, 2], roofBrown: [1.5, 1.5], white: [14, 14], dirt: [11, 11], rail: [1, 1], asphalt: [4, 4], grass: [12, 12],
-    sand: [12, 12], evoGrass: [7, 7], water: [15, 15], waterSurf: [15, 15], corrugated: [2.4, 2.6], fabric: [3.2, 3.2], chainlink: [2, 2],   // v032 : générateur de missions
+    sand: [12, 12], jrock: [3, 3], evoGrass: [7, 7], water: [15, 15], waterSurf: [15, 15], corrugated: [2.4, 2.6], fabric: [3.2, 3.2], chainlink: [2, 2],   // v032 : générateur de missions
   };
 
   function make(name, w, h, draw) {
@@ -203,6 +203,12 @@
         g.fillStyle = r() < 0.5 ? '#2a1f1c' : '#46352f';
         g.fillRect(x, y0, 1, len);
       }
+    },
+    jrock: (g, w, h, r) => {   // v281 : roche de jungle : gres gris-vert en strates, coulures sombres, plaques de mousse
+      noiseFill(g, w, h, r, '#8a907c', 16);
+      for (let y = 3; y < h; y += 5 + Math.floor(r() * 4)) { g.fillStyle = r() < 0.5 ? '#767c68' : '#9aa088'; g.fillRect(0, y, w, 1); }
+      for (let k = 0; k < 22; k++) { const x = Math.floor(r() * w), y0 = Math.floor(r() * h), len = 3 + Math.floor(r() * 9); g.fillStyle = r() < 0.6 ? '#5e644f' : '#4a5340'; g.fillRect(x, y0, 1, len); }
+      for (let k = 0; k < 9; k++) { const x = Math.floor(r() * w), y0 = Math.floor(r() * h * 0.5); g.fillStyle = r() < 0.5 ? '#5f8a46' : '#4c7a3c'; g.fillRect(x, y0, 2 + Math.floor(r() * 3), 1 + Math.floor(r() * 2)); }
     },
     hazard: (g, w, h) => {
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) px(g, x, y, ((x + y) % 16) < 8 ? '#f0b81c' : '#1c1a18');

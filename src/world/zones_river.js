@@ -1,0 +1,85 @@
+/* v281 : NIVEAU 2 REFAIT — « OPERATION CASCADE ». Un hydro-missile descend un fleuve de jungle jusqu'a l'ocean : on part d'une rampe militaire sur la colline, on retombe dans le fleuve, on file
+ * entre des parois couvertes de vegetation, on saute les cascades, on traverse un temple en ruine, puis la lagune ou se dresse le BARRAGE (zone 2 : prise d'eau, conduite forcee,
+ * hall des turbines, canal de fuite, canyon des ecluses). La suite (le delta, l'ocean, la fosse et la base sous-marine) viendra ensuite.
+ * Les scenes se posent avec les memes outils que le niveau 1 (S.bx, S.cyl, S.ball, foe...) ; la vegetation vient de trees.js (T.jungle, T.palm, T.fern, T.bigleaf, T.reeds).
+ * Cotes ABSOLUES partout : WY(d) = surface de l'eau, BED(d) = fond du fleuve (= sol du couloir), A(dc, y) = cote relative a ce sol. */
+(function () {
+  const U = CC.U, Z = CC.Zones, EVO = CC.EVO, T3 = THREE, V = T3.Vector3, foe = Z.evoFoe, O = EVO && EVO.oc, TR = CC.Trees;
+  if (!EVO || !EVO.on || !O || !Z.defs.ocean || !TR || !TR.jungle) return;
+  const OC = Z.defs.ocean, SC = OC.scenes, { pk, rr, ss, lam, basic, mb } = O;
+  const SEAB = -90;                  // altitude de base de la zone « ocean » : cote absolue = rel + SEAB
+  const LA = 1760, LB = 1560, LF = 360;   // longueurs : le fleuve, le barrage, l'arrivee
+  const F1 = 600, F2 = 1180;         // distances des deux cascades
+  const mixf = (a, b, t) => a + (b - a) * t;
+
+  // ============================================== COTES ABSOLUES ==============================================
+  // surface de l'eau : 0 en amont, -24 apres la 1re chute, -54 dans la lagune ; dans le barrage elle reste a -54 (le conduit est noye) puis tombe a -112 a la sortie du canal de fuite
+  const EXIT = LA + 1010;
+  const WY = (d) => -24 * ss(F1, F1 + 20, d) - 30 * ss(F2, F2 + 22, d) - 58 * ss(EXIT, EXIT + 6, d);
+  // profondeur du fleuve
+  const DEP = (d) => {
+    let v = 17 + 2.5 * Math.sin(d / 47);
+    v = mixf(v, 4, ss(470, 596, d)); v = mixf(v, 24, ss(F1 + 4, F1 + 34, d)); v = mixf(v, 10 + 2 * Math.sin(d / 19), ss(F1 + 90, F1 + 200, d));
+    v = mixf(v, 4, ss(F2 - 110, F2 - 4, d)); v = mixf(v, 30, ss(F2 + 4, F2 + 40, d)); v = mixf(v, 38, ss(F2 + 140, F2 + 420, d));
+    return v;
+  };
+  // demi-largeur du fleuve (m) : large et calme, gorge etroite, lagune
+  const HW = (d) => {
+    let v = mixf(40, 33, ss(120, 520, d)); v = mixf(v, 24 + 3 * Math.sin(d / 37), ss(F1 + 20, F1 + 130, d)); v = mixf(v, 17, ss(F2 - 130, F2 - 10, d)); v = mixf(v, 66, ss(F2 + 20, F2 + 190, d));
+    return v;
+  };
+  const PL = 40, SLOPE = 0.344;       // plateau de depart et pente de la rampe (la rampe plonge a -19 degres a partir de d = -50)
+  const A0 = (d) => (d < -50 ? PL : PL - SLOPE * (d + 50));
+  const WYabs = (d) => WY(d);
+  // fond du couloir (sol) : la colline de la rampe se fond dans le lit du fleuve entre d = 40 et d = 100
+  let BED2 = null;   // lit de la zone 2 (zones_river2 plus bas), pose apres
+  const BED = (d) => {
+    if (d >= LA && BED2) return BED2(d);
+    const bed = WY(d) - DEP(d);
+    if (d <= 40) return A0(d);
+    if (d < 100) return mixf(A0(d), bed, ss(40, 100, d));
+    return bed;
+  };
+  const A = (S, dc, y) => y - S.T.base(dc);        // cote absolue -> relative au sol (a la distance dc)
+  const absAt = (S, dc, lx, y) => S.at(dc, lx, A(S, dc, y));   // point du monde pour une cote absolue
+  EVO.riv = { WY, BED, HW, DEP, LA, LB, LF, F1, F2, EXIT, A, absAt, SEAB, PL };
+  // le niveau 2 est ce nouveau fleuve : liste des scenes, fonction d'eau, plateau de depart plat
+  EVO.SCENES2 = ['rapides', 'barrage', 'arrivee'];
+  EVO.waterFn = (d) => WY(d);
+  { const _pr = EVO.preRel; EVO.preRel = (d) => (EVO.seaLevel !== undefined && d <= 0 ? A0(d) - SEAB : (_pr ? _pr(d) : 0)); }
+  EVO.launchY = () => 40.9;
+  EVO.padPitch = () => (EVO.isS2() ? -19 : null);
+  EVO.SCENE_MOOD.rapides = 'jungle'; EVO.SCENE_AUDIO.rapides = 'evoDay'; EVO.SCENE_MOOD.arrivee = 'sea'; EVO.SCENE_AUDIO.arrivee = 'evoDay';
+  EVO.addMood('jungle', { top: '#3f86c8', hor: '#d6ead2', fog: '#a8cdb4', near: 160, far: 640, hemiS: '#e8f4e2', hemiG: '#3f6a46', hemiI: 0.92, amb: 0.22, sunC: '#fff0c8', sunI: 0.88, night: 0 });
+  EVO.addMood('dam', { top: '#4a7aa8', hor: '#cfd8da', fog: '#9fb0b4', near: 120, far: 560, hemiS: '#dde8ec', hemiG: '#4a5a60', hemiI: 0.9, amb: 0.22, sunC: '#ffe8c0', sunI: 0.8, night: 0 });
+  EVO.addMood('pit', { top: '#1a2a38', hor: '#3a5666', fog: '#243844', near: 20, far: 300, hemiS: '#9ac0d0', hemiG: '#1a2a30', hemiI: 0.78, amb: 0.3, sunC: '#a8d0e0', sunI: 0.3, night: 0.3 });
+
+  // ============================================== OUTILS ==============================================
+  const hsh = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
+  const lateral = (S, dc, sg, x) => sg * x;
+  const rel = (sc, fn) => { let lo = 1e9, hi = -1e9; for (let d = sc.d0; d <= sc.d1; d += 4) { const v = fn(d); if (v < lo) lo = v; if (v > hi) hi = v; } sc.rlo = lo; sc.rhi = hi; return { fn, max: Math.max(Math.abs(lo), Math.abs(hi)) }; };
+  const GREEN = ['#3a8a3e', '#448f40', '#357f38', '#4a9444'], WALL = ['#b4bca4', '#aab29a', '#bcc4ac', '#a0a890'], STONE = ['#c4c6b6', '#b8baaa', '#d0d0c0', '#aeb0a0'], TEMPLE = ['#d0d0bc', '#c4c4b0', '#d8d6c2', '#bcbca8'];
+  // eau : surface a niveau constant sur [a, b] (cote absolue)
+  const water = (S, a, b, hw, yAbs, amp) => Z.evoWaves(S, a, b, hw, yAbs - SEAB, 'waterSurf', '#7fcfb8', amp === undefined ? 0.45 : amp);
+  // rideau de cascade : nappe verticale blanche qui coule + embruns
+  const curtain = (S, dc, hw, yTop, yBot) => {
+    if (!S.inClip(dc)) return;
+    const cols = Math.max(4, Math.round(hw / 3)), pos = [], uv = [], ix = [], rows = 4;
+    for (let r = 0; r <= rows; r++) for (let c = 0; c <= cols; c++) { const lx = -hw + 2 * hw * c / cols, y = mixf(yTop, yBot, r / rows), bulge = 1.2 * Math.sin(r / rows * 3.14) + 0.35 * Math.sin(c * 1.7 + r), p = absAt(S, dc + bulge, lx, y); pos.push(p[0], p[1], p[2]); uv.push(lx / 10, (yTop - y) / 7); }
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const a = r * (cols + 1) + c, b = a + 1, q = a + cols + 1, e = q + 1; ix.push(a, q, b, b, q, e); }
+    const g = new T3.BufferGeometry(); g.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new T3.Float32BufferAttribute(uv, 2)); g.setIndex(ix); const g2 = g.toNonIndexed(); g.dispose(); g2.computeVertexNormals();
+    S.b.addGeometry(g2, new V(), new T3.Quaternion(), null, 'waterSurf', '#f4fbff', [1, 1]); g2.dispose();
+    for (let k = -3; k <= 3; k++) { S.glow(dc + 4, k * hw / 3.2, yBot - A(S, dc, 0) + A(S, dc, yBot) * 0 + 0, '#ffffff', 22); S.glow(dc + 2, k * hw / 3.4, A(S, dc, yBot + 3), '#eaf8ff', 30); }   // brume au pied
+  };
+  // pose un arbre/une plante sur la cote absolue y
+  const plant = (S, fn, dc, lx, y, size, r, o) => { const p = absAt(S, dc, lx, y); fn(S.b, p[0], p[1], p[2], size, r, o || {}); };
+  // boite sur la pente : suit l'inclinaison du sol (tilt = angle du sol sous la boite)
+  const slab = (S, dc, lx, yRel, w, h, dd, mat, tint, collide, extra) => {
+    if (!S.inClip(dc)) return null; const T = S.T, a = Math.atan2(T.base(dc + 4) - T.base(dc - 4), 8) * 180 / Math.PI;
+    return S.b.box(Object.assign({ p: T.at(dc, lx, yRel), s: [w, h, dd], r: [-a, S.yaw(dc), 0], mat, tint, collide: collide !== false }, extra || {}));
+  };
+  const lampS = (S, dc, lx, yRel, col, size) => { S.bx(dc, lx, yRel, 0.9, 0.4, 0.9, 'emis:' + col, undefined, false); S.glow(dc, lx, yRel, col, size || 10); };
+  EVO.riv.plant = plant; EVO.riv.slab = slab; EVO.riv.lampS = lampS; EVO.riv.water = water; EVO.riv.curtain = curtain; EVO.riv.hsh = hsh;
+  EVO.riv.setBed2 = (f) => { BED2 = f; };
+  EVO.riv.GREEN = GREEN; EVO.riv.WALL = WALL; EVO.riv.STONE = STONE; EVO.riv.TEMPLE = TEMPLE; EVO.riv.rel = rel; EVO.riv.mixf = mixf;
+})();

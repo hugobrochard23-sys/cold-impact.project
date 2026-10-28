@@ -139,5 +139,91 @@
     const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
   };
 
+
+  // ============================================================================================================
+  // v281 : VEGETATION TROPICALE (niveau 2) : arbre de la canopee a contreforts et lianes, palmier a fronde arquee, fougere en rosette, grande feuille de bananier, roseaux.
+  // Memes principes que le sapin : un seul lot de facettes a couleurs de sommet par plante (ombre sous la canopee, pointes claires), double face, aucune texture.
+  // ============================================================================================================
+  const JUNGLE = [['#14452a', '#3f9a44'], ['#1a5230', '#58b24c'], ['#1f5c2f', '#6ec453'], ['#174a2c', '#4aa646'], ['#235f2c', '#8bd05a']];
+  const PALM = [['#1f6a30', '#6cc451'], ['#25702e', '#86d45a'], ['#1c5e2c', '#5eb84c']];
+  const LEAF = [['#2c7a34', '#8fdc5f'], ['#2a7430', '#79cf55'], ['#337f36', '#a2e468']];
+  // fronde : rachis qui s'arque et retombe, folioles de chaque cote en bandes
+  function frond(m, bx, by, bz, ang, len, rise, droop, wid, cA, cB, segs) {
+    segs = segs || 5; const ca = Math.cos(ang), sa = Math.sin(ang), px = -sa, pz = ca; const P = [];
+    for (let i = 0; i <= segs; i++) { const t = i / segs; P.push([bx + ca * len * t, by + rise * Math.sin(Math.min(1, t * 1.25) * 1.57) - droop * t * t, bz + sa * len * t, t]); }
+    for (let i = 0; i < segs; i++) {
+      const a = P[i], b2 = P[i + 1], wa = wid * Math.sin(Math.PI * (0.12 + 0.88 * a[3])) * (1 - 0.35 * a[3]) + 0.02, wb = wid * Math.sin(Math.PI * (0.12 + 0.88 * b2[3])) * (1 - 0.35 * b2[3]) + 0.02;
+      const c0 = lerp3(cA, cB, a[3]), c1 = lerp3(cA, cB, b2[3]);
+      for (const sg of [-1, 1]) {
+        const lo = 0.1 * wid;
+        m.quad([a[0], a[1], a[2]], [a[0] + px * sg * wa, a[1] - lo, a[2] + pz * sg * wa], [b2[0] + px * sg * wb, b2[1] - lo, b2[2] + pz * sg * wb], [b2[0], b2[1], b2[2]], mul(c0, 0.86), mul(c0, 1.0), mul(c1, 1.05), mul(c1, 0.9));
+      }
+    }
+  }
+  T.palm = function (b, x, y, z, h, rnd, o) {
+    if (inWater(b, x, z)) return; o = o || {}; const m = new Mesh(), pal = PALM[Math.floor(rnd() * PALM.length)], bark = hex('#7a6244'), bark2 = hex('#5c4830');
+    const lean = rr(rnd, -0.24, 0.24) * h, lang = rnd() * 6.28, lx = Math.cos(lang) * lean, lz = Math.sin(lang) * lean, N = 6, r0 = h * 0.022 + 0.28, r1 = h * 0.014 + 0.17;
+    let prev = [x, y - 0.3, z];
+    for (let i = 1; i <= N; i++) { const t = i / N, c = [x + lx * t * t, y + h * t * 0.92, z + lz * t * t]; m.tube(prev, r0 + (r1 - r0) * ((i - 1) / N), c, r0 + (r1 - r0) * t, i % 2 ? bark : bark2, i % 2 ? bark2 : bark, 7); prev = c; }
+    const top = prev, K = 9 + Math.floor(rnd() * 3), ph = rnd() * 6.28;
+    for (let k = 0; k < K; k++) { const a = ph + k / K * 6.2832 + rr(rnd, -0.12, 0.12), up = k % 3 === 0; frond(m, top[0], top[1] + (up ? 0.3 : 0), top[2], a, h * rr(rnd, up ? 0.32 : 0.4, up ? 0.4 : 0.5), h * (up ? 0.22 : 0.09), h * (up ? 0.04 : 0.2), h * 0.07, mul(hex(pal[0]), 0.9), hex(pal[1]), 5); }
+    for (let k = 0; k < 3; k++) { const a = rnd() * 6.28; m.tube([top[0], top[1] - 0.3, top[2]], 0.24, [top[0] + Math.cos(a) * 0.6, top[1] - 0.7, top[2] + Math.sin(a) * 0.6], 0.2, hex('#8a5a2a'), hex('#a8743a'), 5); }
+    const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff', o.tint); g.dispose();
+  };
+  T.fern = function (b, x, y, z, s, rnd) {
+    if (inWater(b, x, z)) return; const m = new Mesh(), pal = LEAF[Math.floor(rnd() * LEAF.length)], K = 7 + Math.floor(rnd() * 3), ph = rnd() * 6.28;
+    for (let k = 0; k < K; k++) frond(m, x, y + 0.1, z, ph + k / K * 6.2832 + rr(rnd, -0.2, 0.2), s * rr(rnd, 0.9, 1.25), s * rr(rnd, 0.5, 0.9), s * rr(rnd, 0.3, 0.6), s * 0.18, mul(hex(pal[0]), 0.9), hex(pal[1]), 4);
+    const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
+  };
+  // grande feuille (bananier / philodendron) : petiole + limbe ovale qui s'arque
+  T.bigleaf = function (b, x, y, z, s, rnd) {
+    if (inWater(b, x, z)) return; const m = new Mesh(), pal = LEAF[Math.floor(rnd() * LEAF.length)], K = 5 + Math.floor(rnd() * 2), ph = rnd() * 6.28;
+    for (let k = 0; k < K; k++) {
+      const a = ph + k / K * 6.2832 + rr(rnd, -0.2, 0.2), h = s * rr(rnd, 0.9, 1.5), ca = Math.cos(a), sa = Math.sin(a), out = s * rr(rnd, 0.5, 0.9), top = [x + ca * out * 0.5, y + h, z + sa * out * 0.5];
+      m.tube([x, y - 0.1, z], 0.07 * s, top, 0.04 * s, hex('#4a8a3a'), hex('#6aa84a'), 5); frond(m, top[0], top[1], top[2], a, s * rr(rnd, 1.1, 1.6), s * 0.25, s * 0.5, s * 0.52, mul(hex(pal[0]), 0.85), hex(pal[1]), 4);
+    }
+    const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
+  };
+  // roseaux : faisceau de lames fines
+  T.reeds = function (b, x, y, z, s, rnd) {
+    if (inWater(b, x, z)) return; const m = new Mesh(), n = 7 + Math.floor(rnd() * 5);
+    for (let k = 0; k < n; k++) {
+      const a = rnd() * 6.28, d = rr(rnd, 0, s * 0.5), h = s * rr(rnd, 0.8, 1.5), px = x + Math.cos(a) * d, pz = z + Math.sin(a) * d, la = rnd() * 6.28, bend = rr(rnd, 0.15, 0.5) * h;
+      const tip = [px + Math.cos(la) * bend, y + h, pz + Math.sin(la) * bend], w = 0.09 * s, c0 = hex('#3a7a34'), c1 = hex('#9fd25e'), nx = -Math.sin(la) * w, nz = Math.cos(la) * w;
+      m.tri([px - nx, y, pz - nz], [px + nx, y, pz + nz], tip, c0, c0, c1);
+    }
+    const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
+  };
+  // arbre de la canopee : tronc elance a contreforts, couronne de masses plates, lianes pendantes, quelques fleurs
+  T.jungle = function (b, x, y, z, h, rnd, o) {
+    if (inWater(b, x, z)) return; o = o || {}; const m = new Mesh(), pal = JUNGLE[Math.floor(rnd() * JUNGLE.length)], bark = hex(['#6a5238', '#5a4632', '#7a6044'][Math.floor(rnd() * 3)]), seed = rnd() * 100;
+    const lean = [rr(rnd, -0.06, 0.06) * h, rr(rnd, -0.06, 0.06) * h], r0 = h * 0.03 + 0.55, topY = y + h * 0.66;
+    m.tube([x, y - 0.6, z], r0 * 1.5, [x + lean[0] * 0.3, y + h * 0.14, z + lean[1] * 0.3], r0 * 0.78, mul(bark, 0.6), mul(bark, 0.8), 8);
+    m.tube([x + lean[0] * 0.3, y + h * 0.14, z + lean[1] * 0.3], r0 * 0.78, [x + lean[0], topY, z + lean[1]], r0 * 0.5, mul(bark, 0.8), mul(bark, 1.0), 8);
+    const nb = 4 + Math.floor(rnd() * 2), ph = rnd() * 6.28;
+    for (let k = 0; k < nb; k++) {   // contreforts : triangles plats qui naissent du tronc
+      const a = ph + k / nb * 6.2832, fw = h * rr(rnd, 0.1, 0.16), fh = h * rr(rnd, 0.16, 0.26), ca = Math.cos(a), sa = Math.sin(a), px = -sa, pz = ca, bx = x + ca * r0 * 1.2, bz = z + sa * r0 * 1.2, tx = x + ca * (r0 * 1.2 + fw), tz = z + sa * (r0 * 1.2 + fw);
+      const wd = r0 * 0.28, cb = mul(bark, 0.65), ct = mul(bark, 0.95);
+      m.quad([bx - px * wd, y + fh, bz - pz * wd], [bx + px * wd, y + fh, bz + pz * wd], [tx + px * wd * 0.6, y - 0.3, tz + pz * wd * 0.6], [tx - px * wd * 0.6, y - 0.3, tz - pz * wd * 0.6], ct, ct, cb, cb);
+    }
+    const crown = [[0, 0, 0, 0.34], [0.26, 0.04, 0.1, 0.27], [-0.2, 0.1, 0.18, 0.28], [0.1, 0.08, -0.26, 0.26], [-0.24, 0.0, -0.16, 0.25], [0.02, 0.22, 0.02, 0.26]];
+    const nc = o.far ? 4 : 5 + Math.floor(rnd() * 2);
+    for (let i = 0; i < nc; i++) {
+      const c = crown[i], cx = x + lean[0] + c[0] * h * 0.9, cz = z + lean[1] + c[2] * h * 0.9, cy = topY + c[1] * h * 0.9 + h * 0.12, rad = c[3] * h * rr(rnd, 0.88, 1.12);
+      m.tube([x + lean[0], topY - h * 0.05, z + lean[1]], r0 * 0.34, [cx, cy - rad * 0.2, cz], r0 * 0.2, mul(bark, 0.9), mul(bark, 1.0), 6);
+      blob(m, cx, cy, cz, rad, 0.5 + 0.12 * rnd(), rnd, mul(hex(pal[0]), 0.55), mul(hex(pal[1]), 0.95), seed + i * 7.1, i > 1);
+    }
+    for (let k = 0; k < 4; k++) {   // lianes pendantes
+      const a = rnd() * 6.28, rd = h * rr(rnd, 0.12, 0.24), vx = x + lean[0] + Math.cos(a) * rd, vz = z + lean[1] + Math.sin(a) * rd, vy0 = topY + h * 0.06, L = h * rr(rnd, 0.22, 0.4);
+      m.tube([vx, vy0, vz], 0.09, [vx + rr(rnd, -0.6, 0.6), vy0 - L, vz + rr(rnd, -0.6, 0.6)], 0.05, hex('#3a5a2a'), hex('#2a4a22'), 4);
+      if (rnd() < 0.7) { const ly = vy0 - L, tp = [vx, ly - 1.4, vz]; m.tri([vx - 0.7, ly, vz], [vx + 0.7, ly, vz], tp, hex('#3c8a3a'), hex('#3c8a3a'), hex('#6cc050')); }
+    }
+    if (rnd() < 0.5) {
+      const fc = ['#ff6a8a', '#ffd23a', '#ff8a3a'][Math.floor(rnd() * 3)];
+      for (let k = 0; k < 4; k++) { const a = rnd() * 6.28, rd = h * rr(rnd, 0.08, 0.3), fx = x + lean[0] + Math.cos(a) * rd, fz = z + lean[1] + Math.sin(a) * rd, fy = topY + h * rr(rnd, 0.14, 0.3), q = 0.55; m.tri([fx - q, fy, fz], [fx + q, fy, fz], [fx, fy + q * 1.3, fz], hex(fc), hex(fc), mul(hex(fc), 1.15)); }
+    }
+    const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff', o.tint); g.dispose();
+  };
+
   CC.Trees = T;
 })();

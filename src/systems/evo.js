@@ -361,11 +361,11 @@
     // et sans carburant la fusee n'est plus aerodynamique (trainee x3, moins de prise) : on ne peut plus monter ni boucler ses descentes pour gagner de la vitesse a l'infini.
     if (!ev.preview) {
       const dry = r.tier >= 2 && rk.fuel <= 0.01; ev.dryK = U.clamp((ev.dryK || 0) + (dry ? dt : -dt * 2) / 0.6, 0, 1); rk.cfg.dragK = r.drag * (1 + 2 * ev.dryK); rk.cfg.gripEngineOff = r.gripOff * (1 - 0.45 * ev.dryK);
-      if (r.wing > 0) { const aL = C.physics.gravity * r.wing * (dry ? 0.25 * (1 - 0.9 * U.clamp((ev.dryT || 0) / 3, 0, 1)) : 0.62) * U.clamp((sp - TU('ls')) / TU('lw'), 0, 1.1), vy = sp > 1 ? rk.vel.y / sp : 0, vx = sp > 1 ? rk.vel.x / sp : 0, vz = sp > 1 ? rk.vel.z / sp : 0; rk.vel.x -= aL * vy * vx * dt; rk.vel.y += aL * (1 - vy * vy) * dt; rk.vel.z -= aL * vy * vz * dt; }
-      { const hh = Math.max(0, rk.pos.y - run.T.base(Math.max(0, run.dist))), st = U.clamp((rk.fwd.y - 0.4) / 0.4, 0, 1) * U.clamp(0.3 + hh / 50, 0, 1);   // v275 : nez trop cabre = decrochage : on tombe et la vitesse s'effondre
+      if (r.wing > 0 && !((g._wsub || 0) > 0.5)) { const aL = C.physics.gravity * r.wing * (dry ? 0.25 * (1 - 0.9 * U.clamp((ev.dryT || 0) / 3, 0, 1)) : 0.62) * U.clamp((sp - TU('ls')) / TU('lw'), 0, 1.1), vy = sp > 1 ? rk.vel.y / sp : 0, vx = sp > 1 ? rk.vel.x / sp : 0, vz = sp > 1 ? rk.vel.z / sp : 0; rk.vel.x -= aL * vy * vx * dt; rk.vel.y += aL * (1 - vy * vy) * dt; rk.vel.z -= aL * vy * vz * dt; }
+      { const hh = Math.max(0, rk.pos.y - EVO.climbRef(g, run)), st = U.clamp((rk.fwd.y - 0.4) / 0.4, 0, 1) * U.clamp(0.3 + hh / 50, 0, 1) * (1 - (g._wsub || 0));   // v275 : nez trop cabre = decrochage : on tombe et la vitesse s'effondre
         if (st > 0) { rk.vel.y -= C.physics.gravity * 3.5 * st * dt; const f = Math.exp(-0.8 * st * dt); rk.vel.x *= f; rk.vel.z *= f; } }
-      if (sp > 1 && rk.vel.y > 0) {   // v275 : monter est tres dur : le poids pese de plus en plus avec l'altitude, et le nez tres cabre fait decrocher (la vitesse verticale s'etouffe)
-        const c = U.clamp(rk.vel.y / sp, 0, 1), h = Math.max(0, rk.pos.y - run.T.base(Math.max(0, run.dist))), hk = 1 + h / 28;
+      if (sp > 1 && rk.vel.y > 0 && !((g._wsub || 0) > 0.5)) {   // v275 : monter est tres dur : le poids pese de plus en plus avec l'altitude, et le nez tres cabre fait decrocher (la vitesse verticale s'etouffe)
+        const c = U.clamp(rk.vel.y / sp, 0, 1), h = Math.max(0, rk.pos.y - EVO.climbRef(g, run)), hk = 1 + h / 28;
         rk.vel.y -= C.physics.gravity * (r.wing > 0 ? 0.9 : 1.3) * c * hk * (1 + 1.5 * ev.dryK) * dt;
         rk.vel.y *= Math.exp(-(0.25 + 1.6 * c * c) * c * hk * 0.5 * dt);
         const cap = Math.max(0, 22 * (1 - h / 75)); if (rk.vel.y > cap) rk.vel.y += (cap - rk.vel.y) * Math.min(1, 3 * dt);   // plafond souple : au-dela de ~75 m au-dessus du sol on ne gagne plus de hauteur
@@ -382,8 +382,8 @@
     { const gyy = run.T.base(Math.max(0, run.dist)) + 0.32; if (rk.pos.y < gyy) { rk.pos.y = gyy; if (rk.vel.y < 0) rk.vel.y = 0; rk.sliding = Math.max(rk.sliding || 0, 0.03); } }
     // sans réacteur ou sans carburant : la fusée tombe ; au sol, le vol est fini
     const out = (r.tier < 2 || rk.fuel <= 0.01) && !ev.preview;
-    if (out && EVO.isS2() && g.flightTime > 1) { ev.outT = (ev.outT || 0) + dt; rk.vel.y -= 38 * Math.min(1, ev.outT / 0.8) * dt; if (rk.fwd.y > -0.6) g.input.addAim(0, -2.2 * dt); } else ev.outT = 0;   // v249 : niveau 2 : sans carburant on pique et on accelere vers le bas (plus de longue glissade)
-    if (out && !ev.preview && sp < 24 && rk.fwd.y > -0.55) g.input.addAim(0, -1.5 * U.clamp((24 - sp) / 8, 0, 1) * dt);   // v125 : décrochage : sans poussée et sans vitesse, le nez plonge (on récupère en reprenant de la vitesse)
+    if (out && EVO.isS2() && g.flightTime > 1 && !((g._wsub || 0) > 0.5)) { ev.outT = (ev.outT || 0) + dt; rk.vel.y -= 38 * Math.min(1, ev.outT / 0.8) * dt; if (rk.fwd.y > -0.6) g.input.addAim(0, -2.2 * dt); } else ev.outT = 0;   // v249 : niveau 2 : sans carburant on pique et on accelere vers le bas (plus de longue glissade)
+    if (out && !ev.preview && sp < 24 && rk.fwd.y > -0.55 && !((g._wsub || 0) > 0.5)) g.input.addAim(0, -1.5 * U.clamp((24 - sp) / 8, 0, 1) * dt);   // v125 : décrochage : sans poussée et sans vitesse, le nez plonge (on récupère en reprenant de la vitesse)
     if (out && rk.sliding > 0 && (ev.slideT = (ev.slideT || 0) + dt) > 0.7) { ev.slideT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; }
     if (!out || rk.sliding <= 0) ev.slideT = 0;
     if (out && sp < TU('stall') && g.flightTime > 1 && rk.pos.y - run.T.base(Math.max(0, run.dist)) < 3) { if ((ev.lowT = (ev.lowT || 0) + dt) > TU('stallT')) { ev.lowT = 0; g.onRocketCrash('stalled', rk.pos.clone(), null); return; } } else ev.lowT = 0;   // v125 : immobile = fini
@@ -666,6 +666,7 @@
   };
   // boss vaincu : on vole un instant dans la zone suivante
   // v276 : barriere invisible : on ne peut pas depasser la distance dB (boss, noyau) tant qu'ils ne sont pas detruits ; la fusee est repoussee et un message le dit
+  EVO.climbRef = (g, run) => { const b = run.T.base(Math.max(0, run.dist)); return EVO.seaLevel !== undefined && EVO.seaLevel > -5000 && g.evo ? Math.max(b, EVO.seaLevel) : b; };   // v281 : la hauteur de reference pour la montee est la surface de l'eau quand il y en a une
   EVO.holdAt = (g, dB, msg) => {
     const run = g.endlessRun, rk = g.rocket; if (!run || !rk || !rk.active || run.dist <= dB) return false;
     const T = run.T, rd = run.dist, a = T.at(rd, 0, 0), b = T.at(rd + 6, 0, 0); let tx = b[0] - a[0], tz = b[2] - a[2]; const l = Math.hypot(tx, tz) || 1; tx /= l; tz /= l;
