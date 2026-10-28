@@ -127,7 +127,7 @@
       // --- les rives : tranches de 14 m, paroi de roche, replats, couverture de jungle
       for (let dc = 74; dc < LA - 6; dc += 14) S.item(dc, (r) => {
         for (const sg of [-1, 1]) {
-          const hwv = HW(dc), face = hwv + r.between([-1.2, 2.2]), top = (dc < 140 ? mixf(A0b(dc) + 10, WY(dc) + 26, ss(74, 140, dc)) : WY(dc) + 26) + 4 * Math.sin(dc / 53 + sg * 1.7) + 2 * Math.sin(dc / 17 + sg), bed = BED(dc), mid = (bed - 6 + top) / 2, hgt = top - bed + 6, wd = OUT - face;
+          const hwv = HW(dc), face = hwv + r.between([-1.2, 2.2]), top = (dc < 140 ? mixf(74, WY(dc) + 26, ss(74, 140, dc)) : WY(dc) + 26) + 4 * Math.sin(dc / 53 + sg * 1.7) + 2 * Math.sin(dc / 17 + sg), bed = BED(dc), mid = (bed - 6 + top) / 2, hgt = top - bed + 6, wd = OUT - face;
           S.bx(dc, sg * (face + wd / 2), A(S, dc, mid), wd, hgt, 18, 'jrock', pk(r, WALL), true);
           S.bx(dc, sg * (face + wd / 2), A(S, dc, top + 0.25), wd, 0.5, 18, 'evoGrass', pk(r, GREEN), true);
           // corniches moussues sur la paroi

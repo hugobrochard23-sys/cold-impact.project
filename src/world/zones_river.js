@@ -33,8 +33,9 @@
   const A0 = (d) => (d < -50 ? PL : PL - SLOPE * (d + 50));
   const WYabs = (d) => WY(d);
   // fond du couloir (sol) : la colline de la rampe se fond dans le lit du fleuve entre d = 40 et d = 100
-  let BED2 = null;   // lit de la zone 2 (zones_river2 plus bas), pose apres
+  let BED2 = null, BED3 = null;   // lit de la zone 2 (zones_river2 plus bas), puis des zones 3 et 4 (zones_river3/4), poses apres
   const BED = (d) => {
+    if (d >= LA + LB && BED3) return BED3(d);
     if (d >= LA && BED2) return BED2(d);
     const bed = WY(d) - DEP(d);
     if (d <= 40) return A0(d);
@@ -46,7 +47,7 @@
   const absAt = (S, dc, lx, y) => S.at(dc, lx, A(S, dc, y));   // point du monde pour une cote absolue
   EVO.riv = { WY, BED, HW, DEP, LA, LB, LF, F1, F2, EXIT, A, absAt, SEAB, PL, PATH };
   // le niveau 2 est ce nouveau fleuve : liste des scenes, fonction d'eau, plateau de depart plat
-  EVO.SCENES2 = ['rapides', 'barrage', 'arrivee'];
+  EVO.SCENES2 = ['rapides', 'barrage', 'delta', 'havre', 'gouffre', 'sousmarin'];
   EVO.waterFn = (d) => WY(d);
   { const _pr = EVO.preRel; EVO.preRel = (d) => (EVO.seaLevel !== undefined && d <= 0 ? A0(d) - SEAB : (_pr ? _pr(d) : 0)); }
   EVO.launchY = () => 40.9;
@@ -92,12 +93,12 @@
         const cols = [], G = new T3.Group(), wm = new T3.MeshLambertMaterial({ color: '#5f7550' }), gm = new T3.MeshLambertMaterial({ color: '#3f8a3c' }), cm = [new T3.MeshLambertMaterial({ color: '#2f7a34' }), new T3.MeshLambertMaterial({ color: '#3a8a3c' })];
         const seg = (d, lx, w, dd, h) => { const a = run.T.at(d, lx, 0), b = run.T.at(d + 4, lx, 0), yaw = Math.atan2(b[0] - a[0], b[2] - a[2]), y0 = run.T.base(d) - 30; const m = new T3.Mesh(new T3.BoxGeometry(w, h + 30, dd), wm); m.position.set(a[0], y0 + (h + 30) / 2, a[2]); m.rotation.y = yaw; G.add(m); cols.push(EVO.colBox(m, w, h + 30, dd, 0, 0, 0)); const t = new T3.Mesh(new T3.BoxGeometry(w + 0.4, 0.6, dd + 0.4), gm); t.position.set(a[0], y0 + h + 30.3, a[2]); t.rotation.y = yaw; G.add(t);
           for (let k = 0; k < 2; k++) { const c = new T3.Mesh(new T3.SphereGeometry(7 + 6 * hsh(d, lx + k), 8, 6), cm[k]); c.scale.y = 0.7; c.position.set(a[0] + (hsh(lx, d + k) - 0.5) * w, y0 + h + 34, a[2] + (hsh(d + k, lx) - 0.5) * dd); G.add(c); } };
-        for (let d = -214; d < 78; d += 14) for (const sg of [-1, 1]) seg(d, sg * 121, 22, 14.9, 34 + 5 * Math.sin(d / 9 + sg));
-        for (let lx = -128; lx <= 128; lx += 16) seg(-214, lx, 16.6, 20, 36 + 6 * Math.sin(lx / 17));
+        for (let d = -214; d < 78; d += 14) for (const sg of [-1, 1]) seg(d, sg * 121, 22, 14.9, 74 + 2 * Math.sin(d / 9 + sg) - run.T.base(d));
+        for (let lx = -128; lx <= 128; lx += 16) seg(-214, lx, 16.6, 20, 76 + 3 * Math.sin(lx / 17) - run.T.base(-214));
         g.scene.add(G); g._lc = G; EVO.addDyn(G, null, cols, { span: 600 }); }
       if (g._lc) g._lc.visible = g.state === 'FLIGHT'; };
   }
   EVO.riv.plant = plant; EVO.riv.slab = slab; EVO.riv.lampS = lampS; EVO.riv.water = water; EVO.riv.curtain = curtain; EVO.riv.hsh = hsh;
-  EVO.riv.setBed2 = (f) => { BED2 = f; };
+  EVO.riv.setBed2 = (f) => { BED2 = f; }; EVO.riv.setBed3 = (f) => { BED3 = f; };
   EVO.riv.GREEN = GREEN; EVO.riv.WALL = WALL; EVO.riv.STONE = STONE; EVO.riv.TEMPLE = TEMPLE; EVO.riv.rel = rel; EVO.riv.mixf = mixf;
 })();

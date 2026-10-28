@@ -97,7 +97,6 @@
       foe(S, 'aaturret', d(1360), -(HWc(d(1360)) - 6), A(S, d(1360), WY(d(1360)) + 11.2), { name: 'TOURELLE', armed: true, keep: true, fixed: true });
       foe(S, 'heli', d(1400), 0, WY(d(1400)) + 20 - BED(d(1400)), { name: 'HELICO', armed: true, keep: true, patrol: (SS, dc, lx, y) => [SS.at(dc, -16, y), SS.at(dc + 24, 0, y + 5), SS.at(dc, 16, y), SS.at(dc - 24, 0, y + 5)], speed: 12 });
       // --- la ligne d'arrivee : un immense mur a damiers, sans collision
-      S.item(d(U_FIN), (r) => finishLine(S, d(U_FIN)));
     } };
   SC.arrivee = { len: [LF, LF], noDoor: true, noChaos: true, gw: 125, grass: false,
     pin: (T, sc) => ({ lx: 0, fy: (d) => WY(d) - 4.5 - T.base(d), from: 24, to: sc.d1 - sc.d0 - 24 }),
@@ -115,7 +114,7 @@
     const grp = new T3.Group(), pl = new T3.Mesh(new T3.PlaneGeometry(W2, H2), new T3.MeshBasicMaterial({ map: tx, transparent: true, opacity: 0.55, side: T3.DoubleSide, depthWrite: false, fog: false })); pl.position.set(0, H2 / 2 - 60, 0); grp.add(pl);
     EVO.placeGroup(S, grp, dm, S.lane(dm).lx, 0, 0);
   }
-  EVO.riv.finishD = LA + U_FIN;
+  EVO.riv.finishD = 1e9; EVO.riv.finishLine = finishLine; EVO.riv.lam = lam; EVO.riv.HWc = HWc;   // v287 : l'arrivee est maintenant au bout de la base sous-marine (zones_river4)
   const _tkf = EVO.tick;
   EVO.tick = (g, dt) => { _tkf(g, dt); const run = g.endlessRun; if (run && EVO.isS2() && g.evo && !g.evo.preview && g.state === 'FLIGHT' && g.rocket.active) { const uu = run.dist - LA; if (uu > U_DAM - 25 && uu < U_MOUTH && g.rocket.pos.y > CREST + 5) { g.rocket.pos.y = CREST + 5; if (g.rocket.vel.y > 0) g.rocket.vel.y = 0; if (!g._dmMsg || performance.now() - g._dmMsg > 3000) { g._dmMsg = performance.now(); if (CC.L1) CC.L1.msg(g, 'PAR LA CONDUITE !', 1.6, '#ffe9a0'); } } } if (EVO.isS2() && g.evo && !g.evo.preview && run && !g.evoFinish && g.state === 'FLIGHT' && g.rocket.active && run.dist > EVO.riv.finishD && EVO.finishRun) EVO.finishRun(g); };
 

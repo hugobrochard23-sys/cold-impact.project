@@ -60,6 +60,7 @@
     aegis: { scene: 'orbite', at: 0.66, ahead: 0, speed: 0, name: 'AEGIS', hp: 4, model: aegisModel, yOff: 0, surge: 300, fire: 2.6, aegis: true },
   };
 
+  EVO.boss2Kit = { lam, bas, bx, cy, glow, marker, DEFS };   // v287 : les boss ajoutes ailleurs (l'ABYSSAL de zones_river4) reutilisent ces outils
   let B = null; const made = {};
   const shotAt = (g, from, big) => {
     const rk = g.rocket; g.spawnEnemyMissile(from.clone(), rk, { miss: 16, lead: 0, turn: 0, speed: 150, life: 8, quiet: true, visualFrom: from.clone() });
@@ -137,8 +138,8 @@
     }
     if (B.mode === 'live' && live && B.awake) {
       const dist = B.W.position.distanceTo(rk.pos);
-      if (dist > 120 && dist < 900) { B.fireT -= dt; if (B.fireT <= 0) { B.fireT = def.fire * (B.hp <= 2 ? 0.8 : 1); const q = def.aegis ? _b.set(0, 0, -86) : _b.set(rr(-60, 60), 60, -250); B.W.localToWorld(q); shotAt(g, q, true); } }
-      if (B.hp <= 2) { B.podT -= dt; if (B.podT <= 0) { B.podT = 4.6; for (const sx of [-1, 1]) { const q = def.aegis ? _a.set(sx * 40, 0, -40) : _a.set(sx * 100, 40, -200); B.W.localToWorld(q); g.spawnEnemyMissile(q.clone(), rk, { miss: 0, lead: 0.05, turn: 0.1, speed: 30, life: 7, quiet: true, visualFrom: q.clone() }); } g.audio.play('hydraulic', _a); } }
+      if (dist > 120 && dist < 900) { B.fireT -= dt; if (B.fireT <= 0) { B.fireT = def.fire * (B.hp <= 2 ? 0.8 : 1); const q = def.aegis ? _b.set(0, 0, -86) : def.muzzle ? _b.set(def.muzzle[0] + rr(-8, 8), def.muzzle[1], def.muzzle[2]) : _b.set(rr(-60, 60), 60, -250); B.W.localToWorld(q); shotAt(g, q, true); } }
+      if (B.hp <= 2) { B.podT -= dt; if (B.podT <= 0) { B.podT = 4.6; for (const sx of [-1, 1]) { const q = def.aegis ? _a.set(sx * 40, 0, -40) : def.muzzle ? _a.set(sx * 20, def.muzzle[1], def.muzzle[2]) : _a.set(sx * 100, 40, -200); B.W.localToWorld(q); g.spawnEnemyMissile(q.clone(), rk, { miss: 0, lead: 0.05, turn: 0.1, speed: 30, life: 7, quiet: true, visualFrom: q.clone() }); } g.audio.play('hydraulic', _a); } }
     }
     if (B.mode === 'dying' || B.mode === 'dead') { rk.fuel = rk.fuelMax; rk.shieldT = Math.max(rk.shieldT || 0, 5); if (rk.vel.y < 0) rk.vel.y *= 0.5; }   // pendant la mort du boss et le bilan : pas de chute, pas de crash
     if (B.mode === 'dying') {
@@ -148,7 +149,7 @@
       if (B.sm <= 0 && t < tb + 2.0) { B.sm = 0.28; _c.set(rr(-70, 70), rr(0, 70), rr(-200, 200)); B.W.localToWorld(_c); fx.explosion(_c.clone(), null, true, 'orange'); if (Math.random() < 0.5) g.audio.play('boom', _c); }
       if (t < tb + 2.4) g.rig.shake = Math.max(g.rig.shake, 0.9 * (1 - t / (tb + 2.6)));
       if (B.ball) { const k = U.clamp((t - tb) / 1.4, 0, 1); B.ball.scale.setScalar(80 + 520 * (1 - Math.pow(1 - k, 3))); B.ball.material.opacity = (1 - k) * 0.95; B.ball.visible = k < 1; }
-      if (t > tb + 3.0) { B.mode = 'dead'; if (def.aegis && EVO.finishRun) EVO.finishRun(g); }
+      if (t > tb + 3.0) { B.mode = 'dead'; if ((def.aegis || def.finish) && EVO.finishRun) EVO.finishRun(g); }
     }
     for (let i = B.debris.length - 1; i >= 0; i--) { const q = B.debris[i]; q.t += dt; q.o.position.addScaledVector(q.v, dt); q.o.rotation.x += q.s * dt; q.o.rotation.z += q.s * 0.7 * dt; if (!def.aegis) q.v.y -= 30 * dt; if (q.t > 6) { g.scene.remove(q.o); B.debris.splice(i, 1); } }
   }
