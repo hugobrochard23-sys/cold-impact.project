@@ -109,7 +109,8 @@
     const lk = [['CONDITIONS D UTILISATION', urls.termsUrl], ['CONFIDENTIALITE', urls.privacyUrl]], ly = cy + ch + HH * 0.03;
     lk.forEach(([lab, url], i) => { const y = ly + i * HH * 0.055; txt(ctx, lab, W / 2, y, cw, 1.5, url ? '#8fd0ff' : DIM, 'center'); if (url) hit(ui, m, y - 8, cw, HH * 0.05, () => { try { window.open(url, '_blank'); } catch (e) { /* ignoré */ } }); });
     const bw = W * 0.8, bh = HH * 0.1, bx = (W - bw) / 2, by = Y(0.82), on = inRect(ui, bx, by, bw, bh);
-    greenBtn(ctx, bx, by, bw, bh, on); txt(ctx, 'ACCEPTER ET JOUER', W / 2, by + bh * 0.32, bw - 16, 2.4, DARK, 'center');
+    if (CC.EVO && CC.EVO.on && CC.UI2) { const UI2 = CC.UI2, f = UI2.greenButton(ctx, bx, by, bw, bh, { cat: 'buy', r: 0.26, lip: 0.16 }); UI2.outlined(ctx, 'ACCEPTER ET JOUER', bx + bw / 2, f.y + f.h * 0.5, UI2.fit(ctx, 'ACCEPTER ET JOUER', bw * 0.86, f.h * 0.5), '#FFFFFF'); }   // v277 : le bouton etait noir et illisible en mode EVO
+    else { greenBtn(ctx, bx, by, bw, bh, on); txt(ctx, 'ACCEPTER ET JOUER', W / 2, by + bh * 0.32, bw - 16, 2.4, DARK, 'center'); }
     txt(ctx, 'EN JOUANT TU ACCEPTES CES CONDITIONS', W / 2, by + bh + HH * 0.02, W * 0.9, 1, DIM, 'center');
     hit(ui, bx, by, bw, bh, () => { game.settings.termsOk = true; try { localStorage.setItem('coldimpact.terms', '1'); } catch (e) { /* ignoré */ } game.writeSave(); ui.overlay = null; game.goHome({ autoLaunch: !(CC.EVO && CC.EVO.on) && ((game.save.lvl && game.save.lvl.max) || 1) <= 1 && !((game.settings.tutStep || 0) >= 4) }); });
   };
