@@ -120,6 +120,7 @@
     const f = Math.sin(x * 0.021 + 0.7) * Math.sin(z * 0.019 + 2.1); if (f > 0.35) out.lerp(GC.f, Math.min(0.75, (f - 0.35) * 2));
     return out;
   };
+  Z.evoGcol = gcol; Z.evoRelN = relN;   // v294 : la rampe de lancement du niveau 2 utilise les memes couleurs et normales que le sol
   const _v = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()], _Q = new THREE.Quaternion(), _O = new THREE.Vector3();
   Z.evoGroundMesh = function (ctx, d, e) {
     const T = ctx.T, b = ctx.b, m = (d + e) / 2, sloped = T.rel(d) !== 0 || T.rel(e) !== 0 || T.rel(m) !== 0, rows = sloped ? Math.max(1, Math.round((e - d) / 5)) : Math.max(1, Math.round((e - d) / 20));
