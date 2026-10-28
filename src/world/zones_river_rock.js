@@ -15,90 +15,71 @@
     if (d < LA) return (d < 140 ? mixf(74, WY(d) + 26, ss(74, 140, d)) : WY(d) + 26) + 4 * Math.sin(d / 53 + sg * 1.7) + 2 * Math.sin(d / 17 + sg);
     return WY(d) + 26 + 3 * Math.sin(d / 53 + sg);
   };
-  const ROCK = ['#8d8774', '#7d7967', '#9b937c', '#6f6b5b', '#868a76', '#968468', '#767263', '#a39a82', '#827a68', '#8f8f7e'];
+  const ROCK = ['#a1a090', '#979a88', '#a8a592', '#8d9080', '#9ca48f', '#a49c88', '#909282', '#adab98'];
   const col = (hex) => { const c = new T3.Color(hex); return [c.r, c.g, c.b]; };
-  const ROCKC = ROCK.map(col), MOSS = col('#4f7a38'), MOSS2 = col('#6a9142'), SOIL = col('#5f4a33'), DARK = col('#2f352b'), ALGAE = col('#33482c');
+  const ROCKC = ROCK.map(col), MOSS = col('#5a8a3e'), MOSS2 = col('#78a448'), SOIL = col('#6a5438'), DARK = col('#343a30'), ALGAE = col('#3d5a36');
   const mixc = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
   const mulc = (a, k) => [Math.min(1, a[0] * k), Math.min(1, a[1] * k), Math.min(1, a[2] * k)];
-  const TH = 4.0;   // epaisseur nominale des strates
-  const yb = (k, sd) => k * TH + (hh(k, sd, 1) - 0.5) * 0.84 * TH;
-  const wk = (k, sd) => 3.0 + 5.0 * hh(k, sd, 2);
-  const xb = (k, j, sd) => (j + 0.84 * (hh(k, j, sd + 5) - 0.5) + hh(k, sd, 3)) * wk(k, sd);
-  const keep = (k, j, sd) => hh(k, j, sd + 9) > 0.2;
-  /* Construit une paroi de blocs.
+  const TH = 5.0, STEP = 5.0;   // epaisseur nominale des strates, pas le long de la paroi
+  const yb = (k, sd) => k * TH + (hh(k, sd, 1) - 0.5) * 0.8 * TH;
+  /* PAROI EN STRATES LISSES : chaque strate est une bande continue qui ondule doucement le long de la paroi (bas a plomb, milieu legerement bombe, haut en retrait) ; entre deux strates, un replat mousseux.
+   * Quelques saillies arrondies, soudees a la paroi (jamais de bloc qui flotte). Les hauteurs des strates sont les memes pour toutes les tranches : tout se raccorde.
    *  W(u, off, y) : point du monde ; u = abscisse le long de la paroi, off = profondeur dans la roche (m, positif = vers l'interieur), y = hauteur absolue
-   *  o = { uA, uB : blocs dont le centre est dans [uA, uB[ ; topf(u) : hauteur du sommet ; bot : hauteur du bas ; seed ; clamp : coupe les blocs aux extremites ; waterY(u) ; vegetation : nombre de plantes }  */
+   *  o = { uA, uB : intervalles dont le debut est dans [uA, uB[ ; topf(u) : hauteur du sommet ; bot : hauteur du bas ; seed ; clamp : paroi plane a extremites nettes ; waterY(u) ; veg : nombre de plantes }  */
   R.rockWall = (S, r, W, o) => {
     const sd = o.seed, uA = o.uA, uB = o.uB, topf = o.topf, bot = o.bot, wy = o.waterY || (() => -1e9), clamp = !!o.clamp;
-    const P = [], N = [], C = [], U = [], P2 = [], N2 = [], C2 = [];
-    const push = (a, b, c, ca, cb, cc, ref, tex) => {
+    const P = [], N = [], C = [], U = [];
+    const push = (a, b, c, ca, cb, cc, ref) => {
       let nx = (b[1] - a[1]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[1] - a[1]), ny = (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]), nz = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
       const l = Math.hypot(nx, ny, nz) || 1; nx /= l; ny /= l; nz /= l;
       if (nx * ref[0] + ny * ref[1] + nz * ref[2] < 0) { const t = b; b = c; c = t; const tc = cb; cb = cc; cc = tc; nx = -nx; ny = -ny; nz = -nz; }
-      if (tex) { P.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]); N.push(nx, ny, nz, nx, ny, nz, nx, ny, nz); C.push(ca[0], ca[1], ca[2], cb[0], cb[1], cb[2], cc[0], cc[1], cc[2]); U.push(a[3], a[4], b[3], b[4], c[3], c[4]); }
-      else { P2.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]); N2.push(nx, ny, nz, nx, ny, nz, nx, ny, nz); C2.push(ca[0], ca[1], ca[2], cb[0], cb[1], cb[2], cc[0], cc[1], cc[2]); }
+      P.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]); N.push(nx, ny, nz, nx, ny, nz, nx, ny, nz); C.push(ca[0], ca[1], ca[2], cb[0], cb[1], cb[2], cc[0], cc[1], cc[2]); U.push(a[3], a[4], b[3], b[4], c[3], c[4]);
     };
-    const quad = (a, b, c, d, ca, cb, cc, cd, ref, tex) => { push(a, b, c, ca, cb, cc, ref, tex); push(a, c, d, ca, cc, cd, ref, tex); };
-    const Wp = (u, off, y) => { const p = W(u, off, y); return [p[0], p[1], p[2], u / 3 + sd * 0.37, y / 3]; };   // avec coordonnees de texture (moellons)
+    const quad = (a, b, c, d, ca, cb, cc, cd, ref) => { push(a, b, c, ca, cb, cc, ref); push(a, c, d, ca, cc, cd, ref); };
     const horiz = (a, b) => { const l = Math.hypot(b[0] - a[0], b[2] - a[2]) || 1; return [(b[0] - a[0]) / l, 0, (b[2] - a[2]) / l]; };
     const um = (uA + uB) / 2, ym = (bot + topf(um)) / 2, outV = horiz(W(um, 0, ym), W(um, -1, ym));          // vers l'exterieur (le fleuve)
-    const tgV = (u) => horiz(W(u - 1, 0, ym), W(u + 1, 0, ym));
-    const k0 = Math.floor((bot - 2) / TH) - 1, k1 = Math.ceil((topf(um) + 3) / TH) + 1, blocks = [];
-    for (let k = k0; k <= k1; k++) {
-      const ya = yb(k, sd), yc = yb(k + 1, sd); if (yc <= bot || ya >= topf(um) + 1.5) continue;
-      const w = wk(k, sd), jA = Math.floor(uA / w) - 4, jB = Math.ceil(uB / w) + 4, bs = [];
-      for (let j = jA; j <= jB; j++) if (keep(k, j, sd)) bs.push(j);
-      const row = [];
-      for (let q = 0; q < bs.length - 1; q++) {
-        const ja = bs[q], jb = bs[q + 1], xa = xb(k, ja, sd), xz = xb(k, jb, sd); if (xz - xa < 0.4) continue;
-        const key = hh(k, ja, sd + 21), off = 0.15 + (hh(k, ja, sd + 11) - 0.12) * 1.9 + (hh(k, 0, sd + 13) - 0.5) * 0.7 + 0.35 * Math.sin((xa + xz) / 34 + k * 1.7);
-        row.push({ k, xa, xz, ya, yc, off, key });
-      }
-      const row2 = [];   // grands blocs : certains se scindent en deux pierres de reliefs differents
-      for (const b of row) { const wd = b.xz - b.xa; if (wd > 3.6 && b.key > 0.4) { const m = b.xa + wd * (0.32 + 0.36 * hh(b.k, b.xa, 31)); row2.push(Object.assign({}, b, { xz: m, off: b.off + (hh(b.k, b.xa, 33) - 0.5) * 0.9 }), Object.assign({}, b, { xa: m, off: b.off + (hh(b.k, b.xz, 35) - 0.5) * 1.0 })); } else row2.push(b); }
-      for (let q = 0; q < row2.length; q++) { row2[q].l = row2[q - 1]; row2[q].rgt = row2[q + 1]; row2[q].cx = (row2[q].xa + row2[q].xz) / 2; }
-      for (const b of row2) if (b.cx >= uA && b.cx < uB) blocks.push(b);
-    }
-    const Dd = 1.45; let nb = 0, nVeg = 0, ti = 0;
-    for (const b of blocks) {
-      const tp = topf(b.cx), ya = Math.max(b.ya, bot), yc = Math.min(b.yc, tp + 0.15); if (yc - ya < 0.35) continue;
-      let ua = b.xa, uz = b.xz; if (clamp) { ua = Math.max(ua, uA); uz = Math.min(uz, uB); if (uz - ua < 0.3) continue; }
-      const wd = uz - ua, ht = yc - ya, jt = (n) => (hh(b.k, b.xa, n) - 0.5) * 0.36 * ht, ju = (n) => (hh(b.k, b.xz, n) - 0.5) * 0.4 * wd;
-      const rec = 0.25 + 0.65 * hh(b.k, b.xa, 45), offL = b.off + (hh(b.k, b.xa, 46) - 0.5) * 0.3, offR = b.off + (hh(b.k, b.xz, 47) - 0.5) * 0.3;
-      const isTop = yc >= tp - 0.9, nearWater = ya < wy(b.cx) + 1.6;
-      const base = ROCKC[Math.floor(hh(b.k, b.xa, 51) * ROCK.length)], mossK = Math.pow(hh(b.k, b.xa, 52), 1.7), yh = Math.max(0, (ya - wy(b.cx)) / 30);
-      let cf = mixc(base, MOSS, mossK * 0.34 * (0.4 + yh)); if (isTop) cf = mixc(SOIL, base, 0.25); if (nearWater) cf = mixc(cf, ALGAE, 0.55);
-      const cLow = mulc(cf, 1.05), cMid = mulc(cf, 1.5), cHigh = mulc(cf, 1.9), o1 = outV;
-      const yBL = ya + jt(41), yBR = ya + jt(42), yTL = yc + jt(43) * 0.6, yTR = yc + jt(44) * 0.6, ymd = (yBL + yTL) / 2 + 0.2 * ht, ymr = (yBR + yTR) / 2 + 0.2 * ht;
-      const A0 = Wp(ua + ju(48) * 0.3, offL, yBL), A1 = Wp(uz + ju(49) * 0.3, offR, yBR), M1 = Wp(uz + ju(50) * 0.2, offR + rec * 0.18, ymr), M0 = Wp(ua + ju(51) * 0.2, offL + rec * 0.18, ymd);
-      const A2 = Wp(uz + ju(52) * 0.5, offR + rec, yTR), A3 = Wp(ua + ju(53) * 0.5, offL + rec, yTL);
-      if (hh(b.k, b.xa, 40) > 0.5) { quad(A0, A1, M1, M0, cLow, cLow, cMid, cMid, o1, true); quad(M0, M1, A2, A3, cMid, cMid, cHigh, cHigh, o1, true); }   // face a plomb + epaule biseautee (texture moellons)
-      else quad(A0, A1, A2, A3, cLow, cLow, cHigh, cHigh, o1, true);
-      const tcol = isTop ? mixc(MOSS2, MOSS, 0.4) : mixc(base, MOSS2, 0.5 + 0.45 * hh(b.k, b.xa, 53));
-      if (isTop || hh(b.k, b.xa, 39) > 0.3) quad(A3, A2, W(uz, offR + rec + Dd, yTR), W(ua, offL + rec + Dd, yTL), mulc(tcol, 0.92), mulc(tcol, 0.92), mulc(tcol, 0.78), mulc(tcol, 0.78), [0, 1, 0]);   // dessus mousseux
-      if (!b.l || b.l.off < b.off - 0.22) { const Bk0 = W(ua, offL + rec + Dd, yBL), Bk1 = W(ua, offL + rec + Dd, yTL), rf = tgV(ua); quad(A0, Bk0, Bk1, A3, mulc(cf, 0.5), mulc(cf, 0.42), mulc(cf, 0.42), mulc(cf, 0.5), [-rf[0], 0, -rf[2]]); }
-      if (!b.rgt || b.rgt.off < b.off - 0.22) { const Bk0 = W(uz, offR + rec + Dd, yBR), Bk1 = W(uz, offR + rec + Dd, yTR), rf = tgV(uz); quad(A1, Bk0, Bk1, A2, mulc(cf, 0.5), mulc(cf, 0.42), mulc(cf, 0.42), mulc(cf, 0.5), [rf[0], 0, rf[2]]); }
-      nb++;
-      // petits cailloux colles au bloc (echelle plus fine) : 1 a 3 par gros bloc
-      if (wd > 1.9 && ht > 1.0 && hh(b.k, b.xa, 54) > 0.8 && !isTop) {
-        const np = 1 + Math.floor(hh(b.k, b.xa, 55) * 2);
-        for (let q = 0; q < np; q++) {
-          const pw = 0.5 + 0.9 * hh(b.k, b.xa, 56 + q), ph = 0.4 + 0.7 * hh(b.k, b.xa, 60 + q), pu = ua + 0.2 + (wd - pw - 0.4) * hh(b.k, b.xa, 64 + q), py = ya + 0.1 + (ht - ph - 0.2) * hh(b.k, b.xa, 68 + q), pf = Math.max(offL, offR) - 0.2 - 0.5 * hh(b.k, b.xa, 72 + q), pc = mixc(ROCKC[Math.floor(hh(b.k, b.xa, 76 + q) * ROCK.length)], MOSS, 0.12 * hh(b.k, b.xa, 80 + q));
-          const p0 = W(pu, pf, py), p1 = W(pu + pw, pf + 0.1, py + ph * 0.1), p2 = W(pu + pw * 0.92, pf + 0.2, py + ph), p3 = W(pu + pw * 0.06, pf + 0.15, py + ph * 0.95), q4 = W(pu + pw * 0.9, pf + 0.45, py + ph), q5 = W(pu + pw * 0.08, pf + 0.45, py + ph * 0.96);
-          quad(p0, p1, p2, p3, mulc(pc, 0.6), mulc(pc, 0.6), mulc(pc, 1.0), mulc(pc, 1.0), o1); quad(p3, p2, q4, q5, mulc(pc, 0.95), mulc(pc, 0.95), mulc(pc, 0.8), mulc(pc, 0.8), [0, 1, 0]);
-          ti++;
+    const Wp = (u, off, y, vv) => { const p = W(u, off, y); return [p[0], p[1], p[2], u / 6 + sd * 0.31, (vv === undefined ? y : vv) / 6]; };   // avec coordonnees de texture
+    // profils d'une strate (pures fonctions de la strate k et de u : se raccordent d'une tranche a l'autre)
+    const sm = (u, k, n) => Math.sin(u / (9 + 7 * hh(k, sd, 80 + n)) + hh(k, sd, 90 + n) * 6.28);
+    const but = (k, u) => { const c = Math.floor(u / 17), cu = (c + 0.2 + 0.6 * hh(k, c, sd + 14)) * 17, w = 2.6 + 3.4 * hh(k, c, sd + 15), t = (u - cu) / w; return (hh(k, c, sd + 16) > 0.5 ? 1 : 0) * Math.exp(-t * t) * (0.45 + 0.8 * hh(k, c, sd + 17)); };   // saillie arrondie
+    const offB = (k, u) => Math.max(-0.35, 0.6 + 0.9 * hh(k, sd, 11) + 0.46 * sm(u, k, 1) + 0.24 * sm(u * 2.3, k, 2) - but(k, u));
+    const offT = (k, u, last) => last ? offB(k, u) + 0.6 : Math.max(offB(k, u) + 0.35 + 0.35 * hh(k, sd, 12), offB(k + 1, u) + 0.28);
+    const bulge = (k) => 0.12 + 0.25 * hh(k, sd, 13);
+    const k0 = Math.floor((bot - 2) / TH) - 1, k1 = Math.ceil((topf(um) + 3) / TH) + 1;
+    let nSeg = Math.max(1, Math.round((uB - uA) / STEP)), u0 = uA, du = (uB - uA) / nSeg;
+    if (!clamp) { const i0 = Math.ceil(uA / STEP), i1 = Math.ceil(uB / STEP); nSeg = i1 - i0; u0 = i0 * STEP; du = STEP; }
+    let nVeg = 0, nq = 0; const vegMax = o.veg === undefined ? 2 : o.veg;
+    for (let i = 0; i < nSeg; i++) {
+      const ua = u0 + i * du, uz = ua + du, ends = [ua, uz], cut = ends.map((u) => topf(u) - 0.3);
+      for (let k = k0; k <= k1; k++) {
+        const y0 = yb(k, sd), y1 = yb(k + 1, sd); if (y1 <= bot + 0.4 || y0 >= Math.min(cut[0], cut[1]) - 0.4) continue;
+        const R0 = [], R1 = [], R2 = [], LG = [], cols = [];
+        let ok = true;
+        for (let e = 0; e < 2; e++) {
+          const u = ends[e], last = y1 > cut[e], yb_ = Math.max(y0, bot), yt = last ? cut[e] : y1; if (yt - yb_ < 0.4) { ok = false; break; }
+          const ob = offB(k, u), ot = offT(k, u, last), om = ob - bulge(k) * Math.min(1, (yt - yb_) / 2.5);
+          R0.push(Wp(u, ob, yb_)); R1.push(Wp(u, om, (yb_ + yt) / 2)); R2.push(Wp(u, ot, yt));
+          if (!last) LG.push(Wp(u, offB(k + 1, u), yt, ot)); else LG.push(Wp(u, 2.7, yt, 2.7));
+          const base = ROCKC[Math.floor(hh(k, sd, 51) * ROCK.length)], mossK = 0.14 + 0.3 * hh(k, sd, 52) * (0.5 + 0.5 * sm(u, k, 3)), nearW = yb_ < wy(u) + 1.6;
+          let cf = mixc(base, MOSS, mossK * Math.min(1, 0.4 + Math.max(0, (yb_ - wy(u)) / 30))); if (nearW) cf = mixc(cf, ALGAE, 0.5); if (last) cf = mixc(cf, SOIL, 0.55);
+          cols.push({ cf, lg: last ? mixc(SOIL, MOSS, 0.5) : mixc(base, MOSS2, 0.55 + 0.3 * hh(k, sd, 53)), last });
         }
+        if (!ok) continue;
+        const c0 = cols[0], c1 = cols[1], ref = outV;
+        quad(R0[0], R0[1], R1[1], R1[0], mulc(c0.cf, 0.8), mulc(c1.cf, 0.8), mulc(c1.cf, 1.0), mulc(c0.cf, 1.0), ref);
+        quad(R1[0], R1[1], R2[1], R2[0], mulc(c0.cf, 1.0), mulc(c1.cf, 1.0), mulc(c1.cf, 1.08), mulc(c0.cf, 1.08), ref);
+        quad(R2[0], R2[1], LG[1], LG[0], mulc(c0.lg, 0.95), mulc(c1.lg, 0.95), mulc(c1.lg, 0.82), mulc(c0.lg, 0.82), [0, 1, 0]);   // replat mousseux (ou terre sous l'herbe au sommet)
+        nq++;
+        if (nVeg < vegMax && !c0.last && TR && hh(k, i + Math.floor(u0), sd + 61) < 0.16) { nVeg++; const uu = (ua + uz) / 2, p = W(uu, (offT(k, uu, false) + offB(k + 1, uu)) / 2, y1 + 0.08); (hh(k, i, sd + 62) < 0.5 ? TR.fern : TR.bigleaf)(S.b, p[0], p[1], p[2], 1.3 + 1.4 * hh(k, i, sd + 63), r); }
       }
-      // plantes qui poussent sur les replats
-      if (nVeg < (o.veg === undefined ? 2 : o.veg) && !nearWater && wd > 1.8 && hh(b.k, b.xa, 61) < 0.2 && TR) { nVeg++; const p = W(b.cx, offL + rec + Dd * 0.55, yc + 0.1); (hh(b.k, b.xa, 62) < 0.5 ? TR.fern : TR.bigleaf)(S.b, p[0], p[1], p[2], 1.4 + 1.6 * hh(b.k, b.xa, 63), r); }
     }
-    // fond sombre derriere les blocs : aucune trouee, les joints paraissent profonds
+    // fond sombre derriere la paroi (sous la ligne d'eau on voit a travers l'eau)
     const bk = o.backBot === undefined ? bot - 6 : o.backBot, tpk = topf(um) + 0.2, uL = clamp ? uA : uA - 1, uR = clamp ? uB : uB + 1;
-    quad(W(uL, 3.6, bk), W(uR, 3.6, bk), W(uR, 3.6, tpk), W(uL, 3.6, tpk), mulc(DARK, 0.7), mulc(DARK, 0.7), mulc(DARK, 1.0), mulc(DARK, 1.0), outV);
-    const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(P2, 3)); geo.setAttribute('normal', new T3.Float32BufferAttribute(N2, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(C2, 3));
-    S.b.addGeometry(geo, new V(), Qi, null, 'tree:#ffffff'); geo.dispose();
-    if (P.length) { const g2 = new T3.BufferGeometry(); g2.setAttribute('position', new T3.Float32BufferAttribute(P, 3)); g2.setAttribute('normal', new T3.Float32BufferAttribute(N, 3)); g2.setAttribute('color', new T3.Float32BufferAttribute(C, 3)); g2.setAttribute('uv', new T3.Float32BufferAttribute(U, 2)); S.b.addGeometry(g2, new V(), Qi, null, 'jrock', undefined, [1, 1]); g2.dispose(); }
-    return nb + ti;
+    quad(Wp(uL, 3.0, bk), Wp(uR, 3.0, bk), Wp(uR, 3.0, tpk), Wp(uL, 3.0, tpk), mulc(DARK, 0.7), mulc(DARK, 0.7), mulc(DARK, 1.0), mulc(DARK, 1.0), outV);
+    if (!P.length) return 0;
+    const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(P, 3)); geo.setAttribute('normal', new T3.Float32BufferAttribute(N, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(C, 3)); geo.setAttribute('uv', new T3.Float32BufferAttribute(U, 2));
+    S.b.addGeometry(geo, new V(), Qi, null, 'rockface', undefined, [1, 1]); geo.dispose();
+    return nq;
   };
   // falaise de la berge, tranche [dc - 7, dc + 7[, cote sg (-1 / +1)
   R.cliffFace = (S, r, dc, sg) => {

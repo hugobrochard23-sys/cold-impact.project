@@ -194,63 +194,66 @@
     }
     const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff'); g.dispose();
   };
-  // v296 : FEUILLAGE EN CARTES : chaque masse de feuillage est un noyau sombre (volume) recouvert de dizaines de cartes decoupees portant une grappe de vraies feuilles (texture 'leaf'), orientees vers l'exterieur
-  // avec une normale douce (eclairage rond, sans facettes) et des teintes variees ; dessous et interieur plus sombres, dessus jamais surexpose
-  function LeafMesh() { this.p = []; this.n = []; this.u = []; this.c = []; }
-  LeafMesh.prototype.card = function (c, uA, vA, hw, hh, nrm, col, colLow) {
-    const k = [[-1, -1, 0, 0], [1, -1, 1, 0], [1, 1, 1, 1], [-1, 1, 0, 1]], P = k.map((q) => [c[0] + uA[0] * hw * q[0] + vA[0] * hh * q[1], c[1] + uA[1] * hw * q[0] + vA[1] * hh * q[1], c[2] + uA[2] * hw * q[0] + vA[2] * hh * q[1], q[2], q[3]]);
-    for (const i of [0, 1, 2, 0, 2, 3]) { const q = P[i]; this.p.push(q[0], q[1], q[2]); this.n.push(nrm[0], nrm[1], nrm[2]); this.u.push(q[3], q[4]); const cc = q[4] > 0.5 ? col : colLow; this.c.push(cc[0], cc[1], cc[2]); }
+  // v297 : ARBRE DE LA JUNGLE EN ETAGES PLEINS, comme les sapins et les palmiers : un tronc qui se divise en grosses branches courbes, chaque branche porte une masse de feuillage faite de 2 a 3 etages
+  // (disques epais a bord lobe, dessus legerement bombe, dessous en cone sombre), ombres par facettes avec un degrade du sombre vers le vert franc. Aucune texture, aucune carte : formes pleines et lisibles de loin ;
+  // l'interieur n'est jamais visible. Les racines sont courbes et restent epaisses jusqu'au bout ; les lianes sont de simples fils.
+  const JUN = [['#1b4a2a', '#3f8a3e'], ['#20532e', '#4c9a44'], ['#1a4527', '#38833a'], ['#245a2c', '#58a048'], ['#1e4d2b', '#44903f']];
+  // etage de feuillage : K lobes (pointes et creux en alternance), le bord le plus eloigne du tronc retombe (dx, dz = direction vers l'exterieur)
+  function pad(m, cx, cy, cz, R, T, rnd, cTop, cRim, cUnder, K, dx, dz, full) {
+    const rim = [], inner = [], ph = rnd() * 6.2832;
+    for (let k = 0; k < K; k++) {
+      const a = ph + k / K * 6.2832 + rr(rnd, -0.1, 0.1), lobe = k % 2 === 0, ro = R * (lobe ? rr(rnd, 0.97, 1.16) : rr(rnd, 0.66, 0.82)), droop = -0.16 * ro * (Math.cos(a) * dx + Math.sin(a) * dz);
+      rim.push([cx + Math.cos(a) * ro, cy + T * (lobe ? -0.04 : 0.1) + rr(rnd, -0.05, 0.05) * T + droop, cz + Math.sin(a) * ro]);
+      const ri = R * rr(rnd, 0.44, 0.58); inner.push([cx + Math.cos(a + 0.16) * ri, cy + T * rr(rnd, 0.8, 0.96) + droop * 0.3, cz + Math.sin(a + 0.16) * ri]);
+    }
+    const apex = [cx, cy + T * 1.1, cz], under = [cx, cy - T * 0.55, cz];
+    for (let k = 0; k < K; k++) {
+      const j = (k + 1) % K, lobe = k % 2 === 0, ct = mul(cTop, 0.92 + 0.16 * rnd()), cr = mul(cRim, lobe ? 0.94 : 1.06);
+      if (full) { m.tri(apex, inner[k], inner[j], mul(ct, 1.04), ct, ct); m.quad(inner[k], rim[k], rim[j], inner[j], ct, cr, cr, ct); } else m.tri(apex, rim[k], rim[j], mul(ct, 1.05), cr, cr);
+      m.tri(under, rim[j], rim[k], cUnder, mul(cUnder, 1.2), mul(cUnder, 1.2));
+    }
+  }
+  // geometrie d'un arbre lointain (2 etages) pour les collines : instanciee, teintee par instance
+  T.padGeometry = function (K) {
+    const m = new Mesh(), rnd = (() => { let s = 7; const f = () => (s = (s * 16807) % 2147483647) / 2147483647; f.between = (r) => r[0] + (r[1] - r[0]) * f(); return f; })();
+    pad(m, 0, 0, 0, 1, 0.3, rnd, [1, 1, 1], [0.82, 0.82, 0.82], [0.42, 0.42, 0.42], K || 9, 0, 0, true); pad(m, 0.05, 0.22, 0.03, 0.66, 0.28, rnd, [1, 1, 1], [0.84, 0.84, 0.84], [0.5, 0.5, 0.5], K || 9, 0, 0, false);
+    return m.geo();
   };
-  LeafMesh.prototype.geo = function () {
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(this.p, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(this.n, 3));
-    g.setAttribute('uv', new THREE.Float32BufferAttribute(this.u, 2)); g.setAttribute('color', new THREE.Float32BufferAttribute(this.c, 3)); return g;
-  };
-  const nrmz = (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
-  const crossv = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-  const LEAFTONE = [[0.62, 0.84, 0.5], [0.7, 0.9, 0.52], [0.55, 0.78, 0.5], [0.8, 0.92, 0.55], [0.6, 0.8, 0.62]];
-  // liane : fil courbe (3 segments) avec quelques petites grappes de feuilles ; plus de triangles
+  // liane : simple fil courbe (2 segments)
   T.vine = function (b, x, y, z, len, rnd, o) {
-    o = o || {}; const m = new Mesh(), L = new LeafMesh(), dx = rr(rnd, -1.2, 1.2), dz = rr(rnd, -1.2, 1.2); let prev = [x, y, z];
-    for (let i = 1; i <= 3; i++) { const t = i / 3, c = [x + dx * Math.sin(t * 2.1) + rr(rnd, -0.2, 0.2), y - len * t, z + dz * Math.sin(t * 2.1) + rr(rnd, -0.2, 0.2)]; m.tube(prev, 0.09 * (1.1 - 0.4 * t), c, 0.09 * (1.1 - 0.5 * t), hex('#3a5a2a'), hex('#2c4a22'), 4); if (i < 3 && rnd() < 0.85) { const a = rnd() * 6.28; L.card([c[0], c[1] - 0.2, c[2]], [Math.cos(a), 0, Math.sin(a)], [0, 1, 0], 0.7, 0.8, [0, 0.8, 0.6], [0.6, 0.85, 0.45], [0.4, 0.62, 0.34]); } prev = c; }
+    o = o || {}; const m = new Mesh(), dx = rr(rnd, -1, 1), dz = rr(rnd, -1, 1), p1 = [x + dx * 0.6, y - len * 0.5, z + dz * 0.6], p2 = [x + dx, y - len, z + dz];
+    m.tube([x, y, z], 0.08, p1, 0.07, hex('#3a5a2a'), hex('#33522a'), 3); m.tube(p1, 0.07, p2, 0.06, hex('#33522a'), hex('#2c4a22'), 3);
     const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff', o.tint); g.dispose();
-    const g2 = L.geo(); b.batch('leaf').shadow = false; b.addGeometry(g2, new V(0, 0, 0), Q, null, 'leaf'); g2.dispose();
   };
   T.jungle = function (b, x, y, z, h, rnd, o) {
-    if (inWater(b, x, z)) return; o = o || {}; const far = !!o.far, m = new Mesh(), LF = new LeafMesh(), pal = JUNGLE[Math.floor(rnd() * JUNGLE.length)], bark = hex(['#6a5238', '#5a4632', '#7a6044', '#625040'][Math.floor(rnd() * 4)]), seed = rnd() * 100, style = rnd() < 0.42 ? 0 : rnd() < 0.62 ? 1 : 2;
+    if (inWater(b, x, z)) return; o = o || {}; const far = !!o.far, m = new Mesh(), bark = hex(['#6a5238', '#5a4632', '#7a6044', '#625040'][Math.floor(rnd() * 4)]), seed = rnd() * 100, style = rnd() < 0.4 ? 0 : rnd() < 0.62 ? 1 : 2;
     const moss = hex('#4a6a34'), lean = [rr(rnd, -0.05, 0.05) * h, rr(rnd, -0.05, 0.05) * h], r0 = h * 0.03 + 0.55, topY = y + h * (style === 0 ? 0.6 : style === 1 ? 0.55 : 0.5);
     const tb = (t) => [x + lean[0] * t * t + 0.5 * Math.sin(t * 3 + seed) * r0 * 0.5, y + (topY - y) * t, z + lean[1] * t * t + 0.5 * Math.cos(t * 2.4 + seed) * r0 * 0.5];
-    { let prev = [x, y - 0.7, z]; for (let i = 1; i <= 4; i++) { const t = i / 4, c = tb(t), rad = r0 * (1.55 - 0.9 * t) * (i === 1 ? 1.15 : 1); m.tube(prev, i === 1 ? r0 * 1.9 : r0 * (1.55 - 0.9 * (i - 1) / 4), c, rad, lerp3(mul(bark, 0.62), moss, i === 1 ? 0.35 : 0.12), mul(bark, 0.7 + 0.12 * t), i < 3 ? 9 : 7); prev = c; } }
-    const nb = far ? 4 : 5 + Math.floor(rnd() * 3), ph = rnd() * 6.28;
-    for (let k = 0; k < nb; k++) {   // contreforts en voile et racines qui rampent sur le sol
-      const a = ph + k / nb * 6.2832 + rr(rnd, -0.2, 0.2), fw = h * rr(rnd, 0.1, 0.19), fh = h * rr(rnd, 0.14, 0.26), ca = Math.cos(a), sa = Math.sin(a), px = -sa, pz = ca, bx = x + ca * r0 * 1.1, bz = z + sa * r0 * 1.1, tx = x + ca * (r0 * 1.1 + fw), tz = z + sa * (r0 * 1.1 + fw), wd = r0 * 0.3, cb = mul(bark, 0.6), ct = mul(bark, 0.95);
-      m.quad([bx - px * wd, y + fh, bz - pz * wd], [bx + px * wd, y + fh, bz + pz * wd], [tx + px * wd * 0.6, y - 0.3, tz + pz * wd * 0.6], [tx - px * wd * 0.6, y - 0.3, tz - pz * wd * 0.6], ct, ct, cb, cb);
-      if (!far) { const L2 = fw * rr(rnd, 1.2, 1.9), a2 = a + rr(rnd, -0.3, 0.3); m.tube([tx, y + 0.25, tz], r0 * 0.24, [x + Math.cos(a2) * (r0 * 1.1 + L2), y - 0.1, z + Math.sin(a2) * (r0 * 1.1 + L2)], r0 * 0.1, mul(bark, 0.7), mul(bark, 0.55), 4); }
+    { let prev = [x, y - 0.7, z]; for (let i = 1; i <= 3; i++) { const t = i / 3, c = tb(t), rad = r0 * (1.55 - 0.9 * t) * (i === 1 ? 1.15 : 1); m.tube(prev, i === 1 ? r0 * 1.9 : r0 * (1.55 - 0.9 * (i - 1) / 3), c, rad, lerp3(mul(bark, 0.62), moss, i === 1 ? 0.35 : 0.12), mul(bark, 0.7 + 0.12 * t), i < 2 ? 8 : 6); prev = c; } }
+    // racines : courbes, larges a la base et encore epaisses au bout (enfoncees dans le sol), jamais en pointe
+    const nb = far ? 2 : 4, ph = rnd() * 6.28;
+    for (let k = 0; k < nb; k++) {
+      const a = ph + k / nb * 6.2832 + rr(rnd, -0.2, 0.2), L = h * rr(rnd, 0.13, 0.22), ca = Math.cos(a), sa = Math.sin(a), px = -sa, pz = ca, bend = L * rr(rnd, -0.3, 0.3), q = (f, up, side) => [x + ca * (r0 * 0.9 + L * f) + px * bend * side, y + up, z + sa * (r0 * 0.9 + L * f) + pz * bend * side];
+      const P0 = q(0, r0 * 1.2, 0), P1 = q(0.4, r0 * 0.5, 0.6), P2 = q(0.75, r0 * 0.1, 1), P3 = q(1, -0.35, 0.8), c0 = mul(bark, 0.7), c1 = mul(bark, 0.55), sg = 4;
+      m.tube(P0, r0 * 0.7, P2, r0 * 0.5, c0, c0, sg); m.tube(P2, r0 * 0.5, P3, r0 * 0.4, c0, c1, sg);
     }
-    const CR = style === 0 ? [[0, 0.16, 0, 0.27], [0.34, 0.03, 0.04, 0.22], [-0.3, 0.05, 0.14, 0.23], [0.06, 0.04, -0.34, 0.22], [-0.12, 0.05, 0.3, 0.2], [0.24, 0.05, 0.28, 0.19], [-0.27, 0.03, -0.24, 0.2]]
-      : style === 1 ? [[0, 0.24, 0, 0.3], [0.22, 0.1, 0.06, 0.24], [-0.2, 0.12, 0.12, 0.25], [0.06, 0.1, -0.24, 0.23], [-0.08, 0.16, 0.22, 0.21], [0.16, 0.3, -0.08, 0.2]]
-      : [[0, 0.1, 0, 0.26], [0.3, 0.02, 0.08, 0.21], [-0.28, 0.04, 0.0, 0.22], [0.04, 0.03, 0.3, 0.2], [-0.04, 0.05, -0.3, 0.2], [0.2, 0.14, -0.2, 0.18]];
-    const nc = far ? 3 : Math.min(CR.length, 5), top0 = tb(1), tone = LEAFTONE[Math.floor(rnd() * LEAFTONE.length)];
-    for (let i = 0; i < nc; i++) {
-      const c = CR[i], rad = c[3] * h * rr(rnd, 0.9, 1.12), cx = top0[0] + c[0] * h, cz = top0[2] + c[2] * h, flat = style === 0 ? 0.46 : 0.6, cy = topY + c[1] * h + rad * 0.2;
-      m.tube([top0[0], topY - h * 0.04, top0[2]], r0 * 0.36, [cx, cy - rad * 0.3, cz], r0 * 0.16, mul(bark, 0.9), mul(bark, 1.0), 4);   // branche maitresse
-      blob(m, cx, cy - rad * 0.08, cz, rad * 0.36, flat + 0.05, rnd, hex('#1f4a26'), hex('#34702f'), seed + i * 7.1, true);   // noyau sombre : le volume sous les feuilles
-      const nCard = far ? 6 : 16 + Math.floor(rnd() * 4);
-      for (let k = 0; k < nCard; k++) {
-        const phi = rnd() * 6.2832, ct = -0.25 + 1.25 * Math.pow(rnd(), 0.75), st = Math.sqrt(Math.max(0, 1 - ct * ct)), dir = [st * Math.cos(phi), ct, st * Math.sin(phi)], rr_ = k % 2 ? 0.86 + 0.2 * rnd() : 0.42 + 0.3 * rnd();
-        const pos = [cx + dir[0] * rad * rr_, cy + dir[1] * rad * flat * 1.25 * rr_, cz + dir[2] * rad * rr_];
-        const t1 = nrmz(crossv(dir, [0, 1, 0.001])), t2 = crossv(dir, t1), psi = rnd() * 6.2832, cp = Math.cos(psi), sp = Math.sin(psi);
-        const uA = [t1[0] * cp + t2[0] * sp, t1[1] * cp + t2[1] * sp, t1[2] * cp + t2[2] * sp], vA = nrmz([-t1[0] * sp + t2[0] * cp, -t1[1] * sp + t2[1] * cp - 0.25, -t1[2] * sp + t2[2] * cp]);
-        const sz = rad * rr(rnd, 0.66, 0.92), shadeK = 0.55 + 0.4 * Math.max(0, Math.min(1, ct + 0.45)), j = 0.9 + 0.2 * rnd(), col = [tone[0] * shadeK * j, tone[1] * shadeK * j, tone[2] * shadeK * j];
-        LF.card(pos, uA, vA, sz, sz * 0.9, nrmz([dir[0], dir[1] * 0.7 + 0.3, dir[2]]), col, mul(col, 0.68));
-      }
-    }
-    if (!far) {
-      for (let k = 0; k < 2; k++) { const a = rnd() * 6.28, bx = top0[0] + Math.cos(a) * r0 * 0.7, bz = top0[2] + Math.sin(a) * r0 * 0.7, by = topY - h * rr(rnd, 0.03, 0.14); frond(m, bx, by, bz, a, h * 0.05, h * 0.03, h * 0.04, h * 0.022, hex('#2a6a30'), hex('#7ac85a'), 3); }   // epiphytes sur les branches
-      if (style === 2) for (let k = 0; k < 4; k++) { const a = rnd() * 6.28, rd = h * rr(rnd, 0.14, 0.3), ex = top0[0] + Math.cos(a) * rd, ez = top0[2] + Math.sin(a) * rd, gx = x + Math.cos(a) * rd * 1.1, gz = z + Math.sin(a) * rd * 1.1; m.tube([ex, topY + h * 0.02, ez], 0.22, [(ex + gx) / 2 + rr(rnd, -0.5, 0.5), y + (topY - y) * 0.45, (ez + gz) / 2 + rr(rnd, -0.5, 0.5)], 0.17, mul(bark, 0.75), mul(bark, 0.7), 5); m.tube([(ex + gx) / 2, y + (topY - y) * 0.45, (ez + gz) / 2], 0.17, [gx, y - 0.3, gz], 0.24, mul(bark, 0.7), mul(bark, 0.55), 5); }   // banian : racines aeriennes
+    // masses de feuillage portees par de grosses branches
+    const top0 = tb(1), R0 = h * (style === 1 ? 0.2 : 0.22), MS = [];
+    if (style === 0) { const n = far ? 3 : 4; for (let i = 0; i < n; i++) { const a = i / n * 6.2832 + 0.4, rr_ = h * 0.3; MS.push([Math.cos(a) * rr_, h * (0.1 + 0.03 * Math.sin(i * 2.1)), Math.sin(a) * rr_, R0, 1 + (i % 2)]); } MS.push([0, h * 0.2, 0, R0 * 1.1, 2]); }
+    else if (style === 1) { const n = far ? 3 : 4; for (let i = 0; i < n; i++) { const a = i / n * 6.2832 + 1.1, rr_ = h * 0.2; MS.push([Math.cos(a) * rr_, h * (0.11 + 0.05 * (i % 2)), Math.sin(a) * rr_, R0, 1 + (i % 2)]); } MS.push([0, h * 0.3, 0, R0 * 1.05, 2]); }
+    else { const n = far ? 3 : 4; for (let i = 0; i < n; i++) { const a = i / n * 6.2832 + 0.2, rr_ = h * 0.36; MS.push([Math.cos(a) * rr_, h * (0.03 + 0.03 * Math.cos(i * 1.7)), Math.sin(a) * rr_, R0 * 0.95, 1 + (i % 2)]); } MS.push([0, h * 0.12, 0, R0 * 1.05, 2]); }
+    const pal = JUN[Math.floor(rnd() * JUN.length)], K = far ? 6 : 8, vines = [];
+    for (const ms of MS) {
+      const ex = top0[0] + ms[0] + lean[0] * 0.3, ey = topY + ms[1], ez = top0[2] + ms[2] + lean[1] * 0.3, Rm = ms[3] * rr(rnd, 0.9, 1.1), od = Math.hypot(ms[0], ms[2]) || 1, dx = ms[0] / od, dz = ms[2] / od;
+      const mid = [(top0[0] + ex) / 2, (topY + ey) / 2 - Rm * 0.08, (top0[2] + ez) / 2];   // branche maitresse courbe, epaisse
+      m.tube([top0[0], topY - h * 0.05, top0[2]], r0 * 0.5, mid, r0 * 0.36, mul(bark, 0.9), mul(bark, 0.95), 4); m.tube(mid, r0 * 0.36, [ex, ey - Rm * 0.12, ez], r0 * 0.24, mul(bark, 0.95), mul(bark, 1.0), 4);
+      const dark = hex(pal[0]), light = lerp3(hex(pal[1]), hex(JUN[Math.floor(rnd() * JUN.length)][1]), 0.25), cTop = lerp3(dark, light, 0.86), cRim = lerp3(dark, light, 0.5), cUnder = mul(dark, 0.78);
+      const tiers = far ? 1 : ms[4];
+      for (let t = 0; t < tiers; t++) pad(m, ex + rr(rnd, -0.2, 0.2) * Rm * t, ey + t * Rm * 0.34, ez + rr(rnd, -0.2, 0.2) * Rm * t, Rm * (1 - 0.3 * t), Rm * (0.34 - 0.03 * t), rnd, cTop, cRim, cUnder, K, dx, dz, t === 0);
+      if (!far && rnd() < 0.5) vines.push([ex + dx * Rm * 0.8, ey - Rm * 0.1, ez + dz * Rm * 0.8]);
     }
     const g = m.geo(); b.addGeometry(g, new V(0, 0, 0), Q, null, 'tree:#ffffff', o.tint); g.dispose();
-    const g2 = LF.geo(); b.batch('leaf').shadow = false; b.addGeometry(g2, new V(0, 0, 0), Q, null, 'leaf', o.tint); g2.dispose();
-    if (!far) for (let k = 0; k < 2; k++) { const a = rnd() * 6.28, rd = h * rr(rnd, 0.1, 0.28); T.vine(b, top0[0] + Math.cos(a) * rd, topY + h * 0.04, top0[2] + Math.sin(a) * rd, h * rr(rnd, 0.2, 0.4), rnd, o); }
+    for (const v of vines.slice(0, 2)) T.vine(b, v[0], v[1], v[2], h * rr(rnd, 0.18, 0.32), rnd, o);
   };
 
   CC.Trees = T;

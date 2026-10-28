@@ -91,12 +91,11 @@
   };
   // cascade laterale : un affluent qui se jette dans le fleuve du haut de la paroi
   const sideFall = (S, dc, sg, hw, top, r) => {
-    const x = sg * (hw + 0.8), h = top - WY(dc), wy = WY(dc);   // v296 : colle a la paroi en blocs ; ecume blanche, remous et vapeur au pied
-    S.bx(dc, x, A(S, dc, (top + wy) / 2), 0.4, h, 6.5, 'waterSurf', '#f4fbff', false); S.bx(dc, x - sg * 1.4, A(S, dc, top - 1), 3.4, 1.8, 7.5, 'jrock', '#9a9a86', true);
-    for (let k = 0; k < 5; k++) S.glow(dc, x - sg * 2, A(S, dc, wy + 0.6 + k * 2.6), '#ffffff', 18 - k * 2); S.ball(dc, x - sg * 3, A(S, dc, wy + 0.4), 3.6, 'waterSurf', '#e8f6ff', false, 0.5);
-    S.bx(dc, x - sg * 3.6, A(S, dc, wy + 0.14), 9, 0.05, 10, 'waterSurf', '#ffffff', false);           // nappe d'ecume
-    for (let k = 0; k < 4; k++) S.bx(dc + r.between([-4, 4]), x - sg * r.between([2, 8]), A(S, dc, wy + 0.18 + k * 0.01), r.between([2.4, 5]), 0.05, r.between([2.4, 5]), 'waterSurf', '#f4fbff', false);   // remous
-    for (let k = 0; k < 3; k++) S.glow(dc, x - sg * (2.5 + k * 2.4), A(S, dc, wy + 2.2 + k), '#f2fbff', 36 - k * 6);   // vapeur
+    const x = sg * (hw + 0.8), h = top - WY(dc), wy = WY(dc);   // v297 : colle a la paroi ; au pied, ecume mate gris-blanc et vapeur douce (plus de halos brillants)
+    S.bx(dc, x, A(S, dc, (top + wy) / 2), 0.4, h, 6.5, 'waterSurf', '#f4fbff', false); S.bx(dc, x - sg * 1.4, A(S, dc, top - 1), 3.4, 1.8, 7.5, 'rockface', '#c8c4b4', true);
+    for (let k = 0; k < 4; k++) S.glow(dc, x - sg * 2, A(S, dc, wy + 0.8 + k * 3), '#ffffff', 9 - k);   // gouttes d'eau le long de la chute
+    for (let k = 0; k < 5; k++) S.bx(dc + r.between([-3.5, 3.5]), x - sg * r.between([1.6, 6.5]), A(S, dc, wy + 0.13 + k * 0.012), r.between([1.6, 4.2]), 0.05, r.between([1.6, 4.2]), 'col:#d6e3e7', undefined, false);   // nappes d'ecume
+    S.glow(dc, x - sg * 3.5, A(S, dc, wy + 2.5), '#52666c', 28);   // vapeur : un halo large et sombre, presque invisible
   };
   // gardien colossal assis : socle, jambes, torse, bras sur les genoux, tete a diademe etage, yeux creux ; un par rive de la lagune
   const guardian = (S, dc, sg, yBase, r) => {
@@ -139,8 +138,8 @@
           if (r() < 0.55) rockC(S, dc + r.between([-5, 5]), sg * (face - r.between([0.8, 3.2])), WY(dc) - 1.2, r.between([1.8, 4]), r, pk(r, STONE), true);
           if (r() < 0.5) plant(S, TR.reeds, dc + r.between([-5, 5]), sg * (face - r.between([0.4, 2.4])), WY(dc) - 0.3, r.between([1.6, 2.6]), r);
           // vegetation du sommet : canopee, palmiers sur le bord, sous-bois
-          if (r() < 0.55) plant(S, TR.jungle, dc + r.between([-5, 5]), sg * (face + r.between([6, 22])), top + 0.2, r.between([20, 34]), r, {});
-          if (r() < 0.35) plant(S, TR.jungle, dc + r.between([-6, 6]), sg * (face + r.between([22, 70])), top + 0.2, r.between([22, 38]), r, { far: true });
+          if (r() < 0.5) plant(S, TR.jungle, dc + r.between([-5, 5]), sg * (face + r.between([6, 22])), top + 0.2, r.between([20, 34]), r, {});
+          if (r() < 0.3) plant(S, TR.jungle, dc + r.between([-6, 6]), sg * (face + r.between([22, 70])), top + 0.2, r.between([22, 38]), r, { far: true });
           if (r() < 0.5) plant(S, TR.palm, dc + r.between([-5, 5]), sg * (face + r.between([1.8, 7])), top + 0.2, r.between([9, 15]), r, {});
           for (let k = 0; k < 2; k++) if (r() < 0.7) plant(S, r() < 0.5 ? TR.fern : TR.bigleaf, dc + r.between([-6, 6]), sg * (face + r.between([0.8, 24])), top + 0.2, r.between([1.6, 2.8]), r);
         }

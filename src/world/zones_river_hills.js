@@ -73,11 +73,11 @@
     const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(col, 3)); geo.setAttribute('uv', new T3.Float32BufferAttribute(uv, 2)); geo.setIndex(ix); geo.computeVertexNormals();
     const grp = new T3.Group(), mesh = new T3.Mesh(geo, mat); mesh.frustumCulled = false; grp.add(mesh); const st = strip(run, mat); grp.add(st);
     // domes d'arbres sur les collines (une seule instance, 20 facettes chacun)
-    const NT = 220, ico = new T3.IcosahedronGeometry(1, 0), inst = new T3.InstancedMesh(ico, new T3.MeshLambertMaterial({ color: '#ffffff' }), NT), M = new T3.Matrix4(), Qn = new T3.Quaternion(), Sc = new T3.Vector3(), Pp = new T3.Vector3(), Cc = new T3.Color();
+    const NT = 220, ico = CC.Trees.padGeometry(9), inst = new T3.InstancedMesh(ico, new T3.MeshLambertMaterial({ color: '#ffffff', vertexColors: true }), NT), M = new T3.Matrix4(), Qn = new T3.Quaternion(), Sc = new T3.Vector3(), Pp = new T3.Vector3(), Cc = new T3.Color();
     let ni = 0; for (let t = 0; t < NT * 6 && ni < NT; t++) {
       const x = x0 + hsh(t, 1.3) * (x1 - x0), z = z0 + hsh(t, 7.9) * (z1 - z0); probe(H, x, z, 0, H.n - 1); if (!out.ok || out.s < S1 + 22 || out.s > SMAX - 30) continue;
-      const rad = 8 + 9 * hsh(t, 3.1), y = out.y + rad * 0.15; Qn.setFromEuler(new T3.Euler(hsh(t, 5) * 0.4, hsh(t, 6) * 6.28, hsh(t, 8) * 0.4)); Sc.set(rad * (0.9 + 0.3 * hsh(t, 2)), rad * (0.62 + 0.2 * hsh(t, 4)), rad * (0.9 + 0.3 * hsh(t, 9))); Pp.set(x, y, z);
-      M.compose(Pp, Qn, Sc); inst.setMatrixAt(ni, M); Cc.setHSL(0.27 + 0.05 * hsh(t, 11), 0.38 + 0.15 * hsh(t, 12), 0.16 + 0.09 * hsh(t, 13)); inst.setColorAt(ni, Cc); ni++;
+      const rad = 9 + 8 * hsh(t, 3.1), y = out.y + rad * 0.5; Qn.setFromEuler(new T3.Euler(0, hsh(t, 6) * 6.28, 0)); Sc.set(rad * (0.9 + 0.3 * hsh(t, 2)), rad * (0.9 + 0.3 * hsh(t, 4)), rad * (0.9 + 0.3 * hsh(t, 9))); Pp.set(x, y, z);
+      M.compose(Pp, Qn, Sc); inst.setMatrixAt(ni, M); Cc.setHSL(0.3 + 0.04 * hsh(t, 11), 0.42 + 0.12 * hsh(t, 12), 0.26 + 0.1 * hsh(t, 13)); inst.setColorAt(ni, Cc); ni++;
     }
     inst.count = ni; inst.instanceMatrix.needsUpdate = true; if (inst.instanceColor) inst.instanceColor.needsUpdate = true; inst.frustumCulled = false; grp.add(inst);
     g.scene.add(grp); return { grp, H, mesh, st, inst };

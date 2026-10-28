@@ -9,7 +9,7 @@
     facadeDark: [12, 14], facadeGlass: [12, 14], facadeSand: [12, 14], facadeBrick: [12, 14], facadeMint: [12, 14], facadeNavy: [12, 14], facadeLilac: [12, 14], facadeWhite: [12, 14], facadeOchre: [12, 14], storefront: [8, 4.2], brick: [2.6, 2.6], planks: [2, 2], grass: [4, 4], rock: [6, 6], hazard: [1.2, 1.2],
     metal: [2, 2], tankGreen: [2, 2], camo: [3, 3], blueFloor: [2, 2], cream: [2, 2], bark: [1.2, 2.4],
     houseWall: [2, 2], roofBrown: [1.5, 1.5], white: [14, 14], dirt: [11, 11], rail: [1, 1], asphalt: [4, 4], grass: [12, 12],
-    sand: [12, 12], jrock: [3, 3], evoGrass: [7, 7], leaf: [1, 1], water: [15, 15], waterSurf: [15, 15], corrugated: [2.4, 2.6], fabric: [3.2, 3.2], chainlink: [2, 2],   // v032 : générateur de missions
+    sand: [12, 12], jrock: [3, 3], rockface: [6, 6], evoGrass: [7, 7], water: [15, 15], waterSurf: [15, 15], corrugated: [2.4, 2.6], fabric: [3.2, 3.2], chainlink: [2, 2],   // v032 : générateur de missions
   };
 
   function make(name, w, h, draw) {
@@ -139,27 +139,6 @@
       for (let k = 0; k < 2600; k++) { const x = Math.floor(r() * w), y = Math.floor(r() * h), L = 2 + Math.floor(r() * 4), dk = r() < 0.5, lean = r() < 0.5 ? -1 : 1; for (let j = 0; j < L; j++) dot(g, w, (x + Math.round(j * 0.3 * lean) + w) % w, (y - j + h) % h, 1, 1, dk ? 'rgba(28,62,22,0.55)' : 'rgba(170,205,100,' + (0.35 + 0.1 * (L - j)) + ')'); }
       for (let k = 0; k < 40; k++) dot(g, w, Math.floor(r() * w), Math.floor(r() * h), 2, 2, pickCol(r, ['#f2efe0', '#f5d76a', '#e9e6f4']));
     },
-    // v296 : GRAPPE DE FEUILLES (arbres de la jungle) : fond transparent, quelques frondes pennees (rachis, folioles pointues de deux verts, nervure) ; posee sur des cartes autour des masses de feuillage
-    leaf: (g, w, h, r) => {
-      g.clearRect(0, 0, w, h);
-      const greens = ['#2a5e2c', '#2f6a2c', '#3a7a30', '#478a34', '#58983a', '#68a63e', '#7bb446'];
-      const leaflet = (x, y, ang, len, wid, col) => {
-        g.save(); g.translate(x, y); g.rotate(ang);
-        g.fillStyle = col; g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(wid, -len * 0.38, 0, -len); g.quadraticCurveTo(-wid, -len * 0.38, 0, 0); g.fill();
-        g.fillStyle = 'rgba(12,40,16,0.30)'; g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(-wid, -len * 0.38, 0, -len); g.quadraticCurveTo(-wid * 0.2, -len * 0.4, 0, 0); g.fill();
-        g.strokeStyle = 'rgba(210,235,150,0.45)'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -len * 0.92); g.stroke(); g.restore();
-      };
-      const fronds = 8;
-      for (let b = 0; b < fronds; b++) {
-        const a = -Math.PI / 2 + (b - (fronds - 1) / 2) * 0.36 + (r() - 0.5) * 0.18, L = 46 + r() * 34, bx = w / 2 + (r() - 0.5) * 18, by = h - 4 - r() * 8, n = 8 + Math.floor(r() * 4), col0 = greens[Math.floor(r() * greens.length)];
-        g.strokeStyle = 'rgba(40,70,26,0.9)'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(bx, by); g.lineTo(bx + Math.cos(a) * L, by + Math.sin(a) * L); g.stroke();
-        for (let i = 1; i <= n; i++) {
-          const t = i / (n + 0.5), px = bx + Math.cos(a) * L * t, py = by + Math.sin(a) * L * t, sz = (1.05 - 0.55 * t) * (13 + r() * 5);
-          for (const sg of [-1, 1]) leaflet(px, py, a + Math.PI / 2 + sg * (0.75 + (r() - 0.5) * 0.3), sz, sz * 0.34, r() < 0.7 ? col0 : greens[Math.floor(r() * greens.length)]);
-        }
-        leaflet(bx + Math.cos(a) * L, by + Math.sin(a) * L, a + Math.PI / 2, 12, 4, col0);
-      }
-    },
     // v126 : HERBE EN TOUFFES (mode évolution) — niveaux de gris : le sol la teinte par sommet ; des centaines de touffes de brins effilés (clairs, sombres) sur un fond en plaques
     evoGrass: (g, w, h, r) => {
       const F = fbmField(w, r, [3, 6, 12, 24], [0.4, 0.3, 0.2, 0.1]);
@@ -249,6 +228,12 @@
         y += rh;
       }
       for (let k = 0; k < 12; k++) { g.fillStyle = 'rgba(30,40,28,0.35)'; g.fillRect(Math.floor(r() * w), Math.floor(r() * h), 1, 3 + Math.floor(r() * 6)); }   // coulees sombres
+    },
+    rockface: (g, w, h, r) => {   // v297 : paroi de falaise : gris clair tres calme (la couleur vient des sommets), quelques lits fins horizontaux, de rares fissures et de petits eclats ; se raccorde sur ses bords
+      noiseFill(g, w, h, r, '#e4e0d4', 5);
+      for (let y = 6; y < h; y += 9 + Math.floor(r() * 9)) { g.fillStyle = r() < 0.5 ? 'rgba(120,112,96,0.20)' : 'rgba(255,255,248,0.22)'; g.fillRect(0, y, w, 1); }
+      for (let k = 0; k < 11; k++) { const x = Math.floor(r() * w), y0 = Math.floor(r() * h), len = 6 + Math.floor(r() * 18); g.fillStyle = 'rgba(70,66,54,0.30)'; g.fillRect(x, y0, 1, len); g.fillRect(x + 1, y0 + len, 1, 2); }
+      for (let k = 0; k < 10; k++) { g.fillStyle = r() < 0.5 ? 'rgba(90,84,70,0.22)' : 'rgba(255,255,250,0.26)'; g.fillRect(Math.floor(r() * w), Math.floor(r() * h), 2 + Math.floor(r() * 3), 1 + Math.floor(r() * 2)); }
     },
     hazard: (g, w, h) => {
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) px(g, x, y, ((x + y) % 16) < 8 ? '#f0b81c' : '#1c1a18');
@@ -377,10 +362,9 @@
       const d = defs[name];
       if (!d) throw new Error('Texture inconnue : ' + name);
       const nat = name === 'grass' || name === 'dirt' || name === 'white' || name === 'sand' || name === 'evoGrass';   // v117 : sols naturels
-      const big = nat ? [256, 256] : name === 'leaf' ? [128, 128] : /^facade/.test(name) ? [128, 128] : name === 'storefront' ? [64, 32] : name === 'fabric' ? [64, 64] : [32, 32];   // design : façades 4 × 4 travées
+      const big = nat ? [256, 256] : name === 'rockface' ? [64, 64] : /^facade/.test(name) ? [128, 128] : name === 'storefront' ? [64, 32] : name === 'fabric' ? [64, 64] : [32, 32];   // design : façades 4 × 4 travées
       cache[name] = make(name, big[0], big[1], d);
       if (nat) { cache[name].magFilter = THREE.LinearFilter; cache[name].anisotropy = 8; }
-      if (name === 'leaf') { cache[name].magFilter = THREE.LinearFilter; cache[name].wrapS = cache[name].wrapT = THREE.ClampToEdgeWrapping; cache[name].anisotropy = 4; }
     }
     return cache[name];
   };
