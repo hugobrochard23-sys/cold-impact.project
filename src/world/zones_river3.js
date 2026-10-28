@@ -21,13 +21,17 @@
   const lamC = (c) => new T3.MeshLambertMaterial({ color: c });
   const col = (S, dc, lx, y, w, h, dd, tint, collide) => S.bx(dc, lx, y, w, h, dd, 'col:' + tint, undefined, collide);
 
-  // pont : tablier + piles espacees (on passe entre les piles, ou on saute par-dessus)
+  // pont (v302) : tablier BOMBE (arc : plus haut au milieu), tronçons inclines selon la pente (raides aux bouts, droits au sommet), garde-corps continus qui suivent la courbe, piles evasees ; on passe entre les piles, ou on saute par-dessus
+  const tb = (S, dc, lx, yAbs, w, h, dd, roll, mat, tint, col) => { if (!S.inClip(dc)) return; return S.b.box({ p: S.T.at(dc, lx, fl(S, dc, yAbs)), s: [w, h, dd], r: [0, S.yaw(dc), roll], mat, tint, collide: !!col }); };
   function bridge(S, dc, hwv, deck, piers, r, big) {
-    const span = 2 * (hwv + 12), th = big ? 4.4 : 3, bed = BED(dc);
-    S.bx(dc, 0, fl(S, dc, deck), span, th, big ? 16 : 11, 'concrete', '#a4a6a2', true); S.bx(dc, 0, fl(S, dc, deck + th / 2 + 0.4), span, 0.7, big ? 16.4 : 11.4, 'asphalt', '#46484c', false);
-    for (const sg of [-1, 1]) S.bx(dc + sg * (big ? 7.4 : 5), 0, fl(S, dc, deck + th / 2 + 1.1), span, 1.4, 0.5, 'concrete', '#c0c4c6', true);
-    for (const x of piers) { S.bx(dc, x, fl(S, dc, (bed + deck) / 2), 3.8, deck - bed, big ? 11 : 7, 'concrete', '#8e908c', true); S.bx(dc, x, fl(S, dc, deck - th / 2 - 0.6), 5.4, 1.2, big ? 12 : 8, 'concrete', '#7e807c', false); }
-    for (let k = -4; k <= 4; k++) lampS(S, dc - 6, k * (span / 9), fl(S, dc, deck + th / 2) + 5, '#fff1c8', 14);
+    const span = 2 * (hwv + 12), th = big ? 3.6 : 2.6, wd = big ? 16 : 11, n = Math.max(16, Math.round(span / 5)), seg = span / n, cam = big ? 3.4 : 1.6, bed = BED(dc);
+    const yAt = (x) => deck + cam * (1 - Math.pow(2 * x / span, 2)), sl = (x) => -8 * cam * x / (span * span);
+    for (let k = 0; k < n; k++) { const x = -span / 2 + (k + 0.5) * seg, y = yAt(x), s = sl(x), ro = Math.atan(s) * 180 / Math.PI, len = seg * Math.sqrt(1 + s * s) * 1.04;
+      tb(S, dc, x, y, len, th, wd, ro, 'concrete', pk(r, ['#a4a6a2', '#9c9e9a']), true);
+      tb(S, dc, x, y + th / 2 + 0.35, len, 0.7, wd + 0.4, ro, 'asphalt', '#46484c', false);
+      for (const e of [-1, 1]) { tb(S, dc + e * (wd / 2 - 0.3), x, y + th / 2 + 1.35, len * 1.02, 0.3, 0.5, ro, 'concrete', '#c0c4c6', false); if (k % 3 === 0) tb(S, dc + e * (wd / 2 - 0.3), x, y + th / 2 + 0.7, 0.5, 1.4, 0.5, 0, 'concrete', '#b0b4b6', false); tb(S, dc + e * (wd / 2 - 0.3), x, y - th / 2 - 0.35, len * 1.02, 0.7, 0.8, ro, 'concrete', '#8a8c88', false); } }
+    for (const x of piers) { S.cyl(dc, x, fl(S, dc, bed - 1), big ? 3.4 : 2.7, deck - bed - th / 2 + 0.6, 'concrete', '#8e908c', 10, big ? 2.1 : 1.7, true); tb(S, dc, x, yAt(x) - th / 2 - 0.5, 6.4, 1.1, wd - 1, 0, 'concrete', '#7e807c', false); }
+    for (let k = -4; k <= 4; k++) lampS(S, dc - wd / 2 - 0.5, k * (span / 9), fl(S, dc, yAt(k * (span / 9)) + th / 2) + 5, '#fff1c8', 14);
   }
   // grue de quai : portique rouge a quatre pieds, fleche
   function crane(S, dc, lx, r) {

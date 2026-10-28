@@ -63,8 +63,15 @@
         for (let k = -4; k <= 4; k++) S.bx(f, k * 14, A(S, dc, (bot + CREST) / 2), 0.5, CREST - bot, 0.3, 'col:#4a4e50', undefined, false);
         for (let y = -90; y < CREST; y += 9) S.bx(f, 0, A(S, dc, y), 2 * OUT, 0.4, 0.3, 'col:#5a5e60', undefined, false);
         for (const sg of [-1, 1]) { S.bx(f - 2.6, sg * (portW / 2 + 5), A(S, dc, (FLOOR_GAL + CREST) / 2 + 2), 6, CREST - FLOOR_GAL + 4, 5.2, 'concrete', '#a8acae', true); S.bx(f - 2.6, sg * (portW / 2 + 5), A(S, dc, CREST + 4.6), 7, 3, 6.4, 'concrete', '#b4b8ba', true); lampS(S, f - 5.4, sg * (portW / 2 + 5), A(S, dc, CREST + 3.4), '#ffd23a', 18); }
-        for (let k = -9; k <= 9; k++) S.bx(f - 0.6, k * 2.4, A(S, dc, (FLOOR_GAL + FLOOR_GAL + H_GAL) / 2), 0.35, H_GAL, 0.35, 'metal', '#34383c', false);   // barreaux de la grille (on voit a travers : sans collision)
-        for (let y = FLOOR_GAL + 4; y < FLOOR_GAL + H_GAL; y += 6) S.bx(f - 0.6, 0, A(S, dc, y), portW, 0.5, 0.45, 'metal', '#2c3034', false);
+        {   // v302 : la grille de la prise d'eau S'OUVRE toute seule quand la fusee s'approche (feux rouges -> verts, herse qui monte, message) ; elle n'a jamais eu de collision
+          const gp = new T3.Group(), door = new T3.Group(), bm = new T3.MeshLambertMaterial({ color: '#4a5056' }), lampR = new T3.MeshBasicMaterial({ color: '#ff3a2a' }), zf = f - 0.6 - dc, bw = 0.4;
+          for (let k = -9; k <= 9; k++) { const m = new T3.Mesh(new T3.BoxGeometry(bw, H_GAL, bw), bm); m.position.set(k * 2.4, (FLOOR_GAL + FLOOR_GAL + H_GAL) / 2, zf); door.add(m); }
+          for (let y = FLOOR_GAL + 4; y < FLOOR_GAL + H_GAL; y += 6) { const m = new T3.Mesh(new T3.BoxGeometry(portW, 0.6, 0.5), bm); m.position.set(0, y, zf); door.add(m); }
+          gp.add(door);
+          for (const sx of [-1, 1]) for (const yy of [FLOOR_GAL + 10, FLOOR_GAL + 22, FLOOR_GAL + 34]) { const m = new T3.Mesh(new T3.BoxGeometry(1.6, 1.6, 1.0), lampR); m.position.set(sx * (portW / 2 + 1.6), yy, zf - 0.2); gp.add(m); }
+          gp.position.y = 0; EVO.placeGroup(S, gp, dc, 0, A(S, dc, 0), 0); let said = false;
+          EVO.addDyn(gp, (t, dt, g) => { const run = g.endlessRun, dist = run ? run.dist : 0, k = ss(f - 210, f - 100, dist); door.position.y = k * (H_GAL - 0.5); lampR.color.set(k > 0.08 ? '#4aff6a' : '#ff3a2a'); if (k > 0.04 && !said && g.state === 'FLIGHT') { said = true; if (CC.L1) CC.L1.msg(g, 'GRILLE OUVERTE', 1.5, '#9dffb4'); } if (k < 0.01) said = false; }, [], { near: 420, span: 140 });
+        }
         S.bx(f - 0.2, 0, A(S, dc, FLOOR_GAL + H_GAL + 2.6), portW + 6, 5.2, 1.2, 'hazard', undefined, false);
         // crete : route, garde-corps, lampadaires, tour de controle, portique de vannes
         S.bx(dc, 0, A(S, dc, CREST + 0.5), 2 * OUT, 1.0, 20, 'asphalt', '#46484c', true); for (const sg of [-1, 1]) S.bx(dc + sg * 9.6, 0, A(S, dc, CREST + 1.7), 2 * OUT, 1.4, 0.5, 'concrete', '#c0c4c6', true);

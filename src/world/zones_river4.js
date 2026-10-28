@@ -10,8 +10,8 @@
   R.D5 = D5; R.DEND = DEND;
   const BED = R.BED;
   R.setDeep((d) => { const u = d - D4; if (u >= LFo) return BEDB; const dpt = 28 + 160 * ss(40, 420, u) + 130 * ss(420, 800, u) + 7 * Math.sin(u / 31) * ss(100, 300, u) * (1 - ss(700, 800, u)); return mixf(R.shallow(d), WYS - dpt, ss(0, 40, u)); });
-  const HWf = (u) => mixf(72, 58, ss(0, 140, u)) + 6 * Math.sin(u / 70) * ss(140, 300, u);
-  const HWb = (u) => (u < 70 ? 58 : u < 560 ? 30 : mixf(30, 80, ss(560, 640, u)));
+  const HWf = (u) => (mixf(72, 58, ss(0, 140, u)) + 6 * Math.sin(u / 70) * ss(140, 300, u)) * (1 - 0.4 * ss(LFo - 330, LFo - 10, u));   // v302 : la fosse se resserre en entonnoir vers le portail de la base
+  const HWb = (u) => (u < 70 ? 35 : u < 560 ? 30 : mixf(30, 80, ss(560, 640, u)));
   const fl = (S, dc, y) => A(S, dc, y);
   for (const [k, m, a] of [['gouffre', 'sea', 'evoDusk'], ['tranchee', 'pit', 'evoMine'], ['cimetiere', 'pit', 'evoMine'], ['portail', 'pit', 'evoMine'], ['sas', 'pit', 'evoMine'], ['cuve', 'pit', 'evoBoss']]) { EVO.SCENE_MOOD[k] = m; EVO.SCENE_AUDIO[k] = a; }
   // trajectoire de reference (tests) : on plonge avec le fond
@@ -30,7 +30,7 @@
     relief(T, sc) { return rel(sc, (d) => BED(d) - SEAB); },
     ground: (d, lx, c) => { c.set('#4a4a46').lerp(new T3.Color('#7a5a36'), 0.25 + 0.25 * Math.sin(d * 0.05 + lx * 0.09)); c.multiplyScalar(0.7 + 0.12 * Math.sin(lx * 0.23 + d * 0.13)); },
     build(S) {
-      const d0 = S.d0, d = (u) => d0 + u, DK = ['#4a5058', '#42484e', '#50565e', '#464c54'];
+      const d0 = S.d0, d = (u) => d0 + u, DK = ['#6c7682', '#64707c', '#727c88', '#68727e'];
       water(S, d0, d0 + LFo, 90, WYS);
       for (let u = 6; u < LFo - 6; u += 14) S.item(d(u), (r) => {
         const dc = d(u);
@@ -39,6 +39,7 @@
           S.bx(dc, sg * (hwv + wd / 2), fl(S, dc, (bed - 8 + top) / 2), wd, top - bed + 8, 18, 'jrock', pk(r, DK), true);
           if (r() < 0.55) { const yl = bed + r.between([6, Math.max(8, top - bed - 20)]), th = r.between([2, 5]), ext = r.between([2, 7]); S.bx(dc + r.between([-4, 4]), sg * (hwv - ext / 2 + 0.2), fl(S, dc, yl), ext, th, r.between([6, 14]), 'jrock', pk(r, DK), true); }
           if (r() < 0.12) S.bx(dc, sg * (hwv - 0.2), fl(S, dc, bed + 4), 0.2, r.between([6, 14]), 1, 'emis:#5ff0ff', undefined, false);
+          for (let k = 0; k < 2; k++) if (S.inClip(dc)) { const sz = r.between([5, 11]), yy = bed + r.between([2, Math.max(6, top - bed - 6)]); S.b.box({ p: S.T.at(dc + r.between([-5, 5]), sg * (hwv - sz * 0.15 + r.between([-1, 3])), A(S, dc, yy)), s: [sz, sz * r.between([0.7, 1.4]), sz * r.between([1, 1.8])], r: [r.between([-18, 18]), S.yaw(dc) + r.between([-12, 12]), r.between([-22, 22])], mat: 'jrock', tint: pk(r, DK), collide: true }); }   // v302 : blocs de roche inclines devant la paroi : plus de mur droit
         }
       });
       // surplombs en quinconce : la trajectoire serpente
@@ -61,6 +62,7 @@
       for (let k = 0; k < 16; k++) { const u = 40 + k * 60; foe(S, 'mine', d(u), (k % 2 ? 1 : -1) * r5(k) * HWf(u), Math.max(8, BED(d(u)) < WYS - 80 ? hsh(u, 5) * 70 + 14 : WYS - BED(d(u)) - 5), { name: 'MINE', keep: true }); }
       for (const u of [90, 190]) foe(S, 'gunboat', d(u), (u === 90 ? -8 : 8), WYS + 0.5 - BED(d(u)), { name: 'CANONNIERE', hp: 4, armed: true, keep: true });
       for (const [u, sg] of [[140, -1], [260, 1], [380, -1], [500, 1], [620, -1], [740, 1], [860, -1], [960, 1]]) foe(S, 'aaturret', d(u), sg * (HWf(u) - 4), BED(d(u)) < WYS - 60 ? 24 : WYS - BED(d(u)) - 6, { name: 'TOURELLE', armed: true, keep: true, fixed: true });
+      for (let k = 0; k < 14; k++) { const u = LFo - 330 + k * 24; for (const sg of [-1, 1]) S.glow(d(u), sg * (HWf(u) - 3), fl(S, d(u), BED(d(u)) + 22), '#7be8ff', 30); }   // v302 : balises de l'entonnoir
       for (let k = 0; k < 22; k++) { const u = 20 + k * 44; S.glow(d(u), (k % 2 ? 1 : -1) * 16, fl(S, d(u), BED(d(u)) + 18 + 10 * (k % 3)), '#5ff0ff', 36); }
     } };
   const r5 = (k) => 0.15 + 0.5 * hsh(k, 3);
@@ -77,7 +79,7 @@
       const d0 = S.d0, d = (u) => d0 + u, HT = 34, CE = BEDB + HT, lamC = (c) => new T3.MeshLambertMaterial({ color: c });
       water(S, d0, d0 + 80, 90, WYS);
       // approche : parois de la fosse, deux tours de sas, puis le portail de la base
-      for (let u = 6; u < 80; u += 14) S.item(d(u), (r) => { const dc = d(u); for (const sg of [-1, 1]) { const hwv = 58, top = WYS + 14, bed = BED(dc), wd = OUT - hwv; S.bx(dc, sg * (hwv + wd / 2), fl(S, dc, (bed - 8 + top) / 2), wd, top - bed + 8, 18, 'jrock', pk(r, ['#4a5058', '#42484e']), true); } });
+      for (let u = 6; u < 80; u += 14) S.item(d(u), (r) => { const dc = d(u); for (const sg of [-1, 1]) { const hwv = 35, top = WYS + 14, bed = BED(dc), wd = OUT - hwv; S.bx(dc, sg * (hwv + wd / 2), fl(S, dc, (bed - 8 + top) / 2), wd, top - bed + 8, 18, 'jrock', pk(r, ['#4a5058', '#42484e']), true); } });
       S.item(d(70), (r) => { const dc = d(70); S.wall(dc, -OUT, OUT, fl(S, dc, BEDB - 8), fl(S, dc, WYS + 14), 18, 'concreteDark', '#7a7e80', { lx: 0, yc: fl(S, dc, BEDB + 17), w: 62, h: 34 }); for (const sg of [-1, 1]) { S.bx(dc - 9.4, sg * 32, fl(S, dc, BEDB + 18), 3, 38, 2, 'hazard', undefined, false); lampS(S, dc - 10.6, sg * 32, fl(S, dc, BEDB + 36), '#ffd23a', 26); } });
       // le sas : murs, plafond, nervures jaunes, lampes cyan, tuyauteries
       for (let u = 76; u < 560; u += 12) S.item(d(u), (r) => {

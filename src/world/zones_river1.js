@@ -136,7 +136,7 @@
           S.bx(dc, sg * (face + wd / 2), A(S, dc, mid), wd, hgt, 18, 'jrock', undefined, true, { render: false });   // v296 : collision seule ; la paroi visible est la falaise en blocs (zones_river_rock.js)
           if (dc > 190 && dc < LA - 120 && hsh(dc, sg * 3.7) < 0.075 && !(dc > 330 && dc < 370) && !(dc > 510 && dc < 550) && !(dc > 980 && dc < 1020) && !(dc > 1100 && dc < 1140)) sideFall(S, dc, sg, hwv, top - 1, r);   // v296 : petits ruisseaux qui coulent de la falaise
           // rochers a la ligne d'eau, roseaux
-          if (r() < 0.55) rockC(S, dc + r.between([-5, 5]), sg * (face - r.between([0.8, 3.2])), WY(dc) - 1.2, r.between([1.8, 4]), r, pk(r, STONE), true);
+          if (r() < (dc < 700 ? 0.44 : 0.55)) rockC(S, dc + r.between([-5, 5]), sg * (face - r.between([0.8, 3.2])), WY(dc) - 1.2, r.between([1.8, 4]), r, pk(r, STONE), true);
           if (r() < 0.5) plant(S, TR.reeds, dc + r.between([-5, 5]), sg * (face - r.between([0.4, 2.4])), WY(dc) - 0.3, r.between([1.6, 2.6]), r);
           // vegetation du sommet : canopee, palmiers sur le bord, sous-bois
           if (r() < 0.5) plant(S, TR.jungle, dc + r.between([-5, 5]), sg * (face + r.between([6, 22])), top + 0.2, r.between([20, 34]), r, {});
@@ -162,7 +162,7 @@
       S.item(820, (r) => { for (let dc = 790; dc <= 850; dc += 15) { const hwv = HW(dc); S.bx(dc, 0, A(S, dc, WY(dc) + 17.5), 2 * (hwv + 8), 9, 15.6, 'jrock', pk(r, WALL), true); S.bx(dc, 0, A(S, dc, WY(dc) + 22.3), 2 * (hwv + 8), 0.6, 15.6, 'evoGrass', '#3f8a3c', true); if (r() < 0.8) plant(S, TR.jungle, dc, r.between([-hwv, hwv]), WY(dc) + 23, r.between([20, 28]), r, {}); lampS(S, dc, -hwv + 3, A(S, dc, WY(dc) + 12), '#ffcf6a', 16); lampS(S, dc, hwv - 3, A(S, dc, WY(dc) + 12), '#ffcf6a', 16);  } });
       // --- LE CAMP (la colline de la rampe) : sol de jungle, piste de terre, cabanes sur pilotis, tours, mat radio, sacs de sable, caisses, futs, vegetation dense
       for (let dc = 4; dc < 104; dc += 10) S.item(dc, (r) => {
-        for (let k = 0; k < 11; k++) { const sg = r() < 0.5 ? -1 : 1, lx = sg * (k < 4 ? r.between([4, 30]) : r.between([12, 110])), yy = BED(dc) + 0.5; const q = r(); if (q < 0.16 && Math.abs(lx) > 10) plant(S, TR.palm, dc + r.between([-5, 5]), lx, yy, r.between([8, 14]), r); else if (q < 0.34 && Math.abs(lx) > 13) rockC(S, dc + r.between([-5, 5]), lx, yy + 0.3, r.between([1.2, 3.2]), r, pk(r, STONE)); else plant(S, q < 0.7 ? TR.fern : TR.bigleaf, dc + r.between([-5, 5]), lx, yy, r.between([1.6, 3.0]), r); }
+        for (let k = 0; k < 11; k++) { const sg = r() < 0.5 ? -1 : 1, lx = sg * (k < 4 ? r.between([4, 30]) : r.between([12, 110])), yy = BED(dc) + 0.5; const q = r(); if (q < 0.16 && Math.abs(lx) > 10) plant(S, TR.palm, dc + r.between([-5, 5]), lx, yy, r.between([8, 14]), r); else if (q < 0.29 && Math.abs(lx) > 13) rockC(S, dc + r.between([-5, 5]), lx, yy + 0.3, r.between([1.2, 3.2]), r, pk(r, STONE)); else plant(S, q < 0.7 ? TR.fern : TR.bigleaf, dc + r.between([-5, 5]), lx, yy, r.between([1.6, 3.0]), r); }
       });
       S.item(30, (r) => {
         for (const [dc, sg, lxx] of [[10, 1, 30], [44, 1, 40], [24, -1, 34], [58, -1, 48], [76, 1, 54]]) hut(S, dc, sg * lxx, BED(dc), r);
