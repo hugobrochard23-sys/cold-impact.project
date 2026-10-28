@@ -5,7 +5,7 @@
   if (!R) return;
   const OC = Z.defs.ocean, SC = OC.scenes, { pk, ss } = EVO.oc;
   const { WY, BED, HW, DEP, LA, F1, F2, A, absAt, SEAB, plant, slab, lampS, water, curtain, hsh, GREEN, WALL, STONE, TEMPLE, rel, mixf } = R;
-  const OUT = 125;
+  const OUT = 150;
   const WOOD = ['#7a5a38', '#6e5232', '#86643e'], THATCH = ['#8f7a3c', '#7e6b34', '#9a8644'], RUST = ['#8a4a2a', '#7a4226', '#94562e'];
   const DRY = ['#6a7a4a', '#5e6e42'];
 
@@ -80,6 +80,34 @@
     for (let k = 0; k < 5; k++) plant(S, TR.fern, dc + r.between([-3, 3]), r.between([-span / 2 + 6, span / 2 - 6]), yDeck + 1.0, r.between([1.2, 2.2]), r);
   };
 
+  // portique de pierre en ruine en travers du fleuve (deux montants, linteau fendu, lianes) : on passe en dessous, au centre
+  const ruinGate = (S, dc, hw, yTop, r) => {
+    for (const sg of [-1, 1]) { const x = sg * (hw - 5.5); S.cyl(dc, x, A(S, dc, BED(dc) - 2), 3.0, yTop - BED(dc) + 2, 'jrock', pk(r, TEMPLE), 9, 2.7, true); S.bx(dc, x, A(S, dc, yTop + 1), 7, 2.2, 7, 'jrock', '#bcbca8', true); for (let k = 0; k < 3; k++) S.bx(dc - 3.2, x, A(S, dc, yTop - 4 - k * 5), 0.4, 1.2, 4.2, 'jrock', '#8a8a78', false); }
+    S.bx(dc, -hw * 0.55, A(S, dc, yTop + 3.4), hw * 0.9, 2.4, 6.4, 'jrock', pk(r, TEMPLE), true); S.bx(dc, hw * 0.62, A(S, dc, yTop + 3.0), hw * 0.76, 2.4, 6.4, 'jrock', pk(r, TEMPLE), true);   // linteau fendu : le centre est libre
+    for (let k = 0; k < 7; k++) S.bx(dc + r.between([-2, 2]), r.between([-hw, hw]), A(S, dc, yTop - r.between([0, 7])), 0.14, r.between([3, 9]), 0.14, 'col:#2e4a24', undefined, false);
+    for (let k = 0; k < 6; k++) plant(S, TR.fern, dc + r.between([-2, 2]), r.between([-hw + 4, hw - 4]), yTop + 4.7, r.between([1.2, 2.2]), r);
+    lampS(S, dc - 4, -(hw - 5.5), A(S, dc, yTop - 6), '#ff8a2a', 18); lampS(S, dc - 4, hw - 5.5, A(S, dc, yTop - 6), '#ff8a2a', 18);
+  };
+  // cascade laterale : un affluent qui se jette dans le fleuve du haut de la paroi
+  const sideFall = (S, dc, sg, hw, top, r) => {
+    const x = sg * (hw + 0.3), h = top - WY(dc);
+    S.bx(dc, x, A(S, dc, (top + WY(dc)) / 2), 0.4, h, 6.5, 'waterSurf', '#f4fbff', false); S.bx(dc, x - sg * 1.4, A(S, dc, top - 1), 3.4, 1.8, 7.5, 'jrock', '#9a9a86', true);
+    for (let k = 0; k < 4; k++) S.glow(dc, x - sg * 2, A(S, dc, WY(dc) + 0.6 + k * 2), '#ffffff', 16 - k * 2); S.ball(dc, x - sg * 3, A(S, dc, WY(dc) + 0.4), 3.2, 'waterSurf', '#e8f6ff', false, 0.5);
+  };
+  // gardien colossal assis : socle, jambes, torse, bras sur les genoux, tete a diademe etage, yeux creux ; un par rive de la lagune
+  const guardian = (S, dc, sg, yBase, r) => {
+    const x = sg * (HW(dc) + 11);   // il regarde vers l'amont, vers la fusee qui arrive
+    const t = pk(r, TEMPLE), m = (w, h, d, lx, y, dd, tint) => S.bx(dc + dd, x + lx * sg, A(S, dc, yBase) + y, w, h, d, 'jrock', tint || t, true);
+    m(16, 4, 16, 0, 2, 0, '#a8a894'); m(11, 1.4, 11, 0, 4.7, 0, '#bcbca8');
+    for (const e of [-1, 1]) { m(4.4, 11, 4.6, e * 3.2, 11, 0); m(3.4, 3.2, 8, e * 3.2, 17.4, 0); }
+    m(10.5, 12.5, 6.4, 0, 22.5, 0); m(13.5, 3.2, 6.8, 0, 29.4, 0);
+    for (const e of [-1, 1]) { m(3.2, 3.2, 10, e * 7.4, 24.6, 0.6); m(3.4, 9, 3.4, e * 7.8, 21, 4.2); }
+    m(5.6, 6.6, 5.6, 0, 34.2, 0); for (let k = 0; k < 4; k++) m(7.4 - k * 1.5, 1.5, 7.4 - k * 1.5, 0, 38.2 + k * 1.5, 0, '#c4c4b0');
+    S.bx(dc - 3.2, x, A(S, dc, yBase) + 33.2, 4.2, 0.9, 0.4, 'col:#101412', undefined, false); S.bx(dc - 3.2, x, A(S, dc, yBase) + 34.8, 0.9, 2.4, 0.5, 'jrock', '#8e8e7c', false);
+    for (const e of [-1, 1]) S.bx(dc - 3.1, x + e * 1.5, A(S, dc, yBase) + 36.2, 1.1, 0.9, 0.5, 'col:#101412', undefined, false);
+    for (let k = 0; k < 8; k++) plant(S, TR.fern, dc + r.between([-6, 6]), x + sg * r.between([-5, 6]), yBase + r.between([0.2, 28]), r.between([1, 1.8]), r);
+    lampS(S, dc + 2, x, A(S, dc, yBase) + 5.4, '#ffb04a', 22);
+  };
   // ============================================== RAPIDES ==============================================
   SC.rapides = { len: [LA, LA], noDoor: true, noChaos: true, gw: 125, grass: false,
     sub: [{ u: 0, key: 'camp', name: 'LE CAMP' }, { u: 0.07, key: 'fleuve', name: 'LE FLEUVE' }, { u: 0.36, key: 'gorges', name: 'LES GORGES' }, { u: 0.7, key: 'lagune', name: 'LA LAGUNE' }],
@@ -138,6 +166,9 @@
       S.item(480, (r) => { pillar(S, 480, -9, WY(480) + 3.5, 6.5, r); for (let k = 0; k < 3; k++) plant(S, TR.palm, 480 + r.between([-3, 3]), -9 + r.between([-3, 3]), WY(480) + 4.2, r.between([8, 12]), r); plant(S, TR.fern, 482, -6, WY(480) + 4.4, 2.0, r); S.bx(480, -9, A(S, 480, WY(480) + 4.8), 2.6, 1.6, 2.6, 'jrock', '#a8a694', true); });
       foe(S, 'gunboat', 330, -10, WY(330) + 0.5 - BED(330), { name: 'CANONNIERE', hp: 3, armed: true, keep: true });
       foe(S, 'mine', 520, 8, WY(520) - BED(520) - 2.5, { name: 'MINE' });
+      S.item(190, (r) => ruinGate(S, 190, HW(190), WY(190) + 17, r)); S.item(350, (r) => sideFall(S, 350, 1, HW(350), WY(350) + 26, r)); S.item(530, (r) => sideFall(S, 530, -1, HW(530), WY(530) + 26, r));
+      S.item(1040, (r) => { cylH(S, 1040, 0, WY(1040) + 15, 2.1, 2 * (HW(1040) + 8), 'bark', '#6a5238', true, -0.05); for (let k = 0; k < 7; k++) plant(S, TR.fern, 1040 + r.between([-1.5, 1.5]), r.between([-HW(1040), HW(1040)]), WY(1040) + 17, r.between([1.2, 2.2]), r); });
+      S.item(1000, (r) => sideFall(S, 1000, -1, HW(1000), WY(1000) + 26, r)); S.item(1120, (r) => sideFall(S, 1120, 1, HW(1120), WY(1120) + 26, r));
       // --- LES GORGES : piliers, slalom de rochers, arche naturelle, le temple, son pont de pierre
       for (let dc = F1 + 52; dc < F2 - 70; dc += 46) S.item(dc, (r) => { const hwv = HW(dc), sg = hsh(dc, 3) < 0.5 ? -1 : 1; pillar(S, dc, sg * r.between([hwv * 0.25, hwv * 0.55]), WY(dc) + r.between([1.2, 4]), r.between([3, 5.2]), r); if (r() < 0.6) pillar(S, dc + 20, -sg * r.between([hwv * 0.2, hwv * 0.5]), WY(dc) + r.between([0.8, 3.2]), r.between([2.6, 4.2]), r); });
       // vestiges immerges : colonnes couchees, blocs a hieroglyphes, tetes de pierre au fond (decor hors du couloir central)
@@ -156,6 +187,7 @@
       foe(S, 'heli', 1060, 0, WY(1060) + 22 - BED(1060), { name: 'HELICO', armed: true, patrol: (SS, dc, lx, y) => [SS.at(dc, -14, y), SS.at(dc + 24, 0, y + 5), SS.at(dc, 14, y), SS.at(dc - 24, 0, y + 5)], speed: 12 });
       // --- LA LAGUNE : pitons de roche couronnes de jungle, aqueduc, mines, brume ; le barrage au loin
       for (let dc = F2 + 90; dc < LA - 40; dc += 58) S.item(dc, (r) => { const sg = hsh(dc, 5) < 0.5 ? -1 : 1, hwv = HW(dc); const x = sg * r.between([hwv * 0.25, hwv * 0.75]), top = WY(dc) + r.between([14, 30]); pillar(S, dc, x, top, r.between([4.5, 7.5]), r); plant(S, TR.palm, dc, x, top + 1, r.between([8, 13]), r); plant(S, TR.fern, dc + 2, x + 2, top + 0.8, 2, r); for (let k = 0; k < 2; k++) S.bx(dc + r.between([-2, 2]), x + r.between([-3, 3]), A(S, dc, top - r.between([3, 9])), 0.14, r.between([3, 7]), 0.14, 'col:#2e4a24', undefined, false); });
+      S.item(1320, (r) => guardian(S, 1320, -1, WY(1320) + 27, r)); S.item(1390, (r) => guardian(S, 1390, 1, WY(1390) + 27, r)); S.item(1610, (r) => ruinGate(S, 1610, HW(1610), WY(1610) + 22, r));
       S.item(1500, (r) => aqueduct(S, 1500, HW(1500), WY(1500) + 34, r));
       for (let k = 0; k < 5; k++) { const dc = 1290 + k * 78; foe(S, 'mine', dc, (k % 2 ? 1 : -1) * 22, WY(dc) - BED(dc) - 2.5, { name: 'MINE', keep: k < 2 }); }
       foe(S, 'gunboat', 1380, 0, WY(1380) + 0.5 - BED(1380), { name: 'CANONNIERE', hp: 4, armed: true, keep: true });

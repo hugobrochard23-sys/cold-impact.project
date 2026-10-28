@@ -6,7 +6,7 @@
   if (!R) return;
   const SC = Z.defs.ocean.scenes, { pk, ss } = EVO.oc;
   const { WY, BED, LA, LB, LF, EXIT, A, absAt, SEAB, plant, slab, lampS, water, curtain, hsh, GREEN, WALL, STONE, rel, mixf } = R;
-  const OUT = 125;
+  const OUT = 150;
   for (const k of ['camp', 'fleuve', 'gorges', 'lagune']) { EVO.SCENE_MOOD[k] = 'jungle'; EVO.SCENE_AUDIO[k] = 'evoDay'; }
   for (const [k, m, a] of [['barrage', 'dam', 'evoDay'], ['lac', 'dam', 'evoDay'], ['conduite', 'pit', 'evoMine'], ['hall', 'pit', 'evoMine'], ['canal', 'dam', 'evoDusk']]) { EVO.SCENE_MOOD[k] = m; EVO.SCENE_AUDIO[k] = a; }
   // ---- cotes du barrage (u = distance depuis le debut de la zone 2)
@@ -117,7 +117,7 @@
   }
   EVO.riv.finishD = LA + U_FIN;
   const _tkf = EVO.tick;
-  EVO.tick = (g, dt) => { _tkf(g, dt); const run = g.endlessRun; if (EVO.isS2() && g.evo && !g.evo.preview && run && !g.evoFinish && g.state === 'FLIGHT' && g.rocket.active && run.dist > EVO.riv.finishD && EVO.finishRun) EVO.finishRun(g); };
+  EVO.tick = (g, dt) => { _tkf(g, dt); const run = g.endlessRun; if (run && EVO.isS2() && g.evo && !g.evo.preview && g.state === 'FLIGHT' && g.rocket.active) { const uu = run.dist - LA; if (uu > U_DAM - 25 && uu < U_MOUTH && g.rocket.pos.y > CREST + 5) { g.rocket.pos.y = CREST + 5; if (g.rocket.vel.y > 0) g.rocket.vel.y = 0; if (!g._dmMsg || performance.now() - g._dmMsg > 3000) { g._dmMsg = performance.now(); if (CC.L1) CC.L1.msg(g, 'PAR LA CONDUITE !', 1.6, '#ffe9a0'); } } } if (EVO.isS2() && g.evo && !g.evo.preview && run && !g.evoFinish && g.state === 'FLIGHT' && g.rocket.active && run.dist > EVO.riv.finishD && EVO.finishRun) EVO.finishRun(g); };
 
   // ---- le tunnel : galerie d'entree, hall en descente, canal de fuite ; boucles de 12 m
   function tunnel(S, d) {

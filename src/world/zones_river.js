@@ -80,6 +80,10 @@
     return S.b.box(Object.assign({ p: T.at(dc, lx, yRel), s: [w, h, dd], r: [-a, S.yaw(dc), 0], mat, tint, collide: collide !== false }, extra || {}));
   };
   const lampS = (S, dc, lx, yRel, col, size) => { S.bx(dc, lx, yRel, 0.9, 0.4, 0.9, 'emis:' + col, undefined, false); S.glow(dc, lx, yRel, col, size || 10); };
+  // cascades : secousse, rafale d'air et message au franchissement de la crete (une fois par vol)
+  { const _br = EVO.beginRun; EVO.beginRun = (g) => { _br(g); g._f1 = g._f2 = 0; };
+    const _tk = EVO.tick; EVO.tick = (g, dt) => { _tk(g, dt); const run = g.endlessRun; if (!run || !EVO.isS2() || !g.evo || g.evo.preview || g.state !== 'FLIGHT') return; const d = run.dist;
+      for (const [k, f] of [['_f1', F1], ['_f2', F2]]) if (!g[k] && d > f + 3 && d < f + 60) { g[k] = 1; g.rig.shake = Math.max(g.rig.shake, 0.9); g.audio.play('whoosh'); if (CC.L1) CC.L1.msg(g, 'CASCADE !', 1.3, '#bff4ff'); g.flash = Math.max(g.flash || 0, 0.12); g.flashColor = '#e8fbff'; } }; }
   EVO.riv.plant = plant; EVO.riv.slab = slab; EVO.riv.lampS = lampS; EVO.riv.water = water; EVO.riv.curtain = curtain; EVO.riv.hsh = hsh;
   EVO.riv.setBed2 = (f) => { BED2 = f; };
   EVO.riv.GREEN = GREEN; EVO.riv.WALL = WALL; EVO.riv.STONE = STONE; EVO.riv.TEMPLE = TEMPLE; EVO.riv.rel = rel; EVO.riv.mixf = mixf;
