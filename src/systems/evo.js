@@ -86,9 +86,9 @@
     if (L <= 10) return Math.round(996 * Math.pow(1.33, L - 7));
     return Math.round(3619 * Math.pow(1.35, L - 11)); };
   EVO.SCORE_K = (g) => (EVO.stage && EVO.stage(g) === 2 ? EVO.LV2K : 8450 / 6910);   // la reference compte 1 piece par metre sur une carte de 8 450 m ; la notre mesure 6 910 m : meme total de pieces sur la carte
-  // v286 : NIVEAU 2 : les prix repartent des memes bases (180 / 180 / 100) mais montent beaucoup plus vite (x2,15 / x1,9 / x2 par amelioration : ~400 000 a la 11e), et les gains sont multiplies par EVO.LV2K (distance et ennemis)
-  EVO.LV2K = 6;
-  EVO.cost2 = (id, n) => Math.round((id === 'cm' ? 100 : 180) * Math.pow(id === 'rk' ? 2.15 : id === 'la' ? 1.9 : 2, n));
+  // v292 : NIVEAU 2 : memes prix et meme montee que le niveau 1 (180 / 180 / 100), la courbe se prolonge simplement plus loin (~130 000 a 200 000 en fin de niveau) ; gains multiplies par EVO.LV2K (distance et ennemis)
+  EVO.LV2K = 3;
+  EVO.cost2 = (id, n) => EVO.cost(id, n);
   // v265 : les paquets de pieces valent N x la moyenne du prix des 3 ameliorations (x1 gratuit, x4 / x10 / x20 payants), arrondis a 3 chiffres
   EVO.COINPACK = { free: 1, coins12k: 4, coins40k: 10, coins100k: 20 };
   EVO.coinPack = (g, key) => { const v = ['rk', 'la', 'cm'].map((id) => EVO.nextCost(g, id)).filter((c) => c !== null), avg = v.length ? v.reduce((a, c) => a + c, 0) / v.length : 1000, n = Math.max(1, Math.round(avg * (EVO.COINPACK[key] || 1))), p = Math.pow(10, Math.max(0, String(n).length - 3)); return Math.round(n / p) * p; };
