@@ -26,6 +26,7 @@
     g.setAttribute('color', new THREE.BufferAttribute(col, 4).setUsage(THREE.DynamicDrawUsage));   // 4 composantes : alpha par sommet
     g.setDrawRange(0, 0);
     const m = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false });
+    m.forceSinglePass = true;   // v322 : ruban toujours face camera : la double passe (dos puis face) ne servait a rien
     const o = new THREE.Mesh(g, m);
     o.frustumCulled = false; o.renderOrder = 2;
     return { o, pos, col, g, n: 0, quads };

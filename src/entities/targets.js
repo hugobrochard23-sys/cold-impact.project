@@ -40,6 +40,27 @@
 const GOLD = new THREE.MeshPhongMaterial({ color: '#f2c230', specular: '#fff6c8', shininess: 120, emissive: '#4a3400' });
   function goldify(model) { model.traverse((o) => { if (o.isMesh && o.material && !o.material.transparent) o.material = GOLD; }); }
 
+  // v322 : fusionne toutes les pieces visibles d'une epave (deja toutes du meme materiau sombre) en un seul maillage, dans le repere de `obj`
+  const _mw = new THREE.Matrix4();
+  function mergeCharred(obj, mat) {
+    const list = [];
+    obj.traverse((o) => { if (o.isMesh && o.visible && o.material === mat && !o.isInstancedMesh && !o.isSkinnedMesh && o.geometry && o.geometry.attributes.position) list.push(o); });
+    if (list.length < 2) return;
+    let n = 0; const geos = list.map((m) => { const g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone(); n += g.attributes.position.count; return g; });
+    const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3); let at = 0;
+    list.forEach((m, i) => {
+      _mw.identity(); for (let a = m; a && a !== obj; a = a.parent) { a.updateMatrix(); _mw.premultiply(a.matrix); }   // du maillage jusqu'a obj (exclu)
+      const g = geos[i], P = g.attributes.position, N = g.attributes.normal;
+      g.applyMatrix4(_mw);
+      pos.set(g.attributes.position.array, at * 3);
+      if (N) nor.set(g.attributes.normal.array, at * 3);
+      at += P.count; g.dispose();
+    });
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); geo.computeBoundingSphere();
+    for (const m of list) m.parent.remove(m);
+    const mesh = new THREE.Mesh(geo, mat); mesh.userData.wreckGeo = true; obj.add(mesh);
+  }
+
   class Target {
     constructor(type, pos, yawDeg, opts) {
       opts = opts || {};
@@ -387,6 +408,7 @@ const GOLD = new THREE.MeshPhongMaterial({ color: '#f2c230', specular: '#fff6c8'
       } else {
         obj.position.y = -0.1; obj.rotation.set(0, 0, r.range(-0.12, 0.12));
       }
+      mergeCharred(obj, charred);   // v322 : l'epave (une dizaine de pieces) n'est plus qu'un seul maillage : un appel de dessin au lieu de 5 a 11, aspect identique (un seul materiau sombre)
       this.wreck = W;
     }
     updateWreck(dt, game) {
@@ -434,6 +456,7 @@ const GOLD = new THREE.MeshPhongMaterial({ color: '#f2c230', specular: '#fff6c8'
     }
     clearWreck(game) {
       if (!this.wreck) return;
+      this.wreck.obj.traverse((o) => { if (o.userData.wreckGeo) o.geometry.dispose(); });
       game.scene.remove(this.wreck.root);
       for (const P of this.wreck.parts) game.scene.remove(P.o);
       this.wreck = null;

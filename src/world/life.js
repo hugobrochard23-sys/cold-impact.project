@@ -198,15 +198,16 @@
 
   // ---------- halos lumineux statiques (enseignes, lampadaires, fenêtres) : un seul objet `Points` par couleur et par tronçon ----------
   const glowMats = {};
+  // v322 : une seule serie de points par TAILLE (la couleur passe par sommet) : 2 a 3 appels de dessin par troncon au lieu d'un par couleur ; meme rendu (couleur de sommet x blanc)
   L.flushGlows = function (ctx) {
     if (!ctx.glows || !ctx.glows.length) return;
-    const by = {};
-    for (const g of ctx.glows) (by[g.c + '|' + g.s] = by[g.c + '|' + g.s] || []).push(g);
+    const by = {}, cc = new THREE.Color();
+    for (const g of ctx.glows) (by[g.s] = by[g.s] || []).push(g);
     for (const k in by) {
-      const a = by[k], pos = new Float32Array(a.length * 3);
-      a.forEach((g, i) => { pos[i * 3] = g.x; pos[i * 3 + 1] = g.y; pos[i * 3 + 2] = g.z; });
-      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-      const m = glowMats[k] || (glowMats[k] = new THREE.PointsMaterial({ map: dotTex(), color: a[0].c, size: a[0].s * (CC.EVO && CC.EVO.on ? 0.38 : 1), sizeAttenuation: true, transparent: true, opacity: CC.EVO && CC.EVO.on ? 0.3 : 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
+      const a = by[k], pos = new Float32Array(a.length * 3), col = new Float32Array(a.length * 3);
+      a.forEach((g, i) => { pos[i * 3] = g.x; pos[i * 3 + 1] = g.y; pos[i * 3 + 2] = g.z; cc.set(g.c); col[i * 3] = cc.r; col[i * 3 + 1] = cc.g; col[i * 3 + 2] = cc.b; });
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      const m = glowMats[k] || (glowMats[k] = new THREE.PointsMaterial({ map: dotTex(), color: '#ffffff', vertexColors: true, size: a[0].s * (CC.EVO && CC.EVO.on ? 0.38 : 1), sizeAttenuation: true, transparent: true, opacity: CC.EVO && CC.EVO.on ? 0.3 : 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
       const pts = new THREE.Points(geo, m); pts.frustumCulled = false; pts.renderOrder = 4; ctx.b.root.add(pts);
     }
   };

@@ -39,6 +39,7 @@
   const _n1 = new THREE.Color(), _n2 = new THREE.Color();
   function normMat(mat, tint, shadow) {
     if (typeof mat !== 'string') return [mat, tint];
+    if (mat.startsWith('emis:') && mat !== 'emis:#ffffff') return ['emis:#ffffff', mat.slice(5)];   // v322 : toutes les couleurs lumineuses partagent UN lot (la couleur passe par sommet, voir mat()) : une dizaine d'appels de dessin en moins par troncon
     const k = mat.startsWith('col:') ? 'col:' : mat.startsWith('basic:') ? 'basic:' : null;
     if (!k) return [mat, tint];
     const hex = mat.slice(k.length);
@@ -91,6 +92,7 @@
         sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vGp; varying float vGd;\nfloat gH( vec2 p ) { p = mod( p, 512.0 ); vec3 q = fract( vec3( p.xyx ) * 0.1031 ); q += dot( q, q.yzx + 33.33 ); return fract( ( q.x + q.y ) * q.z ); }\nfloat gN( vec2 p ) { vec2 i = floor( p ), f = fract( p ); f = f * f * ( 3.0 - 2.0 * f ); return mix( mix( gH( i ), gH( i + vec2( 1.0, 0.0 ) ), f.x ), mix( gH( i + vec2( 0.0, 1.0 ) ), gH( i + vec2( 1.0, 1.0 ) ), f.x ), f.y ); }').replace('#include <color_fragment>', '#include <color_fragment>\n{ vec2 gq = mod( vGp.xz, 4096.0 ); float gr = gH( floor( gq * 9.0 ) ) - 0.5, gm = gN( gq * 1.3 ) - 0.5; diffuseColor.rgb *= 1.0 + ( 0.045 * gr + 0.02 * gm ) * ( 1.0 - 0.75 * smoothstep( 15.0, 80.0, vGd ) ); }'); }; } }   // v211 : sol GRANULEUX : grain fin + taches douces, dont la taille grandit avec la distance : le grain reste visible et de meme finesse a l'ecran, partout   // v180 : le sol herbeux est repousse en profondeur : routes et dalles gagnent toujours (plus de vert qui perce au loin)
       else if (key === 'glass') m = new THREE.MeshLambertMaterial({ color: '#8fd0ff', transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide });
       else if (key === 'glassWarm') m = new THREE.MeshLambertMaterial({ color: '#d8d28a', transparent: true, opacity: 0.45, depthWrite: false, side: THREE.DoubleSide });
+      else if (key === 'emis:#ffffff') { m = new THREE.MeshLambertMaterial({ color: '#ffffff', vertexColors: true, emissive: '#ffffff', emissiveIntensity: 0.8 }); m.customProgramCacheKey = () => 'emisVC'; m.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = emissive * vColor.rgb;'); }; }   // v322 : lumiere = couleur par sommet (diffuse ET emissive), comme avant avec un materiau par couleur
       else if (key.startsWith('emis:')) m = new THREE.MeshLambertMaterial({ color: key.slice(5), emissive: key.slice(5), emissiveIntensity: 0.8 });
       else if (key.startsWith('cloud:')) m = new THREE.MeshBasicMaterial({ color: key.slice(6), fog: false, vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false });
       else if (key === 'chainlink') m = new THREE.MeshLambertMaterial({ map: CC.Textures.get(key), transparent: true, alphaTest: 0.5, side: THREE.DoubleSide });   // v032 : grillage (on voit à travers)
