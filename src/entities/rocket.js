@@ -291,7 +291,8 @@
     }
 
     updateMesh(dt) {
-      this.roll += dt * 2.2;
+      const upright = !!(this.skin && this.skin.build);   // v313 : les fusees aquatiques ont un dessus et un dessous : elles restent a l'endroit et s'inclinent seulement dans les virages
+      if (!upright) this.roll += dt * 2.2;
       // design : jet de tuyère (longueur et éclat suivent l'intensité du moteur, vacillement rapide)
       const J = this.mesh.userData.jet;
       if (J) {
@@ -302,8 +303,17 @@
         J.core.material.opacity = J.core.userData.op * k; J.outer.material.opacity = J.outer.userData.op * k * (0.8 + 0.4 * f);
         J.disc.material.color.setRGB(1, 0.75 + 0.2 * k, 0.45 + 0.35 * k);
       }
+      if (upright) {
+        const U2 = this._ub || (this._ub = { x: new V(), y: new V(), z: new V(), m: new THREE.Matrix4(), pf: new V(0, 0, 1) });
+        U2.z.copy(this.fwd); U2.x.set(0, 1, 0).cross(U2.z); if (U2.x.lengthSq() < 1e-4) U2.x.set(1, 0, 0); U2.x.normalize(); U2.y.crossVectors(U2.z, U2.x);
+        const yr = dt > 0 ? (U2.pf.z * this.fwd.x - U2.pf.x * this.fwd.z) / dt : 0; U2.pf.copy(this.fwd);
+        const tgt = Math.max(-0.5, Math.min(0.5, -yr * 0.35)); this.roll += (tgt - this.roll) * Math.min(1, dt * 4);
+        _q.setFromRotationMatrix(U2.m.makeBasis(U2.x, U2.y, U2.z));
+        this.mesh.quaternion.copy(_q).multiply(_rq.setFromAxisAngle(_z, this.roll));
+      } else {
       _q.setFromUnitVectors(_z, this.fwd);
       this.mesh.quaternion.copy(_q).multiply(_rq.setFromAxisAngle(_z, this.roll));
+      }
       this.mesh.position.copy(this.pos);
       // design : micro-vibration du corps sous poussée (quelques millimètres, désynchronisée du vacillement de la flamme)
       const vib = (this.thrustK || 0) * 0.006;

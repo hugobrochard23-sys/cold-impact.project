@@ -29,21 +29,57 @@
     ground: (d, lx, c) => { c.set('#5a5a56').lerp(new T3.Color('#8a6a44'), 0.25 + 0.25 * Math.sin(d * 0.05 + lx * 0.09)); c.multiplyScalar(0.85 + 0.1 * Math.sin(lx * 0.23 + d * 0.13)); },
     build(S) {
       const d0 = S.d0, d = (u) => d0 + u, DK = ['#8a98a8', '#808e9e', '#92a0b0', '#8694a4'];
+      // v313 : roches naturelles (facettes, irregulieres) et vrai cargo coule, en geometrie fusionnee
+      const hq = (x, y, z) => { const v = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453; return v - Math.floor(v); };
+      const rockify = (geo, amp, sd) => { const P = geo.attributes.position; for (let i = 0; i < P.count; i++) { const x = P.getX(i), y = P.getY(i), z = P.getZ(i), q = Math.round(x * 8) / 8, w = Math.round(y * 8) / 8, e = Math.round(z * 8) / 8, k = (hq(q + sd, w, e) - 0.5) * amp, l = Math.hypot(x, z) || 1; P.setXYZ(i, x + x / l * k, y + (hq(w + sd, e, q) - 0.5) * amp * 0.5, z + z / l * k); } return geo; };
+      const rockMat = new T3.MeshLambertMaterial({ vertexColors: true });
+      const rockMesh = (geo, base, sd, k0) => { const g = geo.toNonIndexed(); g.computeVertexNormals(); const N = g.attributes.normal, P = g.attributes.position, col = new Float32Array(P.count * 3), c0 = new T3.Color(base); for (let i = 0; i < P.count; i++) { const j = 0.9 + 0.2 * hq(Math.floor(i / 3) + sd, 1.7, 3.1), l = (k0 || 0.6) + 0.5 * Math.max(0, N.getY(i)); col[i * 3] = c0.r * l * j; col[i * 3 + 1] = c0.g * l * j; col[i * 3 + 2] = c0.b * l * j; } g.setAttribute('color', new T3.BufferAttribute(col, 3)); return new T3.Mesh(g, rockMat); };
+      const putRock = (S, dc, lx, yAbs, mesh) => { const grp = new T3.Group(); grp.add(mesh); EVO.placeGroup(S, grp, dc, lx, A(S, dc, yAbs), 0); };
+      const ROCKC = '#556372';
+      const spire = (S, dc, lx, y0, r, h, sd, c) => { putRock(S, dc, lx, y0, rockMesh(rockify(new T3.CylinderGeometry(r * 0.16, r, h, 9, 4).translate(0, h / 2, 0), r * 0.5, sd), c || ROCKC, sd)); S.bx(dc, lx, fl(S, dc, y0 + h * 0.4), r * 1.5, h * 0.8, r * 1.5, 'jrock', undefined, true, { render: false }); };
+      const column = (S, dc, lx, y0, r, h, sd) => { putRock(S, dc, lx, y0, rockMesh(rockify(new T3.CylinderGeometry(r * 0.82, r * 1.12, h, 10, 6).translate(0, h / 2, 0), r * 0.32, sd), ROCKC, sd)); S.bx(dc, lx, fl(S, dc, y0 + h / 2), r * 1.7, h, r * 1.7, 'jrock', undefined, true, { render: false }); };
+      const ledge = (S, dc, lx, y, sx, sy, sz, sd) => { putRock(S, dc, lx, y, rockMesh(rockify(new T3.IcosahedronGeometry(1, 1).scale(sx / 2, sy / 2, sz / 2), 2.6, sd), ROCKC, sd, 0.5)); S.bx(dc, lx, fl(S, dc, y), sx * 0.85, sy * 0.85, sz * 0.85, 'jrock', undefined, true, { render: false }); };
+      const slab = (pts, th) => { const sh = new T3.Shape(); pts.forEach((q, i) => (i ? sh.lineTo(q[0], -q[1]) : sh.moveTo(q[0], -q[1]))); const geo = new T3.ExtrudeGeometry(sh, { depth: th, bevelEnabled: false }); geo.translate(0, 0, -th / 2); geo.rotateX(-Math.PI / 2); return geo; };
+      // cargo : coque rouille sur carene couverte d'algues, pont, superstructure a l'arriere (passerelle vitree, cheminee rayee, mat radar), trois cales avec conteneurs, grues, hublots, breche dans la coque
+      const ship = (seed) => {
+        const g = new T3.Group(), cm = {};
+        const add = (geo, c, p, r) => { const m = new T3.Mesh(geo, cm[c] || (cm[c] = new T3.MeshLambertMaterial({ color: c }))); if (p) m.position.set(p[0], p[1], p[2]); if (r) m.rotation.set(r[0], r[1], r[2]); g.add(m); return m; };
+        const litM = new T3.MeshBasicMaterial({ color: '#ffcf6a' }), lit = (geo, p) => { const m = new T3.Mesh(geo, litM); m.position.set(p[0], p[1], p[2]); g.add(m); };
+        const bx = (w, h, d, c, x, y, z, r) => add(new T3.BoxGeometry(w, h, d), c, [x, y, z], r);
+        const cy = (r0, r1, h, c, x, y, z, seg) => add(new T3.CylinderGeometry(r1, r0, h, seg || 12), c, [x, y, z]);
+        const H = [[0, 38], [3.2, 33], [6, 22], [7, 6], [7, -30], [5.2, -37], [-5.2, -37], [-7, -30], [-7, 6], [-6, 22], [-3.2, 33]], sc = (k) => H.map((q) => [q[0] * k, q[1] * k]);
+        add(slab(H, 9), '#6a4a3a', [0, 4.5, 0]); add(slab(sc(0.86), 6), '#2f4a3a', [0, -1.2, 0]); add(slab(sc(1.004), 1.4), '#7a2a20', [0, 2.2, 0]); add(slab(sc(0.935), 0.5), '#4a4036', [0, 9.25, 0]);
+        bx(0.5, 5.4, 9, '#0a0c0e', 7.0, 5.2, -4);
+        for (let z = -28; z <= 4; z += 4.5) for (const sx of [-1, 1]) lit(new T3.BoxGeometry(0.2, 0.55, 0.6), [sx * 7.02, 6.6, z]);
+        // superstructure
+        bx(12, 5, 13, '#b5ab94', 0, 12, -26); bx(10, 4, 10, '#c2b8a0', 0, 16.5, -26); bx(10.4, 3.2, 6.5, '#cfc6ae', 0, 20.1, -24); bx(11, 0.4, 7.2, '#7a7266', 0, 22.0, -24);
+        lit(new T3.BoxGeometry(9.6, 1.1, 0.3), [0, 20.3, -20.7]); for (const sx of [-1, 1]) lit(new T3.BoxGeometry(0.3, 1.1, 5), [sx * 5.25, 20.3, -24]);
+        for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) lit(new T3.BoxGeometry(0.3, 0.9, 1.4), [sx * 6.02, 12.4, -30 + k * 4.5]);
+        cy(2, 1.6, 7, '#a8402c', 0, 22, -31); cy(2.05, 2.05, 1.2, '#e8e0c8', 0, 22.6, -31); cy(1.62, 1.62, 0.8, '#1a1a1a', 0, 25.9, -31);
+        cy(0.25, 0.25, 9, '#8a8a86', 0, 26.5, -25, 6); bx(5, 0.3, 0.3, '#8a8a86', 0, 28.4, -25); bx(3, 0.25, 0.6, '#7a7a76', 0, 31.2, -25, [0, 0.5, 0]);
+        // cales, conteneurs
+        const CC_ = ['#8a2a22', '#2a5a8a', '#8a7a2a', '#3a6a4a', '#9a5a2a'];
+        [[-12, 9], [0, 9], [14, 7]].forEach(([z, L], i) => { bx(10, 1.4, L, '#5a4a3a', 0, 10.2, z); bx(9, 0.3, L - 1, '#3a3a36', 0, 11, z); if (i < 2) for (const sx of [-1, 1]) for (let lay = 0; lay < 2; lay++) if (hq(seed + i, sx, lay) > 0.3) bx(2.4, 2.6, 6, CC_[Math.floor(hq(seed, i * 3 + lay, sx) * 5)], sx * 2.7 + (hq(i, lay, sx) - 0.5) * 0.3, 12.6 + lay * 2.7, z + (hq(sx, lay, i) - 0.5) * 1.2); });
+        // grues et mat de proue
+        for (const sx of [-1, 1]) { cy(0.45, 0.45, 9, '#7a7a74', sx * 3.6, 14, 8, 8); bx(0.6, 0.6, 11, '#8a8a84', sx * 3.6, 18, 12.5, [-0.5 - (sx > 0 ? 0.5 : 0), 0, 0]); }
+        cy(0.3, 0.3, 8, '#8a8a86', 0, 13.5, 26, 6); bx(3, 0.25, 0.25, '#8a8a86', 0, 16.5, 26); bx(3, 2, 3, '#4a4a46', 0, 10.5, 29);
+        return g;
+      };
       water(S, d0, d0 + LFo, 90, WYS);
       // v307 : parois en nappe continue (relief calcule sur la distance absolue : les tranches se raccordent sans fente) ; les boites ne servent plus qu'a la collision (invisibles)
       const WM = new T3.MeshLambertMaterial({ vertexColors: true, side: T3.DoubleSide }), WTOP = WYS + 14, RS = 9, CS = 3.5, WC = DK.map((h) => new T3.Color(h));
       const hz = (a, b, c) => { const v = Math.sin(a * 127.1 + b * 311.7 + (c || 0) * 74.7) * 43758.5453; return v - Math.floor(v); };
-      const wlat = (uu, y, sg) => Math.max(0, 1.3 + 0.75 * Math.sin(uu / 9 + y / 13 + sg * 2) + 0.55 * Math.sin(uu / 4.3 - y / 7 + 1.7 * sg) + 0.3 * Math.sin(uu / 2.1 + y / 3.1));
+      const wlat = (uu, y, sg) => Math.max(0, 2.1 + 1.5 * Math.sin(uu / 11 + y / 17 + sg * 2) + 1.1 * Math.sin(uu / 5.3 - y / 8.5 + 1.7 * sg) + 0.5 * Math.sin(uu / 2.3 + y / 3.7));
       for (let u = 6; u < LFo - 6; u += 14) S.item(d(u), (r) => {
         const dc = d(u);
         for (const sg of [-1, 1]) {
           const hwv = HWf(u) + 2.2 * Math.sin(u / 41 + sg), bed = BED(dc), wd = OUT - hwv;
-          S.bx(dc, sg * (hwv + 1.2 + wd / 2), fl(S, dc, (bed - 8 + WTOP) / 2), wd, WTOP - bed + 8, 18, 'jrock', pk(r, DK), true, { render: false });
+          S.bx(dc, sg * (hwv + 2.4 + wd / 2), fl(S, dc, (bed - 8 + WTOP) / 2), wd, WTOP - bed + 8, 18, 'jrock', pk(r, DK), true, { render: false });
           if (r() < 0.12) S.bx(dc, sg * (hwv - 0.2), fl(S, dc, bed + 4), 0.2, r.between([6, 14]), 1, 'emis:#5ff0ff', undefined, false);
           if (!S.inClip(dc)) continue;
           const P = [], C = [], NC = 4, k0 = Math.floor((bed - 40) / RS), k1 = Math.ceil(WTOP / RS), vt = (i, k) => {
-            const du = dc - 7 + i * CS, uu = du - d0, bd = BED(du) - 8, kj = k + 0.35 * Math.sin(k * 12.9), ry = Math.min(WTOP, Math.max(bd, kj * RS)), hw = HWf(uu) + 2.2 * Math.sin(uu / 41 + sg) + 1.2 + wlat(uu, ry, sg);
-            const c = WC[Math.floor(hz(k, i + Math.floor(dc / 14) * 4, sg) * 4) & 3], br = 0.36 + 0.34 * hz(k, Math.round(uu / 7), 5 + sg) + 0.1 * Math.sin(uu / 6 + k * 1.7);
+            const du = dc - 7 + i * CS, uu = du - d0, bd = BED(du) - 8, kj = k + 0.35 * Math.sin(k * 12.9), ry = Math.min(WTOP, Math.max(bd, kj * RS)), bp = wlat(uu, ry, sg), hw = HWf(uu) + 2.2 * Math.sin(uu / 41 + sg) + 2.6 + bp;
+            const c = WC[0], br = 0.62 - 0.07 * bp + 0.04 * hz(k, Math.round(uu / 7), 5 + sg);   // relief : les saillies sont claires, les creux sombres
             return { p: S.T.at(du, sg * hw, A(S, du, ry)), c: [c.r * br, c.g * br, c.b * br], y: ry };
           };
           for (let i = 0; i < NC; i++) for (let k = k0; k < k1; k++) {
@@ -68,22 +104,22 @@
           if (g.effects && g.effects.debris) for (let k = 0; k < 70; k++) g.effects.debris.emit({ pos: new T3.Vector3(rk.pos.x + (Math.random() - 0.5) * 20, rk.pos.y + (Math.random() - 0.5) * 16, rk.pos.z + (Math.random() - 0.5) * 20), vel: new T3.Vector3((Math.random() - 0.5) * 50, (Math.random() - 0.3) * 30, (Math.random() - 0.5) * 50), life: 1.4 + Math.random(), s0: 1.2, s1: 1.2, s2: 0.4, peak: 0.1, cols: g.effects.pal.debrisLight, grav: 12, drag: 0.6, spin: 7 });
           if (rk.pos.y > WYS + 2) rk.vel.y -= 28; } }, [], { near: 900, span: 400 });
       });
-      // surplombs en quinconce : la trajectoire serpente
-      for (let k = 0; k < 9; k++) { const u = 90 + k * 100, sg = k % 2 ? 1 : -1; S.item(d(u), (r) => { const dc = d(u), hwv = HWf(u), bed = BED(dc), y = bed + 26 + 18 * hsh(u, 2), ext = hwv * 1.05; S.bx(dc, sg * (hwv - ext / 2 + 3), fl(S, dc, y), ext, 6, 22, 'jrock', pk(r, DK), true); S.bx(dc, sg * (hwv - ext + 3), fl(S, dc, y - 5), 4, 12, 20, 'jrock', pk(r, DK), true); S.glow(dc - 12, sg * (hwv - ext + 2), fl(S, dc, y - 2), '#5ff0ff', 20); }); }
-      // stalagmites : on passe entre
-      for (let u = 60; u < LFo - 40; u += 62) S.item(d(u), (r) => { const dc = d(u), hwv = HWf(u), bed = BED(dc); for (let k = 0; k < 1; k++) { const lx = r.between([-hwv * 0.6, hwv * 0.6]), h = r.between([14, 46]); S.cyl(dc + r.between([-5, 5]), lx, fl(S, dc, bed - 1), r.between([3.4, 6]), h, 'jrock', pk(r, DK), 8, 0.9, true); } });
-      // arches de roche : deux piliers et un linteau en travers de la fosse
-      for (const u of [300, 560, 840]) S.item(d(u), (r) => { const dc = d(u), hwv = HWf(u), bed = BED(dc), yb = bed + 38; for (const sg of [-1, 1]) S.cyl(dc, sg * (hwv - 9), fl(S, dc, bed - 1), 7, yb - bed + 4, 'jrock', pk(r, DK), 9, 4.5, true); S.glow(dc - 12, 0, fl(S, dc, yb - 1), '#ffcf6a', 40); });
-      // epaves couchees sur le fond (cargo coupe en deux, mats, conteneurs), cheminees hydrothermales
-      for (const [u, lx, rot] of [[180, 10, 8], [440, -14, -12], [700, 8, 6], [930, -10, -9]]) S.item(d(u), (r) => {
-        const dc = d(u), bed = BED(dc);
-        S.b.box({ p: S.T.at(dc, lx, 8), s: [16, 14, 74], r: [r.between([-8, 8]), rot, rot * 0.7], mat: 'metal', tint: '#9a5a3c', collide: true });
-        S.b.box({ p: S.T.at(dc + 30, lx + 3, 14), s: [9, 4, 30], r: [0, rot, 6], mat: 'metal', tint: '#7a2a22', collide: true });
-        S.cyl(dc - 10, lx, fl(S, dc, bed + 13), 0.6, 26, 'metal', '#5a6068', 6, 0.5, false); S.bx(dc - 10, lx, fl(S, dc, bed + 24), 12, 0.5, 0.5, 'metal', '#5a6068', false);
-        for (let k = 0; k < 3; k++) S.bx(dc + r.between([-12, 12]), lx + r.between([-10, 10]), fl(S, dc, bed + 1.4), 6, 2.6, 2.5, 'col:' + pk(r, ['#8a2a22', '#2a5a8a', '#8a7a2a']), undefined, true);
-        lampS(S, dc, lx + 3, fl(S, dc, bed + 18), '#ffcf6a', 22);
+      // surplombs en quinconce : rebords de roche irreguliers, la trajectoire serpente
+      for (let k = 0; k < 9; k++) { const u = 90 + k * 100, sg = k % 2 ? 1 : -1; S.item(d(u), (r) => { const dc = d(u), hwv = HWf(u), bed = BED(dc), y = bed + 26 + 18 * hsh(u, 2), ext = hwv * 1.05; ledge(S, dc, sg * (hwv - ext / 2 + 3), y, ext * 1.1, 9, 24, k + 3); S.glow(dc - 12, sg * (hwv - ext + 2), fl(S, dc, y - 5), '#5ff0ff', 20); }); }
+      // pointes de roche : on passe entre
+      for (let u = 60; u < LFo - 40; u += 62) S.item(d(u), (r) => { const dc = d(u), hwv = HWf(u), bed = BED(dc), lx = r.between([-hwv * 0.6, hwv * 0.6]), h = r.between([16, 46]); spire(S, dc + r.between([-5, 5]), lx, bed - 2, r.between([3.6, 6.5]), h, Math.floor(u)); });
+      // arches de roche : deux colonnes naturelles de chaque cote
+      for (const u of [300, 560, 840]) S.item(d(u), (r) => { const dc = d(u), hwv = HWf(u), bed = BED(dc), yb = bed + 38; for (const sg of [-1, 1]) column(S, dc, sg * (hwv - 10), bed - 2, 7.5, yb - bed + 6, u + sg); S.glow(dc - 12, 0, fl(S, dc, yb - 1), '#ffcf6a', 40); });
+      // cargos couches sur le fond
+      for (const [u, lx, tilt, yaw] of [[180, 14, 0.16, 0.0], [440, -16, -0.2, 0.05], [700, 12, 0.12, -0.04], [930, -13, -0.17, 0.0]]) S.item(d(u), (r) => {
+        const dc = d(u), bed = BED(dc), grp = ship(u), s = 0.92;
+        grp.scale.setScalar(s); grp.rotation.order = 'YXZ'; const inner = new T3.Group(); inner.add(grp); grp.rotation.z = tilt; grp.rotation.x = -0.06;
+        EVO.placeGroup(S, inner, dc, lx, A(S, dc, bed - 3), yaw); if (S.inClip(dc)) CC.Models.bake(inner);
+        S.bx(dc, lx, fl(S, dc, bed + 3), 13 * s, 9 * s, 72 * s, 'metal', undefined, true, { render: false }); S.bx(dc - 26 * s, lx, fl(S, dc, bed + 14), 11 * s, 14 * s, 12 * s, 'metal', undefined, true, { render: false });
+        lampS(S, dc - 26 * s, lx + 4, fl(S, dc, bed + 30), '#ffcf6a', 22);
       });
-      for (let u = 50; u < LFo - 30; u += 64) S.item(d(u), (r) => { const dc = d(u), hwv = HWf(u), bed = BED(dc), lx = r.between([-hwv * 0.7, hwv * 0.7]); S.cyl(dc, lx, fl(S, dc, bed - 1), 2.6, 6, 'jrock', '#5a4a3a', 8, 1.4, true); S.bx(dc, lx, fl(S, dc, bed + 18), 1.6, 28, 1.6, 'emis:#ff9a4a', undefined, false); S.glow(dc, lx, fl(S, dc, bed + 8), '#ff9a4a', 46); });
+      // cheminees hydrothermales : tuyau de roche sombre et lueur au sommet
+      for (let u = 50; u < LFo - 30; u += 64) S.item(d(u), (r) => { const dc = d(u), hwv = HWf(u), bed = BED(dc), lx = r.between([-hwv * 0.7, hwv * 0.7]); spire(S, dc, lx, bed - 2, 3.4, 13, u + 7, '#3a3430'); S.glow(dc, lx, fl(S, dc, bed + 11), '#ff9a4a', 46); });
       // ennemis : mines partout, tourelles sur les surplombs, canonnieres de surface au tout debut
       for (let k = 0; k < 16; k++) { const u = 40 + k * 60; foe(S, 'mine', d(u), (k % 2 ? 1 : -1) * r5(k) * HWf(u), Math.max(8, BED(d(u)) < WYS - 80 ? hsh(u, 5) * 70 + 14 : WYS - BED(d(u)) - 5), { name: 'MINE', keep: true }); }
       for (const u of [90, 190]) foe(S, 'gunboat', d(u), (u === 90 ? -8 : 8), WYS + 0.5 - BED(d(u)), { name: 'CANONNIERE', hp: 4, armed: true, keep: true });
