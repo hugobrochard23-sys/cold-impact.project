@@ -1,6 +1,7 @@
 /* Menus (absents de la vidéo → conception minimale dans le style du HUD, CHOIX validé) :
  * sélection de niveau, pause, résultats, réglages (TAB), liste des touches (F1). */
 (function () {
+  CC.LOADIMG = new Image(); CC.LOADIMG.src = 'assets/ui/loading.jpg';   // v319 : ecran de chargement illustre
   const U = CC.U;
 
   class UI {
@@ -93,7 +94,11 @@
         ctx.strokeStyle = CC.CONFIG.hud.colors.green; ctx.lineWidth = Math.max(1, px * 0.5); ctx.strokeRect(W * 0.04, T + HH * 0.012, W * 0.92, px * 13);
         this.text(ctx, game.notice, W / 2, T + HH * 0.012 + px * 3, px, CC.CONFIG.hud.colors.green, { align: 'center' });
       }
-      if (game.state === 'BOOT' || game.warm) { this.dim(ctx, W, H, 1); this.text(ctx, 'CHARGEMENT...', W / 2, H / 2, H * 0.004, col.white, { align: 'center' }); if (game.warm) { const bw = W * 0.5, bh = Math.max(3, H * 0.008), bx = (W - bw) / 2, by = H / 2 + H * 0.06; ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(bx, by, bw, bh); ctx.fillStyle = col.white; ctx.fillRect(bx, by, bw * Math.min(1, game.warm.st.p), bh); } }
+      if (game.state === 'BOOT' || game.warm) {
+        const im = CC.LOADIMG, T0 = -(this.offsetY || 0), HF = this.fullH || H;
+        if (im && im.complete && im.naturalWidth) { const k = Math.max(W / im.naturalWidth, HF / im.naturalHeight), dw = im.naturalWidth * k, dh = im.naturalHeight * k; ctx.drawImage(im, (W - dw) / 2, T0 + (HF - dh) / 2, dw, dh); const gr = ctx.createLinearGradient(0, T0 + HF * 0.78, 0, T0 + HF); gr.addColorStop(0, 'rgba(4,10,24,0)'); gr.addColorStop(1, 'rgba(4,10,24,0.72)'); ctx.fillStyle = gr; ctx.fillRect(0, T0 + HF * 0.78, W, HF * 0.22); } else this.dim(ctx, W, H, 1);
+        const yb = T0 + HF * 0.9; this.text(ctx, 'CHARGEMENT...', W / 2, yb, H * 0.0035, col.white, { align: 'center' }); if (game.warm) { const bw = W * 0.5, bh = Math.max(3, H * 0.008), bx = (W - bw) / 2, by = yb + H * 0.045; ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(bx, by, bw, bh); ctx.fillStyle = col.white; ctx.fillRect(bx, by, bw * Math.min(1, game.warm.st.p), bh); }
+      }
       if (game.genDebug && game.level && game.level.plan && CC.Gen.drawDebugOverlay && !this.overlay) CC.Gen.drawDebugOverlay(ctx, game, W, H, this);   // v032
       // v034 : fondu au noir (retour à l'accueil : le temps de bâtir un nouveau couloir, puis la scène réapparaît)
       const fa = game.pendingHome ? 1 : game.fadeIn > 0 ? Math.min(1, game.fadeIn / 0.45) : 0;
