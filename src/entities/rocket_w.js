@@ -1,10 +1,11 @@
 /* v308 : LES QUATRE FUSEES AQUATIQUES (niveau 2) : de vraies silhouettes, plus de simples recolorations du missile du niveau 1.
  * Une fiche de skin avec `build: '<nom>'` est construite ici (CC.Models.rocket l'appelle) : corps de revolution lisse (LatheGeometry), ailes et derives extrudees, accessoires.
  * Axe +Z = nez. Tout est fusionne par couleur (bake) : quelques appels de dessin seulement.
- *   torpille  : torpille de laiton et d'acier, tourelle de sous-marin et periscope, tuyere carenee
- *   marlin    : espadon a rostre, grande voile dorsale, nageoires, queue en croissant, foil de sustentation
- *   requin    : requin hydrojet, gueule a dents, ouies, dorsale, queue heterocerque, nacelles d'hydrojet
- *   manta     : raie manta de combat, ailes delta cernees de veines lumineuses, lobes cephaliques */
+ *   harpon     : missile de croisiere de sous-marin (ailes depliables, bandes d'etancheite)
+ *   hydroptere : fuselage blanc sur mats a foils, helice carenee
+ *   amphibie   : fusee olive a nez jaune, flotteurs a chenilles, rail en treillis (comme le char lance-fusee amphibie)
+ *   abyssal    : missile de profondeur, dome sonar, propulseurs lateraux, filets cyan
+ */
 (function () {
   const T3 = THREE, M = CC.Models; if (!M) return;
   const mats = {};
@@ -26,78 +27,84 @@
   const box = (w, h, d) => new T3.BoxGeometry(w, h, d);
 
   const BUILD = {
-    torpille(g) {
-      const BODY = '#6f8498', DK = '#2e3e4c', BR = '#d9a441', CY = '#7be8ff';
-      put(g, lathe([[0, -0.5], [0.05, -0.5], [0.08, -0.44], [0.105, -0.3], [0.12, -0.1], [0.12, 0.25], [0.112, 0.38], [0.09, 0.48], [0.05, 0.545], [0, 0.575]]), BODY);
-      for (const z of [-0.3, 0.02, 0.3]) put(g, cylZ(0.127, 0.127, 0.032, 18), BR, { p: [0, 0, z] });
-      put(g, sph(0.034), BR, { p: [0, 0, 0.56] });
-      for (const sx of [-1, 1]) for (const z of [-0.14, 0.1, 0.22]) { put(g, sph(0.026), BR, { p: [sx * 0.113, 0, z], s: [0.5, 1, 1] }); put(g, sph(0.017), CY, { p: [sx * 0.12, 0, z], s: [0.5, 1, 1], basic: true }); }
-      // tourelle de sous-marin et periscope
-      put(g, fin([[-0.04, 0.09], [0.22, 0.09], [0.17, 0.2], [0.02, 0.2]], 0.06), DK, { p: [0, 0, 0] });
-      put(g, cylZ(0.009, 0.009, 0.14, 6), '#9aa8b4', { p: [0, 0.27, 0.1], r: [Math.PI / 2, 0, 0] });
-      put(g, box(0.02, 0.02, 0.05), '#9aa8b4', { p: [0, 0.335, 0.125] });
-      // tuyere carenee : anneau de laiton, croix de derives
-      put(g, ringG(0.098, 0.014), BR, { p: [0, 0, -0.5] });
-      put(g, cylZ(0.085, 0.07, 0.1, 14), DK, { p: [0, 0, -0.5] });
-      for (let k = 0; k < 4; k++) { const f = new T3.Group(); f.rotation.z = k * Math.PI / 2 + Math.PI / 4; g.add(f); put(g, fin([[-0.12, 0.085], [-0.5, 0.085], [-0.55, 0.21], [-0.4, 0.23]], 0.024), DK, { parent: f }); put(g, fin([[-0.5, 0.2], [-0.55, 0.21], [-0.4, 0.23], [-0.4, 0.2]], 0.03), BR, { parent: f }); }
-      return { tail: -0.5, jr: 0.075, noseZ: 0.6, tips: [[0.15, 0.15, -0.45], [-0.15, 0.15, -0.45], [0.15, -0.15, -0.45], [-0.15, -0.15, -0.45]] };
-    },
-    marlin(g) {
-      const BODY = '#4f86b8', BELLY = '#cfe3f2', DK = '#26384a', BR = '#d9a441', CY = '#5ff0ff';
-      put(g, lathe([[0, -0.6], [0.04, -0.6], [0.07, -0.52], [0.1, -0.38], [0.112, -0.15], [0.112, 0.25], [0.095, 0.42], [0.06, 0.52], [0.028, 0.58]]), BODY);
-      put(g, lathe([[0, -0.6], [0.03, -0.6], [0.055, -0.5], [0.075, -0.38], [0.082, -0.15], [0.082, 0.25], [0.07, 0.42], [0, 0.5]]), BELLY, { p: [0, -0.052, 0], s: [1.28, 1, 1] });
-      put(g, cylZ(0.04, 0.003, 0.4, 8), DK, { p: [0, 0, 0.74] });
-      for (const z of [0.22, 0.34]) put(g, cylZ(0.116, 0.116, 0.014, 18), CY, { p: [0, 0, z], basic: true });
-      for (const sx of [-1, 1]) { put(g, sph(0.03), '#ffffff', { p: [sx * 0.082, 0.04, 0.45] }); put(g, sph(0.018), CY, { p: [sx * 0.098, 0.043, 0.46], basic: true }); }
-      put(g, fin([[0.3, 0.09], [0.17, 0.25], [0, 0.37], [-0.26, 0.32], [-0.36, 0.09]], 0.02), DK);
-      put(g, fin([[0.3, 0.09], [0.17, 0.25], [0, 0.37], [-0.02, 0.33], [0.1, 0.2], [0.2, 0.09]], 0.024), BR);
-      for (const sx of [-1, 1]) { const w = put(g, flat([[0.09, 0.22], [0.46, -0.08], [0.44, -0.18], [0.09, -0.02]].map((q) => [q[0] * sx, q[1]]), 0.02), DK, { p: [0, -0.05, 0] }); w.rotation.z = sx * -0.16; }
-      put(g, fin([[-0.52, 0.0], [-0.72, 0.32], [-0.84, 0.3], [-0.68, 0.0]], 0.022), DK);
-      put(g, fin([[-0.52, 0.0], [-0.72, -0.32], [-0.84, -0.3], [-0.68, 0.0]], 0.022), DK);
-      for (const sx of [-1, 1]) put(g, flat([[0.07 * sx, -0.4], [0.28 * sx, -0.62], [0.26 * sx, -0.68], [0.06 * sx, -0.56]], 0.018), DK);
-      // foil de sustentation : mat sous le ventre et plan porteur
-      put(g, fin([[-0.02, -0.08], [0.1, -0.08], [0.08, -0.22], [0.0, -0.22]], 0.026), BR);
-      put(g, flat([[-0.3, 0.07], [0.3, 0.07], [0.26, -0.03], [-0.26, -0.03]], 0.018), DK, { p: [0, -0.23, 0.04] });
-      for (const sx of [-1, 1]) put(g, sph(0.015), CY, { p: [sx * 0.29, -0.23, 0.04], basic: true });
-      return { tail: -0.6, jr: 0.06, noseZ: 0.9, tips: [[0.44, -0.1, -0.1], [-0.44, -0.1, -0.1], [0.27, -0.23, 0.0], [-0.27, -0.23, 0.0]] };
-    },
-    requin(g) {
-      const BODY = '#3c6a98', BELLY = '#c8d8e4', DK = '#1b2b3a', BR = '#d9a441', CY = '#5ff0ff';
-      put(g, lathe([[0, -0.75], [0.04, -0.75], [0.07, -0.68], [0.1, -0.5], [0.125, -0.2], [0.137, 0.15], [0.127, 0.4], [0.105, 0.6], [0.07, 0.76], [0.03, 0.86], [0, 0.89]]), BODY);
-      put(g, lathe([[0, -0.6], [0.06, -0.5], [0.09, -0.2], [0.098, 0.15], [0.09, 0.4], [0.07, 0.6], [0.04, 0.72]]), BELLY, { p: [0, -0.068, 0], s: [1.4, 1, 1] });
-      put(g, cylZ(0.106, 0.106, 0.03, 18), DK, { p: [0, 0, 0.64] });
-      for (let k = 0; k < 11; k++) { const a = Math.PI + 0.45 + k * (Math.PI - 0.9) / 10; put(g, cylZ(0.015, 0.001, 0.05, 6), '#ffffff', { p: [Math.cos(a) * 0.098, Math.sin(a) * 0.098, 0.665] }); }
-      for (const sx of [-1, 1]) { put(g, sph(0.027), DK, { p: [sx * 0.098, 0.05, 0.55] }); put(g, sph(0.016), CY, { p: [sx * 0.112, 0.053, 0.555], basic: true }); for (let k = 0; k < 5; k++) put(g, box(0.008, 0.095, 0.014), DK, { p: [sx * 0.137, -0.005, 0.32 - k * 0.055], r: [0, 0, sx * 0.18] }); }
-      put(g, fin([[0.26, 0.12], [0.02, 0.5], [-0.04, 0.5], [-0.24, 0.12]], 0.022), DK);
-      put(g, fin([[0.25, 0.12], [0.02, 0.48], [0.0, 0.46], [0.12, 0.12]], 0.026), BR);
-      put(g, fin([[-0.42, 0.1], [-0.56, 0.22], [-0.64, 0.1]], 0.018), DK);
-      for (const sx of [-1, 1]) { const w = put(g, flat([[0.1, 0.26], [0.52, -0.16], [0.47, -0.25], [0.1, -0.03]].map((q) => [q[0] * sx, q[1]]), 0.022), DK, { p: [0, -0.04, 0] }); w.rotation.z = sx * -0.28; }
-      put(g, fin([[-0.62, 0.02], [-0.8, 0.44], [-0.96, 0.5], [-0.88, 0.16], [-0.78, 0.0]], 0.024), BODY);
-      put(g, fin([[-0.64, -0.02], [-0.8, -0.22], [-0.92, -0.22], [-0.78, 0.0]], 0.02), DK);
-      for (const sx of [-1, 1]) put(g, flat([[0.07 * sx, -0.58], [0.26 * sx, -0.78], [0.24 * sx, -0.84], [0.05 * sx, -0.72]], 0.02), DK);
-      // nacelles d'hydrojet : prise d'eau a l'avant (anneau cyan), tuyere a l'arriere
-      for (const sx of [-1, 1]) { put(g, cylZ(0.042, 0.042, 0.56, 12), DK, { p: [sx * 0.21, -0.07, -0.02] }); put(g, ringG(0.042, 0.009), CY, { p: [sx * 0.21, -0.07, 0.27], basic: true }); put(g, cylZ(0.046, 0.036, 0.06, 12), BR, { p: [sx * 0.21, -0.07, -0.33] }); put(g, box(0.1, 0.014, 0.12), DK, { p: [sx * 0.15, -0.07, 0.0] }); }
-      return { tail: -0.75, jr: 0.06, noseZ: 0.9, tips: [[0.5, -0.2, -0.2], [-0.5, -0.2, -0.2], [0.21, -0.07, -0.34], [-0.21, -0.07, -0.34]] };
-    },
-    manta(g) {
-      const BODY = '#1f3e5a', DK = '#12202e', WING = '#1d4a72', CY = '#5ff0ff', BR = '#d9a441';
-      put(g, lathe([[0, -0.8], [0.05, -0.8], [0.09, -0.7], [0.125, -0.45], [0.14, -0.1], [0.14, 0.3], [0.12, 0.6], [0.08, 0.82], [0.035, 0.95], [0, 1.0]]), BODY);
-      const WP = [[0.12, 0.62], [0.3, 0.52], [0.52, 0.28], [0.7, 0.04], [0.74, -0.12], [0.6, -0.26], [0.34, -0.36], [0.12, -0.5]];
+    // A : missile de croisiere de sous-marin : fuseau fin, bandes d'etancheite, ailes depliables, empennage en croix
+    harpon(g) {
+      const BODY = '#2f4a63', LT = '#c8d2dc', OR = '#ff7a1a', DK = '#14202c';
+      put(g, lathe([[0, -0.7], [0.06, -0.7], [0.085, -0.6], [0.1, -0.5], [0.1, 0.3], [0.092, 0.45], [0.07, 0.58], [0.04, 0.68], [0, 0.76]]), BODY);
+      put(g, cylZ(0.082, 0.0, 0.17, 16), OR, { p: [0, 0, 0.675] });
+      for (const z of [-0.45, 0.12, 0.3]) put(g, cylZ(0.104, 0.104, 0.022, 18), LT, { p: [0, 0, z] });
+      put(g, cylZ(0.104, 0.104, 0.05, 18), OR, { p: [0, 0, -0.3] });
+      for (const z of [-0.12, 0.2, 0.42]) put(g, cylZ(0.1015, 0.1015, 0.006, 18), DK, { p: [0, 0, z] });
+      put(g, box(0.05, 0.035, 0.14), DK, { p: [0, 0.105, -0.12] }); put(g, box(0.04, 0.03, 0.05), BODY, { p: [0, 0.12, -0.17] });
       for (const sx of [-1, 1]) {
-        const grp = new T3.Group(); grp.position.y = -0.02; grp.rotation.z = sx * -0.16; g.add(grp);
-        put(g, flat(WP.map((q) => [q[0] * sx, q[1]]), 0.034), WING, { parent: grp });
-        put(g, flat(WP.map((q) => [q[0] * sx * 0.82 + 0.02 * sx, q[1] * 0.8 + 0.02]), 0.012), '#2a6a9a', { p: [0, 0.02, 0], parent: grp });
-        for (let k = 0; k < 3; k++) { const a = 0.35 - k * 0.42, len = 0.4 - k * 0.04; put(g, box(len, 0.006, 0.014), CY, { p: [sx * (0.17 + len / 2 * Math.cos(a)), 0.028, 0.34 - k * 0.2 - len / 2 * Math.sin(a) * 0.6], r: [0, sx * a, 0], basic: true, parent: grp }); }
-        put(g, sph(0.02), CY, { p: [sx * 0.72, 0, -0.04], basic: true, parent: grp });
-        put(g, cylZ(0.001, 0.036, 0.34, 8), DK, { p: [sx * 0.09, -0.02, 1.08], r: [0, sx * 0.14, 0] });
-        put(g, sph(0.03), '#ffffff', { p: [sx * 0.105, 0.05, 0.72] }); put(g, sph(0.019), CY, { p: [sx * 0.118, 0.053, 0.73], basic: true });
-        const tf = new T3.Group(); tf.rotation.z = sx * 0.3; tf.position.set(sx * 0.1, 0.05, 0); g.add(tf); put(g, fin([[-0.45, 0.06], [-0.78, 0.4], [-0.9, 0.38], [-0.8, 0.06]], 0.022), DK, { parent: tf });
+        put(g, flat([[0.09, 0.2], [0.42, -0.08], [0.42, -0.17], [0.09, -0.1]].map((q) => [q[0] * sx, q[1]]), 0.016), LT, { p: [0, 0, 0] });
+        put(g, box(0.07, 0.05, 0.12), DK, { p: [sx * 0.12, 0, 0.04] });
+        put(g, box(0.012, 0.012, 0.08), OR, { p: [sx * 0.41, 0, -0.1] });
       }
-      put(g, box(0.022, 0.01, 0.9), CY, { p: [0, 0.142, 0.1], basic: true });
-      for (let k = 0; k < 5; k++) put(g, fin([[0.52 - k * 0.22, 0.12], [0.44 - k * 0.22, 0.2 - k * 0.012], [0.3 - k * 0.22, 0.12]], 0.016), DK);
-      put(g, cylZ(0.12, 0.09, 0.08, 16), DK, { p: [0, 0, -0.8] });
-      put(g, ringG(0.1, 0.012), BR, { p: [0, 0, -0.84] });
-      return { tail: -0.8, jr: 0.085, noseZ: 1.2, tips: [[0.72, -0.1, -0.1], [-0.72, -0.1, -0.1], [0.4, 0.4, -0.85], [-0.4, 0.4, -0.85]] };
+      put(g, cylZ(0.085, 0.07, 0.07, 14), DK, { p: [0, 0, -0.7] });
+      for (let k = 0; k < 4; k++) { const f = new T3.Group(); f.rotation.z = k * Math.PI / 2; g.add(f); put(g, fin([[-0.42, 0.085], [-0.7, 0.085], [-0.72, 0.24], [-0.58, 0.25]], 0.02), LT, { parent: f }); put(g, fin([[-0.66, 0.2], [-0.72, 0.24], [-0.7, 0.2]], 0.024), OR, { parent: f }); }
+      return { tail: -0.7, jr: 0.065, noseZ: 0.78, tips: [[0.42, 0, -0.12], [-0.42, 0, -0.12], [0.24, 0, -0.68], [-0.24, 0, -0.68]] };
+    },
+    // B : hydroptere : fuselage blanc sur deux mats a foils (comme un navire a ailes portantes), canards, helice carenee
+    hydroptere(g) {
+      const BODY = '#dde4ea', NAVY = '#243a52', RED = '#e0402c', DK = '#3a4650';
+      put(g, lathe([[0, -0.7], [0.05, -0.7], [0.08, -0.62], [0.098, -0.45], [0.098, 0.35], [0.085, 0.52], [0.055, 0.66], [0.02, 0.76], [0, 0.78]]), BODY);
+      put(g, cylZ(0.088, 0.0, 0.2, 16), NAVY, { p: [0, 0, 0.67] });
+      put(g, cylZ(0.101, 0.101, 0.04, 18), RED, { p: [0, 0, 0.5] }); put(g, cylZ(0.101, 0.101, 0.012, 18), NAVY, { p: [0, 0, 0.1] }); put(g, cylZ(0.101, 0.101, 0.012, 18), NAVY, { p: [0, 0, -0.2] });
+      put(g, box(0.012, 0.012, 0.8), NAVY, { p: [0, 0.099, -0.05] });
+      for (const sx of [-1, 1]) {
+        put(g, flat([[0.09, 0.62], [0.24, 0.5], [0.24, 0.45], [0.09, 0.5]].map((q) => [q[0] * sx, q[1]]), 0.014), NAVY);
+        for (const [z, sp, d] of [[0.14, 1, 0.18], [-0.38, 0.75, 0.15]]) {
+          const st = put(g, box(0.022, 0.24 * sp, 0.05 * sp), DK, { p: [sx * 0.17, -0.1 * sp, z] }); st.rotation.z = sx * 0.55;
+          put(g, flat([[-0.1 * sp, d], [0.1 * sp, d], [0.13 * sp, -d * 0.2], [-0.13 * sp, -d * 0.2]], 0.016), RED, { p: [sx * 0.265 * sp + sx * 0.04, -0.215 * sp, z - 0.02] });
+          put(g, sph(0.02), DK, { p: [sx * 0.1, -0.015, z] });
+        }
+      }
+      put(g, fin([[-0.4, 0.09], [-0.68, 0.09], [-0.72, 0.36], [-0.56, 0.38]], 0.022), BODY);
+      put(g, fin([[-0.62, 0.3], [-0.72, 0.36], [-0.66, 0.3]], 0.026), RED);
+      for (const sx of [-1, 1]) put(g, flat([[0.08 * sx, -0.5], [0.3 * sx, -0.66], [0.3 * sx, -0.73], [0.08 * sx, -0.68]], 0.016), NAVY);
+      put(g, ringG(0.108, 0.014), DK, { p: [0, 0, -0.74] });
+      for (let k = 0; k < 3; k++) { const f = new T3.Group(); f.rotation.z = k * Math.PI * 2 / 3; g.add(f); put(g, box(0.012, 0.1, 0.02), DK, { p: [0, 0.056, -0.74], parent: f }); }
+      return { tail: -0.74, jr: 0.07, noseZ: 0.8, tips: [[0.3, 0, -0.7], [-0.3, 0, -0.7], [0.3, -0.22, 0.12], [-0.3, -0.22, 0.12]] };
+    },
+    // C : missile amphibie (comme le char lance-fusee amphibie) : fusee olive a nez jaune, deux flotteurs a chenilles, rail en treillis
+    amphibie(g) {
+      const OL = '#5f6e3c', OLD = '#3f4a2a', YEL = '#e8c42a', RED = '#c8362a', DK = '#1d2418', STEEL = '#8a949c';
+      put(g, lathe([[0, -0.7], [0.06, -0.7], [0.09, -0.62], [0.105, -0.5], [0.105, 0.4], [0.092, 0.55], [0.066, 0.67], [0.03, 0.76], [0, 0.78]]), OL);
+      put(g, cylZ(0.094, 0.0, 0.24, 16), YEL, { p: [0, 0, 0.66] });
+      put(g, cylZ(0.109, 0.109, 0.05, 18), RED, { p: [0, 0, 0.5] }); put(g, cylZ(0.108, 0.108, 0.18, 18), RED, { p: [0, 0, -0.05] }); put(g, cylZ(0.109, 0.109, 0.014, 18), YEL, { p: [0, 0, -0.17] });
+      for (const sx of [-1, 1]) {
+        put(g, cylZ(0.056, 0.056, 0.86, 14), OLD, { p: [sx * 0.215, -0.06, -0.04] }); put(g, cylZ(0.056, 0.0, 0.14, 14), OLD, { p: [sx * 0.215, -0.06, 0.46] });
+        put(g, box(0.034, 0.12, 0.84), DK, { p: [sx * 0.265, -0.06, -0.04] });
+        for (let k = 0; k < 6; k++) put(g, new T3.CylinderGeometry(0.044, 0.044, 0.04, 10).rotateZ(Math.PI / 2), STEEL, { p: [sx * 0.274, -0.06, -0.38 + k * 0.145] });
+        put(g, box(0.1, 0.022, 0.12), OLD, { p: [sx * 0.15, -0.045, 0.2] }); put(g, box(0.1, 0.022, 0.12), OLD, { p: [sx * 0.15, -0.045, -0.3] });
+      }
+      for (const sx of [-1, 1]) put(g, box(0.012, 0.012, 0.85), DK, { p: [sx * 0.045, 0.125, -0.02] });
+      for (let k = 0; k < 7; k++) put(g, box(0.1, 0.01, 0.014), DK, { p: [0, 0.125, -0.4 + k * 0.13] });
+      put(g, new T3.CylinderGeometry(0.04, 0.04, 0.012, 12), DK, { p: [0, 0.103, 0.24] });
+      put(g, cylZ(0.082, 0.066, 0.07, 14), DK, { p: [0, 0, -0.7] });
+      for (let k = 0; k < 4; k++) { const f = new T3.Group(); f.rotation.z = k * Math.PI / 2 + Math.PI / 4; g.add(f); put(g, fin([[-0.4, 0.1], [-0.7, 0.1], [-0.74, 0.27], [-0.58, 0.28]], 0.022), RED, { parent: f }); }
+      return { tail: -0.7, jr: 0.07, noseZ: 0.8, tips: [[0.3, -0.06, -0.4], [-0.3, -0.06, -0.4], [0.2, 0.2, -0.7], [-0.2, 0.2, -0.7]] };
+    },
+    // D : missile de profondeur : dome sonar a l'avant, deux propulseurs lateraux, ailes en fleche, filets cyan
+    abyssal(g) {
+      const BODY = '#3c4a5a', DKS = '#1c2632', BR = '#d9a441', CY = '#5ff0ff', LT = '#9fb2c4';
+      put(g, lathe([[0, -0.75], [0.06, -0.75], [0.09, -0.65], [0.11, -0.5], [0.11, 0.4], [0.098, 0.52], [0.09, 0.58]]), BODY);
+      put(g, sph(0.1), DKS, { p: [0, 0, 0.58], s: [1, 1, 1.15] }); put(g, ringG(0.103, 0.01), CY, { p: [0, 0, 0.58], basic: true });
+      put(g, cylZ(0.003, 0.003, 0.14, 4), LT, { p: [0, 0, 0.8] });
+      for (const z of [-0.35, 0.0, 0.3]) put(g, cylZ(0.115, 0.115, 0.03, 18), BR, { p: [0, 0, z] });
+      for (const z of [-0.18, 0.15]) put(g, cylZ(0.112, 0.112, 0.01, 18), CY, { p: [0, 0, z], basic: true });
+      put(g, box(0.014, 0.016, 0.9), CY, { p: [0, 0.112, -0.05], basic: true });
+      for (const sx of [-1, 1]) {
+        put(g, cylZ(0.055, 0.055, 0.82, 14), LT, { p: [sx * 0.19, -0.015, -0.1] }); put(g, cylZ(0.055, 0.0, 0.18, 14), BODY, { p: [sx * 0.19, -0.015, 0.4] }); put(g, cylZ(0.05, 0.05, 0.02, 14), CY, { p: [sx * 0.19, -0.015, 0.0], basic: true });
+        put(g, cylZ(0.05, 0.04, 0.07, 12), DKS, { p: [sx * 0.19, -0.015, -0.52] });
+        put(g, box(0.1, 0.03, 0.16), DKS, { p: [sx * 0.13, -0.015, 0.0] });
+        put(g, flat([[0.2 * sx, 0.0], [0.5 * sx, -0.34], [0.5 * sx, -0.46], [0.22 * sx, -0.42]], 0.02), BODY);
+        put(g, box(0.012, 0.012, 0.1), CY, { p: [sx * 0.49, 0, -0.4], basic: true });
+      }
+      for (let k = 0; k < 2; k++) { const f = new T3.Group(); f.rotation.z = k * Math.PI; g.add(f); put(g, fin([[-0.5, 0.1], [-0.76, 0.1], [-0.8, 0.3], [-0.64, 0.34]], 0.024), BODY, { parent: f }); put(g, fin([[-0.7, 0.26], [-0.8, 0.3], [-0.78, 0.26]], 0.028), CY, { parent: f, basic: true }); }
+      put(g, ringG(0.085, 0.012), BR, { p: [0, 0, -0.78] });
+      return { tail: -0.78, jr: 0.075, noseZ: 0.9, tips: [[0.5, 0, -0.44], [-0.5, 0, -0.44], [0.19, -0.015, -0.55], [-0.19, -0.015, -0.55]] };
     },
   };
 

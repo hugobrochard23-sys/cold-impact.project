@@ -129,7 +129,7 @@
     { c: { body: '#3c6a98', nose: '#243649', tip: '#5ff0ff', band: '#5ff0ff', fin: '#243649', nozzle: '#1a2128' }, d: { r: 0.095, len: 1.2, noseLen: 0.42, noseR: 0.018 }, flame: '#5ff0ff' },
     { c: { body: '#2a4258', nose: '#1b2b3a', tip: '#5ff0ff', band: '#d9a441', fin: '#1b2b3a', nozzle: '#12181e' }, d: { r: 0.092, len: 1.5, noseLen: 0.6, noseR: 0.01 }, flame: '#5ff0ff' },
   ];
-  SKIN_W.forEach((d, i) => { CC.Skins.byId['evoW' + i] = { id: 'evoW' + i, name: 'evoW' + i, short: 'evoW' + i, tier: 'base', price: 0, tierLabel: '', c: Object.assign({}, d.c), flame: d.flame, build: ['torpille', 'marlin', 'requin', 'manta'][i], dims: Object.assign({ fins: 0, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 }, d.d), parts: [] }; });
+  SKIN_W.forEach((d, i) => { CC.Skins.byId['evoW' + i] = { id: 'evoW' + i, name: 'evoW' + i, short: 'evoW' + i, tier: 'base', price: 0, tierLabel: '', c: Object.assign({}, d.c), flame: d.flame, build: ['harpon', 'hydroptere', 'amphibie', 'abyssal'][i], dims: Object.assign({ fins: 0, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 }, d.d), parts: [] }; });
   let _pm = null;
   const PM = () => _pm || (_pm = { card: new THREE.MeshLambertMaterial({ color: '#c8a46e' }), cardD: new THREE.MeshLambertMaterial({ color: '#8a6a44' }), white: new THREE.MeshLambertMaterial({ color: '#eceef2' }), red: new THREE.MeshLambertMaterial({ color: '#d8402c' }),
     blue: new THREE.MeshLambertMaterial({ color: '#2a7ad0' }), dark: new THREE.MeshLambertMaterial({ color: '#2b2d31' }), steel: new THREE.MeshLambertMaterial({ color: '#9aa0a8' }) });
