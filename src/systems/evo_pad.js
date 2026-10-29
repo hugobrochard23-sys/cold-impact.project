@@ -128,7 +128,7 @@
     if (pad.deflMat && a && !a.lock) { const h = hold ? ch : 0; pad.deflMat.emissive.setRGB(0.95 * h, 0.35 * h * h, 0.04 * h); }
   };
   // v258 : VRAIES OMBRES au sol : chaque piece du lanceur et de la fusee est ecrasee sur la dalle suivant la direction de la lumiere (ombre a la forme exacte des rails, montants et de la fusee)
-  const LD = new V(0.55, -1, 0.38), PM = new T3.Matrix4(), SM = new T3.Matrix4(), pool = [], shMat = new T3.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false, side: T3.DoubleSide, stencilWrite: true, stencilFunc: T3.NotEqualStencilFunc, stencilRef: 1, stencilZPass: T3.ReplaceStencilOp, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+  const LD = new V(0.55, -1, 0.38), PM = new T3.Matrix4(), SM = new T3.Matrix4(), pool = [], shMat = new T3.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false, side: T3.DoubleSide, stencilWrite: true, stencilFunc: T3.NotEqualStencilFunc, stencilRef: 1, stencilZPass: T3.ReplaceStencilOp, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });   shMat.forceSinglePass = true;   // v322 : une seule passe (le pochoir interdit deja de superposer deux fois l'ombre) : moitie moins d'appels de dessin pour les ombres
   let shGroup = null; const BC = new V();
   const collect = (o, out) => { if (!o.visible || o.userData.noShadow || o.userData.isShadow) return; if (o.isMesh && o.geometry && !(o.material && (o.material.transparent || o.material.blending === T3.AdditiveBlending))) out.push(o); for (const k of o.children) collect(k, out); };
   EVO.shadowTick = (g) => {

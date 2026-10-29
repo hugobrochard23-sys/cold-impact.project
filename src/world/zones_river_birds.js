@@ -65,13 +65,23 @@
     return (cache[key] = { S, geo: [body.geo(), up.geo(), fore.geo(), outer.geo()], E, arm: Wr - E });
   };
   const mat = new T3.MeshLambertMaterial({ vertexColors: true, side: T3.DoubleSide });
+  // v322 : les 7 maillages d'un oiseau (corps + 3 segments x 2 ailes) sont dessines par INSTANCIATION : un seul appel de dessin par piece et par espece pour tous les oiseaux
+  // (avant : jusqu'a 63 appels de dessin dans le port). La hierarchie d'articulations reste la meme : chaque piece n'est plus qu'un repere dont la matrice est copiee dans l'instance.
+  const INST = {};
+  const instFor = (g, key) => {
+    const I = INST[key] || (INST[key] = { parts: [], root: null }), b = build(key);
+    if (I.root !== g._bd.root) {
+      I.root = g._bd.root; I.parts = [0, 1, 2, 3].map((k) => { const m = new T3.InstancedMesh(b.geo[k], mat, 64); m.frustumCulled = false; m.count = 0; m.instanceMatrix.setUsage(T3.DynamicDrawUsage); g._bd.root.add(m); return m; });
+    }
+    return I;
+  };
   const makeBird = (key) => {
-    const b = build(key), S = b.S, root = new T3.Group(), pivot = new T3.Group(); root.add(pivot); pivot.scale.setScalar(S.scale);
-    pivot.add(new T3.Mesh(b.geo[0], mat));
+    const b = build(key), S = b.S, root = new T3.Group(), pivot = new T3.Group(), pts = []; root.add(pivot); pivot.scale.setScalar(S.scale);
+    const part = (k, parent) => { const o = new T3.Object3D(); parent.add(o); pts.push([k, o]); return o; };
+    part(0, pivot);
     const wings = [];
-    for (const sd of [1, -1]) { const sh = new T3.Group(); sh.position.set(0.075 * sd, 0.05, 0.06); sh.scale.x = sd; pivot.add(sh); sh.add(new T3.Mesh(b.geo[1], mat)); const el = new T3.Group(); el.position.set(b.E, 0, 0); sh.add(el); el.add(new T3.Mesh(b.geo[2], mat)); const wr = new T3.Group(); wr.position.set(b.arm, 0, 0); el.add(wr); wr.add(new T3.Mesh(b.geo[3], mat)); wings.push([sh, el, wr]); }
-    root.traverse((o) => { o.frustumCulled = false; });
-    return { root, pivot, wings, S };
+    for (const sd of [1, -1]) { const sh = new T3.Group(); sh.position.set(0.075 * sd, 0.05, 0.06); sh.scale.x = sd; pivot.add(sh); part(1, sh); const el = new T3.Group(); el.position.set(b.E, 0, 0); sh.add(el); part(2, el); const wr = new T3.Group(); wr.position.set(b.arm, 0, 0); el.add(wr); part(3, wr); wings.push([sh, el, wr]); }
+    return { root, pivot, wings, S, pts, key };
   };
 
   // ---------- les groupes d'oiseaux le long du fleuve ----------
@@ -113,6 +123,10 @@
         o.root.visible = true; used++;
       }
     }
+    // instances : une matrice par piece, pour les oiseaux visibles seulement
+    const cnt = {};
+    for (const s of B.spots) if (s.list) for (const o of s.list) { if (!o.root.visible) continue; const I = instFor(g, o.key); o.root.updateMatrixWorld(true); const c = cnt[o.key] || (cnt[o.key] = [0, 0, 0, 0]); for (const [k, ob] of o.pts) { if (c[k] < 64) I.parts[k].setMatrixAt(c[k]++, ob.matrixWorld); } }
+    for (const key in INST) { const I = INST[key], c = cnt[key] || [0, 0, 0, 0]; for (let k = 0; k < 4; k++) { I.parts[k].count = c[k]; I.parts[k].instanceMatrix.needsUpdate = true; } }
   };
   { const _fr = EVO.frame; EVO.frame = (g, dt) => { _fr(g, dt); update(g, dt); }; }
 })();
