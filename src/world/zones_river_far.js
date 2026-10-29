@@ -35,7 +35,7 @@
     out.s = Math.sqrt(bd); out.d = H.d[bi]; out.sg = (dx * -H.tz[bi] + dz * H.tx[bi]) >= 0 ? 1 : -1; out.ok = true;
     out.y = topAt(out.d, out.sg) + prof(out.s, x, z, out.d); return out;
   };
-  const make = (g, run) => {
+  const make = function* (g, run, tick) {   // generateur : le calcul (grille de probes, skyline) est reparti sur plusieurs images (pas de pic de plusieurs dizaines de ms)
     const H = build(run); let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
     for (let i = 0; i < H.n; i++) { x0 = Math.min(x0, H.px[i]); x1 = Math.max(x1, H.px[i]); z0 = Math.min(z0, H.pz[i]); z1 = Math.max(z1, H.pz[i]); }
     x0 = Math.floor((x0 - SMAX) / GRID) * GRID; x1 = Math.ceil((x1 + SMAX) / GRID) * GRID; z0 = Math.floor((z0 - SMAX) / GRID) * GRID; z1 = Math.ceil((z1 + SMAX) / GRID) * GRID;
@@ -44,6 +44,7 @@
       const x = x0 + i * GRID, z = z0 + j * GRID, k = j * nx + i; probe(H, x, z, 0, H.n - 1);
       if (!out.ok || out.s > SMAX) { ys[k] = -1e9; ss_[k] = out.ok ? out.s : -1; continue; }
       ys[k] = out.y; ss_[k] = out.s; dd_[k] = out.d;
+      if (i === nx - 1 && tick()) yield;
     }
     const pos = [], col = [], uv = [], ix = [], map = new Int32Array(nx * nzz).fill(-1); let nv = 0;
     const vert = (k, i, j) => { if (map[k] < 0) { map[k] = nv++; const x = x0 + i * GRID, z = z0 + j * GRID; pos.push(x, ys[k], z); uv.push(x / 7, z / 7); color(x, z, dd_[k], cT); col.push(cT.r, cT.g, cT.b); } return map[k]; };
@@ -60,6 +61,7 @@
     let nb = 0; for (let t = 0; t < NB * 12 && nb < NB; t++) {
       const dd = L0 + 20 + hsh(t, 1.7) * (LP - 200), sg = hsh(t, 5.3) < 0.5 ? -1 : 1, lat = 168 + hsh(t, 8.1) * 200, p = run.T.at(dd, sg * lat, 0); probe(H, p[0], p[2], 0, H.n - 1);
       if (!out.ok || out.s < S1 + 14 || out.s > 400 || out.d < L0 + 10 || out.d > L0 + LP - 190) continue;
+      if (t % 40 === 0 && tick()) yield;
       const w = 12 + 22 * hsh(t, 2.2), h = (7 + 30 * Math.pow(hsh(t, 3.9), 2)) * (0.7 + 0.6 * ss(160, 300, out.s)), dp = 12 + 22 * hsh(t, 4.4), yaw = Math.atan2(-H.tz[Math.round((out.d - D0) / STEP)], H.tx[Math.round((out.d - D0) / STEP)]);
       Qn.setFromEuler(new T3.Euler(0, yaw, 0)); Sc.set(w, h + 4, dp); Pp.set(p[0], out.y + h / 2 - 2, p[2]); M.compose(Pp, Qn, Sc); inst.setMatrixAt(nb, M); Cc.set(PAL[Math.floor(hsh(t, 6.6) * PAL.length)]).multiplyScalar(0.85 + 0.25 * hsh(t, 9.1)); inst.setColorAt(nb, Cc); nb++;
     }
@@ -70,8 +72,11 @@
   EVO.tick = (g, dt) => {
     _tk(g, dt); const run = g.endlessRun;
     if (!run || !EVO.isS2() || !g.evo || g.evo.preview) { if (g._far) g._far.grp.visible = false; return; }
-    if (g._farRun !== run) { g._farRun = run; if (g._far) { g.scene.remove(g._far.grp); g._far.mesh.geometry.dispose(); g._far.inst.dispose(); g._far = null; } }
-    if (!g._far) { if (run.dist < D0 - 340) return; g._far = make(g, run); }   // construit quand on approche (pas pendant les premieres zones)
+    if (g._farRun !== run) { g._farRun = run; if (g._far) { g.scene.remove(g._far.grp); g._far.mesh.geometry.dispose(); g._far.inst.dispose(); g._far = null; } if (g._farJob) { g._farJob.return(); g._farJob = null; } }
+    if (!g._far) {   // construit petit a petit des le debut de la partie (il n'est utile qu'a D0 - 400)
+      if (!g._farJob) g._farJob = make(g, run, () => performance.now() - g._farT0 > 2);
+      g._farT0 = performance.now(); const r = g._farJob.next(); if (r.done) { g._far = r.value; g._farJob = null; } else return;
+    }
     const h = g._far; h.grp.visible = run.dist > D0 - 400 && run.dist < D1 + 160;
     const rk = g.rocket; if (g.state !== 'FLIGHT' || !rk || !rk.active || run.dist < D0 || run.dist > D1) return;
     const i = Math.round((run.dist - D0) / STEP); probe(h.H, rk.pos.x, rk.pos.z, i - 60, i + 60);
