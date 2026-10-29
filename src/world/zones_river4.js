@@ -6,7 +6,7 @@
   if (!R || !R.setDeep || !Z.evoFoe) return;
   const SC = Z.defs.ocean.scenes, { pk, ss } = EVO.oc;
   const { LA, LB, A, lampS, water, rel, mixf } = R;
-  const OUT = 150, WYS = -112 - R.DROP, SEAB = R.SEAB, D4 = R.D4, LFo = 1000, LBa = 1000, D5 = D4 + LFo, DEND = D5 + LBa, BEDB = -430 - R.DROP;
+  const OUT = 150, WYS = -112 - R.DROP, SEAB = R.SEAB, D4 = R.D4, LFo = 1000, LBa = 1700, D5 = D4 + LFo, DEND = D5 + LBa, BEDB = -430 - R.DROP;
   R.D5 = D5; R.DEND = DEND;
   const BED = R.BED;
   R.setDeep((d) => { const u = d - D4; if (u >= LFo) return BEDB; const dpt = 28 + 160 * ss(40, 420, u) + 130 * ss(420, 800, u) + 7 * Math.sin(u / 31) * ss(100, 300, u) * (1 - ss(700, 800, u)); return mixf(R.shallow(d), WYS - dpt, ss(0, 40, u)); });
@@ -133,8 +133,8 @@
 
   // ============================================== LA BASE ==============================================
   SC.sousmarin = { len: [LBa, LBa], noDoor: true, noChaos: true, gw: 125, grass: false,
-    sub: [{ u: 0, key: 'portail', name: 'LA BASE' }, { u: 0.08, key: 'sas', name: 'LE SAS' }, { u: 0.56, key: 'cuve', name: 'LA CUVE' }],
-    turns: [[0.2, 0.3, 12], [0.4, 0.5, -14]],
+    sub: [{ u: 0, key: 'portail', name: 'LA BASE' }, { u: 80 / LBa, key: 'sas', name: 'LE SAS' }, { u: 560 / LBa, key: 'cuve', name: 'LA CUVE' }],
+    turns: [[200 / LBa, 300 / LBa, 12], [400 / LBa, 500 / LBa, -14]],
     pin: (T, sc) => ({ lx: 0, fy: (d) => BEDB + 16 - T.base(d), from: 24, to: sc.d1 - sc.d0 - 24 }),
     relief(T, sc) { return rel(sc, (d) => BED(d) - SEAB); },
     ground: (d, lx, c) => { c.set('#4a5058').multiplyScalar(0.85 + 0.12 * Math.sin(lx * 0.3 + d * 0.2)); },
@@ -170,30 +170,40 @@
       // la cuve : grande salle ouverte, piliers a anneaux lumineux, silos, passerelles, pour le combat contre ABYSSAL
       for (let u = 560; u < LBa - 6; u += 14) S.item(d(u), (r) => { const dc = d(u), hw = HWb(u); for (const sg of [-1, 1]) { const top = BEDB + 70, bed = BEDB, wd = OUT - hw; S.bx(dc, sg * (hw + wd / 2), fl(S, dc, (bed - 8 + top) / 2), wd, top - bed + 8, 18, 'concreteDark', pk(r, ['#52565c', '#4a4e54', '#5a5e64']), true); if (r() < 0.5) S.bx(dc, sg * (hw - 0.5), fl(S, dc, bed + r.between([10, 50])), 0.6, 1, r.between([6, 12]), 'emis:#7be8ff', undefined, false); } S.bx(dc, 0, fl(S, dc, BEDB + 74), 2 * (hw + 14), 8, 14.9, 'concreteDark', '#4a4e54', true); });
       for (let u = 590; u < LBa - 40; u += 70) S.item(d(u), (r) => { const dc = d(u), hw = HWb(u); for (const sg of [-1, 1]) { S.cyl(dc, sg * (hw - 10), fl(S, dc, BEDB), 4.4, 70, 'metal', '#6a7078', 14, 4.4, true); for (let k = 0; k < 4; k++) S.cyl(dc, sg * (hw - 10), fl(S, dc, BEDB + 10 + k * 15), 4.8, 1.2, 'emis:#5ff0ff', undefined, 14, 4.8, false); S.glow(dc, sg * (hw - 10), fl(S, dc, BEDB + 36), '#5ff0ff', 60); } });
-      for (const [u, lx] of [[620, -50], [700, 54], [780, -52], [960, 40]]) S.item(d(u), (r) => { const dc = d(u); S.cyl(dc, lx, fl(S, dc, BEDB), 9, 22, 'metal', '#8a9096', 14, 8, true); S.cyl(dc, lx, fl(S, dc, BEDB + 22), 9.4, 1.4, 'emis:#7be8ff', undefined, 14, 9.4, false); S.cyl(dc, lx, fl(S, dc, BEDB + 23), 6, 4, 'col:#c8dae6', undefined, 14, 4, true); });
+      for (const [u, lx] of [[620, -50], [700, 54], [780, -52], [960, 40], [1180, -52], [1280, 56], [1400, -50], [1520, 46]]) S.item(d(u), (r) => { const dc = d(u); S.cyl(dc, lx, fl(S, dc, BEDB), 9, 22, 'metal', '#8a9096', 14, 8, true); S.cyl(dc, lx, fl(S, dc, BEDB + 22), 9.4, 1.4, 'emis:#7be8ff', undefined, 14, 9.4, false); S.cyl(dc, lx, fl(S, dc, BEDB + 23), 6, 4, 'col:#c8dae6', undefined, 14, 4, true); });
       for (const [u, sg] of [[600, -1], [660, 1], [730, -1], [800, 1], [900, -1], [950, 1]]) foe(S, 'aaturret', d(u), sg * (HWb(u) - 5), 18 + (u % 3) * 8, { name: 'TOURELLE', armed: true, keep: true, fixed: true });
       for (let k = 0; k < 6; k++) { const u = 600 + k * 55; foe(S, 'mine', d(u), (k % 2 ? 1 : -1) * 38, 30 + (k % 3) * 10, { name: 'MINE', keep: true }); }
-      for (let k = 0; k < 30; k++) { const u = 10 + k * 33; S.glow(d(u), (k % 2 ? 1 : -1) * 14, fl(S, d(u), BEDB + 30), '#7be8ff', 48); }
+      for (let k = 0; k < 52; k++) { const u = 10 + k * 33; S.glow(d(u), (k % 2 ? 1 : -1) * 14, fl(S, d(u), BEDB + 30), '#7be8ff', 48); }
       S.item(d(LBa - 24), () => R.finishLine(S, d(LBa - 24)));
     } };
 
   // ============================================== ABYSSAL : le sous-marin cuirasse ==============================================
   function abyssalModel() {
-    const K = EVO.boss2Kit, { lam, bas, bx, cy, glow, marker } = K, root = new T3.Group(), hull = lam('#4a5a66'), dark = lam('#1e262e'), light = lam('#7a8c9a'), red = lam('#a8321c'), cyan = bas('#7be8ff'), zones = [];
-    cy(root, 21, 21, 200, hull, 0, 0, 20, 20, true); cy(root, 21, 7, 55, hull, 0, 0, -107, 20, true); cy(root, 7, 21, 70, hull, 0, 0, 155, 20, true); cy(root, 5, 7, 14, dark, 0, 0, -138, 14, true);
-    for (let k = 0; k < 7; k++) cy(root, 21.5, 21.5, 2.6, k % 2 ? red : light, 0, 0, -50 + k * 24, 20, true);
-    for (let k = 0; k < 14; k++) { const a = k / 14 * 6.2832; bx(root, 1.4, 1.4, 1.4, cyan, Math.cos(a) * 21.4, Math.sin(a) * 21.4, 60); bx(root, 1.4, 1.4, 1.4, cyan, Math.cos(a) * 21.4, Math.sin(a) * 21.4, -30); }
-    bx(root, 12, 26, 46, dark, 0, 30, 10); bx(root, 13, 4, 50, light, 0, 44, 10); for (let k = 0; k < 3; k++) cy(root, 0.6, 0.6, 14, dark, -3 + k * 3, 55, 6 + k * 8, 6); bx(root, 14, 1, 1, cyan, 0, 40, -14); lampMk(root, 0, 58, 6);
-    for (const sx of [-1, 1]) { bx(root, 36, 1.6, 12, light, sx * 30, 0, -50); bx(root, 18, 1.6, 8, dark, sx * 24, 0, 130); bx(root, 1.6, 22, 12, dark, sx * 3, 18, 150); bx(root, 14, 6, 6, dark, sx * 16, -22, -30); }
-    bx(root, 1.6, 28, 12, dark, 0, 0, 155); const prop = new T3.Group(); prop.position.set(0, 0, 192); root.add(prop); for (let k = 0; k < 5; k++) { const b = bx(prop, 1.2, 20, 6, light, 0, 10, 0); b.rotation.z = k * 1.2566; b.position.set(Math.sin(k * 1.2566) * -10, Math.cos(k * 1.2566) * 10, 0); }
-    function lampMk(g, x, y, z) { bx(g, 1.6, 1.6, 1.6, bas('#ff3a2a'), x, y, z); }
-    // zone 1 : le SONAR (dome au nez, dessus)
-    { const n = new T3.Group(); n.position.set(0, 20, -106); root.add(n); const dome = new T3.Mesh(new T3.SphereGeometry(11, 16, 12), new T3.MeshLambertMaterial({ color: '#7fb8d8', emissive: '#2a6a8a', fog: false })); n.add(dome); const ring = new T3.Mesh(new T3.TorusGeometry(12, 1.6, 8, 20), dark); ring.rotation.x = Math.PI / 2; ring.position.y = -3; n.add(ring); const gl = glow(70, '#7be8ff'); n.add(gl); const mk = marker(n, 18, '#ffd040', 1); mk.position.z = -26; zones.push({ id: 'SONAR', pos: new V(0, 20, -106), r: 15, node: n, gl, burn: true, mk }); }
-    // zone 2 : les TUBES lance-torpilles (nez, dessous)
-    { const n = new T3.Group(); n.position.set(0, -8, -128); root.add(n); for (let k = 0; k < 6; k++) { const x = (k % 3 - 1) * 8, y = (k < 3 ? 4.4 : -4.4); cy(n, 3.4, 3.4, 8, dark, x, y, 0, 12, true); cy(n, 2.4, 2.4, 1.2, bas('#ff8a2a'), x, y, -4.2, 12, true); } const gl = glow(70, '#ff9a4a'); gl.position.z = -8; n.add(gl); const mk = marker(n, 18, '#ffd040', 1); mk.position.z = -28; zones.push({ id: 'TUBES', pos: new V(0, -8, -128), r: 16, node: n, gl, burn: true, mk }); }
-    // zone 3 : la TOURELLE de pont (devant la voile)
-    { const n = new T3.Group(); n.position.set(0, 36, -34); root.add(n); bx(n, 14, 5, 14, dark, 0, -2, 0); cy(n, 6, 7, 6, light, 0, 2, 0, 12); for (const sx of [-1, 1]) cy(n, 1.2, 1.4, 22, dark, sx * 2.6, 3, -12, 8, true); const gl = glow(60, '#ffcf6a'); gl.position.y = 6; n.add(gl); const mk = marker(n, 16, '#ffd040', 1); mk.position.z = -26; zones.push({ id: 'TOURELLE', pos: new V(0, 36, -34), r: 14, node: n, gl, burn: true, mk }); }
-    return { root, zones, hulls: [{ pos: new V(0, 0, 40), size: [44, 44, 160] }, { pos: new V(0, 30, 10), size: [12, 28, 46] }], prop };
+    const K = EVO.boss2Kit, { lam, bas, bx, cy, glow } = K, root = new T3.Group();
+    const HULL = lam('#4d5d69'), HULL2 = lam('#5a6b78'), DARK = lam('#1b232b'), LIGHT = lam('#8b9eac'), RED = lam('#962c1b'), CY = bas('#7be8ff'), OR = bas('#ff8a2a');
+    const HP = [[0, -152], [7, -150], [14, -141], [19, -125], [22, -100], [23, -60], [23, 110], [21, 150], [15, 176], [8, 190], [5, 194]];
+    const rad = (z) => { for (let i = 0; i < HP.length - 1; i++) if (z <= HP[i + 1][1]) { const t = (z - HP[i][1]) / (HP[i + 1][1] - HP[i][1]); return HP[i][0] + (HP[i + 1][0] - HP[i][0]) * Math.max(0, t); } return 5; };
+    const lathe = (pts, mat) => { const geo = new T3.LatheGeometry(pts.map((q) => new T3.Vector2(q[0], q[1])), 30); geo.rotateX(Math.PI / 2); const m = new T3.Mesh(geo, mat); root.add(m); return m; };
+    const plate = (pts, th, mat, x, y, z) => { const sh = new T3.Shape(); pts.forEach((q, i) => (i ? sh.lineTo(q[0], -q[1]) : sh.moveTo(q[0], -q[1]))); const geo = new T3.ExtrudeGeometry(sh, { depth: th, bevelEnabled: false }); geo.translate(0, 0, -th / 2); geo.rotateX(-Math.PI / 2); const m = new T3.Mesh(geo, mat); m.position.set(x || 0, y || 0, z || 0); root.add(m); return m; };
+    const finZ = (pts, th, mat, parent) => { const sh = new T3.Shape(); pts.forEach((q, i) => (i ? sh.lineTo(q[0], q[1]) : sh.moveTo(q[0], q[1]))); const geo = new T3.ExtrudeGeometry(sh, { depth: th, bevelEnabled: false }); geo.translate(0, 0, -th / 2); geo.rotateY(-Math.PI / 2); const m = new T3.Mesh(geo, mat); (parent || root).add(m); return m; };
+    // coque lisse : bateau de guerre sous-marin, le NEZ est du cote -Z (il fait face a la fusee)
+    lathe(HP, HULL);
+    for (const z of [-96, -48, 8, 62, 118]) cy(root, rad(z) + 0.35, rad(z) + 0.35, 1.5, DARK, 0, 0, z, 30, true);
+    for (const z of [-24, 134]) cy(root, rad(z) + 0.55, rad(z) + 0.55, 5, RED, 0, 0, z, 30, true);
+    // proue : dome sonar lumineux, couronne de six bouches de tubes lance-torpilles
+    { const dome = new T3.Mesh(new T3.SphereGeometry(10.5, 22, 16), new T3.MeshLambertMaterial({ color: '#8cc4e0', emissive: '#2f7ea0', fog: false })); dome.position.set(0, 0, -146); dome.scale.set(1, 1, 1.15); root.add(dome); const rg = new T3.Mesh(new T3.TorusGeometry(10.8, 1.3, 8, 26), DARK); rg.position.z = -139; root.add(rg); const gl = glow(56, '#7be8ff'); gl.position.z = -156; root.add(gl); }
+    for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3 + Math.PI / 6, x = Math.cos(a) * 15.2, y = Math.sin(a) * 15.2; cy(root, 3.6, 3.6, 4, DARK, x, y, -128, 14, true); const mo = new T3.Mesh(new T3.TorusGeometry(3.7, 0.7, 6, 16), OR); mo.position.set(x, y, -130.4); root.add(mo); }
+    // voile : massive, profilee, avec hublots, periscopes, antennes, feu rouge
+    finZ([[-36, 20], [46, 20], [40, 46], [10, 57], [-18, 52], [-32, 38]], 13, HULL2);
+    finZ([[-34, 45], [38, 45], [34, 51], [-20, 55]], 14.4, LIGHT);
+    for (const sx of [-1, 1]) { bx(root, 0.5, 3.2, 40, CY, sx * 6.8, 33, 4); bx(root, 0.5, 2.4, 14, CY, sx * 6.8, 24.5, 24); }
+    cy(root, 0.7, 0.7, 16, LIGHT, 3, 64, 16, 8); cy(root, 0.7, 0.7, 16, LIGHT, -3, 64, 4, 8); cy(root, 0.35, 0.35, 24, LIGHT, 0, 68, 28, 6); bx(root, 2, 2, 2, bas('#ff3a2a'), 0, 59, 30);
+    // pont : deux rangees de silos a missiles, ailerons de plongee, empennage en croix et helice carenee
+    for (const sx of [-1, 1]) for (let k = 0; k < 6; k++) bx(root, 6.4, 1.2, 8.6, DARK, sx * 8.8, 22.1, 62 + k * 11.6);
+    for (const sx of [-1, 1]) plate([[sx * 22, -84], [sx * 50, -66], [sx * 50, -56], [sx * 22, -60]], 2, LIGHT, 0, 0, 0);
+    for (let k = 0; k < 4; k++) { const f = new T3.Group(); f.rotation.z = k * Math.PI / 2 + Math.PI / 4; root.add(f); finZ([[118, 17], [180, 14], [196, 44], [170, 46]], 2.6, k % 2 ? LIGHT : HULL2, f); }
+    const prop = new T3.Group(); prop.position.z = 196; root.add(prop); { const sh = new T3.Mesh(new T3.TorusGeometry(15.5, 2, 8, 28), DARK); prop.add(sh); cy(prop, 3, 5, 12, LIGHT, 0, 0, 3, 12, true); for (let k = 0; k < 5; k++) { const b = bx(prop, 1.3, 14, 5, LIGHT, 0, 0, 0); b.rotation.z = k * 1.2566; b.position.set(-Math.sin(k * 1.2566) * 8, Math.cos(k * 1.2566) * 8, 0); } }
+    return { root, zones: [], hulls: [{ pos: new V(0, 0, 20), size: [48, 48, 330] }, { pos: new V(0, 38, 8), size: [14, 36, 80] }], prop };
   }
   // v305 : UNE AMBIANCE PAR ZONE (ciel, brume, lumiere) : brume verte des gorges, lagune turquoise, barrage orageux, hall industriel ambre, delta a l'heure doree, mangrove rose, port au crepuscule puis de nuit, fosse bleu profond, cimetiere verdatre, portail cyan, sas froid, cuve rouge d'alerte
   { const M = EVO.addMood, SM = EVO.SCENE_MOOD, mk = (k, name, m) => { M(name, m); SM[k] = name; };
@@ -215,5 +225,5 @@
     mk('sas', 'riv_sas', { top: '#26343e', hor: '#7a94a4', fog: '#4a5c68', near: 40, far: 460, hemiS: '#e0f0fa', hemiG: '#586a76', hemiI: 1.0, amb: 0.45, sunC: '#d8ecf8', sunI: 0.5, night: 0.15 });
     mk('cuve', 'riv_cuve', { top: '#2e1016', hor: '#8a3038', fog: '#451a20', near: 40, far: 480, hemiS: '#ffc4b8', hemiG: '#6a3a40', hemiI: 0.95, amb: 0.4, sunC: '#ff9a88', sunI: 0.5, night: 0.25 });
   }
-  if (EVO.boss2Kit) EVO.boss2Kit.DEFS.abyssal = { scene: 'sousmarin', at: 0.84, ahead: 0, speed: 0, name: 'ABYSSAL', hp: 3, model: abyssalModel, yOff: 8, surge: 220, fire: 2.6, finish: true, muzzle: [0, -8, -140] };
+  if (EVO.boss2Kit) EVO.boss2Kit.DEFS.abyssal = { scene: 'sousmarin', at: 1000 / LBa, ahead: 0, speed: 0, name: 'ABYSSAL', hp: 3, model: abyssalModel, yOff: 6, surge: 150, fire: 2.4, finish: true, anywhere: true, maxD: D5 + LBa - 150, muzzle: [0, -2, -150] };
 })();

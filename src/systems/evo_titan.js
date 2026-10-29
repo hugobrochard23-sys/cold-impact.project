@@ -6,7 +6,7 @@
 (function () {
   const EVO = CC.EVO, U = CC.U, T3 = THREE, V = T3.Vector3;
   if (!EVO || !EVO.on || !EVO.addDyn || !CC.BossModels || !CC.BossModels.titan) return;
-  const SC = 8, HP = 3, SEE = 1300, REACH = 190, CAP = 380;
+  const SC = 8, HP = 2, SEE = 1300, REACH = 190, CAP = 380;
   const _a = new V(), _b = new V(), _c = new V();
   let MODEL = null;
 
@@ -104,7 +104,7 @@
     EVO.onBossHit(g, null); EVO.coinBurst(g, p, TT.hp > 0 ? 14 : 30);
     boom(g, p, true); g.rig.shake = Math.max(g.rig.shake, 1.6); g.flash = 0.35; g.flashColor = '#ffe9b0'; g.hitStop = 0.14; g.hitScale = 0.15; g.chromaBurst = 0.02;
     g.audio.play('clunk', p); g.audio.play('robotRoar', p);
-    if (TT.hp > 0) { TT.mode = 'dash'; TT.dash = { t: 0, dur: 1.3, from: TT.d, to: Math.min(Math.max(TT.d, g.endlessRun.dist) + REACH, TT.d0 + CAP) }; if (CC.L1) CC.L1.msg(g, TT.hp === 2 ? 'TOUCHE !  2 / 3' : 'ENCORE UN !  1 / 3', 1.6, '#ffe9a0'); }
+    if (TT.hp > 0) { TT.mode = 'dash'; TT.dash = { t: 0, dur: 1.3, from: TT.d, to: Math.min(Math.max(TT.d, g.endlessRun.dist) + REACH, TT.d0 + CAP) }; if (CC.L1) CC.L1.msg(g, 'TOUCHE !  ENCORE UN !', 1.6, '#ffe9a0'); }
     else { TT.mode = 'dying'; TT.dying = 0; { const bl = glowSprite(1); bl.material.opacity = 0.95; bl.position.set(0, 26, 0); TT.W.add(bl); TT.ball = bl; } g.hitStop = 0.3; g.flash = 0.5; g.flashColor = '#ffffff'; g.chromaBurst = 0.03; if (CC.L1) CC.L1.msg(g, 'TITAN DETRUIT !', 2.4, '#ffe9a0'); }
     return true;
   }
@@ -147,8 +147,8 @@
       if (live) aimAt(g, rk.pos, dt);
       const dist = rk ? TT.W.position.distanceTo(rk.pos) : 999;
       if (live && TT.mode === 'live' && dist > 110 && dist < 760) {
-        TT.fireT -= dt; if (TT.fireT <= 0) { TT.fireT = TT.hp === 3 ? 2.8 : TT.hp === 2 ? 2.3 : 1.9; shotGraze(g); }
-        if (TT.hp <= 2) { TT.podT -= dt; if (TT.podT <= 0) { TT.podT = 4.6; pods(g); } }
+        TT.fireT -= dt; if (TT.fireT <= 0) { TT.fireT = TT.hp >= 2 ? 2.6 : 2.0; shotGraze(g); }
+        if (TT.hp <= 1) { TT.podT -= dt; if (TT.podT <= 0) { TT.podT = 4.6; pods(g); } }
       }
     }
     // ----- recul : il bondit en arriere, face a la fusee, dans un nuage de poussiere -----

@@ -80,14 +80,14 @@
     const M = def.model(), W = new T3.Group(); W.add(M.root); W.visible = false; g.scene.add(W);
     B = EVO.boss2 = { id, def, W, M, d: d0 + def.at * len + def.ahead, hp: def.hp, hpMax: def.hp, disp: 1, mode: 'live', t: 0, surge: null, cool: 0, fireT: 1.5, podT: 5, debris: [], dying: 0, spin: 0.35, far0: 0, drop: 0 };
     B.lx = 0; B.yy = def.yOff;
-    for (const h of M.hulls) { const gg = new T3.Group(); gg.position.copy(h.pos); M.root.add(gg); const col = EVO.colBox(gg, h.size[0], h.size[1], h.size[2], 0, 0, 0); EVO.addDyn(gg, null, [col], { near: 1e7, span: 1e7 }); h.dyn = EVO.dyn[EVO.dyn.length - 1]; }
+    for (const h of M.hulls) { const gg = new T3.Group(); gg.position.copy(h.pos); M.root.add(gg); const col = EVO.colBox(gg, h.size[0], h.size[1], h.size[2], 0, 0, 0); const any = def.anywhere ? { node: gg, multi: true, atRocket: true } : null; EVO.addDyn(gg, null, [col], any ? { near: 1e7, span: 1e7, hit: (gg2) => zoneHit(gg2, any) } : { near: 1e7, span: 1e7 }); h.dyn = EVO.dyn[EVO.dyn.length - 1]; }
     for (const z of M.zones) { const gg = new T3.Group(); gg.position.copy(z.pos); (z.parent || M.root).add(gg); const col = EVO.colBox(gg, z.r * 2, z.r * 2, z.r * 2, 0, 0, 0); z.group = gg; z.dead = false; z.active = true;
       EVO.addDyn(gg, null, [col], { near: 1e7, span: 1e7, hit: (gg2) => zoneHit(gg2, z) }); }
     EVO.addDyn(W, (t, dt, gg) => { if (B && B.W === W) upd(gg, dt); }, [], { near: 1e7, span: 1e7 });
     place(g, T);
   }
   function place(g, T) {
-    if (!B) return; const lx = T.laneX(B.d) + B.lx, y = T.laneY(B.d) + B.yy - B.drop, p = T.at(B.d, lx, y); B.W.position.set(p[0], p[1], p[2]); B.W.rotation.y = heading(T, B.d);
+    if (!B) return; if (B.def.maxD && B.d > B.def.maxD) B.d = B.def.maxD; const lx = T.laneX(B.d) + B.lx, y = T.laneY(B.d) + B.yy - B.drop, p = T.at(B.d, lx, y); B.W.position.set(p[0], p[1], p[2]); B.W.rotation.y = heading(T, B.d);
   }
   function snuff(z) {   // le moteur s'eteint : plus de flamme, carcasse noircie, il fume et brule
     if (z.fl) z.fl.visible = false; if (z.gl) z.gl.visible = false; if (z.mk) z.mk.visible = false;
@@ -98,15 +98,15 @@
     if (!B || B.mode === 'dying' || B.mode === 'dead') return true;
     if (z.dead || B.cool > 0) return true;
     B.cool = 1.5; B.hp--; const rk = g.rocket, p = rk.pos.clone(), fx = g.effects;
-    z.node.updateWorldMatrix(true, false); z.node.getWorldPosition(_a); if (!z.multi) z.dead = true;
-    fx.explosion(_a.clone(), null, true, 'orange'); fx.ring(_a.clone(), new V(0, 1, 0), 6, 50, 0.7, '#ffd060', 0.8); g.audio.play('boom', p); g.audio.play('clunk', p); g.audio.play('robotRoar', p);
+    z.node.updateWorldMatrix(true, false); z.node.getWorldPosition(_a); if (z.atRocket) _a.copy(p); if (!z.multi) z.dead = true;
+    fx.explosion(_a.clone(), null, true, 'orange'); fx.ring(_a.clone(), new V(0, 1, 0), 6, 50, 0.7, '#ffd060', 0.8); if (z.atRocket) { fx.explosion(_a.clone().add(_b.set(8, 4, 6)), null, true, 'orange'); fx.explosion(_a.clone().add(_b.set(-8, -3, 10)), null, true, 'orange'); } g.audio.play('boom', p); g.audio.play('clunk', p); g.audio.play('robotRoar', p);
     if (EVO.onBossHit) EVO.onBossHit(g, null); if (EVO.coinBurst) EVO.coinBurst(g, p, B.hp > 0 ? 16 : 40);
     g.rig.shake = Math.max(g.rig.shake, 1.7); g.flash = 0.35; g.flashColor = '#ffe9b0'; g.hitStop = 0.14; g.hitScale = 0.15; g.chromaBurst = 0.02;
     if (z.burn) snuff(z);
     if (z.shields) { const sh = z.shields.find((m) => m.visible); if (sh) { sh.visible = false; fx.ring(_a.clone(), new V(0, 0, 1), 20, 150, 0.9, '#9ad8ff', 0.8); for (let i = 0; i < 14; i++) fx.sparks.emit({ pos: _a.clone().add(new V(rr(-30, 30), rr(-30, 30), rr(-30, 30))), vel: new V(rr(-1, 1), rr(-1, 1), rr(-1, 1)).multiplyScalar(rr(20, 60)), life: rr(0.5, 1.1), s0: 0.8, s1: 0.9, s2: 0.3, cols: fx.pal.ember, drag: 1, grav: 0, a: 1, fout: 0.5 }); } }
     if (B.hp > 0) {
       B.surge = { t: 0, dur: 1.6, dist: B.def.surge || 0 }; B.spin += 0.5;
-      if (CC.L1) CC.L1.msg(g, B.def.aegis ? 'BOUCLIER BRISE !' : 'MOTEUR ' + (B.hpMax - B.hp) + ' / ' + (B.hpMax - 1), 1.8, '#ffe9a0');
+      if (CC.L1) CC.L1.msg(g, B.def.aegis ? 'BOUCLIER BRISE !' : B.def.anywhere ? (B.hp === 2 ? 'TOUCHE !  ENCORE 2 COUPS' : 'ENCORE UN COUP !') : 'MOTEUR ' + (B.hpMax - B.hp) + ' / ' + (B.hpMax - 1), 1.8, '#ffe9a0');
     } else { B.mode = 'dying'; B.dying = 0; g.hitStop = 0.3; g.flash = 0.5; g.flashColor = '#ffffff'; g.chromaBurst = 0.03; for (const h of B.M.hulls) if (h.dyn) h.dyn.cols.length = 0; if (CC.L1) CC.L1.msg(g, B.def.name + ' DETRUIT !', 2.6, '#ffe9a0'); }
     return true;
   }
@@ -116,12 +116,31 @@
     const ball = glow(60, '#ffd9a0'); ball.position.set(0, 20, 0); B.W.add(ball); B.ball = ball;
   }
 
+  // v315 : le boss se reveille : un obus geant detruit un pan de la salle (explosion enorme, debris, secousse) ; et, depuis le haut de la fosse, des torpilles frolent la fusee
+  function wakeBlast(g, T) {
+    const d = B.d - 260, p = T.at(d, T.laneX(d) + (Math.random() < 0.5 ? -38 : 38), T.laneY(d) + 14), P = new V(p[0], p[1], p[2]), fx = g.effects;
+    for (let k = 0; k < 5; k++) fx.explosion(P.clone().add(_b.set(rr(-16, 16), rr(-8, 14), rr(-18, 18))), null, true, 'orange');
+    fx.ring(P.clone(), new V(0, 1, 0), 10, 140, 1.0, '#ffd060', 0.9); fx.flash(P.clone(), '#ffd890', 40, 900, 0.8, '#ff8a30');
+    if (fx.debris) for (let k = 0; k < 90; k++) fx.debris.emit({ pos: P.clone().add(_b.set(rr(-12, 12), rr(-6, 10), rr(-12, 12))), vel: new V(rr(-45, 45), rr(5, 55), rr(-45, 45)), life: 2 + Math.random() * 1.5, s0: 1.6, s1: 1.6, s2: 0.5, peak: 0.1, cols: fx.pal.debrisLight, grav: 22, drag: 0.5, spin: 6 });
+    g.audio.play('boom', P); g.audio.play('boom', P); g.rig.shake = Math.max(g.rig.shake, 1.5); g.flash = Math.max(g.flash || 0, 0.4); g.flashColor = '#ffe1a8';
+    shotAt(g, B.W.localToWorld(_c.set(0, -2, -150)), true);
+  }
+  let ambT = 3;
+  function ambTorp(g, dist) {
+    const T = g.endlessRun.T, rk = g.rocket, d = dist + rr(380, 460), p = T.at(d, T.laneX(d) + rr(-14, 14), T.laneY(d) + rr(-8, 10)), from = new V(p[0], p[1], p[2]);
+    g.spawnEnemyMissile(from.clone(), rk, { miss: 16, lead: 0, turn: 0, speed: 130, life: 7, quiet: true, visualFrom: from.clone() });
+    const m = g.missiles[g.missiles.length - 1]; if (!m) return;
+    _a.copy(rk.pos).sub(from).normalize(); _b.crossVectors(_a, new V(0, 1, 0)).normalize(); _c.crossVectors(_b, _a).normalize(); const sg = Math.random() < 0.5 ? -1 : 1;
+    m.miss.copy(_b).multiplyScalar(sg * rr(11, 17)).addScaledVector(_c, rr(-5, 5)); m.dir.copy(rk.pos).sub(from).add(m.miss).normalize();
+    if (m.object) { m.object.scale.setScalar(4.5); m.object.add(glow(4, '#ffd9a0')); }
+  }
+
   function upd(g, dt) {
     if (!B || !g.endlessRun) return; const run = g.endlessRun, T = run.T, rk = g.rocket, rd = run.dist, def = B.def, fx = g.effects, live = g.state === 'FLIGHT' && rk && rk.active;
     B.t += dt; B.cool = Math.max(0, B.cool - dt);
     const near = rd > B.d - SEE - 200 && rd < B.d + 700 + (def.speed || def.aegis ? 900 : 0); B.W.visible = near;
     if (near && g.camera.far < 1700) { B.far0 = B.far0 || g.camera.far; g.camera.far = 1700; g.camera.updateProjectionMatrix(); } else if (!near && B.far0 && g.camera.far > B.far0) { g.camera.far = B.far0; g.camera.updateProjectionMatrix(); }
-    if (!B.awake && rd > B.d - (def.aegis ? 800 : 520)) { B.awake = true; if (live) { g.audio.play('robotRoar'); g.audio.play('robotAlarm'); g.rig.shake = Math.max(g.rig.shake, 0.8); if (CC.L1) CC.L1.msg(g, def.name + ' !', 2, '#ff6a50'); } }
+    if (!B.awake && rd > B.d - (def.aegis ? 800 : 520)) { B.awake = true; if (live) { g.audio.play('robotRoar'); g.audio.play('robotAlarm'); g.rig.shake = Math.max(g.rig.shake, 0.8); if (CC.L1) CC.L1.msg(g, def.name + ' !', 2, '#ff6a50'); if (def.anywhere) wakeBlast(g, T); } }
     if (B.mode === 'live' && B.awake && rd > B.d + 80) { B.d = rd + 380; B.surge = null; B.lx = 0; if (live) { g.audio.play('robotAlarm'); g.rig.shake = Math.max(g.rig.shake, 0.7); if (CC.L1) CC.L1.msg(g, def.name + ' REVIENT !', 1.6, '#ff6a50'); } }   // anti-contournement : on ne peut pas depasser un boss vivant, il se replace devant la fusee
     if (B.mode === 'live' || B.mode === 'dying') {
       if (B.surge) { const S = B.surge; S.t += dt; const k0 = U.smooth(0, 1, (S.t - dt) / S.dur), k1 = U.smooth(0, 1, S.t / S.dur); B.d += S.dist * (k1 - k0); if (S.t >= S.dur) B.surge = null; }
@@ -159,6 +178,7 @@
     _tk(g, dt);
     if (NOBOSS || !g.endlessRun || !g.endlessRun.T || !g.evo || g.evo.preview || !EVO.isS2 || !EVO.isS2() || !EVO.s2d0) return;
     const dist = g.endlessRun.dist;
+    { const rv = EVO.riv; if (rv && rv.D4 && g.state === 'FLIGHT' && g.rocket.active && dist > rv.D4 - 60 && dist < (rv.DEND || 1e9) - 200 && !(B && (B.awake || B.mode !== 'live'))) { ambT -= dt; if (ambT <= 0) { ambT = rr(2.2, 3.6); ambTorp(g, dist); } } }   // v315 : torpilles qui frolent la fusee des le haut de la fosse
     if (B && dist > B.d + 900) dispose(g);   // l'epave est loin derriere : on libere la place pour le boss suivant
     for (const id of Object.keys(DEFS)) { if (made[id]) continue; const def = DEFS[id], d0 = EVO.s2d0(def.scene); if (d0 === undefined) continue; const start = d0 + def.at * (CC.Zones.defs.ocean.scenes[def.scene].len[0]) + def.ahead; if (dist > start - SEE - 700 && dist < start + 1500) { create(g, def, id); break; } }
   };
