@@ -487,7 +487,7 @@ const GOLD = new THREE.MeshPhongMaterial({ color: '#f2c230', specular: '#fff6c8'
       let missDist = opts ? opts.miss * (0.7 + U.rng() * 0.6) : 5 + U.rng() * 3;
       { const ln = CC.game && CC.game.levelRun && CC.game.levelRun.n; if (ln && ln >= 2 && ln <= 9) missDist = Math.max(missDist, 13 + U.rng() * 6); else if (ln && ln <= 19) missDist = Math.max(missDist, 5 + U.rng() * 3); }   // v113 : niveaux 1-9 : les missiles frôlent la fusée sans la toucher (juste pour prévenir)
       if (opts && opts.exact) missDist = 0;   // v118 : tirs du boss du niveau 1 : visée exacte (éventail, mur)
-      this.puffGap = (opts && opts.puffGap) || 0.018;
+      this.puffGap = (opts && opts.puffGap) || 0.018; this.trailK = (opts && opts.trailK) || 1; this.whoosh = !!(opts && opts.whoosh);
       this.miss = new V(U.rng() - 0.5, U.rng() * 0.6, U.rng() - 0.5).normalize().multiplyScalar(missDist);
       this.dir = new V().subVectors(target.pos, from).add(this.miss).normalize();
       this.speed = opts ? opts.speed : 48; this.turn = opts ? opts.turn : 0.8; this.life = opts ? opts.life : 5;
@@ -525,7 +525,7 @@ const GOLD = new THREE.MeshPhongMaterial({ color: '#f2c230', specular: '#fff6c8'
       const gl = this.object.userData.glow;
       if (gl) { const f = 0.8 + 0.4 * U.fx(); gl.scale.set(f, (0.8 + 0.6 * (this.speed / this.vmax)) * f, f); }
       this.puff -= dt;
-      if (this.puff <= 0) { this.puff = this.puffGap; game.effects.trailPuff(this.object.position.clone().addScaledVector(this.dir, -0.4), this.dir); }
+      if (this.puff <= 0) { this.puff = this.puffGap; game.effects.trailPuff(this.object.position.clone().addScaledVector(this.dir, -0.4 * this.trailK), this.dir, this.trailK); }
       // v020 : plus courte distance pendant l'image (mouvement relatif), pas seulement en fin d'image :
       // face à face, les deux engins se rapprochent de plusieurs mètres par image et « sautaient » la détonation
       let closest = Infinity;
@@ -535,6 +535,7 @@ const GOLD = new THREE.MeshPhongMaterial({ color: '#f2c230', specular: '#fff6c8'
         closest = r0.addScaledVector(dr, k).length();
         this.lastRk = (this.lastRk || new V()).copy(rk.pos);
       }
+      if (this.whoosh && !this.passed && rk && closest < 45) { this.passed = true; game.audio.play('whoosh', this.pos); game.audio.play('whoosh', this.pos); }   // v316 : bruit quand une torpille file a cote de la fusee
       if (rk && closest < this.fuse) { this.alive = false; game.onRocketCrash('missile', this.pos.clone(), this.dir.clone().negate()); return; }
       const hit = game.world.sweep(p0, this.pos, 0.08);
       if (hit || this.life <= 0) { this.alive = false; game.effects.explosion(this.pos.clone(), null, false); game.audio.play('boomSmall', this.pos); }

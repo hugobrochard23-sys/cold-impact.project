@@ -68,7 +68,7 @@
     if (m) {   // l'ecart de visee est toujours LATERAL (perpendiculaire a la ligne de tir) : l'obus frole, il ne peut pas toucher
       _a.copy(rk.pos).sub(from).normalize(); _b.crossVectors(_a, new V(0, 1, 0)).normalize(); _c.crossVectors(_b, _a).normalize(); const sg = Math.random() < 0.5 ? -1 : 1;
       m.miss.copy(_b).multiplyScalar(sg * rr(13, 19)).addScaledVector(_c, rr(-6, 6)); m.dir.copy(rk.pos).sub(from).add(m.miss).normalize();
-      if (m.object) { m.object.scale.setScalar(big ? 7 : 5); m.object.add(glow(5, '#ffd9a0')); } }
+      if (m.object) m.object.scale.setScalar(big ? 7 : 5); }
     g.effects.flash(from.clone(), '#ffd890', 10, 260, 0.35, '#ff8a30'); g.audio.play('boom', from); g.rig.shake = Math.max(g.rig.shake, 0.35);
   };
   const dispose = (g) => { if (!B) return; if (B.far0 && g.camera.far > B.far0) { g.camera.far = B.far0; g.camera.updateProjectionMatrix(); } g.scene.remove(B.W); for (const q of B.debris) g.scene.remove(q.o); B = null; EVO.boss2 = null; };
@@ -127,12 +127,12 @@
   }
   let ambT = 3;
   function ambTorp(g, dist) {
-    const T = g.endlessRun.T, rk = g.rocket, d = dist + rr(380, 460), p = T.at(d, T.laneX(d) + rr(-14, 14), T.laneY(d) + rr(-8, 10)), from = new V(p[0], p[1], p[2]);
-    g.spawnEnemyMissile(from.clone(), rk, { miss: 16, lead: 0, turn: 0, speed: 130, life: 7, quiet: true, visualFrom: from.clone() });
+    const T = g.endlessRun.T, rk = g.rocket, d = dist + rr(300, 380), p = T.at(d, T.laneX(d) + rr(-14, 14), T.laneY(d) - rr(2, 16)), from = new V(p[0], p[1], p[2]);
+    g.spawnEnemyMissile(from.clone(), rk, { miss: 16, lead: 0, turn: 0, speed: 130, life: 7, quiet: true, visualFrom: from.clone(), trailK: 5.5, puffGap: 0.02, whoosh: true });
     const m = g.missiles[g.missiles.length - 1]; if (!m) return;
     _a.copy(rk.pos).sub(from).normalize(); _b.crossVectors(_a, new V(0, 1, 0)).normalize(); _c.crossVectors(_b, _a).normalize(); const sg = Math.random() < 0.5 ? -1 : 1;
     m.miss.copy(_b).multiplyScalar(sg * rr(11, 17)).addScaledVector(_c, rr(-5, 5)); m.dir.copy(rk.pos).sub(from).add(m.miss).normalize();
-    if (m.object) { m.object.scale.setScalar(4.5); m.object.add(glow(4, '#ffd9a0')); }
+    if (m.object) m.object.scale.setScalar(9);
   }
 
   function upd(g, dt) {
@@ -160,7 +160,7 @@
       if (dist > 120 && dist < 900) { B.fireT -= dt; if (B.fireT <= 0) { B.fireT = def.fire * (B.hp <= 2 ? 0.8 : 1); const q = def.aegis ? _b.set(0, 0, -86) : def.muzzle ? _b.set(def.muzzle[0] + rr(-8, 8), def.muzzle[1], def.muzzle[2]) : _b.set(rr(-60, 60), 60, -250); B.W.localToWorld(q); shotAt(g, q, true); } }
       if (B.hp <= 2) { B.podT -= dt; if (B.podT <= 0) { B.podT = 4.6; for (const sx of [-1, 1]) { const q = def.aegis ? _a.set(sx * 40, 0, -40) : def.muzzle ? _a.set(sx * 20, def.muzzle[1], def.muzzle[2]) : _a.set(sx * 100, 40, -200); B.W.localToWorld(q); g.spawnEnemyMissile(q.clone(), rk, { miss: 0, lead: 0.05, turn: 0.1, speed: 30, life: 7, quiet: true, visualFrom: q.clone() }); } g.audio.play('hydraulic', _a); } }
     }
-    if (B.mode === 'dying' || B.mode === 'dead') { rk.fuel = rk.fuelMax; rk.shieldT = Math.max(rk.shieldT || 0, 5); if (rk.vel.y < 0) rk.vel.y *= 0.5; if (def.finish) rk.vel.multiplyScalar(Math.exp(-dt * 2.2)); }   // v314 : la fusee freine pendant la mort du boss : elle ne sort plus de la salle   // pendant la mort du boss et le bilan : pas de chute, pas de crash
+    if (B.mode === 'dying' || B.mode === 'dead') { rk.fuel = rk.fuelMax; rk.shieldT = Math.max(rk.shieldT || 0, 5); if (rk.vel.y < 0) rk.vel.y *= 0.5; }   // pendant la mort du boss et le bilan : pas de chute, pas de crash
     if (B.mode === 'dying') {
       B.dying += dt; const t = B.dying; B.sm = (B.sm || 0) - dt;
       const tb = def.aegis ? 0.3 : 3.0;   // BEHEMOTH plonge d'abord vers la mer en brulant, puis explose ; AEGIS explose tout de suite
@@ -168,7 +168,7 @@
       if (B.sm <= 0 && t < tb + 2.0) { B.sm = 0.28; _c.set(rr(-70, 70), rr(0, 70), rr(-200, 200)); B.W.localToWorld(_c); fx.explosion(_c.clone(), null, true, 'orange'); if (Math.random() < 0.5) g.audio.play('boom', _c); }
       if (t < tb + 2.4) g.rig.shake = Math.max(g.rig.shake, 0.9 * (1 - t / (tb + 2.6)));
       if (B.ball) { const k = U.clamp((t - tb) / 1.4, 0, 1); B.ball.scale.setScalar(80 + 520 * (1 - Math.pow(1 - k, 3))); B.ball.material.opacity = (1 - k) * 0.95; B.ball.visible = k < 1; }
-      if (t > tb + 3.0) { B.mode = 'dead'; if ((def.aegis || def.finish) && EVO.finishRun) EVO.finishRun(g); }
+      if (t > tb + 3.0) { B.mode = 'dead'; if (def.aegis && EVO.finishRun) EVO.finishRun(g); else if (def.finish && CC.L1) CC.L1.msg(g, 'FONCE VERS L ARRIVEE !', 2.6, '#ffe9a0'); }
     }
     for (let i = B.debris.length - 1; i >= 0; i--) { const q = B.debris[i]; q.t += dt; q.o.position.addScaledVector(q.v, dt); q.o.rotation.x += q.s * dt; q.o.rotation.z += q.s * 0.7 * dt; if (!def.aegis) q.v.y -= 30 * dt; if (q.t > 6) { g.scene.remove(q.o); B.debris.splice(i, 1); } }
   }
@@ -178,7 +178,7 @@
     _tk(g, dt);
     if (NOBOSS || !g.endlessRun || !g.endlessRun.T || !g.evo || g.evo.preview || !EVO.isS2 || !EVO.isS2() || !EVO.s2d0) return;
     const dist = g.endlessRun.dist;
-    { const rv = EVO.riv; if (rv && rv.D4 && g.state === 'FLIGHT' && g.rocket.active && dist > rv.D4 - 60 && dist < (rv.DEND || 1e9) - 200 && !(B && (B.awake || B.mode !== 'live'))) { ambT -= dt; if (ambT <= 0) { ambT = rr(2.2, 3.6); ambTorp(g, dist); } } }   // v315 : torpilles qui frolent la fusee des le haut de la fosse
+    { const rv = EVO.riv; if (rv && rv.D4 && g.state === 'FLIGHT' && g.rocket.active && dist > rv.D4 - 260 && dist < (rv.DEND || 1e9) - 200 && !(B && (B.awake || B.mode !== 'live'))) { ambT -= dt; if (ambT <= 0) { ambT = rr(2.2, 3.6); ambTorp(g, dist); } } }   // v315 : torpilles qui frolent la fusee des le haut de la fosse
     if (B && dist > B.d + 900) dispose(g);   // l'epave est loin derriere : on libere la place pour le boss suivant
     for (const id of Object.keys(DEFS)) { if (made[id]) continue; const def = DEFS[id], d0 = EVO.s2d0(def.scene); if (d0 === undefined) continue; const start = d0 + def.at * (CC.Zones.defs.ocean.scenes[def.scene].len[0]) + def.ahead; if (dist > start - SEE - 700 && dist < start + 1500) { create(g, def, id); break; } }
   };

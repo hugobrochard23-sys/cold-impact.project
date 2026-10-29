@@ -508,9 +508,9 @@
     }
 
     // traînée de missile ennemi : fumée blanche translucide qui gonfle et dérive + petite flamme à l'arrière
-    trailPuff(pos, dir) {
-      const r = U.fx;
-      this.smoke.emit({ pos: pos.clone(), vel: new V(r.range(-0.5, 0.5), r.range(0, 0.6), r.range(-0.5, 0.5)), life: r.range(1.2, 2.2), s0: 0.1, s1: r.range(0.35, 0.55), s2: r.range(0.7, 1), peak: 0.2, cols: this.pal.whiteSmoke, drag: 1, a: r.range(0.35, 0.5), fin: 0.05, fout: 0.25, wind: 1, turb: 1.5, spin: 1 });
+    trailPuff(pos, dir, k) {
+      const r = U.fx; k = k || 1;
+      this.smoke.emit({ pos: pos.clone(), vel: new V(r.range(-0.5, 0.5), r.range(0, 0.6), r.range(-0.5, 0.5)), life: r.range(1.2, 2.2) * (k > 1 ? 1.4 : 1), s0: 0.1 * k, s1: r.range(0.35, 0.55) * k, s2: r.range(0.7, 1) * k, peak: 0.2, cols: this.pal.whiteSmoke, drag: 1, a: r.range(0.35, 0.5), fin: 0.05, fout: 0.25, wind: 1, turb: 1.5, spin: 1 });
       if (dir) this.flame.emit({ pos: pos.clone(), vel: dir.clone().multiplyScalar(-r.range(3, 6)), life: r.range(0.05, 0.09), s0: 0.08, s1: 0.16, s2: 0.04, peak: 0.3, cols: this.pal.flame, a: 0.9, fout: 0.3 });
     }
   }
