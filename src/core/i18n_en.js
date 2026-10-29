@@ -71,4 +71,5 @@
   I.rule(/^FERMER DANS (\d+) S$/, 'CLOSE IN $1 S'); I.rule(/^RECOMPENSE DANS (\d+) S$/, 'REWARD IN $1 S'); I.rule(/^FERMER LA PUB +X$/, 'CLOSE AD  X'); I.rule(/^(\d+) GEMMES?$/, '$1 GEM'); I.rule(/^SOUFFLE +(.*)$/, 'BLAST $1');
   I.rule(/^\+?(\d[\d.,KMB]*) PIECES$/, '+$1 COINS'); I.rule(/^PIECES +(.+)$/, 'COINS $1'); I.rule(/^(\d+) PIECES$/, '$1 COINS');
   I.rule(/^(.+) A AILERONS$/, (m, a) => I.t(a) + ' WITH FINS');
+  I.add({ 'TOUCHE !  ENCORE 2 COUPS': 'HIT!  2 MORE HITS', 'ENCORE UN COUP !': 'ONE MORE HIT!', 'TOUCHE !  ENCORE UN !': 'HIT!  ONE MORE!', 'FONCE VERS L ARRIVEE !': 'RACE TO THE FINISH!', 'LE BARRAGE CEDE !': 'THE DAM BREAKS!', 'MUR !': 'WALL!' });   // v318 : messages ajoutes au niveau 2 (boss, barrage, arrivee)
 })();
