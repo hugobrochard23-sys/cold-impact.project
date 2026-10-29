@@ -30,16 +30,33 @@
     build(S) {
       const d0 = S.d0, d = (u) => d0 + u, DK = ['#8a98a8', '#808e9e', '#92a0b0', '#8694a4'];
       water(S, d0, d0 + LFo, 90, WYS);
+      // v307 : parois en nappe continue (relief calcule sur la distance absolue : les tranches se raccordent sans fente) ; les boites ne servent plus qu'a la collision (invisibles)
+      const WM = new T3.MeshLambertMaterial({ vertexColors: true, side: T3.DoubleSide }), WTOP = WYS + 14, RS = 9, CS = 3.5, WC = DK.map((h) => new T3.Color(h));
+      const hz = (a, b, c) => { const v = Math.sin(a * 127.1 + b * 311.7 + (c || 0) * 74.7) * 43758.5453; return v - Math.floor(v); };
+      const wlat = (uu, y, sg) => Math.max(0, 1.3 + 0.75 * Math.sin(uu / 9 + y / 13 + sg * 2) + 0.55 * Math.sin(uu / 4.3 - y / 7 + 1.7 * sg) + 0.3 * Math.sin(uu / 2.1 + y / 3.1));
       for (let u = 6; u < LFo - 6; u += 14) S.item(d(u), (r) => {
         const dc = d(u);
         for (const sg of [-1, 1]) {
-          const hwv = HWf(u) + 2.2 * Math.sin(u / 41 + sg), top = WYS + 14, bed = BED(dc), wd = OUT - hwv;
-          S.bx(dc, sg * (hwv + wd / 2), fl(S, dc, (bed - 8 + top) / 2), wd, top - bed + 8, 18, 'jrock', pk(r, DK), true);
+          const hwv = HWf(u) + 2.2 * Math.sin(u / 41 + sg), bed = BED(dc), wd = OUT - hwv;
+          S.bx(dc, sg * (hwv + 1.2 + wd / 2), fl(S, dc, (bed - 8 + WTOP) / 2), wd, WTOP - bed + 8, 18, 'jrock', pk(r, DK), true, { render: false });
           if (r() < 0.12) S.bx(dc, sg * (hwv - 0.2), fl(S, dc, bed + 4), 0.2, r.between([6, 14]), 1, 'emis:#5ff0ff', undefined, false);
-          for (let k = 0; k < 1; k++) if (r() < 0.4 && S.inClip(dc)) { const sz = r.between([8, 14]), yy = bed + r.between([2, Math.max(6, top - bed - 6)]); S.b.box({ p: S.T.at(dc + r.between([-5, 5]), sg * (hwv - sz * 0.15 + r.between([-1, 3])), A(S, dc, yy)), s: [sz, sz * r.between([0.7, 1.4]), sz * r.between([1, 1.8])], r: [r.between([-18, 18]), S.yaw(dc) + r.between([-12, 12]), r.between([-22, 22])], mat: 'jrock', tint: pk(r, DK), collide: true }); }   // v302 : blocs de roche inclines devant la paroi : plus de mur droit
+          if (!S.inClip(dc)) continue;
+          const P = [], C = [], NC = 4, k0 = Math.floor((bed - 40) / RS), k1 = Math.ceil(WTOP / RS), vt = (i, k) => {
+            const du = dc - 7 + i * CS, uu = du - d0, bd = BED(du) - 8, kj = k + 0.35 * Math.sin(k * 12.9), ry = Math.min(WTOP, Math.max(bd, kj * RS)), hw = HWf(uu) + 2.2 * Math.sin(uu / 41 + sg) + 1.2 + wlat(uu, ry, sg);
+            const c = WC[Math.floor(hz(k, i + Math.floor(dc / 14) * 4, sg) * 4) & 3], br = 0.36 + 0.34 * hz(k, Math.round(uu / 7), 5 + sg) + 0.1 * Math.sin(uu / 6 + k * 1.7);
+            return { p: S.T.at(du, sg * hw, A(S, du, ry)), c: [c.r * br, c.g * br, c.b * br], y: ry };
+          };
+          for (let i = 0; i < NC; i++) for (let k = k0; k < k1; k++) {
+            const a0 = vt(i, k), a1 = vt(i + 1, k), b0 = vt(i, k + 1), b1 = vt(i + 1, k + 1);
+            if (a0.y === b0.y && a1.y === b1.y) continue;
+            for (const q of [a0, a1, b1, a0, b1, b0]) { P.push(q.p[0], q.p[1], q.p[2]); C.push(q.c[0], q.c[1], q.c[2]); }
+          }
+          if (!P.length) continue;
+          const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(P, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(C, 3)); geo.computeVertexNormals();
+          S.b.root.add(new T3.Mesh(geo, WM));
         }
       });
-      // v306 : LA VITRE : un mur de verre barre tout le fosse a l'entree (et monte tres haut) : on le traverse en le brisant, et on plonge. Des anneaux lumineux descendent ensuite le long du bon chemin.
+      // v306 : LA VITRE : un mur de verre barre tout le fosse a l'entree (et monte tres haut) : on le traverse en le brisant, et on plonge. 
       S.item(d(40), (r) => {
         const dc = d(40), Wd = 2 * OUT, top = WYS + 300, bot = WYS - 300, grp = new T3.Group(), gm = new T3.MeshBasicMaterial({ color: '#aef2ff', transparent: true, opacity: 0.2, side: T3.DoubleSide, depthWrite: false, fog: false }), em = new T3.MeshBasicMaterial({ color: '#9ff6ff' });
         const pane = new T3.Mesh(new T3.PlaneGeometry(Wd, top - bot), gm); pane.position.y = (top + bot) / 2; grp.add(pane);
@@ -51,24 +68,16 @@
           if (g.effects && g.effects.debris) for (let k = 0; k < 70; k++) g.effects.debris.emit({ pos: new T3.Vector3(rk.pos.x + (Math.random() - 0.5) * 20, rk.pos.y + (Math.random() - 0.5) * 16, rk.pos.z + (Math.random() - 0.5) * 20), vel: new T3.Vector3((Math.random() - 0.5) * 50, (Math.random() - 0.3) * 30, (Math.random() - 0.5) * 50), life: 1.4 + Math.random(), s0: 1.2, s1: 1.2, s2: 0.4, peak: 0.1, cols: g.effects.pal.debrisLight, grav: 12, drag: 0.6, spin: 7 });
           if (rk.pos.y > WYS + 2) rk.vel.y -= 28; } }, [], { near: 900, span: 400 });
       });
-      { const rm = new T3.MeshBasicMaterial({ color: '#7be8ff', transparent: true, opacity: 0.8, depthWrite: false, fog: false });
-        for (let k = 0; k < 14; k++) S.item(d(80 + k * 52), (r) => {
-          const dc = d(80 + k * 52), py = EVO.riv.pathY(dc), sl = (EVO.riv.pathY(dc + 12) - EVO.riv.pathY(dc - 12)) / 24, grp = new T3.Group(), ring = new T3.Mesh(new T3.TorusGeometry(15, 0.55, 6, 28), rm); grp.add(ring);
-          EVO.placeGroup(S, grp, dc, 0, A(S, dc, py), 0); grp.rotation.order = 'YXZ'; grp.rotation.x = -Math.atan(sl);
-          if (k === 0) EVO.addDyn(grp, (t) => { rm.opacity = 0.55 + 0.35 * Math.sin(t * 3); }, [], { near: 700, span: 400 });
-          S.glow(dc, 0, A(S, dc, py), '#7be8ff', 30);
-        });
-      }
       // surplombs en quinconce : la trajectoire serpente
       for (let k = 0; k < 9; k++) { const u = 90 + k * 100, sg = k % 2 ? 1 : -1; S.item(d(u), (r) => { const dc = d(u), hwv = HWf(u), bed = BED(dc), y = bed + 26 + 18 * hsh(u, 2), ext = hwv * 1.05; S.bx(dc, sg * (hwv - ext / 2 + 3), fl(S, dc, y), ext, 6, 22, 'jrock', pk(r, DK), true); S.bx(dc, sg * (hwv - ext + 3), fl(S, dc, y - 5), 4, 12, 20, 'jrock', pk(r, DK), true); S.glow(dc - 12, sg * (hwv - ext + 2), fl(S, dc, y - 2), '#5ff0ff', 20); }); }
       // stalagmites : on passe entre
       for (let u = 60; u < LFo - 40; u += 62) S.item(d(u), (r) => { const dc = d(u), hwv = HWf(u), bed = BED(dc); for (let k = 0; k < 1; k++) { const lx = r.between([-hwv * 0.6, hwv * 0.6]), h = r.between([14, 46]); S.cyl(dc + r.between([-5, 5]), lx, fl(S, dc, bed - 1), r.between([3.4, 6]), h, 'jrock', pk(r, DK), 8, 0.9, true); } });
       // arches de roche : deux piliers et un linteau en travers de la fosse
-      for (const u of [300, 560, 840]) S.item(d(u), (r) => { const dc = d(u), hwv = HWf(u), bed = BED(dc), yb = bed + 38; for (const sg of [-1, 1]) S.bx(dc, sg * (hwv - 8), fl(S, dc, (bed + yb) / 2), 18, yb - bed, 20, 'jrock', pk(r, DK), true); S.bx(dc, 0, fl(S, dc, yb + 4), 2 * hwv, 8, 22, 'jrock', pk(r, DK), true); S.glow(dc - 12, 0, fl(S, dc, yb - 1), '#ffcf6a', 40); });
+      for (const u of [300, 560, 840]) S.item(d(u), (r) => { const dc = d(u), hwv = HWf(u), bed = BED(dc), yb = bed + 38; for (const sg of [-1, 1]) S.cyl(dc, sg * (hwv - 9), fl(S, dc, bed - 1), 7, yb - bed + 4, 'jrock', pk(r, DK), 9, 4.5, true); S.glow(dc - 12, 0, fl(S, dc, yb - 1), '#ffcf6a', 40); });
       // epaves couchees sur le fond (cargo coupe en deux, mats, conteneurs), cheminees hydrothermales
       for (const [u, lx, rot] of [[180, 10, 8], [440, -14, -12], [700, 8, 6], [930, -10, -9]]) S.item(d(u), (r) => {
         const dc = d(u), bed = BED(dc);
-        S.b.box({ p: S.T.at(dc, lx, 8), s: [16, 14, 74], r: [r.between([-8, 8]), rot, rot * 0.7], mat: 'metal', tint: '#3a3e46', collide: true });
+        S.b.box({ p: S.T.at(dc, lx, 8), s: [16, 14, 74], r: [r.between([-8, 8]), rot, rot * 0.7], mat: 'metal', tint: '#9a5a3c', collide: true });
         S.b.box({ p: S.T.at(dc + 30, lx + 3, 14), s: [9, 4, 30], r: [0, rot, 6], mat: 'metal', tint: '#7a2a22', collide: true });
         S.cyl(dc - 10, lx, fl(S, dc, bed + 13), 0.6, 26, 'metal', '#5a6068', 6, 0.5, false); S.bx(dc - 10, lx, fl(S, dc, bed + 24), 12, 0.5, 0.5, 'metal', '#5a6068', false);
         for (let k = 0; k < 3; k++) S.bx(dc + r.between([-12, 12]), lx + r.between([-10, 10]), fl(S, dc, bed + 1.4), 6, 2.6, 2.5, 'col:' + pk(r, ['#8a2a22', '#2a5a8a', '#8a7a2a']), undefined, true);
