@@ -23,18 +23,26 @@
   const sph = (r) => new T3.SphereGeometry(r, 10, 8);
   const box = (w, h, d) => new T3.BoxGeometry(w, h, d);
 
+  const shade = (c, k) => '#' + new T3.Color(c).multiplyScalar(k).getHexString();
   const BUILD = {
-    // MISSILE AMPHIBIE, une seule fusee qui evolue en 4 etats (st 0..3) : nue -> flotteurs -> chenilles + helice carenee -> livree finale bleu nuit / blanc / cyan. Formes simples, aucune fioriture.
+    // MISSILE AMPHIBIE, une seule fusee qui evolue en 4 etats (st 0..3) : nue -> flotteurs -> chenilles -> livree finale bleu nuit / blanc / cyan.
+    // Fuselage en tranches (comme le missile du niveau 1) : chaque troncon est une piece separee, joints sombres ; vraie tuyere en cloche.
     amphibie(g, st) {
       const F = st >= 3;
       const OL = F ? '#16283f' : '#5f6e3c', OLD = F ? '#0e1a2b' : '#3f4a2a', NOSE = F ? '#eef3f7' : '#e8c42a', RED = F ? '#27bde0' : '#c8362a', DK = F ? '#0a121c' : '#1d2418', STEEL = F ? '#b8c6d4' : '#8a949c';
       const rb = (geo, p) => put(g, geo, RED, { p, basic: F });
-      put(g, lathe([[0, -0.7], [0.06, -0.7], [0.09, -0.62], [0.105, -0.5], [0.105, 0.4], [0.092, 0.55], [0.066, 0.67], [0.03, 0.76], [0, 0.78]]), OL);
-      put(g, lathe([[0.112, 0.5], [0.1, 0.55], [0.074, 0.67], [0.036, 0.76], [0, 0.79]]), NOSE);
-      rb(cylZ(0.109, 0.109, 0.16, 22), [0, 0, -0.02]);
-      // tuyere et empennage : 4 ailerons en fleche, racine posee sur le fuselage (suit la conicite de l'arriere)
-      put(g, cylZ(0.082, 0.066, 0.07, 16), DK, { p: [0, 0, -0.7] });
-      for (let k = 0; k < 4; k++) { const f = new T3.Group(); f.rotation.z = k * Math.PI / 2 + Math.PI / 4; g.add(f); put(g, fin([[-0.36, 0.085], [-0.7, 0.03], [-0.76, 0.26], [-0.6, 0.27]], 0.022), RED, { parent: f, basic: F }); }
+      const CT = [[-0.68, 0.062], [-0.62, 0.09], [-0.5, 0.105], [0.4, 0.105], [0.55, 0.092], [0.67, 0.066], [0.76, 0.03], [0.79, 0.0]];
+      const rad = (z) => { for (let i = 0; i < CT.length - 1; i++) if (z <= CT[i + 1][0]) { const t = (z - CT[i][0]) / (CT[i + 1][0] - CT[i][0]); return CT[i][1] + (CT[i + 1][1] - CT[i][1]) * Math.max(0, t); } return 0; };
+      const sec = (z0, z1, c) => { const p = [[rad(z0), z0]]; for (const q of CT) if (q[0] > z0 + 1e-3 && q[0] < z1 - 1e-3) p.push([q[1], q[0]]); p.push([rad(z1), z1]); put(g, lathe(p, 22), c); };
+      sec(-0.68, -0.3, OL); sec(-0.3, 0.2, OL); sec(0.2, 0.5, OL); sec(0.5, 0.7, NOSE); sec(0.7, 0.79, shade(NOSE, 0.82));
+      for (const [z, c] of [[-0.3, OL], [0.2, OL], [0.5, NOSE], [0.7, NOSE]]) put(g, cylZ(rad(z) * 1.016, rad(z) * 1.016, 0.016, 22), shade(c, 0.6), { p: [0, 0, z] });
+      rb(cylZ(0.109, 0.109, 0.16, 22), [0, 0, -0.04]);
+      // tuyere en cloche : col, evasement, levre, interieur noir
+      const BELL = [[0.093, -0.84], [0.086, -0.8], [0.072, -0.74], [0.06, -0.69], [0.062, -0.67]];
+      put(g, lathe(BELL, 20), shade(STEEL, 0.55)); put(g, lathe(BELL.map((q) => [q[0] - 0.008, q[1]]).reverse(), 20), '#07090c');
+      put(g, ringG(0.094, 0.007), STEEL, { p: [0, 0, -0.84] }); put(g, cylZ(0.074, 0.074, 0.02, 18), shade(STEEL, 0.7), { p: [0, 0, -0.685] });
+      // empennage : 4 ailerons en fleche, racine posee sur le fuselage
+      for (let k = 0; k < 4; k++) { const f = new T3.Group(); f.rotation.z = k * Math.PI / 2 + Math.PI / 4; g.add(f); put(g, fin([[-0.36, 0.085], [-0.68, 0.035], [-0.76, 0.26], [-0.6, 0.27]], 0.022), RED, { parent: f, basic: F }); }
       const tips = [[0.19, 0.19, -0.7], [-0.19, 0.19, -0.7], [0.19, -0.19, -0.7], [-0.19, -0.19, -0.7]];
       // etat 1 : deux flotteurs sur pylones
       if (st >= 1) for (const sx of [-1, 1]) {
@@ -43,22 +51,14 @@
         for (const z of [0.2, -0.3]) put(g, box(0.11, 0.024, 0.12), OLD, { p: [sx * 0.15, -0.045, z] });
         tips.push([sx * 0.27, -0.06, -0.45]);
       }
-      // etat 2 : chenilles (caisson, galets) et helice carenee
-      if (st >= 2) {
-        for (const sx of [-1, 1]) {
-          put(g, box(0.034, 0.12, 0.8), DK, { p: [sx * 0.27, -0.06, -0.04] });
-          for (let k = 0; k < 5; k++) put(g, new T3.CylinderGeometry(0.048, 0.048, 0.034, 14).rotateZ(Math.PI / 2), STEEL, { p: [sx * 0.29, -0.06, -0.36 + k * 0.16] });
-        }
-        put(g, ringG(0.112, 0.012), STEEL, { p: [0, 0, -0.78] });
-        for (let k = 0; k < 3; k++) { const f = new T3.Group(); f.rotation.z = k * Math.PI * 2 / 3 + 0.3; g.add(f); put(g, box(0.012, 0.11, 0.02), DK, { p: [0, 0.058, -0.78], parent: f }); }
-        tips.push([0.1, 0.1, -0.8], [-0.1, 0.1, -0.8]);
+      // etat 2 : chenilles (caisson, galets)
+      if (st >= 2) for (const sx of [-1, 1]) {
+        put(g, box(0.034, 0.12, 0.8), DK, { p: [sx * 0.27, -0.06, -0.04] });
+        for (let k = 0; k < 5; k++) put(g, new T3.CylinderGeometry(0.048, 0.048, 0.034, 14).rotateZ(Math.PI / 2), STEEL, { p: [sx * 0.29, -0.06, -0.36 + k * 0.16] });
       }
-      // etat 3 : un seul filet lumineux par flotteur et l'anneau de tuyere
-      if (st >= 3) {
-        for (const sx of [-1, 1]) put(g, box(0.008, 0.012, 0.74), RED, { p: [sx * 0.2155, 0.0, -0.04], basic: true });
-        put(g, ringG(0.112, 0.006), RED, { p: [0, 0, -0.78], basic: true });
-      }
-      return { tail: st >= 2 ? -0.78 : -0.7, jr: 0.07, noseZ: 0.84, tips };
+      // etat 3 : un seul filet lumineux par flotteur
+      if (st >= 3) for (const sx of [-1, 1]) put(g, box(0.008, 0.012, 0.74), RED, { p: [sx * 0.2155, 0.0, -0.04], basic: true });
+      return { tail: -0.84, jr: 0.075, noseZ: 0.84, tips };
     },
   };
 
