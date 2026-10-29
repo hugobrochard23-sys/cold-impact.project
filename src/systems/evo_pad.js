@@ -154,23 +154,23 @@
   EVO.foeShadowTick = (g) => {
     if (!fGroup) { fGroup = new T3.Group(); fGroup.frustumCulled = false; }
     if (fGroup.parent !== g.scene) g.scene.add(fGroup);
-    const on = g.evo && g.rocket && g.targets && (g.state === 'FLIGHT' || g.state === 'CRASHED' || g.state === 'IMPACT'); fGroup.visible = !!on; if (!on) return;
-    const rp = g.rocket.pos, now = performance.now(), dx = LD.x / LD.y, dz = LD.z / LD.y; let n = 0;
+    const on = g.evo && g.rocket && g.targets && (g.state === 'FLIGHT' || g.state === 'CRASHED' || g.state === 'IMPACT') && !(EVO.isS2() && EVO.riv && g.endlessRun && g.endlessRun.dist > EVO.riv.D4 - 40); fGroup.visible = !!on; if (!on) return;   // v317 : plus d'ombres d'ennemis dans la fosse et la base (sous l'eau)
+    const rp = g.rocket.pos, now = performance.now(), dx = LD.x / LD.y, dz = LD.z / LD.y, R2 = EVO.isS2() ? 6400 : 25600, NM = EVO.isS2() ? 120 : 480; let n = 0;   // v317 : niveau 2 : ombres des ennemis seulement a moins de 80 m et 120 pieces au plus (c'etait 156 appels de dessin dans le port)
     for (const t of g.targets) {
-      if (!t.alive || !t.object || !t.object.visible || !t.model || !t.object.parent || t.object.position.distanceToSquared(rp) > 25600) continue;
+      if (!t.alive || !t.object || !t.object.visible || !t.model || !t.object.parent || t.object.position.distanceToSquared(rp) > R2) continue;
       if (t._gt === undefined || now - t._gt > 450) { t._gy = EVO.groundY(g, t.object.position); t._gt = now; }
       if (t._gy === null || t._gy === undefined) continue;
       t.object.updateMatrixWorld(true); const y = t._gy + 0.06; FPM.set(1, -dx, 0, dx * y, 0, 0, 0, y, 0, -dz, 1, dz * y, 0, 0, 0, 1);
       const list = []; collect(t.model, list);
       for (const o of list) {
-        if (n >= 480) break; let m = fPool[n]; if (!m) { m = fPool[n] = new T3.Mesh(o.geometry, shMat); m.matrixAutoUpdate = false; m.frustumCulled = false; m.renderOrder = 3; m.userData.isShadow = true; fGroup.add(m); }
+        if (n >= NM) break; let m = fPool[n]; if (!m) { m = fPool[n] = new T3.Mesh(o.geometry, shMat); m.matrixAutoUpdate = false; m.frustumCulled = false; m.renderOrder = 3; m.userData.isShadow = true; fGroup.add(m); }
         m.geometry = o.geometry; m.visible = true; m.matrix.multiplyMatrices(FPM, o.matrixWorld); m.matrixWorldNeedsUpdate = true; n++;
       }
     }
     { const TT = EVO.titan;   // v264 : l'ombre du boss
       if (TT && TT.W && TT.W.visible && TT.W.parent && TT.mode !== 'dead' && TT.W.position.distanceToSquared(rp) < 160000) {
         TT.W.updateMatrixWorld(true); const y = TT.W.position.y + 0.08; FPM.set(1, -dx, 0, dx * y, 0, 0, 0, y, 0, -dz, 1, dz * y, 0, 0, 0, 1); const list = []; collect(TT.M, list);
-        for (const o of list) { if (n >= 480) break; let m = fPool[n]; if (!m) { m = fPool[n] = new T3.Mesh(o.geometry, shMat); m.matrixAutoUpdate = false; m.frustumCulled = false; m.renderOrder = 3; m.userData.isShadow = true; fGroup.add(m); } m.geometry = o.geometry; m.visible = true; m.matrix.multiplyMatrices(FPM, o.matrixWorld); m.matrixWorldNeedsUpdate = true; n++; } } }
+        for (const o of list) { if (n >= NM) break; let m = fPool[n]; if (!m) { m = fPool[n] = new T3.Mesh(o.geometry, shMat); m.matrixAutoUpdate = false; m.frustumCulled = false; m.renderOrder = 3; m.userData.isShadow = true; fGroup.add(m); } m.geometry = o.geometry; m.visible = true; m.matrix.multiplyMatrices(FPM, o.matrixWorld); m.matrixWorldNeedsUpdate = true; n++; } } }
     for (let i = n; i < fPool.length; i++) fPool[i].visible = false;
   };
   // le lancement : maintenir pour allumer, relacher pour liberer
