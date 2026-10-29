@@ -31,12 +31,16 @@
       rk.vel.x -= fx; rk.vel.z -= fz;
       const lowK = g.flightTime > 1.5 && !(r.tier < 2 || rk.fuel <= 0.01) ? U.clamp(1 - sp / 24, 0, 1) : 0;   // (sans moteur : plus de flottabilite de secours, l'engin coule quand il ralentit)
       rk.vel.y += gr * (1 + 1.8 * lowK) * 0.94 * sub * dt;                       // poussee d'Archimede : le poids est quasi annule
-      const vW = VW[Math.min(3, r.tier)] + (r.tier >= 2 ? 1.2 * r.s : 0), sr = rk.vel.length();
+      // v325 : LA PLONGEE. Nez vers le bas, l'engin se laisse tomber de plus en plus vite (la trainee s'efface, la vitesse maximale monte jusqu'a 300 km/h au bout de ~3 s) : redescendre la fosse ne prend plus 30 s
+      const dive = U.clamp((-rk.fwd.y - 0.35) / 0.45, 0, 1); ev.diveT = dive > 0 ? Math.min(4, (ev.diveT || 0) + dt) : Math.max(0, (ev.diveT || 0) - 2 * dt);
+      const dK = dive * U.clamp(ev.diveT / 3, 0, 1);
+      const vW = VW[Math.min(3, r.tier)] + (r.tier >= 2 ? 1.2 * r.s : 0), vWd = vW + (78 - vW) * dK, sr = rk.vel.length();
       const imp = r.tier < 2 ? Math.max(0.3, 1 - 0.1 * r.n) : 1;   // les ailerons et les ailes affinent l'engin : moins de trainee a chaque amelioration
-      rk.vel.multiplyScalar(Math.exp(-(rk.thrusting ? 0.07 : r.tier < 2 ? (0.02 + 0.003 * sr) * imp : 0.2 + 0.019 * sr) * sub * dt));   // trainee de l'eau : forte quand on glisse, faible moteur allume (c'est le plafond de vitesse qui limite)
-      if (sr > vW) rk.vel.multiplyScalar(1 - Math.min(1, (rk.thrusting ? 1.6 : 3.2) * dt * sub) * (1 - vW / sr));   // vitesse maximale du palier
+      rk.vel.multiplyScalar(Math.exp(-(rk.thrusting ? 0.07 : r.tier < 2 ? (0.02 + 0.003 * sr) * imp : 0.2 + 0.019 * sr) * (1 - 0.9 * dK) * sub * dt));   // trainee de l'eau : forte quand on glisse, faible moteur allume (c'est le plafond de vitesse qui limite)
+      if (dK > 0) rk.vel.y -= 24 * dK * sub * dt;
+      if (sr > vWd) rk.vel.multiplyScalar(1 - Math.min(1, (rk.thrusting ? 1.6 : 3.2) * dt * sub) * (1 - vWd / sr));   // vitesse maximale du palier
       const dry = r.tier < 2 || rk.fuel <= 0.01, sr2 = rk.vel.length();
-      if (rk.vel.y < 0) rk.vel.y *= Math.exp(-2.8 * sub * dt);   // l'eau amortit la plongee : l'engin se redresse au lieu de s'enfoncer jusqu'au fond
+      if (rk.vel.y < 0) rk.vel.y *= Math.exp(-2.8 * (1 - dive) * sub * dt);   // l'eau amortit la plongee : l'engin se redresse au lieu de s'enfoncer jusqu'au fond
       rk.vel.x += fx; rk.vel.z += fz;
       // v286 : JAMAIS de mort a cause de la vitesse. Sans moteur (ou sans carburant), a faible vitesse l'engin perd sa flottabilite : le nez plonge doucement, il coule jusqu'au fond ; c'est le contact avec le sol qui met fin au vol
       if (dry && g.flightTime > 1.5) { const kk = U.clamp(1 - sr2 / 12, 0, 1); if (kk > 0) { rk.vel.y -= gr * 1.5 * kk * sub * dt; g.input.addAim(0, -0.7 * kk * dt); if (kk > 0.45 && !ev._warn) { ev._warn = 1; if (CC.L1) CC.L1.msg(g, r.tier < 2 ? 'PLUS D ELAN' : 'PLUS DE CARBURANT', 1.6, '#ffd070'); } } else if (sr2 > 10) ev._warn = 0; }
