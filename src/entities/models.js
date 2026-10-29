@@ -85,6 +85,7 @@
   const D2R = Math.PI / 180;
   M.rocket = function (skin) {
     skin = skin || (CC.Skins && CC.Skins.get('stock'));
+    if (skin && skin.build && CC.RocketW) return CC.RocketW.build(skin);   // v308 : fusees aquatiques a silhouette propre
     const g = new THREE.Group();
     const c = skin ? skin.c : { body: '#c4c6c9', nose: '#c4c6c9', tip: '#e02a1c', band: '#f3cf00', fin: '#5d6065', nozzle: '#3d3f43' };
     const d = Object.assign({ r: 0.1, len: 0.86, noseLen: 0.3, noseR: 0.012, fins: 4, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 }, (skin && skin.dims) || {});

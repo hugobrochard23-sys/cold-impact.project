@@ -129,7 +129,7 @@
     { c: { body: '#3c6a98', nose: '#243649', tip: '#5ff0ff', band: '#5ff0ff', fin: '#243649', nozzle: '#1a2128' }, d: { r: 0.095, len: 1.2, noseLen: 0.42, noseR: 0.018 }, flame: '#5ff0ff' },
     { c: { body: '#2a4258', nose: '#1b2b3a', tip: '#5ff0ff', band: '#d9a441', fin: '#1b2b3a', nozzle: '#12181e' }, d: { r: 0.092, len: 1.5, noseLen: 0.6, noseR: 0.01 }, flame: '#5ff0ff' },
   ];
-  SKIN_W.forEach((d, i) => { CC.Skins.byId['evoW' + i] = { id: 'evoW' + i, name: 'evoW' + i, short: 'evoW' + i, tier: 'base', price: 0, tierLabel: '', c: Object.assign({}, d.c), flame: d.flame, dims: Object.assign({ fins: 0, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 }, d.d), parts: [] }; });
+  SKIN_W.forEach((d, i) => { CC.Skins.byId['evoW' + i] = { id: 'evoW' + i, name: 'evoW' + i, short: 'evoW' + i, tier: 'base', price: 0, tierLabel: '', c: Object.assign({}, d.c), flame: d.flame, build: ['torpille', 'marlin', 'requin', 'manta'][i], dims: Object.assign({ fins: 0, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 }, d.d), parts: [] }; });
   let _pm = null;
   const PM = () => _pm || (_pm = { card: new THREE.MeshLambertMaterial({ color: '#c8a46e' }), cardD: new THREE.MeshLambertMaterial({ color: '#8a6a44' }), white: new THREE.MeshLambertMaterial({ color: '#eceef2' }), red: new THREE.MeshLambertMaterial({ color: '#d8402c' }),
     blue: new THREE.MeshLambertMaterial({ color: '#2a7ad0' }), dark: new THREE.MeshLambertMaterial({ color: '#2b2d31' }), steel: new THREE.MeshLambertMaterial({ color: '#9aa0a8' }) });
@@ -166,14 +166,8 @@
     root.userData.P = P; return root;
   }
   // pieces aquatiques : hydrofoils (croix d'ailettes courtes), helice carenee (puis ailettes de queue a l'amphibie), pods d'hydrojet lateraux, petits canards
-  function buildPartsW(tier) {
-    const root = new THREE.Group(), P = {}, st = new THREE.MeshLambertMaterial({ color: '#8fa6ba' }), nv = new THREE.MeshLambertMaterial({ color: '#26384a' }), br = new THREE.MeshLambertMaterial({ color: '#d9a441' }), cy = new THREE.MeshBasicMaterial({ color: '#5ff0ff' });
-    P.wings = fins(tier >= 2 ? nv : st, br, 0.3, 0.12, 0.24, 0.1, 0.02, 0, false, 0.026);
-    if (tier >= 3) P.tail = fins(nv, nv, 0.34, 0.12, 0.26, 0.15, -0.5, Math.PI / 4, false, 0.03);
-    else { const t = new THREE.Group(); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.108, 0.013, 8, 20), nv); ring.position.z = -0.5; t.add(ring); t.add(cyl(0.025, 0.025, 0.07, br, 0, 0, -0.5)); for (let k = 0; k < 4; k++) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.1, 0.05), st); b.position.set(0, 0.06, -0.5); b.rotation.x = 0.4; const f = new THREE.Group(); f.rotation.z = k * Math.PI / 2; f.add(b); t.add(f); } P.tail = t; }
-    const boost = new THREE.Group(); for (const s of [-1, 1]) { boost.add(cyl(0.045, 0.045, 0.5, nv, s * 0.18, -0.06, -0.12)); boost.add(cyl(0.0, 0.045, 0.12, st, s * 0.18, -0.06, 0.18)); boost.add(cyl(0.046, 0.046, 0.04, cy, s * 0.18, -0.06, -0.38)); } P.boost = boost;
-    const flaps = new THREE.Group(); flaps.add(fins(nv, nv, 0.2, 0.08, 0.1, 0.05, 0.55, Math.PI / 4, false, 0.022)); P.flaps = flaps;
-    for (const k of Object.keys(P)) { P[k].userData.k = 0; root.add(P[k]); }
+  function buildPartsW() {   // v308 : les fusees aquatiques ont chacune leur propre silhouette (rocket_w.js) : plus de pieces rapportees
+    const root = new THREE.Group(), P = {}; for (const k of ['wings', 'tail', 'boost', 'flaps']) { P[k] = new THREE.Group(); P[k].userData.k = 0; root.add(P[k]); }
     root.userData.P = P; return root;
   }
   const PART_TIER = { wings: 1, tail: 1, flaps: 3, boost: 3 }, PART_TIER2 = { wings: 1, tail: 1, boost: 2, flaps: 3 };  EVO.PART_TIER = PART_TIER; EVO.partTier = () => (EVO.isS2() ? PART_TIER2 : PART_TIER);
@@ -182,7 +176,7 @@
     if (rk.mesh.userData.evoParts) rk.mesh.remove(rk.mesh.userData.evoParts);
     const PT = EVO.partTier(), root = EVO.isS2() ? buildPartsW(r.tier) : buildParts(r.tier); rk.mesh.add(root); rk.mesh.userData.evoParts = root; g.evoParts = root.userData.P;
     for (const k of Object.keys(g.evoParts)) { const on = r.tier >= PT[k]; g.evoParts[k].userData.k = on ? 1 : 0; g.evoParts[k].scale.setScalar(on ? 1 : 0.0001); g.evoParts[k].visible = on; }
-    rk.mesh.userData.finTips = r.tier >= 3 ? [new V(0.4, 0, -0.62), new V(-0.4, 0, -0.62), new V(0, 0.4, -0.62), new V(0, -0.4, -0.62)] : r.tier >= 1 ? [new V(0.44, 0, -0.18), new V(-0.44, 0, -0.18), new V(0, 0.44, -0.18), new V(0, -0.44, -0.18)] : [];   // bouts d'ailes : traînées de condensation
+    if (!EVO.isS2()) rk.mesh.userData.finTips = r.tier >= 3 ? [new V(0.4, 0, -0.62), new V(-0.4, 0, -0.62), new V(0, 0.4, -0.62), new V(0, -0.4, -0.62)] : r.tier >= 1 ? [new V(0.44, 0, -0.18), new V(-0.44, 0, -0.18), new V(0, 0.44, -0.18), new V(0, -0.44, -0.18)] : [];   // bouts d'ailes : traînées de condensation
     rk.mesh.scale.setScalar((1 + 0.012 * r.n) * 1.28);
   };
   // v159 : LIVREES : une fois la fusee au bout de ses ameliorations (niveau 20), on peut en changer l'apparence ; une nouvelle s'ouvre tous les 5 niveaux
