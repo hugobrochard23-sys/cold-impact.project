@@ -24,62 +24,39 @@
   const box = (w, h, d) => new T3.BoxGeometry(w, h, d);
 
   const BUILD = {
-    // MISSILE AMPHIBIE, une seule fusee qui evolue en 4 etats (st 0..3) : nue -> flotteurs -> chenilles, rail et helice carenee -> livree finale bleu nuit / or / cyan
+    // MISSILE AMPHIBIE, une seule fusee qui evolue en 4 etats (st 0..3) : nue -> flotteurs -> chenilles + helice carenee -> livree finale bleu nuit / blanc / cyan. Formes simples, aucune fioriture.
     amphibie(g, st) {
       const F = st >= 3;
-      const OL = F ? '#18283f' : '#5f6e3c', OLD = F ? '#0f1b2c' : '#3f4a2a', NOSE = F ? '#e8b63a' : '#e8c42a', RED = F ? '#1fb6d8' : '#c8362a', DK = F ? '#0a121c' : '#1d2418', STEEL = F ? '#b8c6d4' : '#8a949c', WH = '#ece6cc', CY = '#5ff0ff', BR = '#d9a441';
-      const acc = (geo, c, p, o) => put(g, geo, c, Object.assign({ p, basic: F && c === RED }, o || {}));
-      // corps et ogive
+      const OL = F ? '#16283f' : '#5f6e3c', OLD = F ? '#0e1a2b' : '#3f4a2a', NOSE = F ? '#eef3f7' : '#e8c42a', RED = F ? '#27bde0' : '#c8362a', DK = F ? '#0a121c' : '#1d2418', STEEL = F ? '#b8c6d4' : '#8a949c';
+      const rb = (geo, p) => put(g, geo, RED, { p, basic: F });
       put(g, lathe([[0, -0.7], [0.06, -0.7], [0.09, -0.62], [0.105, -0.5], [0.105, 0.4], [0.092, 0.55], [0.066, 0.67], [0.03, 0.76], [0, 0.78]]), OL);
       put(g, lathe([[0.112, 0.5], [0.1, 0.55], [0.074, 0.67], [0.036, 0.76], [0, 0.79]]), NOSE);
-      put(g, cylZ(0.101, 0.101, 0.02, 18), DK, { p: [0, 0, 0.535] });
-      put(g, cylZ(0.013, 0.0, 0.06, 8), STEEL, { p: [0, 0, 0.8] });
-      // bandes, joints de troncons, rivets
-      acc(cylZ(0.109, 0.109, 0.05, 20), RED, [0, 0, 0.47]); acc(cylZ(0.108, 0.108, 0.18, 20), RED, [0, 0, -0.05]); put(g, cylZ(0.109, 0.109, 0.014, 20), NOSE, { p: [0, 0, -0.17] }); put(g, cylZ(0.109, 0.109, 0.014, 20), NOSE, { p: [0, 0, 0.1] });
-      for (const z of [-0.42, 0.24, 0.35]) put(g, cylZ(0.1065, 0.1065, 0.008, 20), DK, { p: [0, 0, z] });
-      for (const z of [-0.3, 0.3]) for (let k = 0; k < 14; k++) { const a = k * Math.PI * 2 / 14; put(g, sph(0.005), STEEL, { p: [Math.cos(a) * 0.106, Math.sin(a) * 0.106, z] }); }
-      // marquage : trois barres blanches de chaque cote, conduit de cables, trappe d'inspection
-      for (const sx of [-1, 1]) { for (let k = 0; k < 3; k++) put(g, box(0.008, 0.05, 0.014), WH, { p: [sx * 0.1065, 0, 0.27 + k * 0.03] }); put(g, cylZ(0.006, 0.006, 0.62, 6), DK, { p: [sx * 0.082, 0.066, -0.0] }); for (const z of [-0.25, 0.0, 0.25]) put(g, box(0.014, 0.02, 0.016), STEEL, { p: [sx * 0.082, 0.066, z] }); }
-      put(g, new T3.CylinderGeometry(0.05, 0.05, 0.01, 16), STEEL, { p: [0, 0.103, 0.0] }); put(g, new T3.CylinderGeometry(0.038, 0.038, 0.016, 16), DK, { p: [0, 0.106, 0.0] }); put(g, box(0.05, 0.006, 0.01), STEEL, { p: [0, 0.116, 0.0] });
-      // tuyere et empennage
-      put(g, cylZ(0.082, 0.066, 0.07, 16), DK, { p: [0, 0, -0.7] }); put(g, ringG(0.07, 0.008), STEEL, { p: [0, 0, -0.735] });
-      for (let k = 0; k < 4; k++) { const f = new T3.Group(); f.rotation.z = k * Math.PI / 2 + Math.PI / 4; g.add(f); acc(fin([[-0.4, 0.1], [-0.7, 0.1], [-0.76, 0.27], [-0.58, 0.29]], 0.022), RED, [0, 0, 0], { parent: f, p: undefined }); put(g, fin([[-0.62, 0.285], [-0.76, 0.27], [-0.74, 0.255], [-0.62, 0.27]], 0.03), NOSE, { parent: f }); put(g, fin([[-0.4, 0.1], [-0.7, 0.1], [-0.7, 0.108], [-0.4, 0.108]], 0.034), DK, { parent: f }); }
-      const tips = [[0.2, 0.2, -0.74], [-0.2, 0.2, -0.74], [0.2, -0.2, -0.74], [-0.2, -0.2, -0.74]];
-      // ---- etat 1 : deux flotteurs sur pylones
+      rb(cylZ(0.109, 0.109, 0.16, 22), [0, 0, -0.02]);
+      // tuyere et empennage : 4 ailerons en fleche, racine posee sur le fuselage (suit la conicite de l'arriere)
+      put(g, cylZ(0.082, 0.066, 0.07, 16), DK, { p: [0, 0, -0.7] });
+      for (let k = 0; k < 4; k++) { const f = new T3.Group(); f.rotation.z = k * Math.PI / 2 + Math.PI / 4; g.add(f); put(g, fin([[-0.36, 0.085], [-0.7, 0.03], [-0.76, 0.26], [-0.6, 0.27]], 0.022), RED, { parent: f, basic: F }); }
+      const tips = [[0.19, 0.19, -0.7], [-0.19, 0.19, -0.7], [0.19, -0.19, -0.7], [-0.19, -0.19, -0.7]];
+      // etat 1 : deux flotteurs sur pylones
       if (st >= 1) for (const sx of [-1, 1]) {
         put(g, cylZ(0.056, 0.056, 0.86, 16), OLD, { p: [sx * 0.215, -0.06, -0.04] }); put(g, cylZ(0.056, 0.0, 0.16, 16), OLD, { p: [sx * 0.215, -0.06, 0.47] }); put(g, cylZ(0.056, 0.04, 0.05, 16), DK, { p: [sx * 0.215, -0.06, -0.495] });
-        acc(cylZ(0.0575, 0.0575, 0.03, 16), RED, [sx * 0.215, -0.06, 0.2]); put(g, box(0.05, 0.014, 0.5), STEEL, { p: [sx * 0.215, -0.002, -0.05] });
-        for (const z of [0.22, -0.32]) { put(g, box(0.11, 0.024, 0.12), OLD, { p: [sx * 0.15, -0.045, z] }); const br = put(g, box(0.014, 0.1, 0.014), DK, { p: [sx * 0.14, -0.02, z + 0.08] }); br.rotation.z = sx * 0.9; }
+        rb(cylZ(0.0575, 0.0575, 0.08, 16), [sx * 0.215, -0.06, 0.2]);
+        for (const z of [0.2, -0.3]) put(g, box(0.11, 0.024, 0.12), OLD, { p: [sx * 0.15, -0.045, z] });
         tips.push([sx * 0.27, -0.06, -0.45]);
       }
-      // ---- etat 2 : chenilles, rail de lancement en treillis, helice carenee
+      // etat 2 : chenilles (caisson, galets) et helice carenee
       if (st >= 2) {
         for (const sx of [-1, 1]) {
-          const X = sx * 0.268;
-          put(g, box(0.03, 0.1, 0.78), DK, { p: [sx * 0.262, -0.06, -0.04] });
-          for (let k = 0; k < 7; k++) put(g, new T3.CylinderGeometry(0.04, 0.04, 0.036, 12).rotateZ(Math.PI / 2), STEEL, { p: [sx * 0.282, -0.06, -0.38 + k * 0.12] });
-          for (const z of [-0.43, 0.35]) put(g, new T3.CylinderGeometry(0.052, 0.052, 0.034, 12).rotateZ(Math.PI / 2), DK, { p: [sx * 0.282, -0.06, z] });
-          for (let k = 0; k < 17; k++) { const z = -0.43 + k * 0.049; put(g, box(0.04, 0.01, 0.034), DK, { p: [sx * 0.284, -0.006, z] }); put(g, box(0.04, 0.01, 0.034), DK, { p: [sx * 0.284, -0.114, z] }); }
-          put(g, box(0.044, 0.018, 0.1), OLD, { p: [sx * 0.284, 0.02, -0.04] });
+          put(g, box(0.034, 0.12, 0.8), DK, { p: [sx * 0.27, -0.06, -0.04] });
+          for (let k = 0; k < 5; k++) put(g, new T3.CylinderGeometry(0.048, 0.048, 0.034, 14).rotateZ(Math.PI / 2), STEEL, { p: [sx * 0.29, -0.06, -0.36 + k * 0.16] });
         }
-        for (const sx of [-1, 1]) put(g, box(0.012, 0.012, 0.88), DK, { p: [sx * 0.045, 0.131, -0.02] });
-        for (let k = 0; k < 8; k++) { put(g, box(0.1, 0.01, 0.014), DK, { p: [0, 0.131, -0.44 + k * 0.125] }); if (k < 7) { const d = put(g, box(0.008, 0.008, 0.13), DK, { p: [(k % 2 ? 1 : -1) * 0.022, 0.131, -0.375 + k * 0.125] }); d.rotation.y = (k % 2 ? 1 : -1) * 0.5; } }
-        for (const z of [-0.44, 0.44]) put(g, box(0.1, 0.03, 0.02), STEEL, { p: [0, 0.12, z] });
         put(g, ringG(0.112, 0.012), STEEL, { p: [0, 0, -0.78] });
         for (let k = 0; k < 3; k++) { const f = new T3.Group(); f.rotation.z = k * Math.PI * 2 / 3 + 0.3; g.add(f); put(g, box(0.012, 0.11, 0.02), DK, { p: [0, 0.058, -0.78], parent: f }); }
         tips.push([0.1, 0.1, -0.8], [-0.1, 0.1, -0.8]);
       }
-      // ---- etat 3 : livree finale : canards, filets lumineux, anneaux cyan, nez or
+      // etat 3 : un seul filet lumineux par flotteur et l'anneau de tuyere
       if (st >= 3) {
-        for (const sx of [-1, 1]) {
-          put(g, flat([[0.09 * sx, 0.5], [0.26 * sx, 0.38], [0.26 * sx, 0.33], [0.09 * sx, 0.4]], 0.014), STEEL);
-          put(g, box(0.012, 0.012, 0.8), CY, { p: [sx * 0.215, -0.0, -0.05], basic: true });
-          put(g, ringG(0.057, 0.008), CY, { p: [sx * 0.215, -0.06, 0.38], basic: true });
-          put(g, box(0.006, 0.012, 0.7), CY, { p: [sx * 0.1085, 0.0, 0.0], basic: true });
-        }
-        put(g, ringG(0.108, 0.007), CY, { p: [0, 0, -0.78], basic: true }); put(g, cylZ(0.111, 0.111, 0.008, 20), CY, { p: [0, 0, 0.3], basic: true });
-        put(g, box(0.014, 0.01, 0.7), CY, { p: [0, 0.1075, 0.05], basic: true });
-        tips.push([0.26, 0, 0.35], [-0.26, 0, 0.35]);
+        for (const sx of [-1, 1]) put(g, box(0.008, 0.012, 0.74), RED, { p: [sx * 0.2155, 0.0, -0.04], basic: true });
+        put(g, ringG(0.112, 0.006), RED, { p: [0, 0, -0.78], basic: true });
       }
       return { tail: st >= 2 ? -0.78 : -0.7, jr: 0.07, noseZ: 0.84, tips };
     },
