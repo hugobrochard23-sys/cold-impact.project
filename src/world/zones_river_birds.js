@@ -128,5 +128,7 @@
     for (const s of B.spots) if (s.list) for (const o of s.list) { if (!o.root.visible) continue; const I = instFor(g, o.key); o.root.updateMatrixWorld(true); const c = cnt[o.key] || (cnt[o.key] = [0, 0, 0, 0]); for (const [k, ob] of o.pts) { if (c[k] < 64) I.parts[k].setMatrixAt(c[k]++, ob.matrixWorld); } }
     for (const key in INST) { const I = INST[key], c = cnt[key] || [0, 0, 0, 0]; for (let k = 0; k < 4; k++) { I.parts[k].count = c[k]; I.parts[k].instanceMatrix.needsUpdate = true; } }
   };
+  // v322 : compile le programme des oiseaux instancies pendant l'ecran de chargement (sinon petit gel a la premiere vue d'un oiseau)
+  EVO.birdsPrewarm = (g) => { try { const m = new T3.InstancedMesh(build('ara').geo[0], mat, 1); m.frustumCulled = false; g.scene.add(m); g.renderer.compile(g.scene, g.camera); g.scene.remove(m); } catch (err) { /* sans effet */ } };
   { const _fr = EVO.frame; EVO.frame = (g, dt) => { _fr(g, dt); update(g, dt); }; }
 })();
