@@ -129,5 +129,25 @@
     { const n = new T3.Group(); n.position.set(0, 36, -34); root.add(n); bx(n, 14, 5, 14, dark, 0, -2, 0); cy(n, 6, 7, 6, light, 0, 2, 0, 12); for (const sx of [-1, 1]) cy(n, 1.2, 1.4, 22, dark, sx * 2.6, 3, -12, 8, true); const gl = glow(60, '#ffcf6a'); gl.position.y = 6; n.add(gl); const mk = marker(n, 16, '#ffd040', 1); mk.position.z = -26; zones.push({ id: 'TOURELLE', pos: new V(0, 36, -34), r: 14, node: n, gl, burn: true, mk }); }
     return { root, zones, hulls: [{ pos: new V(0, 0, 40), size: [44, 44, 160] }, { pos: new V(0, 30, 10), size: [12, 28, 46] }], prop };
   }
+  // v305 : UNE AMBIANCE PAR ZONE (ciel, brume, lumiere) : brume verte des gorges, lagune turquoise, barrage orageux, hall industriel ambre, delta a l'heure doree, mangrove rose, port au crepuscule puis de nuit, fosse bleu profond, cimetiere verdatre, portail cyan, sas froid, cuve rouge d'alerte
+  { const M = EVO.addMood, SM = EVO.SCENE_MOOD, mk = (k, name, m) => { M(name, m); SM[k] = name; };
+    mk('gorges', 'riv_gorges', { top: '#3a86d4', hor: '#cfe8dc', fog: '#b4dcc8', near: 80, far: 440, hemiS: '#e4f4ea', hemiG: '#4a8a56', hemiI: 0.8, amb: 0.27, sunC: '#fff2d0', sunI: 0.7, night: 0 });
+    mk('lagune', 'riv_lagune', { top: '#2a9ee6', hor: '#d4f6f2', fog: '#b4ece4', near: 90, far: 480, hemiS: '#e8fbf8', hemiG: '#4a9a8a', hemiI: 0.84, amb: 0.28, sunC: '#fff6dc', sunI: 0.74, night: 0 });
+    mk('barrage', 'riv_barrage', { top: '#52627a', hor: '#c4ccd2', fog: '#8a98a6', near: 100, far: 520, hemiS: '#d4dce4', hemiG: '#4a5660', hemiI: 0.86, amb: 0.26, sunC: '#ffe6c0', sunI: 0.6, night: 0.05 });
+    SM.lac = 'riv_barrage';
+    for (const k of ['conduite', 'hall']) mk(k, 'riv_hall', { top: '#2e2a26', hor: '#8a7656', fog: '#5a4c3a', near: 40, far: 420, hemiS: '#ffe4b8', hemiG: '#6a5640', hemiI: 1.3, amb: 0.7, sunC: '#ffd8a0', sunI: 0.5, night: 0.15 });
+    mk('canal', 'riv_canal', { top: '#4a86c8', hor: '#f0dcc0', fog: '#c8c0b0', near: 110, far: 540, hemiS: '#f4ecdc', hemiG: '#5a6a5a', hemiI: 0.88, amb: 0.28, sunC: '#ffd8a0', sunI: 0.8, night: 0 });
+    mk('delta', 'riv_delta', { top: '#4c84d8', hor: '#ffdca8', fog: '#f0c89a', near: 100, far: 520, hemiS: '#fff0d8', hemiG: '#6a8a50', hemiI: 0.9, amb: 0.3, sunC: '#ffc27a', sunI: 0.85, night: 0 });
+    mk('mangrove', 'riv_mangrove', { top: '#7266b8', hor: '#ffb994', fog: '#e8a894', near: 90, far: 500, hemiS: '#ffe0d0', hemiG: '#7a6a58', hemiI: 0.86, amb: 0.32, sunC: '#ff9a68', sunI: 0.78, night: 0.05 });
+    mk('havre', 'riv_havre', { top: '#3c4488', hor: '#f08c78', fog: '#9a7498', near: 90, far: 520, hemiS: '#ffd4c8', hemiG: '#5a5068', hemiI: 0.84, amb: 0.34, sunC: '#ffa070', sunI: 0.6, night: 0.15 });
+    mk('quais', 'riv_quais', { top: '#242c62', hor: '#c8627e', fog: '#5e4c7e', near: 80, far: 500, hemiS: '#e8b8d0', hemiG: '#4a4668', hemiI: 0.8, amb: 0.4, sunC: '#ff8a7a', sunI: 0.4, night: 0.35 });
+    mk('rade', 'riv_rade', { top: '#121c42', hor: '#3e5084', fog: '#222e58', near: 70, far: 480, hemiS: '#a8bce8', hemiG: '#3a4468', hemiI: 0.9, amb: 0.5, sunC: '#a8c0f0', sunI: 0.35, night: 0.55 });
+    mk('gouffre', 'riv_gouffre', { top: '#2c5470', hor: '#6aa0ba', fog: '#3f7a96', near: 40, far: 560, hemiS: '#d4eefa', hemiG: '#55747e', hemiI: 1.6, amb: 0.95, sunC: '#c8e4f0', sunI: 0.5, night: 0.2 });
+    mk('tranchee', 'riv_tranchee', { top: '#1c3c78', hor: '#4a78c0', fog: '#2c5090', near: 40, far: 560, hemiS: '#b8d4ff', hemiG: '#3c5a8c', hemiI: 1.5, amb: 0.9, sunC: '#a8c8ff', sunI: 0.5, night: 0.25 });
+    mk('cimetiere', 'riv_cimetiere', { top: '#24502c', hor: '#78a878', fog: '#3c7054', near: 40, far: 540, hemiS: '#d0f0d4', hemiG: '#4a6a50', hemiI: 1.5, amb: 0.9, sunC: '#c8f0c8', sunI: 0.5, night: 0.25 });
+    mk('portail', 'riv_portail', { top: '#0e4a5e', hor: '#4ac0d4', fog: '#1e7088', near: 40, far: 520, hemiS: '#c8f8ff', hemiG: '#3c7080', hemiI: 1.5, amb: 0.95, sunC: '#b0f0ff', sunI: 0.5, night: 0.2 });
+    mk('sas', 'riv_sas', { top: '#26343e', hor: '#7a94a4', fog: '#4a5c68', near: 40, far: 460, hemiS: '#e0f0fa', hemiG: '#586a76', hemiI: 1.5, amb: 0.9, sunC: '#d8ecf8', sunI: 0.5, night: 0.15 });
+    mk('cuve', 'riv_cuve', { top: '#2e1016', hor: '#8a3038', fog: '#451a20', near: 40, far: 480, hemiS: '#ffc4b8', hemiG: '#6a3a40', hemiI: 1.4, amb: 0.8, sunC: '#ff9a88', sunI: 0.5, night: 0.25 });
+  }
   if (EVO.boss2Kit) EVO.boss2Kit.DEFS.abyssal = { scene: 'sousmarin', at: 0.84, ahead: 0, speed: 0, name: 'ABYSSAL', hp: 3, model: abyssalModel, yOff: 8, surge: 220, fire: 2.6, finish: true, muzzle: [0, -8, -140] };
 })();

@@ -124,6 +124,33 @@
   const _tkf = EVO.tick;
   EVO.tick = (g, dt) => { _tkf(g, dt); const run = g.endlessRun; if (run && EVO.isS2() && g.evo && !g.evo.preview && g.state === 'FLIGHT' && g.rocket.active) { } if (EVO.isS2() && g.evo && !g.evo.preview && run && !g.evoFinish && g.state === 'FLIGHT' && g.rocket.active && run.dist > EVO.riv.finishD && EVO.finishRun) EVO.finishRun(g); };
 
+  // v305 : LA RUPTURE DU BARRAGE. Quand la fusee arrive dans le hall, le beton craque (secousse, flash, message) et un MUR D'EAU de toute la largeur du conduit se declenche derriere elle : il la rattrape, la pousse (jamais de degat) et jaillit avec elle a la sortie du canal de fuite.
+  { const W0 = 1, H0 = 1, NC = 22, NR = 12, pos = [], col = [], ix = [];
+    for (let r = 0; r <= NR; r++) for (let c = 0; c <= NC; c++) { const u = c / NC - 0.5, v = r / NR, lean = 12 * v * v * v + 2.5 * Math.sin(c * 1.9 + r * 0.7) * v, y = v; pos.push(u * W0, y * H0, lean); const k = Math.pow(v, 3), n = 0.06 * Math.sin(c * 3.1 + r * 1.7), cc = [0.16 + 0.84 * k + n, 0.66 + 0.34 * k + n, 0.78 + 0.22 * k + n]; col.push(cc[0], cc[1], cc[2]); }
+    for (let r = 0; r < NR; r++) for (let c = 0; c < NC; c++) { const a = r * (NC + 1) + c, b = a + 1, q = a + NC + 1, e = q + 1; ix.push(a, b, q, b, e, q); }
+    const FG = new T3.BufferGeometry(); FG.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); FG.setAttribute('color', new T3.Float32BufferAttribute(col, 3)); FG.setIndex(ix);
+    const mFront = new T3.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.8, side: T3.DoubleSide, depthWrite: false, fog: false }), mBody = new T3.MeshBasicMaterial({ color: '#8fe4ee', transparent: true, opacity: 0.3, side: T3.DoubleSide, depthWrite: false, fog: false });
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const yawAt = (T, d) => { const a = T.at(d, 0, 0), b = T.at(d + 6, 0, 0); return Math.atan2(b[0] - a[0], b[2] - a[2]); };
+    const _tkb = EVO.tick;
+    EVO.tick = (g, dt) => { _tkb(g, dt); const run = g.endlessRun; if (!run || !EVO.isS2() || !g.evo || g.evo.preview) { if (g._br && g._br.grp) g._br.grp.visible = false; return; }
+      if (g._brRun !== run) { g._brRun = run; if (g._br && g._br.grp) g.scene.remove(g._br.grp); const grp = new T3.Group(), front = new T3.Mesh(FG, mFront), body = new T3.Mesh(new T3.BoxGeometry(1, 1, 1), mBody); front.frustumCulled = false; body.frustumCulled = false; grp.add(front); grp.add(body); grp.visible = false; g.scene.add(grp); g._br = { grp, front, body, st: 0, dW: 0 }; }
+      const B = g._br, rk = g.rocket; if (g.state !== 'FLIGHT' || !rk.active) { if (g.state !== 'FLIGHT') { B.st = B.st === 3 ? 3 : 0; B.grp.visible = false; } return; }
+      const d = run.dist, u = d - LA;
+      if (B.st === 0 && u > U_HALL + 40 && u < U_TURB) { B.st = 1; B.t = 0; B.dW = Math.max(LA + U_DAM + 20, d - 140); g.rig.shake = Math.max(g.rig.shake, 1.0); g.flash = Math.max(g.flash || 0, 0.3); g.flashColor = '#ffffff'; g.audio.play('whoosh'); if (CC.L1) CC.L1.msg(g, 'LE BARRAGE CEDE !', 1.8, '#ffe9a0'); }
+      if (B.st === 0 && u < U_HALL) B.grp.visible = false;
+      if (B.st === 1 || B.st === 2) {
+        B.t += dt; if (B.t > 0.9) B.st = 2; const vw = B.st === 2 ? 108 : 40; B.dW += vw * dt;
+        const dw = B.dW, uw = dw - LA, inTun = uw < U_MOUTH + 10, fl = BED(dw), W = inTun ? 2 * HWt(uw) - 1 : 2 * HWc(dw), H = inTun ? Math.max(14, ceilAbs(dw) - fl - 1) : 30, a = run.T.at(dw, 0, 0), yw = yawAt(run.T, dw);
+        B.grp.visible = true; B.grp.position.set(a[0], fl + 0.3, a[2]); B.grp.rotation.y = yw; B.front.scale.set(W, H, 1); B.body.scale.set(W * 0.98, H * 0.78, 120); B.body.position.set(0, H * 0.39, -62);
+        if (g.effects && g.effects.smoke && Math.random() < dt * 60) { const sp = new T3.Vector3(a[0] + Math.sin(yw) * 6 + (Math.random() - 0.5) * W * 0.8, fl + H * (0.5 + 0.5 * Math.random()), a[2] + Math.cos(yw) * 6), vv = new T3.Vector3((Math.random() - 0.5) * 8, 2 + Math.random() * 5, (Math.random() - 0.5) * 8); g.effects.smoke.emit({ pos: sp, vel: vv, life: 1.1 + Math.random() * 0.8, s0: 4, s1: 14, s2: 22, peak: 0.5, cols: g.effects.pal.smoke, drag: 1.2, a: 0.5, fin: 0.05, fout: 0.5, wind: 0, turb: 1, spin: 1 }); }
+        const gap = dw - d;   // devant la fusee : positif ; la vague la rattrape puis la pousse
+        if (gap > -90 && gap < 160) g.rig.shake = Math.max(g.rig.shake, 0.35 * (1 - Math.abs(gap - 20) / 180));
+        if (gap > -75 && gap < 60 && uw < U_MOUTH + 60 && rk.pos.y < ceilAbs(d) && rk.pos.y > BED(d) - 3) { const k = clamp((60 - gap) / 60, 0, 1); rk.vel.addScaledVector(rk.fwd, 70 * k * dt); const sp = rk.vel.length(); if (sp > 108) rk.vel.multiplyScalar(108 / sp); }
+        if (uw > U_MOUTH + 260) { B.st = 3; B.grp.visible = false; }
+      }
+    };
+  }
   // ---- le tunnel : galerie d'entree, hall en descente, canal de fuite ; boucles de 12 m
   function tunnel(S, d) {
     // nervures d'acier : un portique (deux montants, une traverse, une bande jaune) tous les 24 m ; lumieres le long du plafond
