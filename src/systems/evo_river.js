@@ -10,6 +10,8 @@
   // vitesse du courant (m/s) selon la distance : fleuve plus rapide dans les gorges etroites, nul sur le lac, fort dans la conduite forcee
   const CUR = (d) => { const R = EVO.riv; if (!R) return 0; let c; if (d < R.LA) c = 4.5 + 5 * U.clamp((46 - R.HW(d)) / 24, 0, 1); else c = d < R.LA + 300 ? 3 : d < R.EXIT ? 9 : 4; return c * U.clamp(d / 60, 0, 1); };
   EVO.curAt = CUR;
+  // v328 : le depart ne depasse jamais la vitesse normale de l'engin dans l'eau (un depart tres puissant faisait filer la fusee a l'air libre puis la plaquait contre la berge avant que l'eau ne la ralentisse)
+  { const _ls = EVO.launchSpeed; if (_ls) EVO.launchSpeed = (g) => { const v = _ls(g); if (!EVO.isS2 || !EVO.isS2()) return v; const r = EVO.rocket(EVO.save(g).rk); return Math.min(v, VW[Math.min(3, r.tier)] + (r.tier >= 2 ? 1.2 * r.s : 0) + 14); }; }
   const _tk = EVO.tick;
   EVO.tick = (g, dt) => {
     _tk(g, dt);

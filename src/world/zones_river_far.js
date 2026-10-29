@@ -4,11 +4,11 @@
 (function () {
   const EVO = CC.EVO, R = EVO && EVO.riv, T3 = THREE; if (!R || !EVO.oc || !R.D3 || !R.D4) return;
   const { mixf } = R, ss = EVO.oc.ss, D3 = R.D3, D4 = R.D4, LD = R.LD, LP = R.LP, WYS = -112 - R.DROP;
-  const D0 = D3 - 80, D1 = D4 + 70, STEP = 8, SB = 138, S1 = 150, SMAX = 500, GRID = 30, L0 = D3 + LD;
+  const LA = R.LA, D0 = LA + 200, D1 = (R.DEND || D4 + 2700) + 40, STEP = 8, SB = 138, S1 = 150, SMAX = 500, GRID = 30, L0 = D3 + LD;
   const fr = (v) => v - Math.floor(v), hsh = (a, b) => fr(Math.sin(a * 127.1 + b * 311.7) * 43758.5453);
   const nz = (x, z) => 0.5 + 0.5 * (Math.sin(x * 0.0113 + z * 0.0171) * 0.5 + Math.sin(x * 0.0271 - z * 0.0131 + 1.3) * 0.3 + Math.sin(x * 0.0511 + z * 0.0433) * 0.2);
   // hauteur du sommet de la berge (la meme que celle des zones : delta puis port)
-  const topAt = (d, sg) => { const u = d - D3; if (u < LD) return mixf(-84, WYS + 9 + 3 * Math.sin(d / 41 + sg), ss(24, 120, u)); return WYS + 6.5; };
+  const EX = LA + 1010, LID0 = D4 + 40, LEND = D1 - 40, inCap = (d) => (d >= LA + 330 && d <= EX) || (d >= LID0 && d <= LEND), topAt = (d, sg) => { if (d < D3) { const u2 = d - LA; if (u2 >= 1010) return R.topAt(Math.max(d, EX + 8), sg); return mixf(R.topAt(d, sg), mixf(-10, -86, ss(900, 1010, u2)), ss(300, 360, u2)); } const u = d - D3; if (u < LD) return mixf(-84, WYS + 9 + 3 * Math.sin(d / 41 + sg), ss(24, 120, u)); if (d >= D4) return mixf(WYS + 6.5, WYS + 14, ss(D4 + 60, D4 + 130, d)); return WYS + 6.5; };   // v328 : au-dela de D4, la mer entre sous une colline : le plafond de la fosse (le dessus des parois)
   const portW = (d) => ss(L0 - 40, L0 + 80, d) * (1 - ss(L0 + LP - 200, L0 + LP - 100, d));   // 1 dans le port (quais), 0 dans le delta et la rade
   const GJ = ['#3a8a3e', '#448f40', '#357f38', '#4a9444'].map((h) => new T3.Color(h)), GP = new T3.Color('#6a6e68'), GP2 = new T3.Color('#58605c'), cT = new T3.Color();
   const color = (x, z, d, out) => {
@@ -17,7 +17,7 @@
   };
   const prof = (s, x, z, d) => {
     if (s < S1) return -0.3 - (S1 - s) * 0.02;
-    const u = s - S1, w = portW(d), k = ss(D3 - 30, D3 + 40, d) * (1 - ss(D4 - 20, D4 + 60, d)), A = (58 - 36 * w) * (1 - Math.exp(-u / 130)), n = nz(x * 0.9 + 17, z * 0.9);
+    const u = s - S1, w = portW(d), k = 1, A = (58 - 36 * w) * (1 - Math.exp(-u / 130)), n = nz(x * 0.9 + 17, z * 0.9);
     const flat = 1 - w * Math.exp(-u / 70);   // le port : terre plate au bord, les collines viennent apres les blocs
     return k * flat * (A * (0.4 + 0.6 * n) + 6 * (1 - Math.exp(-u / 50)) * Math.sin(x * 0.034 + z * 0.026 + 2) + 3 * Math.sin(x * 0.07 - z * 0.05));
   };
@@ -33,7 +33,7 @@
     const dx = x - H.px[bi], dz = z - H.pz[bi], along = dx * H.tx[bi] + dz * H.tz[bi];
     if ((bi === H.n - 1 && along > 0) || (bi === 0 && along < 0)) return out;
     out.s = Math.sqrt(bd); out.d = H.d[bi]; out.sg = (dx * -H.tz[bi] + dz * H.tx[bi]) >= 0 ? 1 : -1; out.ok = true;
-    out.y = topAt(out.d, out.sg) + prof(out.s, x, z, out.d); return out;
+    out.y = topAt(out.d, out.sg) + (out.s < S1 && inCap(out.d) ? -0.3 : prof(out.s, x, z, out.d)); return out;
   };
   const make = function* (g, run, tick) {   // generateur : le calcul (grille de probes, skyline) est reparti sur plusieurs images (pas de pic de plusieurs dizaines de ms)
     const H = build(run); let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
@@ -46,15 +46,16 @@
       ys[k] = out.y; ss_[k] = out.s; dd_[k] = out.d;
       if (i === nx - 1 && tick()) yield;
     }
-    const pos = [], col = [], uv = [], ix = [], map = new Int32Array(nx * nzz).fill(-1); let nv = 0;
-    const vert = (k, i, j) => { if (map[k] < 0) { map[k] = nv++; const x = x0 + i * GRID, z = z0 + j * GRID; pos.push(x, ys[k], z); uv.push(x / 7, z / 7); color(x, z, dd_[k], cT); col.push(cT.r, cT.g, cT.b); } return map[k]; };
+    const pos = [], col = [], uv = [], ix = [], ixL = [], map = new Int32Array(nx * nzz).fill(-1); let nv = 0;
+    const vert = (k, i, j) => { if (map[k] < 0) { map[k] = nv++; const x = x0 + i * GRID, z = z0 + j * GRID; pos.push(x, ys[k] - (ss_[k] < SB && !inCap(dd_[k]) ? 3 : 0) - 2 * (1 - ss(LA + 240, LA + 300, dd_[k])), z); uv.push(x / 7, z / 7); color(x, z, dd_[k], cT); col.push(cT.r, cT.g, cT.b); } return map[k]; };
     for (let j = 0; j < nzz - 1; j++) for (let i = 0; i < nx - 1; i++) {
       const k00 = j * nx + i, k10 = k00 + 1, k01 = k00 + nx, k11 = k01 + 1; let ok = true;
-      for (const k of [k00, k10, k01, k11]) if (ys[k] < -1e8 || ss_[k] < SB) ok = false; if (!ok) continue;
-      const a = vert(k00, i, j), b = vert(k10, i + 1, j), c = vert(k01, i, j + 1), d = vert(k11, i + 1, j + 1); ix.push(a, c, b, b, c, d);
+      let far = false, cap = true; for (const k of [k00, k10, k01, k11]) { if (ys[k] < -1e8) ok = false; else if (ss_[k] >= SB) far = true; if (!inCap(dd_[k])) cap = false; } if ((dd_[k00] + dd_[k10] + dd_[k01] + dd_[k11]) / 4 < LA + 235) ok = false; if (!ok || !(far || cap)) continue;   // cap : le dessus du barrage et de la galerie (entre le mur et la sortie du canal) est couvert de colline   // v328 : plus de trous au bord de la berge : une maille touche la berge des qu'un de ses coins est assez loin (les coins proches sont rabaisses sous la berge)
+      const a = vert(k00, i, j), b = vert(k10, i + 1, j), c = vert(k01, i, j + 1), d = vert(k11, i + 1, j + 1); (cap ? ixL : ix).push(a, c, b, b, c, d);   // les mailles du dessus du barrage et du plafond de la fosse forment un maillage a part (dessous sombre)
     }
-    const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(col, 3)); geo.setAttribute('uv', new T3.Float32BufferAttribute(uv, 2)); geo.setIndex(ix); geo.computeVertexNormals();
+    const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(col, 3)); geo.setAttribute('uv', new T3.Float32BufferAttribute(uv, 2)); geo.setIndex(ix.concat(ixL)); geo.computeVertexNormals(); geo.setIndex(ix);
     const grp = new T3.Group(), mesh = new T3.Mesh(geo, new T3.MeshLambertMaterial({ map: CC.Textures.get('evoGrass'), vertexColors: true, side: T3.DoubleSide })); mesh.frustumCulled = false; grp.add(mesh);
+    if (ixL.length) { const gl = new T3.BufferGeometry(); for (const k in geo.attributes) gl.setAttribute(k, geo.attributes[k]); gl.setIndex(ixL); const ml = new T3.Mesh(gl, new T3.MeshLambertMaterial({ map: CC.Textures.get('evoGrass'), vertexColors: true, side: T3.FrontSide })), mb = new T3.Mesh(gl, new T3.MeshLambertMaterial({ color: '#2c3036', side: T3.BackSide })); ml.frustumCulled = mb.frustumCulled = false; grp.add(ml); grp.add(mb); }
     // skyline du port : blocs de bureaux et d'entrepots (une seule instance) sur la terre plate, loin des quais
     const NB = 150, inst = new T3.InstancedMesh(new T3.BoxGeometry(1, 1, 1), new T3.MeshLambertMaterial({ color: '#ffffff' }), NB), M = new T3.Matrix4(), Qn = new T3.Quaternion(), Sc = new T3.Vector3(), Pp = new T3.Vector3(), Cc = new T3.Color();
     const PAL = ['#8a929a', '#9aa0a4', '#7a8490', '#a89c8c', '#6e7884', '#b4b0a4'];
@@ -66,20 +67,36 @@
       Qn.setFromEuler(new T3.Euler(0, yaw, 0)); Sc.set(w, h + 4, dp); Pp.set(p[0], out.y + h / 2 - 2, p[2]); M.compose(Pp, Qn, Sc); inst.setMatrixAt(nb, M); Cc.set(PAL[Math.floor(hsh(t, 6.6) * PAL.length)]).multiplyScalar(0.85 + 0.25 * hsh(t, 9.1)); inst.setColorAt(nb, Cc); nb++;
     }
     inst.count = nb; inst.instanceMatrix.needsUpdate = true; if (inst.instanceColor) inst.instanceColor.needsUpdate = true; inst.frustumCulled = false; grp.add(inst);
+    // v328 : les berges de la mangrove (du bord du fleuve jusqu'a 152 m) : une nappe lisse (face de roche + dessus d'herbe) a la place des marches de boites ; les boites ne servent plus qu'a la collision
+    if (R.HWd) {
+      const wp = [], wc = [], tp = [], tc = [], tu = [], wi = [], ti = [], NC = Math.ceil((LD + 6) / 3), RK = [new T3.Color('#6e6656'), new T3.Color('#857c6a')], Ck = new T3.Color();
+      for (const sg of [-1, 1]) {
+        const bw = wp.length / 3, bt = tp.length / 3;
+        for (let c = 0; c <= NC; c++) {
+          const u = Math.min(c * 3, LD + 6), dd = D3 + u, top = topAt(dd, sg), a = run.T.at(dd, sg * (R.HWd(u) + 0.5), 0), b = run.T.at(dd, sg * 152, 0), q = nz(dd * 0.9, sg * 7);
+          Ck.copy(RK[0]).lerp(RK[1], q); wp.push(a[0], WYS - 6, a[2], a[0], top, a[2]); wc.push(Ck.r * 0.55, Ck.g * 0.55, Ck.b * 0.55, Ck.r, Ck.g, Ck.b);
+          for (const p of [a, b]) { tp.push(p[0], top, p[2]); tu.push(p[0] / 7, p[2] / 7); color(p[0], p[2], dd, cT); tc.push(cT.r, cT.g, cT.b); }
+          if (c < NC) { const k = c * 2; wi.push(bw + k, bw + k + 1, bw + k + 2, bw + k + 1, bw + k + 3, bw + k + 2); ti.push(bt + k, bt + k + 1, bt + k + 2, bt + k + 1, bt + k + 3, bt + k + 2); }
+        }
+      }
+      const gw = new T3.BufferGeometry(); gw.setAttribute('position', new T3.Float32BufferAttribute(wp, 3)); gw.setAttribute('color', new T3.Float32BufferAttribute(wc, 3)); gw.setIndex(wi); gw.computeVertexNormals();
+      const gt = new T3.BufferGeometry(); gt.setAttribute('position', new T3.Float32BufferAttribute(tp, 3)); gt.setAttribute('color', new T3.Float32BufferAttribute(tc, 3)); gt.setAttribute('uv', new T3.Float32BufferAttribute(tu, 2)); gt.setIndex(ti); gt.computeVertexNormals();
+      const mw = new T3.Mesh(gw, new T3.MeshLambertMaterial({ vertexColors: true, side: T3.DoubleSide })), mt = new T3.Mesh(gt, mesh.material); mw.frustumCulled = mt.frustumCulled = false; grp.add(mw); grp.add(mt);
+    }
     g.scene.add(grp); return { grp, H, mesh, inst };
   };
   const _tk = EVO.tick;
   EVO.tick = (g, dt) => {
     _tk(g, dt); const run = g.endlessRun;
     if (!run || !EVO.isS2() || !g.evo || g.evo.preview) { if (g._far) g._far.grp.visible = false; return; }
-    if (g._farRun !== run) { g._farRun = run; if (g._far) { g.scene.remove(g._far.grp); g._far.mesh.geometry.dispose(); g._far.inst.dispose(); g._far = null; } if (g._farJob) { g._farJob.return(); g._farJob = null; } }
+    if (g._farRun !== run) { g._farRun = run; if (g._far) { g.scene.remove(g._far.grp); g._far.grp.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); g._far.inst.dispose(); g._far = null; } if (g._farJob) { g._farJob.return(); g._farJob = null; } }
     if (!g._far) {   // construit petit a petit des le debut de la partie (il n'est utile qu'a D0 - 400)
       if (!g._farJob) g._farJob = make(g, run, () => performance.now() - g._farT0 > 2);
-      g._farT0 = performance.now(); const r = g._farJob.next(); if (r.done) { g._far = r.value; g._farJob = null; } else return;
+      g._farT0 = performance.now(); const r = g._farJob.next(); if (window.__GSTEPS) window.__GSTEPS.push([-1, r.done ? 1 : 0, performance.now() - g._farT0]); if (r.done) { g._far = r.value; g._farJob = null; } else return;
     }
     const h = g._far; h.grp.visible = run.dist > D0 - 400 && run.dist < D1 + 160;
     const rk = g.rocket; if (g.state !== 'FLIGHT' || !rk || !rk.active || run.dist < D0 || run.dist > D1) return;
     const i = Math.round((run.dist - D0) / STEP); probe(h.H, rk.pos.x, rk.pos.z, i - 60, i + 60);
-    if (out.ok && out.s > S1 + 1 && rk.pos.y < out.y + 0.6) g.onRocketCrash('wall', rk.pos.clone(), new T3.Vector3(0, 1, 0));
+    if (out.ok && (out.s > S1 + 1 ? rk.pos.y < out.y + 0.6 : inCap(out.d) && rk.pos.y < out.y + 0.6 && rk.pos.y > out.y - 3.5)) g.onRocketCrash('wall', rk.pos.clone(), new T3.Vector3(0, 1, 0));
   };
 })();

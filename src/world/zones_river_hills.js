@@ -19,7 +19,7 @@
   // collines : la hauteur monte vite puis sature ; le bruit fait des collines et des vallons qui se succedent
   const prof = (s, x, z, d) => {
     if (s < S1) return -0.2;
-    const u = s - S1, k = 1 - ss(LA + 120, D1, d), A = 58 * (1 - Math.exp(-u / 130)), n = nz(x * 0.9 + 17, z * 0.9);
+    const u = s - S1, k = 1, A = 58 * (1 - Math.exp(-u / 130)), n = nz(x * 0.9 + 17, z * 0.9);
     return k * (A * (0.4 + 0.6 * n) + 7 * (1 - Math.exp(-u / 50)) * Math.sin(x * 0.034 + z * 0.026 + 2) + 4 * Math.sin(x * 0.07 - z * 0.05));
   };
   const build = (run) => {
@@ -58,17 +58,17 @@
     const H = build(run), mat = grassMat(); let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
     for (let i = 0; i < H.n; i++) { x0 = Math.min(x0, H.px[i]); x1 = Math.max(x1, H.px[i]); z0 = Math.min(z0, H.pz[i]); z1 = Math.max(z1, H.pz[i]); }
     x0 = Math.floor((x0 - SMAX) / GRID) * GRID; x1 = Math.ceil((x1 + SMAX) / GRID) * GRID; z0 = Math.floor((z0 - SMAX) / GRID) * GRID; z1 = Math.ceil((z1 + SMAX) / GRID) * GRID;
-    const nx = Math.round((x1 - x0) / GRID) + 1, nzz = Math.round((z1 - z0) / GRID) + 1, ys = new Float32Array(nx * nzz), ss_ = new Float32Array(nx * nzz);
+    const nx = Math.round((x1 - x0) / GRID) + 1, nzz = Math.round((z1 - z0) / GRID) + 1, ys = new Float32Array(nx * nzz), ss_ = new Float32Array(nx * nzz), dd_ = new Float32Array(nx * nzz);
     for (let j = 0; j < nzz; j++) for (let i = 0; i < nx; i++) {
       const x = x0 + i * GRID, z = z0 + j * GRID, k = j * nx + i; probe(H, x, z, 0, H.n - 1);
       if (!out.ok || out.s > SMAX) { ys[k] = -1e9; ss_[k] = out.ok ? out.s : -1; continue; }
-      ys[k] = out.y; ss_[k] = out.s;
+      ys[k] = out.y; ss_[k] = out.s; dd_[k] = out.d;
     }
     const pos = [], col = [], uv = [], ix = [], map = new Int32Array(nx * nzz).fill(-1); let nv = 0;
-    const vert = (k, i, j) => { if (map[k] < 0) { map[k] = nv++; const x = x0 + i * GRID, z = z0 + j * GRID; pos.push(x, ys[k], z); uv.push(x / 7, z / 7); gcolor(x, z, cTmp); col.push(cTmp.r, cTmp.g, cTmp.b); } return map[k]; };
+    const vert = (k, i, j) => { if (map[k] < 0) { map[k] = nv++; const x = x0 + i * GRID, z = z0 + j * GRID; pos.push(x, ys[k] - (ss_[k] < SB ? 3 : 0), z); uv.push(x / 7, z / 7); gcolor(x, z, cTmp); col.push(cTmp.r, cTmp.g, cTmp.b); } return map[k]; };
     for (let j = 0; j < nzz - 1; j++) for (let i = 0; i < nx - 1; i++) {
       const k00 = j * nx + i, k10 = k00 + 1, k01 = k00 + nx, k11 = k01 + 1; let ok = true;
-      for (const k of [k00, k10, k01, k11]) if (ys[k] < -1e8 || ss_[k] < SB) ok = false; if (!ok) continue;
+      let far = false; for (const k of [k00, k10, k01, k11]) { if (ys[k] < -1e8) ok = false; else if (ss_[k] >= SB) far = true; } if (!ok || !far || (dd_[k00] + dd_[k10] + dd_[k01] + dd_[k11]) / 4 > LA + 275) continue;   // v328 : pas de trous au raccord avec les terrasses : les coins proches sont rabaisses sous la berge
       const a = vert(k00, i, j), b = vert(k10, i + 1, j), c = vert(k01, i, j + 1), d = vert(k11, i + 1, j + 1); ix.push(a, c, b, b, c, d);
     }
     const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(col, 3)); geo.setAttribute('uv', new T3.Float32BufferAttribute(uv, 2)); geo.setIndex(ix); geo.computeVertexNormals();

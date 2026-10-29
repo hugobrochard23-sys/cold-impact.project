@@ -16,7 +16,7 @@
   R.setBed3((d) => (d >= D4 && deep ? deep(d) : mixf(w2(d), shallow(d), ss(D3 + 18, D3 + 80, d))));
   const BED = R.BED;
   for (const [k, m, a] of [['delta', 'sea', 'evoDay'], ['mangrove', 'sea', 'evoDay'], ['havre', 'sea', 'evoDusk'], ['quais', 'sea', 'evoDusk'], ['rade', 'sea', 'evoDusk']]) { EVO.SCENE_MOOD[k] = m; EVO.SCENE_AUDIO[k] = a; }
-  const HWd = (u) => 46 + 6 * Math.sin(u / 61), HWp = (u) => 50 + 4 * Math.sin(u / 47) + 18 * ss(LP - 160, LP - 20, u);
+  const HWd = (u) => 46 + 6 * Math.sin(u / 61), _hwd = R.HWd = HWd, HWp = (u) => 50 + 4 * Math.sin(u / 47) + 18 * ss(LP - 160, LP - 20, u);
   const fl = (S, dc, y) => A(S, dc, y);
   const lamC = (c) => new T3.MeshLambertMaterial({ color: c });
   const col = (S, dc, lx, y, w, h, dd, tint, collide) => S.bx(dc, lx, y, w, h, dd, 'col:' + tint, undefined, collide);
@@ -86,13 +86,17 @@
         const dc = d(u);
         for (const sg of [-1, 1]) {
           const hwv = HWd(u) + r.between([-1.2, 2]), top = mixf(-84, WYS + 9 + 3 * Math.sin(dc / 41 + sg), ss(24, 120, u)), bed = BED(dc), wd = OUT - hwv;
-          S.bx(dc, sg * (hwv + wd / 2), fl(S, dc, (bed - 6 + top) / 2), wd, top - bed + 6, 18, 'jrock', pk(r, WALL), true); S.bx(dc, sg * (hwv + wd / 2), fl(S, dc, top + 0.25), wd, 0.5, 18, 'evoGrass', pk(r, GREEN), true);
+          if (u >= 132) { S.bx(dc, sg * (hwv + wd / 2), fl(S, dc, (bed - 6 + top) / 2), wd, top - bed + 6, 18, 'jrock', pk(r, WALL), true, { render: false }); S.bx(dc, sg * (hwv + wd / 2), fl(S, dc, top + 0.25), wd, 0.5, 18, 'evoGrass', pk(r, GREEN), true, { render: false }); }   // v328 : la berge se voit par une nappe lisse (zones_river_far.js) ; ces boites ne servent plus qu'a la collision
           for (let k = 0; k < 3; k++) S.cyl(dc + r.between([-6, 6]), sg * (hwv - r.between([0.2, 2.6])), fl(S, dc, WYS - 1), 0.28, r.between([2.4, 4.4]), 'bark', '#4a3820', 5, 0.18, false);
           if (r() < 0.7) plant(S, TR.reeds, dc + r.between([-5, 5]), sg * (hwv - r.between([0.4, 2.6])), WYS - 0.3, r.between([1.6, 2.8]), r);
           if (r() < 0.6) plant(S, TR.palm, dc + r.between([-5, 5]), sg * (hwv + r.between([2, 9])), top + 0.2, r.between([9, 15]), r, {});
           if (r() < 0.45) plant(S, TR.jungle, dc + r.between([-5, 5]), sg * (hwv + r.between([10, 40])), top + 0.2, r.between([20, 32]), r, {});
           if (r() < 0.6) plant(S, r() < 0.5 ? TR.fern : TR.bigleaf, dc + r.between([-6, 6]), sg * (hwv + r.between([0.8, 20])), top + 0.2, r.between([1.6, 2.8]), r);
         }
+      });
+      for (let u = 2; u < 132; u += 4) S.item(d(u), () => {   // v328 : la rampe de la berge (de -84 m au niveau du delta) : collision en tranches fines, la nappe visible est lisse
+        const dc = d(u);
+        for (const sg of [-1, 1]) { const hwv = HWd(u) + 0.4, top = mixf(-84, WYS + 9 + 3 * Math.sin(dc / 41 + sg), ss(24, 120, u)), bed = BED(dc), wd = OUT - hwv; S.bx(dc, sg * (hwv + wd / 2), fl(S, dc, (bed - 6 + top) / 2), wd, top - bed + 6, 6, 'jrock', undefined, true, { render: false }); S.bx(dc, sg * (hwv + wd / 2), fl(S, dc, top + 0.25), wd, 0.5, 6, 'evoGrass', undefined, true, { render: false }); }
       });
       // les iles : blocs de roche couronnes de palmiers qui separent le fleuve en deux bras
       for (const [u, lx, w, dd] of [[110, -16, 20, 40], [250, 18, 22, 46], [330, -14, 18, 34], [470, 16, 22, 50], [600, -18, 20, 40], [700, 12, 20, 44], [760, -12, 16, 30]]) S.item(d(u), (r) => {
