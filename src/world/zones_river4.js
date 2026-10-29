@@ -16,7 +16,7 @@
   for (const [k, m, a] of [['gouffre', 'sea', 'evoDusk'], ['tranchee', 'pit', 'evoMine'], ['cimetiere', 'pit', 'evoMine'], ['portail', 'pit', 'evoMine'], ['sas', 'pit', 'evoMine'], ['cuve', 'pit', 'evoBoss']]) { EVO.SCENE_MOOD[k] = m; EVO.SCENE_AUDIO[k] = a; }
   // trajectoire de reference (tests) : on plonge avec le fond
   { const _p = EVO.riv.pathY; EVO.riv.pathY = (d) => (d >= R.D3 + 1500 && d >= D4 ? Math.max(BED(d) + 16, WYS - 300) : d >= R.D3 ? WYS - 5 : _p(d)); }
-  EVO.riv.finishD = DEND - 20;
+  EVO.riv.finishD = DEND - 70;
   { const _ld = EVO.levelDef2, NM = { rapides: 'LE CAMP', barrage: 'LE LAC', delta: 'LE DELTA', havre: 'LE PORT', gouffre: 'LA FOSSE', sousmarin: 'LA BASE' }; EVO.levelDef2 = (g) => { const r = _ld(g); for (const c of EVO.chapters || []) if (NM[c.key]) c.name = NM[c.key]; return r; }; }
   // v302b : plus aucun plafond de hauteur (on peut remonter librement)
 

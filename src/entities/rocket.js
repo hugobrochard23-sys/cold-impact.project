@@ -307,7 +307,7 @@
         const U2 = this._ub || (this._ub = { x: new V(), y: new V(), z: new V(), m: new THREE.Matrix4(), pf: new V(0, 0, 1) });
         U2.z.copy(this.fwd); U2.x.set(0, 1, 0).cross(U2.z); if (U2.x.lengthSq() < 1e-4) U2.x.set(1, 0, 0); U2.x.normalize(); U2.y.crossVectors(U2.z, U2.x);
         const yr = dt > 0 ? (U2.pf.z * this.fwd.x - U2.pf.x * this.fwd.z) / dt : 0; U2.pf.copy(this.fwd);
-        const tgt = Math.max(-0.5, Math.min(0.5, -yr * 0.35)); this.roll += (tgt - this.roll) * Math.min(1, dt * 4);
+        const tgt = Math.max(-0.95, Math.min(0.95, -yr * 1.1)); this.roll += (tgt - this.roll) * Math.min(1, dt * 6);
         _q.setFromRotationMatrix(U2.m.makeBasis(U2.x, U2.y, U2.z));
         this.mesh.quaternion.copy(_q).multiply(_rq.setFromAxisAngle(_z, this.roll));
       } else {

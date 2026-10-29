@@ -122,7 +122,7 @@
   }
   EVO.riv.finishD = 1e9; EVO.riv.finishLine = finishLine; EVO.riv.lam = lam; EVO.riv.HWc = HWc;   // v287 : l'arrivee est maintenant au bout de la base sous-marine (zones_river4)
   const _tkf = EVO.tick;
-  EVO.tick = (g, dt) => { _tkf(g, dt); const run = g.endlessRun; if (run && EVO.isS2() && g.evo && !g.evo.preview && g.state === 'FLIGHT' && g.rocket.active) { } if (EVO.isS2() && g.evo && !g.evo.preview && run && !g.evoFinish && g.state === 'FLIGHT' && g.rocket.active && run.dist > EVO.riv.finishD && EVO.finishRun) EVO.finishRun(g); };
+  EVO.tick = (g, dt) => { _tkf(g, dt); const run = g.endlessRun; if (run && EVO.isS2() && g.evo && !g.evo.preview && g.state === 'FLIGHT' && g.rocket.active) { } if (EVO.isS2() && g.evo && !g.evo.preview && run && !g.evoFinish && g.state === 'FLIGHT' && g.rocket.active && run.dist > EVO.riv.finishD && EVO.finishRun) EVO.finishRun(g); if (EVO.isS2() && g.evoFinish && g.rocket.active) g.rocket.vel.multiplyScalar(Math.exp(-dt * 3)); };   // v314 : apres l'arrivee la fusee freine (plus de vol dans le vide au-dela de la base)
 
   // v305 : LA RUPTURE DU BARRAGE. Quand la fusee arrive dans le hall, le beton craque (secousse, flash, message) et un MUR D'EAU de toute la largeur du conduit se declenche derriere elle : il la rattrape, la pousse (jamais de degat) et jaillit avec elle a la sortie du canal de fuite.
   { const W0 = 1, H0 = 1, NC = 22, NR = 12, pos = [], col = [], ix = [];
