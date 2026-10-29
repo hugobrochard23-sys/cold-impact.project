@@ -197,7 +197,7 @@
       // guides lateraux et carter au plafond
       for (const sg of [-1, 1]) S.bx(dc, sg * (hw - 0.4), A(S, dc, (fl + ce) / 2), 1.4, ce - fl, 4.4, 'metal', '#3a4046', false);
       S.bx(dc, 0, A(S, dc, ce - 1), 2 * hw, 2, 5, 'hazard', undefined, false);
-      EVO.addDyn(g, (t) => { const b = ce - 19 + 11 * Math.sin(t * 0.95 + ph), low = b - fl < 17; g.position.y = b + 15; lampM.color.set(low ? '#ff3a2a' : '#4aff6a'); }, cols, { near: 420, span: 20 });
+      EVO.addDyn(g, (t) => { const b = ce - 14 + 7 * Math.sin(t * 0.95 + ph), low = b - fl < 17; g.position.y = b + 15; lampM.color.set(low ? '#ff3a2a' : '#4aff6a'); }, cols, { near: 420, span: 20 });
     }));
     S.item(T0 - 16, () => { for (const sg of [-1, 1]) S.bx(T0 - 16, sg * 31, A(S, T0, BED(T0) + 20), 4, 40, 6, 'concreteDark', '#6a6e70', true); });
     // v286 : defenses du barrage : mines dans la galerie et le canal, tourelles de paroi sur consoles dans le hall et le canal de fuite

@@ -33,14 +33,14 @@
   EVO.applyMood = (g, m) => {
     _am(g, m);
     if (EVO.seaLevel === undefined || !g.uwK || g.uwK < 0.01) { if (EVO.seaLevel !== undefined) g.fogBase = null; return; }
-    const k = g.uwK, rk = g.rocket, depth = U.clamp(-(rk && rk.active ? rk.pos.y : -20) / 260, 0, 1), f = g.scene.fog, u = g.skyMat.uniforms;
+    const k = g.uwK, rk = g.rocket, s2 = !!(EVO.waterFn && g.endlessRun && EVO.isS2 && EVO.isS2()), sfc = s2 ? EVO.waterFn(g.endlessRun.dist) : 0, depth = U.clamp(-((rk && rk.active ? rk.pos.y : -20) - sfc) / 260, 0, 1) * (s2 ? 0.5 : 1), f = g.scene.fog, u = g.skyMat.uniforms;
     _c.copy(UW_TOP).lerp(UW_DEEP, depth * 0.85);
-    _c.lerp(UW_FAR, 0.3); f.color.lerp(_c, k); _c.copy(UW_TOP).lerp(UW_DEEP, depth * 0.85); f.near = U.lerp(f.near, 8, k); f.far = U.lerp(f.far, 380 - 190 * depth, k); g.renderer.setClearColor(f.color); g.fogBase = null;
+    _c.lerp(UW_FAR, 0.3); f.color.lerp(_c, k); _c.copy(UW_TOP).lerp(UW_DEEP, depth * 0.85); f.near = U.lerp(f.near, s2 ? 24 : 8, k); f.far = U.lerp(f.far, (s2 ? 620 : 380) - (s2 ? 180 : 190) * depth, k); g.renderer.setClearColor(f.color); g.fogBase = null;
     u.cloud.value *= (1 - k); u.top.value.lerp(_c, k); u.horizon.value.lerp(_c, k); u.bottom.value.lerp(UW_DEEP, k * 0.7);
-    g.hemi.color.lerp(C3('#cfe6ff'), k); g.hemi.groundColor.lerp(C3('#2a6f94'), k); g.hemi.intensity = U.lerp(g.hemi.intensity, 1.0 - 0.2 * depth, k); g.ambient.intensity = U.lerp(g.ambient.intensity, 0.24, k);
+    g.hemi.color.lerp(C3('#cfe6ff'), k); g.hemi.groundColor.lerp(C3('#2a6f94'), k); g.hemi.intensity = U.lerp(g.hemi.intensity, s2 ? Math.max(1.0, g.hemi.intensity) : 1.0 - 0.2 * depth, k); g.ambient.intensity = U.lerp(g.ambient.intensity, s2 ? Math.max(0.5, g.ambient.intensity) : 0.24, k);
     g.sun.intensity = U.lerp(g.sun.intensity, 0.95 * (1 - 0.7 * depth), k); g.sun.color.lerp(C3('#e8fbff'), k);
     if (g.postParams) { g.postParams.tint = '#' + C3('#ffffff').lerp(C3('#dcefff'), k).getHexString(); g.postParams.bloomStrength = Math.max(g.postParams.bloomStrength, 0.05 * k); g.postParams.saturation = U.lerp(g.postParams.saturation === undefined ? 1 : g.postParams.saturation, 1.03, k); g.postParams.contrast = U.lerp(g.postParams.contrast === undefined ? 1 : g.postParams.contrast, 1.04, k); }
-    g.nightK = U.lerp(g.nightK || 0, 0.35 * depth, k);
+    g.nightK = U.lerp(g.nightK || 0, (s2 ? 0.1 : 0.35) * depth, k);
   };
   const dotTex = () => { const c = document.createElement('canvas'); c.width = c.height = 32; const x = c.getContext('2d'), g2 = x.createRadialGradient(16, 16, 0, 16, 16, 16); g2.addColorStop(0, 'rgba(255,255,255,1)'); g2.addColorStop(0.5, 'rgba(255,255,255,0.6)'); g2.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g2; x.fillRect(0, 0, 32, 32); return new T3.CanvasTexture(c); };
   // --- neige marine : des particules qui défilent autour de la caméra quand on est sous l'eau (donnent le sens de la vitesse)

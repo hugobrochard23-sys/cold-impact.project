@@ -26,9 +26,9 @@
     turns: [[0.2, 0.34, 28], [0.45, 0.6, -36], [0.7, 0.84, 30]],
     pin: (T, sc) => ({ lx: 0, fy: (d) => EVO.riv.pathY(d) - T.base(d), from: 24, to: sc.d1 - sc.d0 - 24 }),
     relief(T, sc) { return rel(sc, (d) => BED(d) - SEAB); },
-    ground: (d, lx, c) => { c.set('#6a6a64').lerp(new T3.Color('#9a7a50'), 0.25 + 0.25 * Math.sin(d * 0.05 + lx * 0.09)); c.multiplyScalar(0.95 + 0.1 * Math.sin(lx * 0.23 + d * 0.13)); },
+    ground: (d, lx, c) => { c.set('#5a5a56').lerp(new T3.Color('#8a6a44'), 0.25 + 0.25 * Math.sin(d * 0.05 + lx * 0.09)); c.multiplyScalar(0.85 + 0.1 * Math.sin(lx * 0.23 + d * 0.13)); },
     build(S) {
-      const d0 = S.d0, d = (u) => d0 + u, DK = ['#8896a6', '#7e8c9c', '#909eae', '#8492a2'];
+      const d0 = S.d0, d = (u) => d0 + u, DK = ['#8a98a8', '#808e9e', '#92a0b0', '#8694a4'];
       water(S, d0, d0 + LFo, 90, WYS);
       for (let u = 6; u < LFo - 6; u += 14) S.item(d(u), (r) => {
         const dc = d(u);
@@ -39,6 +39,26 @@
           for (let k = 0; k < 1; k++) if (r() < 0.4 && S.inClip(dc)) { const sz = r.between([8, 14]), yy = bed + r.between([2, Math.max(6, top - bed - 6)]); S.b.box({ p: S.T.at(dc + r.between([-5, 5]), sg * (hwv - sz * 0.15 + r.between([-1, 3])), A(S, dc, yy)), s: [sz, sz * r.between([0.7, 1.4]), sz * r.between([1, 1.8])], r: [r.between([-18, 18]), S.yaw(dc) + r.between([-12, 12]), r.between([-22, 22])], mat: 'jrock', tint: pk(r, DK), collide: true }); }   // v302 : blocs de roche inclines devant la paroi : plus de mur droit
         }
       });
+      // v306 : LA VITRE : un mur de verre barre tout le fosse a l'entree (et monte tres haut) : on le traverse en le brisant, et on plonge. Des anneaux lumineux descendent ensuite le long du bon chemin.
+      S.item(d(40), (r) => {
+        const dc = d(40), Wd = 2 * OUT, top = WYS + 300, bot = WYS - 300, grp = new T3.Group(), gm = new T3.MeshBasicMaterial({ color: '#aef2ff', transparent: true, opacity: 0.2, side: T3.DoubleSide, depthWrite: false, fog: false }), em = new T3.MeshBasicMaterial({ color: '#9ff6ff' });
+        const pane = new T3.Mesh(new T3.PlaneGeometry(Wd, top - bot), gm); pane.position.y = (top + bot) / 2; grp.add(pane);
+        for (let k = -3; k <= 3; k++) { const m = new T3.Mesh(new T3.BoxGeometry(1.2, top - bot, 1.2), em); m.position.set(k * 45, (top + bot) / 2, 0); grp.add(m); }
+        for (const y of [WYS - 80, WYS - 30, WYS + 30, WYS + 90, WYS + 160]) { const m = new T3.Mesh(new T3.BoxGeometry(Wd, 1.2, 1.2), em); m.position.set(0, y, 0); grp.add(m); }
+        for (const sx of [-1, 1]) { const m = new T3.Mesh(new T3.BoxGeometry(34, 3.2, 1.6), em); m.position.set(sx * 9, WYS + 14, 0.5); m.rotation.z = -sx * 0.84; grp.add(m); }   // grande fleche en V : on plonge
+        EVO.placeGroup(S, grp, dc, 0, A(S, dc, 0), 0); let done = false;
+        EVO.addDyn(grp, (t, dt, g) => { const run = g.endlessRun, rk = g.rocket; if (done || !run || g.state !== 'FLIGHT') return; if (run.dist > dc) { done = true; grp.visible = false; g.rig.shake = Math.max(g.rig.shake, 1.0); g.flash = Math.max(g.flash || 0, 0.35); g.flashColor = '#dffbff'; g.audio.play('whoosh');
+          if (g.effects && g.effects.debris) for (let k = 0; k < 70; k++) g.effects.debris.emit({ pos: new T3.Vector3(rk.pos.x + (Math.random() - 0.5) * 20, rk.pos.y + (Math.random() - 0.5) * 16, rk.pos.z + (Math.random() - 0.5) * 20), vel: new T3.Vector3((Math.random() - 0.5) * 50, (Math.random() - 0.3) * 30, (Math.random() - 0.5) * 50), life: 1.4 + Math.random(), s0: 1.2, s1: 1.2, s2: 0.4, peak: 0.1, cols: g.effects.pal.debrisLight, grav: 12, drag: 0.6, spin: 7 });
+          if (rk.pos.y > WYS + 2) rk.vel.y -= 28; } }, [], { near: 900, span: 400 });
+      });
+      { const rm = new T3.MeshBasicMaterial({ color: '#7be8ff', transparent: true, opacity: 0.8, depthWrite: false, fog: false });
+        for (let k = 0; k < 14; k++) S.item(d(80 + k * 52), (r) => {
+          const dc = d(80 + k * 52), py = EVO.riv.pathY(dc), sl = (EVO.riv.pathY(dc + 12) - EVO.riv.pathY(dc - 12)) / 24, grp = new T3.Group(), ring = new T3.Mesh(new T3.TorusGeometry(15, 0.55, 6, 28), rm); grp.add(ring);
+          EVO.placeGroup(S, grp, dc, 0, A(S, dc, py), 0); grp.rotation.order = 'YXZ'; grp.rotation.x = -Math.atan(sl);
+          if (k === 0) EVO.addDyn(grp, (t) => { rm.opacity = 0.55 + 0.35 * Math.sin(t * 3); }, [], { near: 700, span: 400 });
+          S.glow(dc, 0, A(S, dc, py), '#7be8ff', 30);
+        });
+      }
       // surplombs en quinconce : la trajectoire serpente
       for (let k = 0; k < 9; k++) { const u = 90 + k * 100, sg = k % 2 ? 1 : -1; S.item(d(u), (r) => { const dc = d(u), hwv = HWf(u), bed = BED(dc), y = bed + 26 + 18 * hsh(u, 2), ext = hwv * 1.05; S.bx(dc, sg * (hwv - ext / 2 + 3), fl(S, dc, y), ext, 6, 22, 'jrock', pk(r, DK), true); S.bx(dc, sg * (hwv - ext + 3), fl(S, dc, y - 5), 4, 12, 20, 'jrock', pk(r, DK), true); S.glow(dc - 12, sg * (hwv - ext + 2), fl(S, dc, y - 2), '#5ff0ff', 20); }); }
       // stalagmites : on passe entre
@@ -96,7 +116,8 @@
         cols.push(EVO.colBox(g, 2 * hw - 1, 30, 3, 0, 0, 0));
         const p = R.absAt(S, dc, 0, fl(S, dc, CE)); g.position.set(p[0], CE - 19 + 15, p[2]); g.rotation.y = U.deg(S.yaw(dc)); S.b.root.add(g);
         S.bx(dc, 0, fl(S, dc, CE - 1), 2 * hw, 2, 5, 'hazard', undefined, false);
-        EVO.addDyn(g, (t) => { const b = CE - 19 + 11 * Math.sin(t * 0.95 + ph), low = b - BEDB < 18; g.position.y = b + 15; lampM.color.set(low ? '#ff3a2a' : '#4aff6a'); }, cols, { near: 420, span: 20 });
+        EVO.addDyn(g, (t) => { const b = CE - 14 + 7 * Math.sin(t * 0.95 + ph), low = b - BEDB < 18;   // v306 : les portes ne descendent plus qu'a 13 m du sol (elles etaient a 4 m)
+          g.position.y = b + 15; lampM.color.set(low ? '#ff3a2a' : '#4aff6a'); }, cols, { near: 420, span: 20 });
       }));
       // defenses du sas : mines, tourelles de paroi sur consoles
       for (const [u, sg, y] of [[110, 1, 12], [200, -1, 16], [235, 1, 10], [300, -1, 14], [330, 1, 18], [420, -1, 12], [445, 1, 16], [520, -1, 10]]) foe(S, 'mine', d(u), sg * 12, y, { name: 'MINE', keep: true });
@@ -142,12 +163,12 @@
     mk('havre', 'riv_havre', { top: '#3c4488', hor: '#f08c78', fog: '#9a7498', near: 90, far: 520, hemiS: '#ffd4c8', hemiG: '#5a5068', hemiI: 0.84, amb: 0.34, sunC: '#ffa070', sunI: 0.6, night: 0.15 });
     mk('quais', 'riv_quais', { top: '#242c62', hor: '#c8627e', fog: '#5e4c7e', near: 80, far: 500, hemiS: '#e8b8d0', hemiG: '#4a4668', hemiI: 0.8, amb: 0.4, sunC: '#ff8a7a', sunI: 0.4, night: 0.35 });
     mk('rade', 'riv_rade', { top: '#121c42', hor: '#3e5084', fog: '#222e58', near: 70, far: 480, hemiS: '#a8bce8', hemiG: '#3a4468', hemiI: 0.9, amb: 0.5, sunC: '#a8c0f0', sunI: 0.35, night: 0.55 });
-    mk('gouffre', 'riv_gouffre', { top: '#2c5470', hor: '#6aa0ba', fog: '#3f7a96', near: 40, far: 560, hemiS: '#d4eefa', hemiG: '#55747e', hemiI: 1.6, amb: 0.95, sunC: '#c8e4f0', sunI: 0.5, night: 0.2 });
-    mk('tranchee', 'riv_tranchee', { top: '#1c3c78', hor: '#4a78c0', fog: '#2c5090', near: 40, far: 560, hemiS: '#b8d4ff', hemiG: '#3c5a8c', hemiI: 1.5, amb: 0.9, sunC: '#a8c8ff', sunI: 0.5, night: 0.25 });
-    mk('cimetiere', 'riv_cimetiere', { top: '#24502c', hor: '#78a878', fog: '#3c7054', near: 40, far: 540, hemiS: '#d0f0d4', hemiG: '#4a6a50', hemiI: 1.5, amb: 0.9, sunC: '#c8f0c8', sunI: 0.5, night: 0.25 });
-    mk('portail', 'riv_portail', { top: '#0e4a5e', hor: '#4ac0d4', fog: '#1e7088', near: 40, far: 520, hemiS: '#c8f8ff', hemiG: '#3c7080', hemiI: 1.5, amb: 0.95, sunC: '#b0f0ff', sunI: 0.5, night: 0.2 });
-    mk('sas', 'riv_sas', { top: '#26343e', hor: '#7a94a4', fog: '#4a5c68', near: 40, far: 460, hemiS: '#e0f0fa', hemiG: '#586a76', hemiI: 1.5, amb: 0.9, sunC: '#d8ecf8', sunI: 0.5, night: 0.15 });
-    mk('cuve', 'riv_cuve', { top: '#2e1016', hor: '#8a3038', fog: '#451a20', near: 40, far: 480, hemiS: '#ffc4b8', hemiG: '#6a3a40', hemiI: 1.4, amb: 0.8, sunC: '#ff9a88', sunI: 0.5, night: 0.25 });
+    mk('gouffre', 'riv_gouffre', { top: '#2c5470', hor: '#6aa0ba', fog: '#3f7a96', near: 40, far: 560, hemiS: '#d4eefa', hemiG: '#55747e', hemiI: 1.0, amb: 0.45, sunC: '#c8e4f0', sunI: 0.5, night: 0.2 });
+    mk('tranchee', 'riv_tranchee', { top: '#1c3c78', hor: '#4a78c0', fog: '#2c5090', near: 40, far: 560, hemiS: '#b8d4ff', hemiG: '#3c5a8c', hemiI: 0.95, amb: 0.42, sunC: '#a8c8ff', sunI: 0.5, night: 0.25 });
+    mk('cimetiere', 'riv_cimetiere', { top: '#24502c', hor: '#78a878', fog: '#3c7054', near: 40, far: 540, hemiS: '#d0f0d4', hemiG: '#4a6a50', hemiI: 0.95, amb: 0.42, sunC: '#c8f0c8', sunI: 0.5, night: 0.25 });
+    mk('portail', 'riv_portail', { top: '#0e4a5e', hor: '#4ac0d4', fog: '#1e7088', near: 40, far: 520, hemiS: '#c8f8ff', hemiG: '#3c7080', hemiI: 1.0, amb: 0.45, sunC: '#b0f0ff', sunI: 0.5, night: 0.2 });
+    mk('sas', 'riv_sas', { top: '#26343e', hor: '#7a94a4', fog: '#4a5c68', near: 40, far: 460, hemiS: '#e0f0fa', hemiG: '#586a76', hemiI: 1.0, amb: 0.45, sunC: '#d8ecf8', sunI: 0.5, night: 0.15 });
+    mk('cuve', 'riv_cuve', { top: '#2e1016', hor: '#8a3038', fog: '#451a20', near: 40, far: 480, hemiS: '#ffc4b8', hemiG: '#6a3a40', hemiI: 0.95, amb: 0.4, sunC: '#ff9a88', sunI: 0.5, night: 0.25 });
   }
   if (EVO.boss2Kit) EVO.boss2Kit.DEFS.abyssal = { scene: 'sousmarin', at: 0.84, ahead: 0, speed: 0, name: 'ABYSSAL', hp: 3, model: abyssalModel, yOff: 8, surge: 220, fire: 2.6, finish: true, muzzle: [0, -8, -140] };
 })();

@@ -55,7 +55,7 @@
   EVO.SCENE_MOOD.rapides = 'jungle'; EVO.SCENE_AUDIO.rapides = 'evoDay'; EVO.SCENE_MOOD.arrivee = 'sea'; EVO.SCENE_AUDIO.arrivee = 'evoDay';
   EVO.addMood('jungle', { top: '#3c8ef0', hor: '#c8e8fc', fog: '#c6e4f6', near: 90, far: 460, hemiS: '#eaf5fd', hemiG: '#5a8a58', hemiI: 0.8, amb: 0.26, sunC: '#fff0d0', sunI: 0.72, night: 0 });   // v296 : lumiere moins forte (le haut des arbres, des rochers et des collines n'est plus surexpose) ; v295 : vrai ciel bleu, brume bleutee (les collines lointaines passent au bleu)
   EVO.addMood('dam', { top: '#4a7aa8', hor: '#cfd8da', fog: '#9fb0b4', near: 120, far: 560, hemiS: '#dde8ec', hemiG: '#4a5a60', hemiI: 0.9, amb: 0.22, sunC: '#ffe8c0', sunI: 0.8, night: 0 });
-  EVO.addMood('pit', { top: '#2c5470', hor: '#6aa0ba', fog: '#3f7a96', near: 40, far: 560, hemiS: '#d4eefa', hemiG: '#55747e', hemiI: 1.6, amb: 0.95, sunC: '#c8e4f0', sunI: 0.5, night: 0.2 });
+  EVO.addMood('pit', { top: '#2c5470', hor: '#6aa0ba', fog: '#3f7a96', near: 40, far: 560, hemiS: '#d4eefa', hemiG: '#55747e', hemiI: 1.0, amb: 0.45, sunC: '#c8e4f0', sunI: 0.5, night: 0.2 });
 
   // ============================================== OUTILS ==============================================
   const hsh = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };

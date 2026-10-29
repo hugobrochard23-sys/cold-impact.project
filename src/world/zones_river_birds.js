@@ -51,23 +51,25 @@
     cone(body, 0.042 * S.beak, bl * 0.8, 0, 0.056, 0.41, Math.PI / 2 + 0.05, 0, S.beakL, 5);                                          // mandibule
     for (let i = 0; i < S.tailN; i++) { const t = (i - (S.tailN - 1) / 2) / ((S.tailN - 1) / 2), ln = S.tailLen * (1 - 0.32 * Math.abs(t)), a = Math.PI / 2 + t * 0.26; feather(body, ln, 0.1, -0.03, 0, -0.01, -0.28, a, 0.08 + 0.05 * Math.abs(t), (u) => lerp3(S.tailA, S.tailB, u)); }
     for (const sx of [-1, 1]) { const g = new T3.CylinderGeometry(0.012, 0.01, 0.12, 4); M.makeRotationX(0.9); Mt.makeTranslation(sx * 0.045, -0.1, -0.05); M.premultiply(Mt); body.add(g, M, [0.35, 0.3, 0.28], 0.1); g.dispose(); }
-    // aile interieure : bras, couvertures (deux rangees), secondaires (en arriere, de plus en plus ecartees)
-    const arm = 0.4 * S.span * S.wing, sc = S.span * S.wing;
-    { const g = new T3.BoxGeometry(arm, 0.035, 0.2); g.translate(arm / 2, 0, 0); inner.add(g, new T3.Matrix4(), S.cov, 0.05); g.dispose(); }
-    for (let i = 0; i < 8; i++) { const t = i / 7, bx = 0.04 + t * arm * 0.95; feather(inner, (0.4 - 0.02 * t) * sc, 0.13, 0.02, bx, 0, -0.02, Math.PI / 2 - 0.13 - 0.35 * t, 0.05 + 0.04 * t, (u) => lerp3(S.cov, S.sec, Math.min(1, u * 1.6))); }
-    for (let r = 0; r < 2; r++) for (let i = 0; i < 6; i++) { const t = i / 5, bx = 0.05 + t * arm * 0.9; feather(inner, (0.22 - r * 0.07) * sc, 0.11, 0.03, bx, 0.014 + r * 0.012, -0.015 - r * 0.02, Math.PI / 2 - 0.2 - 0.3 * t, 0.06, () => lerp3(S.cov, S.body, r * 0.35 + 0.15)); }
-    // aile exterieure : main, primaires en eventail (la derniere vers l'avant, la plus ecartee)
-    { const g = new T3.BoxGeometry(0.16 * sc, 0.03, 0.06); g.translate(0.08 * sc, 0, 0); outer.add(g, new T3.Matrix4(), S.cov, 0.05); g.dispose(); }
+    // aile en TROIS segments articules : bras (couvertures et tertiaires), avant-bras (secondaires), main (primaires en eventail) ; chaque segment est un maillage qui tourne autour de son articulation
+    const sc = S.span * S.wing, E = 0.17 * sc, Wr = 0.4 * sc, up = new Parts(), fore = new Parts();
+    { const g = new T3.BoxGeometry(E, 0.04, 0.2); g.translate(E / 2, 0, 0); up.add(g, new T3.Matrix4(), S.cov, 0.05); g.dispose(); }
+    { const g = new T3.BoxGeometry(Wr - E, 0.035, 0.2); g.translate((Wr - E) / 2, 0, 0); fore.add(g, new T3.Matrix4(), S.cov, 0.05); g.dispose(); }
+    for (let i = 0; i < 4; i++) { const t = i / 3; feather(up, (0.3 - 0.02 * t) * sc, 0.13, 0.02, 0.02 + t * E * 0.85, 0, -0.02, Math.PI / 2 - 0.1 - 0.2 * t, 0.05, (u) => lerp3(S.cov, S.sec, Math.min(1, u * 1.5))); }
+    for (let r = 0; r < 2; r++) for (let i = 0; i < 4; i++) { const t = i / 3; feather(up, (0.2 - r * 0.06) * sc, 0.11, 0.03, 0.03 + t * E * 0.8, 0.014 + r * 0.012, -0.015 - r * 0.02, Math.PI / 2 - 0.15 - 0.2 * t, 0.06, () => lerp3(S.cov, S.body, r * 0.35 + 0.15)); }
+    for (let i = 0; i < 6; i++) { const t = i / 5; feather(fore, (0.4 - 0.03 * t) * sc, 0.13, 0.02, 0.02 + t * (Wr - E) * 0.95, 0, -0.02, Math.PI / 2 - 0.2 - 0.3 * t, 0.05 + 0.04 * t, (u) => lerp3(S.cov, S.sec, Math.min(1, u * 1.6))); }
+    for (let r = 0; r < 2; r++) for (let i = 0; i < 5; i++) { const t = i / 4; feather(fore, (0.2 - r * 0.06) * sc, 0.11, 0.03, 0.04 + t * (Wr - E) * 0.9, 0.014 + r * 0.012, -0.015 - r * 0.02, Math.PI / 2 - 0.25 - 0.3 * t, 0.06, () => lerp3(S.cov, S.body, r * 0.35 + 0.15)); }
+    { const g = new T3.BoxGeometry(0.16 * sc, 0.03, 0.08); g.translate(0.08 * sc, 0, 0); outer.add(g, new T3.Matrix4(), S.cov, 0.05); g.dispose(); }
     for (let i = 0; i < 9; i++) { const t = i / 8, a = 0.08 + 0.95 * t; feather(outer, (0.5 + 0.1 * Math.sin(t * 2.4)) * sc * (1 - 0.15 * t), 0.092, 0.02, 0.02 + 0.07 * t * sc, 0, 0, a, 0.03 + 0.03 * (1 - t), (u) => lerp3(S.sec, S.pri, Math.min(1, u * 1.8 + 0.1))); }
     for (let i = 0; i < 6; i++) { const t = i / 5; feather(outer, 0.2 * sc, 0.1, 0.03, 0.02 + 0.1 * sc * t, 0.013, 0.01, 0.15 + 0.5 * t, 0.05, () => lerp3(S.cov, S.sec, 0.2)); }
-    return (cache[key] = { S, geo: [body.geo(), inner.geo(), outer.geo()], arm });
+    return (cache[key] = { S, geo: [body.geo(), up.geo(), fore.geo(), outer.geo()], E, arm: Wr - E });
   };
   const mat = new T3.MeshLambertMaterial({ vertexColors: true, side: T3.DoubleSide });
   const makeBird = (key) => {
     const b = build(key), S = b.S, root = new T3.Group(), pivot = new T3.Group(); root.add(pivot); pivot.scale.setScalar(S.scale);
     pivot.add(new T3.Mesh(b.geo[0], mat));
     const wings = [];
-    for (const sd of [1, -1]) { const sh = new T3.Group(); sh.position.set(0.075 * sd, 0.05, 0.06); sh.scale.x = sd; pivot.add(sh); const inn = new T3.Mesh(b.geo[1], mat); sh.add(inn); const el = new T3.Group(); el.position.set(b.arm, 0, 0); sh.add(el); el.add(new T3.Mesh(b.geo[2], mat)); wings.push([sh, el]); }
+    for (const sd of [1, -1]) { const sh = new T3.Group(); sh.position.set(0.075 * sd, 0.05, 0.06); sh.scale.x = sd; pivot.add(sh); sh.add(new T3.Mesh(b.geo[1], mat)); const el = new T3.Group(); el.position.set(b.E, 0, 0); sh.add(el); el.add(new T3.Mesh(b.geo[2], mat)); const wr = new T3.Group(); wr.position.set(b.arm, 0, 0); el.add(wr); wr.add(new T3.Mesh(b.geo[3], mat)); wings.push([sh, el, wr]); }
     root.traverse((o) => { o.frustumCulled = false; });
     return { root, pivot, wings, S };
   };
@@ -81,7 +83,7 @@
     for (let d = 3440; d < 4720; d += 120) add(d + Math.floor(hh(d, 1) * 40), 'mouette', 3 + (hh(d, 3) < 0.4 ? 1 : 0), 34);
     return out;
   };
-  const MAXB = 12; let clk = 0;
+  const MAXB = 9; let clk = 0;
   const update = (g, dt) => {
     const run = g.endlessRun, on = run && EVO.isS2() && g.evo && !g.evo.preview && g.state === 'FLIGHT';
     if (!on) { if (g._bd) g._bd.root.visible = false; return; }
@@ -100,9 +102,14 @@
         if (o.flee > 0.001) { const l = Math.hypot(dxr, dzr) || 1; o.fx += (dxr / l) * dt * 14 * o.flee; o.fz += (dzr / l) * dt * 14 * o.flee; }
         x += o.fx; z += o.fz; y += o.flee * 22;
         const head = Math.atan2(vx + o.fx * 0.02, vz + o.fz * 0.02), S = o.S, w = clk * S.flap * 6.28 + i * 1.3, burst = S.glide > 0 ? Math.max(0, Math.sin(clk * 0.6 + i * 2.1 + s.ph)) : 1, amp = (0.18 + 0.5 * (S.glide > 0 ? burst : 1)) * (1 + o.flee * 0.5);
-        o.root.position.set(x, y, z); o.root.rotation.set(0, head, 0); o.pivot.rotation.z = 0.2 * s.dir * (1 + 0.3 * Math.sin(clk + i)) * (S.glide > 0 ? 1.3 : 1); o.pivot.rotation.x = -0.1 - 0.12 * o.flee + 0.03 * Math.sin(w);
-        o.pivot.position.y = 0.05 * Math.sin(w) * S.scale * 0.2;
-        for (const [sh, el] of o.wings) { sh.rotation.z = 0.12 + amp * Math.sin(w); sh.rotation.y = -0.08 * Math.cos(w); el.rotation.z = 0.5 * amp * Math.sin(w - 0.9) - 0.04; el.rotation.y = 0.18 * Math.cos(w - 0.9); }
+        const fa = S.glide > 0 ? 0.25 + 0.75 * burst : 1, A = (0.8 * fa + 0.1) * (1 + o.flee * 0.35), c = Math.cos(w), s1 = Math.sin(w), s2 = Math.sin(w - 0.85), s3 = Math.sin(w - 1.7);
+        o.root.position.set(x, y - 0.5 * S.scale * 0.35 * c * fa * (S.scale / 3.4), z); o.root.rotation.set(0, head, 0); o.pivot.rotation.z = 0.16 * s.dir; o.pivot.rotation.x = -0.1 - 0.12 * o.flee - 0.07 * fa * c;
+        for (const [sh, el, wr] of o.wings) {
+          const up = Math.max(0, c);   // montee : l'aile se replie (coude fléchi, main qui traîne) ; descente : l'aile se tend et balaie vers l'avant
+          sh.rotation.z = 0.1 + A * s1; sh.rotation.y = -0.18 * c * fa; sh.rotation.x = 0.1 * s1 * fa;
+          el.rotation.z = 0.7 * A * s2 - 0.1 - 0.5 * up * fa; el.rotation.y = 0.25 * up * fa;
+          wr.rotation.z = 0.95 * A * s3 - 0.05 - 0.35 * up * fa; wr.rotation.y = 0.35 * Math.cos(w - 1.7) * fa;
+        }
         o.root.visible = true; used++;
       }
     }
