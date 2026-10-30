@@ -129,7 +129,9 @@
       if (o.render !== false && m && typeof m === 'object' && /^facade/.test(m.side || '') && m.top && m.top !== 'none' && Math.abs(q.x) < 1e-3 && Math.abs(q.z) < 1e-3) {
         this.buildings.push({ pos, w, h, d, q: q.clone(), facade: m.side, tint: o.tint });
       }
-      if (o.collide !== false && o.kind !== 'noCollide') {
+      // v332 : tout volume dur visible (panneau mince, passerelle, rambarde, dalle) est solide, sauf lumieres, vitres, eau, fils et ce qui est marque noCollide : on ne traverse plus une face sans epaisseur
+      const hard = o.collide === false && o.kind !== 'noCollide' && o.render !== false && Math.max(w, h, d) >= 1.5 && Math.min(w, h, d) >= 0.12 && !(typeof m === 'string' && /^(emis|glass|water|hazard|basic|chainlink|waterSurf|col)(:|$)/.test(m));
+      if ((o.collide !== false || hard) && o.kind !== 'noCollide') {
         return this.world.addBox({ center: pos, size: o.s, quat: q, kind: o.kind || 'solid', ground: o.ground, ref: o.ref, invisible: o.render === false && !o.ground });   // invisible : collision seule (l'ombre l'ignore)
       }
       return null;

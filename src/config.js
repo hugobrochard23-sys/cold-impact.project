@@ -146,9 +146,9 @@ CC.CONFIG = {
 
   // Traînées de la roquette (CHOIX v026, Hugo) : src/rendering/trails.js
   trails: {
-    life: 1.0,                   // s : durée de vie d'un point de traînée des ailerons (v331 : beaucoup plus longue, le bout ne se voit plus)
+    life: 1.5,                   // s : durée de vie d'un point de traînée des ailerons (v331 : beaucoup plus longue, le bout ne se voit plus)
     minStep: 1.0, minDt: 0.03,   // un point tous les 1 m (ou 0,03 s)
-    maxPoints: 64,
+    maxPoints: 96,
     alpha: 0.5,                  // opacité de la traînée blanche (sans boost) : discrète mais visible sur les murs clairs
     alphaBoost: 0.75,            // opacité de la traînée jaune/rouge pendant le boost
     width: 0.004, widthBoost: 0.007,   // épaisseur en fraction de la hauteur d'écran (≈ 3 et 5 px sur un écran de 800 px)

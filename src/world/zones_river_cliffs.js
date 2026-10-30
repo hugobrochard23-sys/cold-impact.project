@@ -102,6 +102,6 @@
     _tk(g, dt); const run = g.endlessRun;
     if (!run || !EVO.isS2() || !g.evo || g.evo.preview) { if (g._cl) for (const m of g._cl.meshes) m.visible = false; return; }
     if (g._clRun !== run) { g._clRun = run; if (g._cl) for (const m of g._cl.meshes) { g.scene.remove(m); m.geometry.dispose(); } g._cl = build(run); for (const m of g._cl.meshes) g.scene.add(m); }
-    const d = run.dist; for (const m of g._cl.meshes) m.visible = m.userData.d1 > d - 120 && m.userData.d0 < d + 620;
+    const d = run.dist, fl = g.state === 'FLIGHT'; for (const m of g._cl.meshes) m.visible = m.userData.d1 > d - (fl ? 160 : 3000) && m.userData.d0 < d + 620;   // v332 : apres le crash la camera regarde en arriere : toute la falaise derriere reste affichee (plus de trou dans la montagne a la mort)
   };
 })();

@@ -8,10 +8,10 @@
   const fr = (v) => v - Math.floor(v), hsh = (a, b) => fr(Math.sin(a * 127.1 + b * 311.7) * 43758.5453);
   const nz = (x, z) => 0.5 + 0.5 * (Math.sin(x * 0.0113 + z * 0.0171) * 0.5 + Math.sin(x * 0.0271 - z * 0.0131 + 1.3) * 0.3 + Math.sin(x * 0.0511 + z * 0.0433) * 0.2);
   // hauteur du sommet de la berge (la meme que celle des zones : delta puis port)
-  const EX = LA + 1010, MOUTH = D4 + 40, FRONT = D4 - 20, LIDC = D4 - 65, LEND = D1 - 40, inCap = (d) => (d >= LA + 330 && d <= EX) || (d >= LIDC && d <= LEND), topAt = (d, sg) => { if (d < D3) { const u2 = d - LA; if (u2 >= 1010) return R.topAt(Math.max(d, EX + 8), sg); return mixf(R.topAt(d, sg), mixf(-10, -86, ss(900, 1010, u2)), ss(300, 360, u2)); } const u = d - D3; if (u < LD) return mixf(-84, WYS + 9 + 3 * Math.sin(d / 41 + sg), ss(24, 120, u)); if (d >= FRONT) return mixf(WYS + 6.5, WYS + 260, ss(FRONT, FRONT + 40, d)); return WYS + 6.5; };   // v329 : au-dela de D4 la mer entre sous une MONTAGNE (falaise de 250 m) : impossible de survoler la fosse, il faut plonger
+  const EX = LA + 1010, MOUTH = D4 + 40, FRONT = D4 - 20, LIDC = D4 - 65, LEND = D1 - 40, inCap = (d) => (d >= LA + 330 && d <= EX) || (d >= LIDC && d <= LEND), topAt = (d, sg) => { if (d < D3) { const u2 = d - LA; if (u2 >= 1010) return R.topAt(Math.max(d, EX + 8), sg); return mixf(R.topAt(d, sg), mixf(-10, -86, ss(900, 1010, u2)), ss(300, 360, u2)); } const u = d - D3; if (u < LD) return mixf(-84, WYS + 9 + 3 * Math.sin(d / 41 + sg), ss(24, 120, u)); if (d >= FRONT) return mixf(WYS + 6.5, WYS + 260, ss(FRONT - 30, FRONT, d)); return WYS + 6.5; };   // v329 : au-dela de D4 la mer entre sous une MONTAGNE (falaise de 250 m) : impossible de survoler la fosse, il faut plonger
   // v330 : LA GROTTE DE LA FOSSE : une entree ultra haute et large (300 m x 240 m) dont le toit descend en pente douce, en suivant le fond de la fosse, jusqu'a l'arene du boss (le toit passe sous l'eau : il faut plonger)
   const D5 = R.D5 || D4 + 1000, WTOP = WYS + 14, BEDf = R.BED, HWf = R.HWf || (() => 60);
-  const caveW = (d) => HWf(d - D4) + 6, roofAt = (d) => Math.max(BEDf(d) + 85, WYS + 240 - 0.55 * Math.max(0, d - MOUTH));
+  const caveW = (d) => HWf(d - D4) + 4, caveE = (d) => HWf(d - D4), CAVE0 = FRONT, roofAt = (d) => Math.max(BEDf(d) + 85, WYS + 240 - 0.55 * Math.max(0, d - MOUTH));
   const portW = (d) => ss(L0 - 40, L0 + 80, d) * (1 - ss(L0 + LP - 200, L0 + LP - 100, d));   // 1 dans le port (quais), 0 dans le delta et la rade
   const GJ = ['#3a8a3e', '#448f40', '#357f38', '#4a9444'].map((h) => new T3.Color(h)), GP = new T3.Color('#6a6e68'), GP2 = new T3.Color('#58605c'), cT = new T3.Color();
   const ROCKM = new T3.Color('#68707a'), color = (x, z, d, out) => {
@@ -37,7 +37,7 @@
     if ((bi === H.n - 1 && along > 0) || (bi === 0 && along < 0)) return out;
     out.s = Math.sqrt(bd); out.d = H.d[bi]; out.sg = (dx * -H.tz[bi] + dz * H.tx[bi]) >= 0 ? 1 : -1; out.ok = true;
     out.y = topAt(out.d, out.sg) + (out.s < S1 && inCap(out.d) ? -0.3 : prof(out.s, x, z, out.d));
-    if (out.d >= LIDC && out.d <= D5 + 60 && out.s < caveW(out.d) + 6) out.y = WYS + 259.7;   // au-dessus de la grotte : le dessus de la montagne est plat
+    if (out.d >= LIDC && out.d <= D5 + 60 && out.s < caveE(out.d)) out.y = WYS + 259.7;   // au-dessus de la grotte : le dessus de la montagne est plat
     return out;
   };
   const make = function* (g, run, tick) {   // generateur : le calcul (grille de probes, skyline) est reparti sur plusieurs images (pas de pic de plusieurs dizaines de ms)
@@ -52,10 +52,10 @@
       if (i === nx - 1 && tick()) yield;
     }
     const pos = [], col = [], uv = [], ix = [], ixL = [], map = new Int32Array(nx * nzz).fill(-1); let nv = 0;
-    const vert = (k, i, j) => { if (map[k] < 0) { map[k] = nv++; const x = x0 + i * GRID, z = z0 + j * GRID; pos.push(x, (ss_[k] < SB && ss_[k] >= caveW(dd_[k]) + 6 && dd_[k] >= LIDC - 20 && dd_[k] < FRONT + 40 ? mixf(WYS - 40, ys[k], ss(FRONT - 10, FRONT + 30, dd_[k])) : ys[k] - (ss_[k] < SB && !inCap(dd_[k]) ? 3 : 0)) - 2 * (1 - ss(LA + 240, LA + 300, dd_[k])), z); uv.push(x / 7, z / 7); color(x, z, dd_[k], cT); if (dd_[k] >= D4 - 40) cT.lerp(ROCKM, ss(WYS + 20, WYS + 110, ys[k])); col.push(cT.r, cT.g, cT.b); } return map[k]; };
+    const vert = (k, i, j) => { if (map[k] < 0) { map[k] = nv++; const x = x0 + i * GRID, z = z0 + j * GRID; pos.push(x, (ss_[k] < SB && ss_[k] >= caveE(dd_[k]) && dd_[k] >= LIDC - 20 && dd_[k] < FRONT + 10 ? mixf(WYS - 40, ys[k], ss(FRONT - 40, FRONT - 8, dd_[k])) : ys[k] - (ss_[k] < SB && !inCap(dd_[k]) ? 3 : 0)) - 2 * (1 - ss(LA + 240, LA + 300, dd_[k])), z); uv.push(x / 7, z / 7); color(x, z, dd_[k], cT); if (dd_[k] >= D4 - 40) cT.lerp(ROCKM, ss(WYS + 20, WYS + 110, ys[k])); col.push(cT.r, cT.g, cT.b); } return map[k]; };
     for (let j = 0; j < nzz - 1; j++) for (let i = 0; i < nx - 1; i++) {
       const k00 = j * nx + i, k10 = k00 + 1, k01 = k00 + nx, k11 = k01 + 1; let ok = true;
-      let far = false, cap = false; for (const k of [k00, k10, k01, k11]) { if (ys[k] < -1e8) ok = false; else if (ss_[k] >= SB) far = true; } const dm = (dd_[k00] + dd_[k10] + dd_[k01] + dd_[k11]) / 4; cap = inCap(dm); if (dm < LA + 235) ok = false; if (ok && dm >= LIDC && dm < MOUTH && Math.max(ss_[k00], ss_[k10], ss_[k01], ss_[k11]) < caveW(dm) + 6) ok = false; if (!ok || !(far || cap)) continue;   // cap : le dessus du barrage et de la galerie (entre le mur et la sortie du canal) est couvert de colline   // v328 : plus de trous au bord de la berge : une maille touche la berge des qu'un de ses coins est assez loin (les coins proches sont rabaisses sous la berge)
+      let far = false, cap = false; for (const k of [k00, k10, k01, k11]) { if (ys[k] < -1e8) ok = false; else if (ss_[k] >= SB) far = true; } const dm = (dd_[k00] + dd_[k10] + dd_[k01] + dd_[k11]) / 4; cap = inCap(dm); if (dm < LA + 235) ok = false; if (ok && dm >= LIDC && dm < CAVE0 && Math.max(ss_[k00], ss_[k10], ss_[k01], ss_[k11]) < caveE(dm)) ok = false; if (!ok || !(far || cap)) continue;   // cap : le dessus du barrage et de la galerie (entre le mur et la sortie du canal) est couvert de colline   // v328 : plus de trous au bord de la berge : une maille touche la berge des qu'un de ses coins est assez loin (les coins proches sont rabaisses sous la berge)
       const a = vert(k00, i, j), b = vert(k10, i + 1, j), c = vert(k01, i, j + 1), d = vert(k11, i + 1, j + 1); (cap ? ixL : ix).push(a, c, b, b, c, d);   // les mailles du dessus du barrage et du plafond de la fosse forment un maillage a part (dessous sombre)
     }
     const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(col, 3)); geo.setAttribute('uv', new T3.Float32BufferAttribute(uv, 2)); geo.setIndex(ix.concat(ixL)); geo.computeVertexNormals(); geo.setIndex(ix);
@@ -67,10 +67,10 @@
       const hz = (a, b, c) => { const v = Math.sin(a * 127.1 + b * 311.7 + (c || 0) * 74.7) * 43758.5453; return v - Math.floor(v); };
       const wlat = (uu, y, sg) => Math.max(0, 2.1 + 1.5 * Math.sin(uu / 11 + y / 17 + sg * 2) + 1.1 * Math.sin(uu / 5.3 - y / 8.5 + 1.7 * sg) + 0.5 * Math.sin(uu / 2.3 + y / 3.7));
       const hwAt = (du, ry, sg) => { const uu = du - D4; return HWf(uu) + 2.2 * Math.sin(uu / 41 + sg) + 2.6 + wlat(uu, ry, sg); };
-      const NC = Math.ceil((D5 - MOUTH) / CS), k0 = Math.floor(WTOP / RS), k1 = Math.ceil((WYS + 262) / RS);
+      const NC = Math.ceil((D5 - CAVE0) / CS), k0 = Math.floor(WTOP / RS), k1 = Math.ceil((WYS + 262) / RS);
       const tri = (q, br) => { for (const v of q) { P.push(v[0], v[1], v[2]); C.push(WC0.r * br, WC0.g * br, WC0.b * br); } };
       for (const sg of [-1, 1]) {
-        const vt = (i, k) => { const du = MOUTH + i * CS, uu = du - D4, kj = k + 0.35 * Math.sin(k * 12.9), ry = Math.min(roofAt(du), Math.max(WTOP, kj * RS)), bp = wlat(uu, ry, sg); return { p: run.T.at(du, sg * hwAt(du, ry, sg), ry), y: ry, br: 0.62 - 0.07 * bp + 0.04 * hz(k, Math.round(uu / 7), 5 + sg) }; };
+        const vt = (i, k) => { const du = CAVE0 + i * CS, uu = du - D4, kj = k + 0.35 * Math.sin(k * 12.9), ry = Math.min(roofAt(du), Math.max(WTOP, kj * RS)), bp = wlat(uu, ry, sg); return { p: run.T.at(du, sg * hwAt(du, ry, sg), ry), y: ry, br: 0.62 - 0.07 * bp + 0.04 * hz(k, Math.round(uu / 7), 5 + sg) }; };
         for (let i = 0; i < NC; i++) {
           for (let k = k0; k < k1; k++) {
             const a0 = vt(i, k), a1 = vt(i + 1, k), b0 = vt(i, k + 1), b1 = vt(i + 1, k + 1);
@@ -82,12 +82,12 @@
         }
       }
       // toit : de paroi a paroi, a la hauteur de collision ; des facettes comme le reste de la roche
-      const NL = 8, rp = (c, l) => { const du = Math.min(MOUTH + c * CS, D5), r0 = roofAt(du), hl = hwAt(du, r0, -1), hr = hwAt(du, r0, 1), lat = -hl + (hl + hr) * l / NL, p = run.T.at(du, lat, 0), edge = l === 0 || l === NL; return [p[0], r0 + (edge ? 0 : 6 * nz(du * 0.21, lat * 0.17) * nz(du * 0.07 + 5, lat * 0.05)), p[2]]; };
+      const NL = 8, rp = (c, l) => { const du = Math.min(CAVE0 + c * CS, D5), r0 = roofAt(du), hl = hwAt(du, r0, -1), hr = hwAt(du, r0, 1), lat = -hl + (hl + hr) * l / NL, p = run.T.at(du, lat, 0), edge = l === 0 || l === NL; return [p[0], r0 + (edge ? 0 : 6 * nz(du * 0.21, lat * 0.17) * nz(du * 0.07 + 5, lat * 0.05)), p[2]]; };
       for (let c = 0; c < NC; c++) {
         for (let l = 0; l < NL; l++) { const a = rp(c, l), b = rp(c, l + 1), d1 = rp(c + 1, l), e = rp(c + 1, l + 1), br = 0.5 + 0.12 * hz(c, l, 9); tri([a, d1, b], br); tri([b, d1, e], 0.5 + 0.12 * hz(c, l, 11)); }
         if (c % 40 === 39 && tick()) yield;
       }
-      { const hl = hwAt(MOUTH, roofAt(MOUTH), -1), hr = hwAt(MOUTH, roofAt(MOUTH), 1), a = run.T.at(MOUTH, -hl, 0), b = run.T.at(MOUTH, hr, 0), y0 = roofAt(MOUTH), y1 = WYS + 262; tri([[a[0], y0, a[2]], [b[0], y0, b[2]], [a[0], y1, a[2]]], 0.55); tri([[b[0], y0, b[2]], [b[0], y1, b[2]], [a[0], y1, a[2]]], 0.6); }
+      { const hl = hwAt(CAVE0, roofAt(CAVE0), -1), hr = hwAt(CAVE0, roofAt(CAVE0), 1), a = run.T.at(CAVE0, -hl, 0), b = run.T.at(CAVE0, hr, 0), y0 = roofAt(CAVE0), y1 = WYS + 262; tri([[a[0], y0, a[2]], [b[0], y0, b[2]], [a[0], y1, a[2]]], 0.55); tri([[b[0], y0, b[2]], [b[0], y1, b[2]], [a[0], y1, a[2]]], 0.6); }
       const gc = new T3.BufferGeometry(); gc.setAttribute('position', new T3.Float32BufferAttribute(P, 3)); gc.setAttribute('color', new T3.Float32BufferAttribute(C, 3)); gc.computeVertexNormals();
       const mc = new T3.Mesh(gc, WMc); mc.frustumCulled = false; grp.add(mc);
     }
@@ -139,9 +139,9 @@
     const rk = g.rocket; if (g.state !== 'FLIGHT' || !rk || !rk.active || run.dist < D0 || run.dist > D1) return;
     const i = Math.round((run.dist - D0) / STEP); probe(h.H, rk.pos.x, rk.pos.z, i - 60, i + 60);
     if (out.ok) {
-      const y = rk.pos.y, d = out.d, sd = out.s, Wm = caveW(d) + 6; let hit;
+      const y = rk.pos.y, d = out.d, sd = out.s, Wm = caveW(d); let hit;
       if (d >= LIDC && d <= LEND) {   // la montagne de la fosse : on entre par la grotte (toit qui descend) ; les flancs sont de la roche pleine
-        if (sd < Wm) hit = d >= MOUTH && d <= D5 ? y > roofAt(d) - 0.5 : d > D5 && y > WYS + 8 && y < out.y + 0.6;
+        if (sd < Wm) hit = d >= CAVE0 && d <= D5 ? y > roofAt(d) - 0.5 : d > D5 && y > WYS + 8 && y < out.y + 0.6;
         else hit = y < out.y + 0.6 && (sd > S1 + 1 || y > WTOP - 2);
       } else hit = sd > S1 + 1 ? y < out.y + 0.6 : inCap(d) && y < out.y + 0.6 && y > out.y - 3.5;
       if (hit) g.onRocketCrash('wall', rk.pos.clone(), new T3.Vector3(0, 1, 0));
