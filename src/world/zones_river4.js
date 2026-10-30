@@ -11,6 +11,7 @@
   const BED = R.BED;
   R.setDeep((d) => { const u = d - D4; if (u >= LFo) return BEDB; const dpt = 28 + 160 * ss(40, 420, u) + 130 * ss(420, 800, u) + 7 * Math.sin(u / 31) * ss(100, 300, u) * (1 - ss(700, 800, u)); return mixf(R.shallow(d), WYS - dpt, ss(0, 40, u)); });
   const HWf = (u) => (mixf(72, 58, ss(0, 140, u)) + 6 * Math.sin(u / 70) * ss(140, 300, u)) * (1 - 0.4 * ss(LFo - 330, LFo - 10, u));   // v302 : la fosse se resserre en entonnoir vers le portail de la base
+  R.HWf = HWf;
   const HWb = (u) => (u < 70 ? 35 : u < 560 ? 30 : mixf(30, 80, ss(560, 640, u)));
   const fl = (S, dc, y) => A(S, dc, y);
   for (const [k, m, a] of [['gouffre', 'sea', 'evoDusk'], ['tranchee', 'pit', 'evoMine'], ['cimetiere', 'pit', 'evoMine'], ['portail', 'pit', 'evoMine'], ['sas', 'pit', 'evoMine'], ['cuve', 'pit', 'evoBoss']]) { EVO.SCENE_MOOD[k] = m; EVO.SCENE_AUDIO[k] = a; }
@@ -92,17 +93,11 @@
           S.b.root.add(new T3.Mesh(geo, WM));
         }
       });
-      // v306 : LA VITRE : un mur de verre barre tout le fosse a l'entree (et monte tres haut) : on le traverse en le brisant, et on plonge. 
+      // v330 : plus de vitre : l'entree de la fosse est la grotte (zones_river_far.js) ; on garde seulement la secousse et le souffle quand on passe le porche
       S.item(d(40), (r) => {
-        const dc = d(40), Wd = 2 * OUT, top = WYS + 300, bot = WYS - 300, grp = new T3.Group(), gm = new T3.MeshBasicMaterial({ color: '#aef2ff', transparent: true, opacity: 0.2, side: T3.DoubleSide, depthWrite: false, fog: false }), em = new T3.MeshBasicMaterial({ color: '#9ff6ff' });
-        const pane = new T3.Mesh(new T3.PlaneGeometry(Wd, top - bot), gm); pane.position.y = (top + bot) / 2; grp.add(pane);
-        for (let k = -3; k <= 3; k++) { const m = new T3.Mesh(new T3.BoxGeometry(1.2, top - bot, 1.2), em); m.position.set(k * 45, (top + bot) / 2, 0); grp.add(m); }
-        for (const y of [WYS - 80, WYS - 30, WYS + 30, WYS + 90, WYS + 160]) { const m = new T3.Mesh(new T3.BoxGeometry(Wd, 1.2, 1.2), em); m.position.set(0, y, 0); grp.add(m); }
-        for (const sx of [-1, 1]) { const m = new T3.Mesh(new T3.BoxGeometry(34, 3.2, 1.6), em); m.position.set(sx * 9, WYS + 14, 0.5); m.rotation.z = -sx * 0.84; grp.add(m); }   // grande fleche en V : on plonge
+        const dc = d(40), grp = new T3.Group();
         EVO.placeGroup(S, grp, dc, 0, A(S, dc, 0), 0); let done = false;
-        EVO.addDyn(grp, (t, dt, g) => { const run = g.endlessRun, rk = g.rocket; if (done || !run || g.state !== 'FLIGHT') return; if (run.dist > dc) { done = true; grp.visible = false; g.rig.shake = Math.max(g.rig.shake, 1.0); g.flash = Math.max(g.flash || 0, 0.35); g.flashColor = '#dffbff'; g.audio.play('whoosh');
-          if (g.effects && g.effects.debris) for (let k = 0; k < 70; k++) g.effects.debris.emit({ pos: new T3.Vector3(rk.pos.x + (Math.random() - 0.5) * 20, rk.pos.y + (Math.random() - 0.5) * 16, rk.pos.z + (Math.random() - 0.5) * 20), vel: new T3.Vector3((Math.random() - 0.5) * 50, (Math.random() - 0.3) * 30, (Math.random() - 0.5) * 50), life: 1.4 + Math.random(), s0: 1.2, s1: 1.2, s2: 0.4, peak: 0.1, cols: g.effects.pal.debrisLight, grav: 12, drag: 0.6, spin: 7 });
-          if (rk.pos.y > WYS + 2) rk.vel.y -= 28; } }, [], { near: 900, span: 400 });
+        EVO.addDyn(grp, (t, dt, g) => { const run = g.endlessRun; if (done || !run || g.state !== 'FLIGHT') return; if (run.dist > dc) { done = true; g.rig.shake = Math.max(g.rig.shake, 0.8); g.audio.play('whoosh'); } }, [], { near: 900, span: 400 });
       });
       // surplombs en quinconce : rebords de roche irreguliers, la trajectoire serpente
       for (let k = 0; k < 9; k++) { const u = 90 + k * 100, sg = k % 2 ? 1 : -1; S.item(d(u), (r) => { const dc = d(u), hwv = HWf(u), bed = BED(dc), y = bed + 26 + 18 * hsh(u, 2), ext = hwv * 1.05; ledge(S, dc, sg * (hwv - ext / 2 + 3), y, ext * 1.1, 9, 24, k + 3); S.glow(dc - 12, sg * (hwv - ext + 2), fl(S, dc, y - 5), '#5ff0ff', 20); }); }
