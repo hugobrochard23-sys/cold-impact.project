@@ -408,6 +408,7 @@
     firePad() {
       const pad = this.pad, PC = CC.CONFIG.pad, rk = this.rocket;
       this.input.setAim(0, pad.pitch); this.rig.setAim(0, pad.pitch);
+      this.acc = 0;
       rk.launch(pad.origin.clone(), pad.dir.clone(), { speed: this.evo ? CC.EVO.launchSpeed(this) : PC.launchSpeed, ignited: true, freeBoost: this.evo ? 0 : PC.freeBoost });
       rk.fuelMax = CC.CONFIG.endless.fuelMax + this.progress.fuelBonus(); rk.fuel = Math.min(rk.fuelMax, CC.CONFIG.endless.fuelStart + this.progress.fuelBonus() + (this.assistFuel || 0));
       if (this.evo) CC.EVO.onLaunch(this);   // v119 : stats de la fusée et du lanceur
@@ -438,7 +439,7 @@
       this.missiles = [];
       const yaw = Math.atan2(-dir.x, -dir.z), pitch = Math.asin(dir.y);
       this.input.setAim(yaw, pitch); this.rig.setAim(yaw, pitch);
-      rk.launch(pos, dir, { speed: 36, ignited: true, freeBoost: 0.8 });
+      this.acc = 0; rk.launch(pos, dir, { speed: 36, ignited: true, freeBoost: 0.8 });
       rk.fuel = rk.fuelMax * RC.fuelFrac; rk.shieldT = RC.shield;
       this.rig.padLook.copy(pos); this.rig.startHandoff(false); this.rig.startFlight();
       this.state = 'FLIGHT'; this.flightTime = 0.5; this.stallT = 0; this.warn = null; run.altT = 0;
@@ -1046,6 +1047,7 @@
             rk.step(fdt, { aimDir: this.rig.aimDir, retro: inp.retro });
             if (!rk.active) break;
           }
+          if (!rk.active || n >= 80) this.acc = 0;   // v329 : le temps de physique en retard n'est jamais garde (l'ecran de fin de niveau le faisait grossir : la fusee suivante partait a toute vitesse pendant plusieurs secondes)
           if (rk.active) {
             rk.frame(dt, inp);
             if (this.endlessRun) {   // v034 : éclats, progression des missions

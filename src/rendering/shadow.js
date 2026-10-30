@@ -42,7 +42,15 @@
       const g = this.game, rk = g.rocket, C = this.cfg, R = g.renderer;
       if (!rk || !rk.mesh || !rk.mesh.visible || (g.state !== 'FLIGHT' && g.state !== 'CRASHED' && g.state !== 'IMPACT')) { this.hide(); return; }
       rk.mesh.getWorldPosition(_o); _p1.copy(_o).addScaledVector(DOWN, C.maxDist);
-      const hit = g.world.sweep(_o, _p1, 0.02, GROUND);
+      let hit = g.world.sweep(_o, _p1, 0.02, GROUND);
+      const TR = CC.EVO && CC.EVO.terrain;   // v329 : sol du decor (collines, berges lisses, dessus du barrage) : ce ne sont pas des boites de collision
+      if (TR && TR.length) for (const f of TR) {
+        const ty = f(g, _o.x, _o.z);
+        if (ty !== null && ty <= _o.y + 0.3 && _o.y - ty < C.maxDist) {
+          const t = Math.max(0, (_o.y - ty) / C.maxDist);
+          if (!hit || t < hit.t) { const a = f(g, _o.x + 3, _o.z), b = f(g, _o.x - 3, _o.z), c = f(g, _o.x, _o.z + 3), d = f(g, _o.x, _o.z - 3); hit = { t, normal: new V(a !== null && b !== null ? -(a - b) / 6 : 0, 1, c !== null && d !== null ? -(c - d) / 6 : 0).normalize() }; }
+        }
+      }
       if (!hit) { this.hide(); return; }
       this.height = hit.t * C.maxDist;
       const n = hit.normal; if (n.y < 0.3) { this.hide(); return; }

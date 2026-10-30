@@ -84,6 +84,10 @@
     g.scene.add(grp); return { grp, H, mesh, st, inst };
   };
   EVO.hillAt = (g, x, z) => { const h = g._hill; if (!h) return null; probe(h.H, x, z, 0, h.H.n - 1); return out.ok ? { s: out.s, y: out.y, d: out.d } : null; };
+  (EVO.terrain = EVO.terrain || []).push((g, x, z) => {   // v329 : sol du decor pour l'ombre de la fusee (terrasses des berges et collines)
+    const h = g._hill, run = g.endlessRun; if (!h || !run || !h.grp.visible || run.dist > D1 + 100) return null;
+    probe(h.H, x, z, 0, h.H.n - 1); return out.ok && out.d < LA + 275 && out.s >= (out.s > S1 ? 0 : R.faceX(out.d) + 0.5) ? out.y : null;
+  });
   const _tk = EVO.tick;
   EVO.tick = (g, dt) => {
     _tk(g, dt); const run = g.endlessRun;
