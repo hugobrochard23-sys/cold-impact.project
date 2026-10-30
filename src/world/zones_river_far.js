@@ -141,7 +141,8 @@
     if (out.ok) {
       const y = rk.pos.y, d = out.d, sd = out.s, Wm = caveW(d); let hit;
       if (d >= LIDC && d <= LEND) {   // la montagne de la fosse : on entre par la grotte (toit qui descend) ; les flancs sont de la roche pleine
-        if (sd < Wm) hit = d >= CAVE0 && d <= D5 ? y > roofAt(d) - 0.5 : d > D5 && y > WYS + 8 && y < out.y + 0.6;
+        if (d > D5 && R.HWb) hit = y < out.y + 0.6 && (sd > R.HWb(d - D5) + 3 || y > WYS + 8);   // la base : on ne sort pas de la salle par-dessus les murs, ce qui est derriere est de la roche pleine
+        else if (sd < Wm) hit = d >= CAVE0 && d <= D5 ? y > roofAt(d) - 0.5 : false;
         else hit = y < out.y + 0.6 && (sd > S1 + 1 || y > WTOP - 2);
       } else hit = sd > S1 + 1 ? y < out.y + 0.6 : inCap(d) && y < out.y + 0.6 && y > out.y - 3.5;
       if (hit) g.onRocketCrash('wall', rk.pos.clone(), new T3.Vector3(0, 1, 0));

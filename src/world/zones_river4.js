@@ -12,6 +12,7 @@
   R.setDeep((d) => { const u = d - D4; if (u >= LFo) return BEDB; const dpt = 28 + 160 * ss(40, 420, u) + 130 * ss(420, 800, u) + 7 * Math.sin(u / 31) * ss(100, 300, u) * (1 - ss(700, 800, u)); return mixf(R.shallow(d), WYS - dpt, ss(0, 40, u)); });
   const HWf = (u) => (mixf(72, 58, ss(0, 140, u)) + 6 * Math.sin(u / 70) * ss(140, 300, u)) * (1 - 0.4 * ss(LFo - 330, LFo - 10, u));   // v302 : la fosse se resserre en entonnoir vers le portail de la base
   R.HWf = HWf;
+  R.HWb = (u) => (u < 70 ? 35 : u < 560 ? 30 : mixf(30, 80, ss(560, 640, u)));
   const HWb = (u) => (u < 70 ? 35 : u < 560 ? 30 : mixf(30, 80, ss(560, 640, u)));
   const fl = (S, dc, y) => A(S, dc, y);
   for (const [k, m, a] of [['gouffre', 'sea', 'evoDusk'], ['tranchee', 'pit', 'evoMine'], ['cimetiere', 'pit', 'evoMine'], ['portail', 'pit', 'evoMine'], ['sas', 'pit', 'evoMine'], ['cuve', 'pit', 'evoBoss']]) { EVO.SCENE_MOOD[k] = m; EVO.SCENE_AUDIO[k] = a; }

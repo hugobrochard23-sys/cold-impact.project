@@ -125,7 +125,7 @@
         const pa = at(Math.max(0, i - 1)).p, pb = at(Math.min(count - 1, i + 1)).p;
         _d.subVectors(pa, pb); if (_d.lengthSq() < 1e-8) _d.copy(rocketFwd);
         if (q.boost) _c.copy(YELLOW).lerp(RED, Math.min(1, k * 1.6)); else _c.copy(WHITE);
-        const alpha = (q.boost ? cfg.alphaBoost : cfg.alpha) * Math.pow(1 - k, 1.5) * this.camFade(q.p, camera);   // v211 : fondu progressif jusqu'a la transparence complete a l'arriere
+        const alpha = (q.boost ? cfg.alphaBoost : cfg.alpha) * Math.pow(1 - k, 2.3) * this.camFade(q.p, camera);   // v333 : fondu plus long : le bout est totalement transparent bien avant la fin, meme vu de cote   // v211 : fondu progressif jusqu'a la transparence complete a l'arriere
         put(L, q.p, _d.normalize(), camera, (q.boost ? cfg.widthBoost : cfg.width) * (1 - 0.85 * k), _c, alpha);
       }
       finish(L);
