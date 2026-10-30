@@ -11,7 +11,7 @@
   const EX = LA + 1010, MOUTH = D4 + 40, FRONT = D4 - 20, LIDC = D4 - 65, LEND = D1 - 40, inCap = (d) => (d >= LA + 330 && d <= EX) || (d >= LIDC && d <= LEND), topAt = (d, sg) => { if (d < D3) { const u2 = d - LA; if (u2 >= 1010) return R.topAt(Math.max(d, EX + 8), sg); return mixf(R.topAt(d, sg), mixf(-10, -86, ss(900, 1010, u2)), ss(300, 360, u2)); } const u = d - D3; if (u < LD) return mixf(-84, WYS + 9 + 3 * Math.sin(d / 41 + sg), ss(24, 120, u)); if (d >= FRONT) return mixf(WYS + 6.5, WYS + 260, ss(FRONT, FRONT + 40, d)); return WYS + 6.5; };   // v329 : au-dela de D4 la mer entre sous une MONTAGNE (falaise de 250 m) : impossible de survoler la fosse, il faut plonger
   // v330 : LA GROTTE DE LA FOSSE : une entree ultra haute et large (300 m x 240 m) dont le toit descend en pente douce, en suivant le fond de la fosse, jusqu'a l'arene du boss (le toit passe sous l'eau : il faut plonger)
   const D5 = R.D5 || D4 + 1000, WTOP = WYS + 14, BEDf = R.BED, HWf = R.HWf || (() => 60);
-  const caveW = (d) => mixf(150, HWf(d - D4) + 14, ss(0, 450, Math.max(0, d - MOUTH))), roofAt = (d) => Math.max(BEDf(d) + 85, WYS + 240 - 0.55 * Math.max(0, d - MOUTH));
+  const caveW = (d) => HWf(d - D4) + 6, roofAt = (d) => Math.max(BEDf(d) + 85, WYS + 240 - 0.55 * Math.max(0, d - MOUTH));
   const portW = (d) => ss(L0 - 40, L0 + 80, d) * (1 - ss(L0 + LP - 200, L0 + LP - 100, d));   // 1 dans le port (quais), 0 dans le delta et la rade
   const GJ = ['#3a8a3e', '#448f40', '#357f38', '#4a9444'].map((h) => new T3.Color(h)), GP = new T3.Color('#6a6e68'), GP2 = new T3.Color('#58605c'), cT = new T3.Color();
   const ROCKM = new T3.Color('#68707a'), color = (x, z, d, out) => {
@@ -61,25 +61,35 @@
     const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(col, 3)); geo.setAttribute('uv', new T3.Float32BufferAttribute(uv, 2)); geo.setIndex(ix.concat(ixL)); geo.computeVertexNormals(); geo.setIndex(ix);
     const grp = new T3.Group(), mesh = new T3.Mesh(geo, new T3.MeshLambertMaterial({ map: CC.Textures.get('evoGrass'), vertexColors: true, side: T3.DoubleSide })); mesh.frustumCulled = false; grp.add(mesh);
     if (ixL.length) { const gl = new T3.BufferGeometry(); for (const k in geo.attributes) gl.setAttribute(k, geo.attributes[k]); gl.setIndex(ixL); const ml = new T3.Mesh(gl, new T3.MeshLambertMaterial({ map: CC.Textures.get('evoGrass'), vertexColors: true, side: T3.FrontSide })), mb = new T3.Mesh(gl, new T3.MeshLambertMaterial({ color: '#2c3036', side: T3.BackSide })); ml.frustumCulled = mb.frustumCulled = false; grp.add(ml); grp.add(mb); }
-    // la grotte : toit (toujours visible, en roche), parois et linteau de l'entree
+    // la grotte : parois, toit (toujours visible, en roche) et linteau de l'entree. Meme largeur et meme motif de roche que la fosse (zones_river4.js) : les parois prolongent exactement les siennes vers le haut
     {
-      const cp = [], cc = [], ci = [], RC = [new T3.Color('#454d57'), new T3.Color('#6b7580')], Ck = new T3.Color(), NCR = Math.ceil((D5 - MOUTH) / 8), NL = 10;
-      const ccol = (x, z, y, dk) => { Ck.copy(RC[0]).lerp(RC[1], nz(x * 0.8, z * 0.8)).multiplyScalar((0.6 + 0.4 * ss(WYS - 320, WYS + 220, y)) * dk); cc.push(Ck.r, Ck.g, Ck.b); };
-      const bump = (d, l) => 5 * nz(d * 0.37, l * 0.31) * nz(d * 0.11 + 5, l * 0.09);   // le relief du toit ne descend jamais sous la hauteur de collision
-      for (let c = 0; c <= NCR; c++) {
-        const d = Math.min(MOUTH + c * 8, D5), W = caveW(d), r0 = roofAt(d);
-        for (let l = 0; l <= NL; l++) { const lat = -W + 2 * W * l / NL, p = run.T.at(d, lat, 0), y = r0 + bump(d, lat); cp.push(p[0], y, p[2]); ccol(p[0], p[2], y, 1); }
-        if (c < NCR) for (let l = 0; l < NL; l++) { const a = c * (NL + 1) + l, b = a + 1, q = a + NL + 1, e = q + 1; ci.push(a, q, b, b, q, e); }
-      }
+      const RS = 9, CS = 3.5, WC0 = new T3.Color('#8a98a8'), WMc = new T3.MeshLambertMaterial({ vertexColors: true, side: T3.DoubleSide }), P = [], C = [];
+      const hz = (a, b, c) => { const v = Math.sin(a * 127.1 + b * 311.7 + (c || 0) * 74.7) * 43758.5453; return v - Math.floor(v); };
+      const wlat = (uu, y, sg) => Math.max(0, 2.1 + 1.5 * Math.sin(uu / 11 + y / 17 + sg * 2) + 1.1 * Math.sin(uu / 5.3 - y / 8.5 + 1.7 * sg) + 0.5 * Math.sin(uu / 2.3 + y / 3.7));
+      const hwAt = (du, ry, sg) => { const uu = du - D4; return HWf(uu) + 2.2 * Math.sin(uu / 41 + sg) + 2.6 + wlat(uu, ry, sg); };
+      const NC = Math.ceil((D5 - MOUTH) / CS), k0 = Math.floor(WTOP / RS), k1 = Math.ceil((WYS + 262) / RS);
+      const tri = (q, br) => { for (const v of q) { P.push(v[0], v[1], v[2]); C.push(WC0.r * br, WC0.g * br, WC0.b * br); } };
       for (const sg of [-1, 1]) {
-        const base = cp.length / 3;
-        for (let c = 0; c <= NCR; c++) { const d = Math.min(MOUTH + c * 8, D5), W = caveW(d), p = run.T.at(d, sg * W, 0), yt = Math.max(roofAt(d) + bump(d, sg * W), WTOP + 1); cp.push(p[0], WTOP - 6, p[2], p[0], yt, p[2]); ccol(p[0], p[2], WTOP - 6, 0.7); ccol(p[0], p[2], yt, 1); if (c < NCR) { const a = base + c * 2; ci.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
-        if (tick()) yield;
+        const vt = (i, k) => { const du = MOUTH + i * CS, uu = du - D4, kj = k + 0.35 * Math.sin(k * 12.9), ry = Math.min(roofAt(du), Math.max(WTOP, kj * RS)), bp = wlat(uu, ry, sg); return { p: run.T.at(du, sg * hwAt(du, ry, sg), ry), y: ry, br: 0.62 - 0.07 * bp + 0.04 * hz(k, Math.round(uu / 7), 5 + sg) }; };
+        for (let i = 0; i < NC; i++) {
+          for (let k = k0; k < k1; k++) {
+            const a0 = vt(i, k), a1 = vt(i + 1, k), b0 = vt(i, k + 1), b1 = vt(i + 1, k + 1);
+            if (a0.y === b0.y && a1.y === b1.y) continue;
+            const q0 = [[a0.p[0], a0.y, a0.p[2]], [a1.p[0], a1.y, a1.p[2]], [b1.p[0], b1.y, b1.p[2]]], q1 = [[a0.p[0], a0.y, a0.p[2]], [b1.p[0], b1.y, b1.p[2]], [b0.p[0], b0.y, b0.p[2]]];
+            tri(q0, a0.br); tri(q1, a0.br);
+          }
+          if (i % 40 === 39 && tick()) yield;
+        }
       }
-      { const W = caveW(MOUTH), base = cp.length / 3, a = run.T.at(MOUTH, -W, 0), b = run.T.at(MOUTH, W, 0), y0 = roofAt(MOUTH), y1 = WYS + 262; cp.push(a[0], y0, a[2], b[0], y0, b[2], a[0], y1, a[2], b[0], y1, b[2]); ccol(a[0], a[2], y0, 1); ccol(b[0], b[2], y0, 1); ccol(a[0], a[2], y1, 1); ccol(b[0], b[2], y1, 1); ci.push(base, base + 1, base + 2, base + 1, base + 3, base + 2); }
-      const gi = new T3.BufferGeometry(); gi.setAttribute('position', new T3.Float32BufferAttribute(cp, 3)); gi.setAttribute('color', new T3.Float32BufferAttribute(cc, 3)); gi.setIndex(ci);
-      const gc = gi.toNonIndexed(); gi.dispose(); gc.computeVertexNormals(); { const C = gc.attributes.color; for (let i = 0; i < C.count; i += 3) { const j = 0.78 + 0.34 * hsh(i * 0.37, 3.1); for (let q = 0; q < 3; q++) C.setXYZ(i + q, C.getX(i + q) * j, C.getY(i + q) * j, C.getZ(i + q) * j); } }   // facettes : de la roche, pas un voile lisse
-      const mc = new T3.Mesh(gc, new T3.MeshLambertMaterial({ vertexColors: true, side: T3.DoubleSide })); mc.frustumCulled = false; grp.add(mc);
+      // toit : de paroi a paroi, a la hauteur de collision ; des facettes comme le reste de la roche
+      const NL = 8, rp = (c, l) => { const du = Math.min(MOUTH + c * CS, D5), r0 = roofAt(du), hl = hwAt(du, r0, -1), hr = hwAt(du, r0, 1), lat = -hl + (hl + hr) * l / NL, p = run.T.at(du, lat, 0), edge = l === 0 || l === NL; return [p[0], r0 + (edge ? 0 : 6 * nz(du * 0.21, lat * 0.17) * nz(du * 0.07 + 5, lat * 0.05)), p[2]]; };
+      for (let c = 0; c < NC; c++) {
+        for (let l = 0; l < NL; l++) { const a = rp(c, l), b = rp(c, l + 1), d1 = rp(c + 1, l), e = rp(c + 1, l + 1), br = 0.5 + 0.12 * hz(c, l, 9); tri([a, d1, b], br); tri([b, d1, e], 0.5 + 0.12 * hz(c, l, 11)); }
+        if (c % 40 === 39 && tick()) yield;
+      }
+      { const hl = hwAt(MOUTH, roofAt(MOUTH), -1), hr = hwAt(MOUTH, roofAt(MOUTH), 1), a = run.T.at(MOUTH, -hl, 0), b = run.T.at(MOUTH, hr, 0), y0 = roofAt(MOUTH), y1 = WYS + 262; tri([[a[0], y0, a[2]], [b[0], y0, b[2]], [a[0], y1, a[2]]], 0.55); tri([[b[0], y0, b[2]], [b[0], y1, b[2]], [a[0], y1, a[2]]], 0.6); }
+      const gc = new T3.BufferGeometry(); gc.setAttribute('position', new T3.Float32BufferAttribute(P, 3)); gc.setAttribute('color', new T3.Float32BufferAttribute(C, 3)); gc.computeVertexNormals();
+      const mc = new T3.Mesh(gc, WMc); mc.frustumCulled = false; grp.add(mc);
     }
     // skyline du port : blocs de bureaux et d'entrepots (une seule instance) sur la terre plate, loin des quais
     const NB = 150, inst = new T3.InstancedMesh(new T3.BoxGeometry(1, 1, 1), new T3.MeshLambertMaterial({ color: '#ffffff' }), NB), M = new T3.Matrix4(), Qn = new T3.Quaternion(), Sc = new T3.Vector3(), Pp = new T3.Vector3(), Cc = new T3.Color();

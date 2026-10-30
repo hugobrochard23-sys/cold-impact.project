@@ -121,12 +121,12 @@
       const off = tip ? 1 : 0, count = f.pts.length + off;
       const at = (i) => (i < off ? head : f.pts[i - off]);
       for (let i = 0; i < count; i++) {
-        const q = at(i), k = U.clamp((now - q.t) / cfg.life, 0, 1);
+        const q = at(i), k = Math.max(U.clamp((now - q.t) / cfg.life, 0, 1), count > 1 ? i / (count - 1) : 0);   // v331 : le fondu et l'affinement suivent la POSITION le long de la traine : le bout (cote camera) est toujours transparent et fin, meme quand la traine est coupee par le nombre de points
         const pa = at(Math.max(0, i - 1)).p, pb = at(Math.min(count - 1, i + 1)).p;
         _d.subVectors(pa, pb); if (_d.lengthSq() < 1e-8) _d.copy(rocketFwd);
         if (q.boost) _c.copy(YELLOW).lerp(RED, Math.min(1, k * 1.6)); else _c.copy(WHITE);
-        const alpha = (q.boost ? cfg.alphaBoost : cfg.alpha) * Math.pow(1 - k, 1.9) * this.camFade(q.p, camera);   // v211 : fondu progressif jusqu'a la transparence complete a l'arriere
-        put(L, q.p, _d.normalize(), camera, (q.boost ? cfg.widthBoost : cfg.width) * (1 - 0.75 * k), _c, alpha);
+        const alpha = (q.boost ? cfg.alphaBoost : cfg.alpha) * Math.pow(1 - k, 1.5) * this.camFade(q.p, camera);   // v211 : fondu progressif jusqu'a la transparence complete a l'arriere
+        put(L, q.p, _d.normalize(), camera, (q.boost ? cfg.widthBoost : cfg.width) * (1 - 0.85 * k), _c, alpha);
       }
       finish(L);
     }
