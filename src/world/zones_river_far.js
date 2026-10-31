@@ -88,6 +88,20 @@
         if (c % 40 === 39 && tick()) yield;
       }
       { const hl = hwAt(CAVE0, roofAt(CAVE0), -1), hr = hwAt(CAVE0, roofAt(CAVE0), 1), a = run.T.at(CAVE0, -hl, 0), b = run.T.at(CAVE0, hr, 0), y0 = roofAt(CAVE0), y1 = WYS + 262; tri([[a[0], y0, a[2]], [b[0], y0, b[2]], [a[0], y1, a[2]]], 0.55); tri([[b[0], y0, b[2]], [b[0], y1, b[2]], [a[0], y1, a[2]]], 0.6); }
+      // v334 : le rideau de l'entree : une face verticale a l'aplomb du debut des parois, de la paroi (rangee par rangee, memes points qu'elle) jusqu'a 170 m vers l'exterieur ; elle ferme la fente entre la rampe d'herbe et la grotte (on ne voit plus le ciel au travers)
+      {
+        const CP = [], CK = [], CU = [], gcol = GJ[2].clone(), r0 = roofAt(CAVE0), ytop = WYS + 262;
+        for (const sg of [-1, 1]) {
+          const ys = [WYS - 60]; for (let k = k0; k <= k1; k++) { const kj = k + 0.35 * Math.sin(k * 12.9), y = Math.min(r0, Math.max(WTOP, kj * RS)); if (y > ys[ys.length - 1] + 1e-6) ys.push(y); } ys.push(ytop);
+          const pt = (y, ext) => { const yc = Math.min(Math.max(y, WTOP), r0), p = run.T.at(CAVE0, sg * (hwAt(CAVE0, yc, sg) + ext), 0); return [p[0], y, p[2]]; };
+          for (let i = 0; i + 1 < ys.length; i++) {
+            const A = pt(ys[i], 0), B = pt(ys[i + 1], 0), C = pt(ys[i + 1], 170), D = pt(ys[i], 170);
+            for (const t of [A, B, C, A, C, D]) { CP.push(t[0], t[1], t[2]); CK.push(gcol.r, gcol.g, gcol.b); CU.push((t[0] + t[2]) / 7, t[1] / 7); }
+          }
+        }
+        const gk = new T3.BufferGeometry(); gk.setAttribute('position', new T3.Float32BufferAttribute(CP, 3)); gk.setAttribute('color', new T3.Float32BufferAttribute(CK, 3)); gk.setAttribute('uv', new T3.Float32BufferAttribute(CU, 2)); gk.computeVertexNormals();
+        const mk = new T3.Mesh(gk, new T3.MeshLambertMaterial({ map: CC.Textures.get('evoGrass'), vertexColors: true, side: T3.DoubleSide })); mk.frustumCulled = false; grp.add(mk);
+      }
       const gc = new T3.BufferGeometry(); gc.setAttribute('position', new T3.Float32BufferAttribute(P, 3)); gc.setAttribute('color', new T3.Float32BufferAttribute(C, 3)); gc.computeVertexNormals();
       const mc = new T3.Mesh(gc, WMc); mc.frustumCulled = false; grp.add(mc);
     }
@@ -126,9 +140,20 @@
     const i = Math.round((run.dist - D0) / STEP); probe(h.H, x, z, i - 60, i + 60); if (!out.ok) return null;
     return out.s >= S1 || inCap(out.d) || (out.d >= D3 && out.d <= L0 + 6 && out.s >= R.HWd(Math.max(0, out.d - D3)) + 0.5) ? out.y : null;
   });
+  const hitAt = (H, i, x, y, z) => {
+    probe(H, x, z, i - 60, i + 60); if (!out.ok) return false;
+    const d = out.d, sd = out.s, Wm = caveW(d);
+    if (d >= LIDC && d <= LEND) {   // la montagne de la fosse : on entre par la grotte (toit qui descend) ; les flancs sont de la roche pleine
+      if (d > D5 && R.HWb) return y < out.y + 0.6 && (sd > R.HWb(d - D5) + 3 || y > WYS + 8);   // la base : on ne sort pas de la salle par-dessus les murs, ce qui est derriere est de la roche pleine
+      if (sd < Wm) return d >= CAVE0 && d <= D5 ? y > roofAt(d) - 0.5 : false;
+      return y < out.y + 0.6 && (sd > S1 + 1 || y > WTOP - 2);
+    }
+    return sd > S1 + 1 ? y < out.y + 0.6 : inCap(d) && y < out.y + 0.6 && y > out.y - 3.5;
+  };
   const _tk = EVO.tick;
   EVO.tick = (g, dt) => {
     _tk(g, dt); const run = g.endlessRun;
+    if (g.state !== 'FLIGHT') g._farPok = false;
     if (!run || !EVO.isS2() || !g.evo || g.evo.preview) { if (g._far) g._far.grp.visible = false; return; }
     if (g._farRun !== run) { g._farRun = run; if (g._far) { g.scene.remove(g._far.grp); g._far.grp.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); g._far.inst.dispose(); g._far = null; } if (g._farJob) { g._farJob.return(); g._farJob = null; } }
     if (!g._far) {   // construit petit a petit des le debut de la partie (il n'est utile qu'a D0 - 400)
@@ -136,16 +161,16 @@
       g._farT0 = performance.now(); const r = g._farJob.next(); if (window.__GSTEPS) window.__GSTEPS.push([-1, r.done ? 1 : 0, performance.now() - g._farT0]); if (r.done) { g._far = r.value; g._farJob = null; } else return;
     }
     const h = g._far; h.grp.visible = run.dist > D0 - 400 && run.dist < D1 + 160;
-    const rk = g.rocket; if (g.state !== 'FLIGHT' || !rk || !rk.active || run.dist < D0 || run.dist > D1) return;
-    const i = Math.round((run.dist - D0) / STEP); probe(h.H, rk.pos.x, rk.pos.z, i - 60, i + 60);
-    if (out.ok) {
-      const y = rk.pos.y, d = out.d, sd = out.s, Wm = caveW(d); let hit;
-      if (d >= LIDC && d <= LEND) {   // la montagne de la fosse : on entre par la grotte (toit qui descend) ; les flancs sont de la roche pleine
-        if (d > D5 && R.HWb) hit = y < out.y + 0.6 && (sd > R.HWb(d - D5) + 3 || y > WYS + 8);   // la base : on ne sort pas de la salle par-dessus les murs, ce qui est derriere est de la roche pleine
-        else if (sd < Wm) hit = d >= CAVE0 && d <= D5 ? y > roofAt(d) - 0.5 : false;
-        else hit = y < out.y + 0.6 && (sd > S1 + 1 || y > WTOP - 2);
-      } else hit = sd > S1 + 1 ? y < out.y + 0.6 : inCap(d) && y < out.y + 0.6 && y > out.y - 3.5;
-      if (hit) g.onRocketCrash('wall', rk.pos.clone(), new T3.Vector3(0, 1, 0));
+    const rk = g.rocket; if (g.state !== 'FLIGHT' || !rk || !rk.active || run.dist < D0 || run.dist > D1) { g._farPok = false; return; }
+    const i = Math.round((run.dist - D0) / STEP), P = g._farP || (g._farP = new T3.Vector3()), C = rk.pos;   // v334 : le test balaye tout le trajet de l'image (jamais de saut a travers un mur mince, quelle que soit la vitesse)
+    if (!g._farPok) P.copy(C); g._farPok = true;
+    const len = P.distanceTo(C), ns = Math.min(240, Math.max(1, Math.ceil(len / 0.8)));
+    for (let k = 1; k <= ns; k++) {
+      const t = k / ns, x = P.x + (C.x - P.x) * t, y = P.y + (C.y - P.y) * t, z = P.z + (C.z - P.z) * t;
+      if (hitAt(h.H, i, x, y, z)) { g.onRocketCrash('wall', new T3.Vector3(x, y, z), new T3.Vector3(0, 1, 0)); break; }
     }
+    P.copy(C);
   };
+  EVO.solid = EVO.solid || [];
+  EVO.solid.push((g, x, y, z) => { const h = g._far, run = g.endlessRun; if (!h || !run || !h.grp.visible || run.dist < D0 - 100 || run.dist > D1 + 100) return false; return hitAt(h.H, Math.round((run.dist - D0) / STEP), x, y, z); });   // l'epave aussi est arretee par le decor (herbe, falaises, grotte)
 })();

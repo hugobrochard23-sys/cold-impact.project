@@ -94,8 +94,16 @@
     if (!run || !EVO.isS2() || !g.evo || g.evo.preview) { if (g._hill) g._hill.grp.visible = false; return; }
     if (g._hillRun !== run) { g._hillRun = run; if (g._hill) { g.scene.remove(g._hill.grp); g._hill.mesh.geometry.dispose(); g._hill.st.geometry.dispose(); g._hill.inst.dispose(); } g._hill = make(g, run); }
     const h = g._hill; h.grp.visible = run.dist < D1 + 160;
-    const rk = g.rocket; if (g.state !== 'FLIGHT' || !rk || !rk.active || run.dist < D0 || run.dist > D1) return;
-    const i = Math.round((run.dist - D0) / STEP); probe(h.H, rk.pos.x, rk.pos.z, i - 90, i + 90);
-    if (out.ok && out.s > S1 && rk.pos.y < out.y + 0.6) g.onRocketCrash('wall', rk.pos.clone(), new T3.Vector3(0, 1, 0));
+    const rk = g.rocket; if (g.state !== 'FLIGHT' || !rk || !rk.active || run.dist < D0 || run.dist > D1) { g._hillPok = false; return; }
+    const i = Math.round((run.dist - D0) / STEP), P = g._hillP || (g._hillP = new T3.Vector3()), C = rk.pos;   // v334 : trajet balaye (pas de saut a travers le relief)
+    if (!g._hillPok) P.copy(C); g._hillPok = true;
+    const ns = Math.min(240, Math.max(1, Math.ceil(P.distanceTo(C) / 0.8)));
+    for (let k = 1; k <= ns; k++) {
+      const t = k / ns, x = P.x + (C.x - P.x) * t, y = P.y + (C.y - P.y) * t, z = P.z + (C.z - P.z) * t;
+      probe(h.H, x, z, i - 90, i + 90);
+      if (out.ok && out.s > S1 && y < out.y + 0.6) { g.onRocketCrash('wall', new T3.Vector3(x, y, z), new T3.Vector3(0, 1, 0)); break; }
+    }
+    P.copy(C);
   };
+  (EVO.solid = EVO.solid || []).push((g, x, y, z) => { const h = g._hill, run = g.endlessRun; if (!h || !run || !h.grp.visible || run.dist < D0 - 100 || run.dist > D1 + 100) return false; probe(h.H, x, z, Math.round((run.dist - D0) / STEP) - 90, Math.round((run.dist - D0) / STEP) + 90); return out.ok && out.s > S1 && out.d < LA + 300 && y < out.y + 0.6; });
 })();

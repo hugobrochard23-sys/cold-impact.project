@@ -527,6 +527,13 @@
   // hauteur de la surface sous un point (jusqu'a 1,6 m au-dessous) : monde physique, sinon sol visible du couloir ; null s'il n'y a rien
   const surfBelow = (g, p) => { const W = g.world; _pv.set(p.x, p.y + 0.9, p.z); _nx.set(p.x, p.y - 0.8, p.z); const h = W.sweep(_pv, _nx, 0.04); if (h) return _pv.y + (_nx.y - _pv.y) * h.t; const fy = floorAt(g, p); return p.y - fy < 0.8 && p.y - fy > -0.3 ? fy : null; };
   EVO.groundY = (g, p) => { const W = g.world; _pv.set(p.x, p.y + 6, p.z); _nx.set(p.x, p.y - 80, p.z); const h = W.sweep(_pv, _nx, 0.05); return h ? _pv.y + (_nx.y - _pv.y) * h.t : null; };
+  const _sh = { t: 0, normal: new V(0, 1, 0), inside: true, pen: 0.4 }, _sn = new V(), _sp = new V(), SD = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+  const solidAt = (g, x, y, z) => { for (const f of EVO.solid) if (f(g, x, y, z)) return true; return false; };
+  const solidHit = (g, p, rad) => {   // le point est dans un solide du decor : la normale = les directions libres autour (pas de pas de 1,5 m)
+    if (!solidAt(g, p.x, p.y - rad, p.z)) return null;
+    _sn.set(0, 0, 0); for (const d of SD) if (!solidAt(g, p.x + d[0] * 1.5, p.y + d[1] * 1.5 - rad, p.z + d[2] * 1.5)) _sn.add(_sp.set(d[0], d[1], d[2]));
+    if (_sn.lengthSq() < 1e-6) _sn.set(0, 1, 0); _sn.normalize(); _sh.normal.copy(_sn); return _sh;
+  };
   EVO.tumbleFrame = (g, dt) => {
     const Tm = g.evoTumble; if (!Tm) return; Tm.t += dt;
     const run = g.endlessRun, T = run && run.T, gy = T ? T.base(Math.max(0, run.dist)) : 0, W = g.world, SUB = 3, h = dt / SUB;
@@ -537,6 +544,7 @@
       _pv.copy(q.m.position); _nx.copy(_pv).addScaledVector(q.v, h);
       let hit = W.sweep(_pv, _nx, rad);
       if (!hit && T) { const fy = floorAt(g, _nx); if (_pv.y - rad >= fy - 0.4 && _nx.y - rad < fy) { const den = _pv.y - _nx.y; _fk.t = den > 1e-6 ? Math.max(0, Math.min(1, (_pv.y - rad - fy) / den)) : 0; hit = _fk; } }
+      if (!hit && EVO.solid && EVO.solid.length) hit = solidHit(g, _nx, rad);   // v334 : decor du niveau 2 (herbe, falaises, grotte) : l'epave ne le traverse plus
       if (!hit) q.m.position.copy(_nx);
       else {
         const n = hit.normal; q.m.position.copy(_pv).addScaledVector(_dq.subVectors(_nx, _pv), hit.t).addScaledVector(n, 0.03 + (hit.inside ? hit.pen : 0));
