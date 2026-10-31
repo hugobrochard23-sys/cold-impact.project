@@ -223,20 +223,45 @@
       S.bx(dm, inner, A(S, dm, top + 6), 6, 10, 8, 'concrete', '#c4c8ca', true); S.bx(dm - 4.1, inner, A(S, dm, top + 7), 3.4, 2.4, 0.2, 'glass', undefined, false); lampS(S, dm, inner, A(S, dm, top + 11.8), '#ff3a2a', 16);
       for (const q of [-1, 0, 1]) S.bx(dm, inner + sg * (4 + q * 0.0), A(S, dm, top + 1.9), 0.14, 1.3, 11.5, 'metal', '#7a8088', false);
       for (let k = 0; k < 5; k++) S.cyl(dm - 5 + k * 2.5, sg * (hw + 1), A(S, dm, top), 0.25, 1.4, 'metal', '#8a9096', 5, 0.25, false);
-      S.bx(dm + 7, (inner + outer) / 2, A(S, dm, top + 1.5), Math.abs(outer - inner) * 0.6, 2.6, 2.6, 'corrugated', '#c8a028', true);   // conteneur d'outillage
       S.bx(dm, (inner + outer) / 2 + sg * 6, A(S, dm, top + 4.5), 4, 4, 4, 'corrugated', '#2a6a8a', false);
     }
-    S.bxr(dm, off, A(S, dm, top + 8.8), 30, 0.8, 1.4, 'metal', '#c8362a', 0, 0, false);   // portique de signalisation au-dessus de la breche
+    S.bx(dm, off, A(S, dm, top + 8.8), 30, 1.3, 1.8, 'metal', '#c8362a', false); S.bx(dm - 0.92, off, A(S, dm, top + 8.8), 30, 0.3, 0.1, 'hazard', undefined, false);   // portique de signalisation au-dessus de la breche
+    for (const q of [-9, 0, 9]) { S.bx(dm - 1.1, off + q, A(S, dm, top + 7.2), 1, 1.8, 0.7, 'metal', '#22262a', false); lampS(S, dm - 1.5, off + q, A(S, dm, top + 7.6), q === 0 ? '#ff3a2a' : '#4aff6a', 8); }
+    for (const sg of [-1, 1]) {   // v335 : flancs de la chambre : nervures, bande de choc sombre au niveau de l'eau, liseré jaune et noir en haut, garde-corps, conteneurs empiles
+      const inner = off + sg * 13, outer = sg * (hw + 6), mid = (inner + outer) / 2, wd = Math.abs(outer - inner);
+      for (let k = 0; k < 5; k++) S.bx(dm - 6.4, mid + (k - 2) * (wd / 5), A(S, dm, (bed + top) / 2), 1.6, top - bed + 3, 0.9, 'concreteDark', '#a4a8aa', false);
+      S.bx(dm - 6.5, mid, A(S, dm, wy + 0.4), wd, 1.4, 0.7, 'metal', '#2e3438', false); S.bx(dm - 6.2, mid, A(S, dm, top - 0.5), wd, 0.8, 0.5, 'hazard', undefined, false);
+      for (let k = 0; k <= 4; k++) S.bx(dm - 5 + k * 2.5, inner - sg * 0.5, A(S, dm, top + 1.6), 0.18, 1.2, 0.18, 'metal', '#7a8088', false);
+      S.bx(dm, inner - sg * 0.5, A(S, dm, top + 2.1), 0.14, 0.14, 11, 'metal', '#7a8088', false);
+      for (let k = 0; k < 2; k++) for (let j = 0; j < 2; j++) S.bx(dm + 2 + k * 2.6, mid + sg * (4 + j * 7), A(S, dm, top + 1.9), 6.2, 2.6, 2.4, 'corrugated', pk(r, ['#c8362a', '#2a6a8a', '#d8a020', '#3a7a46']), true);
+    }
     lampS(S, dm - 1, off - 9, A(S, dm, top + 8.0), '#4aff6a', 14); lampS(S, dm - 1, off + 9, A(S, dm, top + 8.0), '#4aff6a', 14);
   }
-  // grues a portique sur les quais et piles de conteneurs
+  // grues a portique sur les quais et piles de conteneurs (v335 : pieds contreventes, fleche en treillis, chariot, vrais cables sous la fleche, conteneur suspendu, contrepoids)
   function cranes(S, dm, r) {
-    const hw = HWc(dm), wy = WY(dm), cols = ['#c8362a', '#2a6a8a', '#d8a020', '#3a7a46', '#6a4a8a', '#c8c8c8'];
+    const hw = HWc(dm), wy = WY(dm), cols = ['#c8362a', '#2a6a8a', '#d8a020', '#3a7a46', '#6a4a8a', '#c8c8c8'], YEL = '#e8b020', DYEL = '#b8800e', DG = '#3a3e44', DEG = 180 / Math.PI;
     for (const sg of [-1, 1]) {
       const x = sg * (hw + 14), y0 = wy + 30;
-      for (const q of [-1, 1]) for (const e of [-1, 1]) S.bx(dm + q * 12, x + e * 6, A(S, dm, y0 + 15), 1.8, 30, 1.8, 'metal', '#c88a1a', true);
-      S.bx(dm, x, A(S, dm, y0 + 30.5), 16, 2.2, 28, 'metal', '#c88a1a', true); S.bx(dm, x - sg * 20, A(S, dm, y0 + 31.5), 36, 1.6, 2.2, 'metal', '#c88a1a', true); S.bx(dm, x - sg * 40, A(S, dm, y0 + 28), 0.2, 6, 0.2, 'col:#2a2a2a', undefined, false); S.bx(dm, x - sg * 40, A(S, dm, y0 + 24.5), 2.4, 0.8, 4, 'col:#c8362a', undefined, false);
-      S.bx(dm, x, A(S, dm, y0 + 33), 5, 4, 7, 'concrete', '#c8c8c4', true); lampS(S, dm, x, A(S, dm, y0 + 36.4), '#ff3a2a', 14);
+      for (const q of [-1, 1]) {
+        for (const e of [-1, 1]) { S.bx(dm + q * 12, x + e * 6, A(S, dm, y0 + 15), 2, 30, 2, 'metal', YEL, true); S.bx(dm + q * 12, x + e * 6, A(S, dm, y0 + 0.6), 3.4, 1.2, 3.4, 'concreteDark', '#5a6066', true); }
+        const an = Math.atan2(30, 12) * DEG, ln = Math.hypot(12, 30);   // contreventement en X entre les deux pieds
+        S.bxr(dm + q * 12, x, A(S, dm, y0 + 15), ln, 0.8, 0.8, 'metal', DYEL, an, 0, false); S.bxr(dm + q * 12, x, A(S, dm, y0 + 15), ln, 0.8, 0.8, 'metal', DYEL, -an, 0, false);
+      }
+      for (const e of [-1, 1]) { S.bx(dm, x + e * 6, A(S, dm, y0 + 15), 1, 1, 24, 'metal', DYEL, false); S.bx(dm, x + e * 6, A(S, dm, y0 + 29), 1.2, 1.2, 24, 'metal', DYEL, false); }
+      S.bx(dm, x, A(S, dm, y0 + 30.5), 16, 2.2, 28, 'metal', YEL, true);
+      // fleche en treillis (membrure haute, membrure basse, diagonales) au-dessus de l'eau
+      const bl = x - sg * 20, tip = x - sg * 38;
+      S.bx(dm, bl, A(S, dm, y0 + 32.6), 36, 0.9, 1.4, 'metal', YEL, true); S.bx(dm, bl, A(S, dm, y0 + 30.4), 36, 0.8, 1.4, 'metal', YEL, true);
+      for (let k = 0; k < 18; k++) { const cx = x - sg * (2 + k * 2 + 1), up = (k & 1) ? 1 : -1; S.bxr(dm, cx, A(S, dm, y0 + 31.5), Math.hypot(2, 2.2), 0.3, 0.3, 'metal', DYEL, up * sg * 47.7, 0, false); }
+      S.bx(dm, x + sg * 7, A(S, dm, y0 + 31.4), 10, 1.2, 1.4, 'metal', YEL, true); S.bx(dm, x + sg * 10, A(S, dm, y0 + 29.8), 3.4, 2.6, 3, 'concreteDark', '#6a6e70', true);   // contrepoids
+      // chariot, quatre cables, palonnier et conteneur suspendu : tout est a l'aplomb de la fleche
+      const tx = x - sg * 30;
+      S.bx(dm, tx, A(S, dm, y0 + 29.4), 3.4, 1.2, 2.8, 'metal', DG, true);
+      for (const cx of [-1.3, 1.3]) for (const cz of [-1.1, 1.1]) S.bx(dm + cz, tx + cx, A(S, dm, y0 + 26.3), 0.12, 5, 0.12, 'col:#22262a', undefined, false);
+      S.bx(dm, tx, A(S, dm, y0 + 23.7), 3.8, 0.5, 3.4, 'metal', DG, false);
+      S.bx(dm, tx, A(S, dm, y0 + 22.1), 2.6, 2.6, 6.2, 'corrugated', pk(r, cols), true);
+      lampS(S, dm, tip, A(S, dm, y0 + 33.4), '#ff3a2a', 12);
+      S.bx(dm, x, A(S, dm, y0 + 33), 5, 4, 7, 'concrete', '#c8c8c4', true); S.bx(dm - 3.6, x - sg * 1.2, A(S, dm, y0 + 33.2), 2.4, 1.6, 0.2, 'glass', undefined, false); lampS(S, dm, x, A(S, dm, y0 + 36.4), '#ff3a2a', 14);
       for (let k = 0; k < 4; k++) for (let j = 0; j < 2; j++) S.bx(dm + (k - 1.5) * 7, x + sg * (8 + j * 4), A(S, dm, y0 + 1.4), 6.4, 2.6, 2.5, 'corrugated', pk(r, cols), true);
     }
   }

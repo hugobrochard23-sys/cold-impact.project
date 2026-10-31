@@ -177,7 +177,6 @@
   })();
   </script>
   <script>/* v333 : ?ver=1 affiche le numero de version charge (petit texte en bas a gauche) pour verifier qu'on joue bien la derniere version */
-  (function () { if (!/[?&]ver=1/.test(location.search)) return; try { var x = new XMLHttpRequest(); x.open('GET', 'version.json?t=' + Date.now(), false); x.send(); var d = document.createElement('div'); d.textContent = 'build ' + JSON.parse(x.responseText).v; d.style.cssText = 'position:fixed;left:6px;bottom:4px;z-index:99999;font:11px monospace;color:#fff;opacity:.75;pointer-events:none;text-shadow:0 0 3px #000'; document.body.appendChild(d); } catch (e) {} })();
   </script>
 </body>
 </html>
