@@ -352,7 +352,7 @@
     C.endless.fuelTarget = 0;
     { const W = CC.Zones.evoWater; if (W) { const dy = rk.pos.y - W.y; if (W.prev !== undefined && W.prev * dy < 0 && run.dist > W.d0 - 30 && run.dist < W.d1 + 30) { const fx = g.effects, pp = rk.pos.clone(); pp.y = W.y; fx.ring(pp, new V(0, 1, 0), 0.4, 7, 0.6, '#d6eefc', 0.8); fx.ring(pp, new V(0, 1, 0), 0.2, 4, 0.45, '#ffffff', 0.7); g.rig.shake = Math.max(g.rig.shake, 0.25); g.audio.play('uiTick'); } W.prev = dy; } }
     const CH = EVO.chapters;   // v123 : bandeau et prime à chaque nouveau chapitre franchi
-    if (CH && !ev.preview) while (ev.chap < CH.length && run.dist >= CH[ev.chap].d) { const c = CH[ev.chap++], b = Math.round(40 * c.i * EVO.mult(S.cm)); ev.chapCoins += 0; CC.L1.msg(g, c.name, 1.6, '#ffe9a0'); g.audio.play('levelUp'); if (EVO.onChapter) EVO.onChapter(g, c, S); }
+    if (CH && !ev.preview) while (ev.chap < CH.length && run.dist >= CH[ev.chap].d) { const c = CH[ev.chap++], b = Math.round(40 * c.i * EVO.mult(S.cm)); ev.chapCoins += 0; CC.L1.msg(g, c.name, 1.6, '#ffe9a0'); if (EVO.onChapter) EVO.onChapter(g, c, S); }
     // planeur : les ailes portent (elles annulent une partie de la gravité tant que la vitesse est suffisante)
     // v265 : physique d'energie. La portance est perpendiculaire a la trajectoire (elle ne donne plus d'energie quand on monte), monter coute de la vitesse meme moteur allume (poids),
     // et sans carburant la fusee n'est plus aerodynamique (trainee x3, moins de prise) : on ne peut plus monter ni boucler ses descentes pour gagner de la vitesse a l'infini.

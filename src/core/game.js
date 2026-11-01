@@ -1192,6 +1192,8 @@
           if (CC.Touch && CC.Touch.active && CC.Haptics) CC.Haptics.tick('warn');
         }
         this.wasUnder = under;
+      } else if (run && (this.state === 'CRASHED' || this.state === 'IMPACT') && this.wasUnder !== undefined) {   // v336 : apres la mort dans l'eau on reste dans l'eau (son etouffe, brouillard) : l'epave decide
+        const T = this.evoTumble; under = T && T.body && CC.EVO && CC.EVO.seaLevel !== undefined && this.evo ? T.body.m.position.y < CC.EVO.seaLevel : this.wasUnder; this.wasUnder = under;
       } else this.wasUnder = undefined;
       this.uwK = (this.uwK || 0) + ((under ? 1 : 0) - (this.uwK || 0)) * U.damp(under ? 7 : 4, dt);
     }

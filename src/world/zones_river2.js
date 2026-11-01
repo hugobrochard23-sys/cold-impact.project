@@ -137,7 +137,8 @@
       if (g._brRun !== run) { g._brRun = run; if (g._br && g._br.grp) g.scene.remove(g._br.grp); const grp = new T3.Group(), front = new T3.Mesh(FG, mFront), body = new T3.Mesh(new T3.BoxGeometry(1, 1, 1), mBody); front.frustumCulled = false; body.frustumCulled = false; grp.add(front); grp.add(body); grp.visible = false; g.scene.add(grp); g._br = { grp, front, body, st: 0, dW: 0 }; }
       const B = g._br, rk = g.rocket; if (g.state !== 'FLIGHT' || !rk.active) { if (g.state !== 'FLIGHT') { B.st = B.st === 3 ? 3 : 0; B.grp.visible = false; } return; }
       const d = run.dist, u = d - LA;
-      if (B.st === 0 && u > U_HALL + 40 && u < U_TURB) { B.st = 1; B.t = 0; B.dW = Math.max(LA + U_DAM + 20, d - 140); g.rig.shake = Math.max(g.rig.shake, 1.0); g.flash = Math.max(g.flash || 0, 0.3); g.flashColor = '#ffffff'; g.audio.play('whoosh'); if (CC.L1) CC.L1.msg(g, 'LE BARRAGE CEDE !', 1.8, '#ffe9a0'); }
+      if (false && B.st === 0 && u > U_HALL + 40 && u < U_TURB) {   // v336 : plus de tsunami
+        B.st = 1; B.t = 0; B.dW = Math.max(LA + U_DAM + 20, d - 140); g.rig.shake = Math.max(g.rig.shake, 1.0); g.flash = Math.max(g.flash || 0, 0.3); g.flashColor = '#ffffff'; g.audio.play('whoosh'); if (CC.L1) CC.L1.msg(g, 'LE BARRAGE CEDE !', 1.8, '#ffe9a0'); }
       if (B.st === 0 && u < U_HALL) B.grp.visible = false;
       if (B.st === 1 || B.st === 2) {
         B.t += dt; if (B.t > 0.9) B.st = 2; const vw = B.st === 2 ? 108 : 40; B.dW += vw * dt;
