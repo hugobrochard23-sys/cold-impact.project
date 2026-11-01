@@ -132,7 +132,8 @@ public class NativeBridge {
     private void loadProducts() {
         List<QueryProductDetailsParams.Product> ps = new ArrayList<>();
         for (String p : PRODUCTS) ps.add(QueryProductDetailsParams.Product.newBuilder().setProductId(p).setProductType(BillingClient.ProductType.INAPP).build());
-        billing.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(ps).build(), (r, list) -> {
+        billing.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(ps).build(), (r, res) -> {   // billing 8 : le resultat est un QueryProductDetailsResult
+            List<ProductDetails> list = res != null ? res.getProductDetailsList() : null;
             synchronized (details) { details.clear(); if (list != null) details.addAll(list); }
             if (jsReady) sendPrices(); restore();
         });
