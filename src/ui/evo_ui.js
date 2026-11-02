@@ -49,7 +49,7 @@
   Home.evoFly = (game, c, g, nc, sy, cx) => { const h = game.evoHold = game.evoHold || { c: 0, g: 0 }; h.c += c; h.g += g; game.evoFly = { t0: performance.now(), c: h.c, g: h.g, nc: nc || 36, sy, cx }; };
   // ---------- barre du haut ----------
   function topBar(ui, ctx, game, F, S0, E, o) {
-    o = o || {}; const h = S(96), y = F.T0 + S(34), x0 = F.ox + S(36), now = performance.now(), fxg = game.evoGemFx;
+    o = o || {}; const h = S(96), y = F.T0 + S(34) + (CC.safePx ? CC.safePx() : 0), x0 = F.ox + S(36), now = performance.now(), fxg = game.evoGemFx;
     const cwid = S(250);
     // v237 : le compteur de pieces defile jusqu'a la nouvelle valeur, la pastille rebondit quand on gagne, une valeur « -1 897 » tombe quand on depense
     flyStep(game, now); const hold = game.evoHold, tgt = Math.max(0, S0.coins - (hold ? hold.c : 0)); if (game._cs === undefined) { game._cs = tgt; game._cp = tgt; }
@@ -182,7 +182,7 @@
     topBar(ui, ctx, game, F, S0, E);
     if (anim && !(anim.ui !== undefined && anim.t > anim.ui)) { const a = U.clamp(anim.t / 0.4, 0, 1) * (1 - U.smooth(anim.dur - 0.6, anim.dur, anim.t)), name = anim.label + ' !'; ctx.save(); ctx.globalAlpha = a; UI.text(ctx, name, cx, Y(0.2), UI.fit(ctx, name, cw * 0.9, S(130)), T.yellow, { outline: true }); UI.text(ctx, anim.sub || 'NOUVELLE PIÈCE', cx, Y(0.27), S(52), T.white, { outline: true }); ctx.restore(); return; }
     // (v227 : plus de bande sombre derriere les cartes)
-    { const r0 = E.rocket(S0.rk), nm = CC.I18n.t((E.isS2() ? TIERNAME2 : TIERNAME)[r0.tier]), sp = nm.indexOf(' '), l1 = nm.slice(0, sp), l2 = nm.slice(sp + 1), bw = S(380), bh = S(104), bx = cx - bw / 2 + S(30), by = T0 + S(172), bd = Math.max(2, S(4)), rd = S(12);
+    { const r0 = E.rocket(S0.rk), nm = CC.I18n.t((E.isS2() ? TIERNAME2 : TIERNAME)[r0.tier]), sp = nm.indexOf(' '), l1 = nm.slice(0, sp), l2 = nm.slice(sp + 1), bw = S(380), bh = S(104), bx = cx - bw / 2 + S(30), by = T0 + S(172) + (CC.safePx ? CC.safePx() : 0), bd = Math.max(2, S(4)), rd = S(12);
       rr0(ctx, bx - bd, by - bd, bw + bd * 2, bh + bd * 2, rd + bd); ctx.fillStyle = '#05080C'; ctx.fill(); rr0(ctx, bx, by, bw, bh, rd); ctx.fillStyle = '#26394B'; ctx.fill();
       ctx.save(); rr0(ctx, bx, by, bw, bh, rd); ctx.clip(); ctx.fillStyle = '#1B2A38'; ctx.fillRect(bx, by + bh - S(9), bw, S(9)); ctx.restore();
       ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowOffsetY = S(6); ctx.shadowOffsetX = S(3); ctx.shadowBlur = 0; UI.icon(ctx, 'missile_ogive', bx + S(6), by + bh / 2 - S(4), S(128)); ctx.restore();
@@ -428,7 +428,7 @@
   const fuelCol = (k) => { const S0 = FUEL_STOPS; if (k <= S0[0][0]) return 'rgb(' + S0[0][1].join(',') + ')'; for (let i = 1; i < S0.length; i++) if (k <= S0[i][0]) { const a = S0[i - 1], b = S0[i], q = (k - a[0]) / (b[0] - a[0]); return 'rgb(' + a[1].map((v, j) => Math.round(v + (b[1][j] - v) * q)).join(',') + ')'; } return 'rgb(' + S0[S0.length - 1][1].join(',') + ')'; };
   Home.evoUI.hud = function (ctx, g, W, H, px) {
     const rk = g.rocket, run = g.endlessRun, E = CC.EVO, TT = run && run.T; if (!rk || !run) return;
-    const u = H > W ? W : Math.min(W, H * 0.62), ox = (W - u) / 2; UI.begin(u, g.hudPr || 1); const top = H * 0.022, now = performance.now();
+    const u = H > W ? W : Math.min(W, H * 0.62), ox = (W - u) / 2; UI.begin(u, g.hudPr || 1); const top = H * 0.022 + (CC.safePx ? CC.safePx() : 0), now = performance.now();
     if (E.rocket(E.save(g).rk).tier >= 2 && !(g.evo && g.evo.preview)) {
       const fw = u * 0.46, fh = S(54), fx = ox + u * 0.29, fy = top + S(6), k = U.clamp((rk.active ? rk.fuel : rk.fuelMax) / Math.max(1, rk.fuelMax), 0, 1), lowF = k < 0.22, bl = Math.floor(now / 230) % 2 === 0;
       ctx.save(); rr0(ctx, fx, fy, fw, fh, fh / 2); ctx.fillStyle = 'rgba(0,0,0,0.38)'; ctx.fill(); ctx.lineWidth = S(5); ctx.strokeStyle = lowF && bl ? '#FF5A4A' : 'rgba(255,255,255,0.9)'; ctx.stroke();
@@ -458,7 +458,7 @@
           tri(off); ctx.lineWidth = lw + S(9); ctx.strokeStyle = '#0F3A8C'; ctx.fillStyle = '#0F3A8C'; ctx.fill(); ctx.stroke();
           tri(0); ctx.lineWidth = lw + S(9); ctx.strokeStyle = '#2F7BEA'; ctx.stroke(); ctx.lineWidth = lw; ctx.strokeStyle = YEL; ctx.fillStyle = YEL; ctx.fill(); ctx.stroke(); ctx.restore(); } }
       ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowOffsetX = S(6); ctx.shadowOffsetY = S(8); ctx.shadowBlur = S(3); UI.icon(ctx, 'missile_ogive', bx + bw / 2, ty + th * (1 - pct) - S(6), S(84), { rot: -Math.PI / 4 }); ctx.restore(); { const pt = Math.round(pct * 100) + '%', pp = S(54); ctx.save(); UI.setFont(ctx, pp); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.miterLimit = 2; ctx.lineWidth = Math.max(3, pp * 0.22); ctx.strokeStyle = '#FFFFFF'; ctx.strokeText(pt, bx + bw / 2, by + bh + S(14)); ctx.fillStyle = '#387CEE'; ctx.fillText(pt, bx + bw / 2, by + bh + S(14)); ctx.restore(); } }
-    { const kmh = rk.active ? rk.vel.length() * 3.6 : 0, R = S(112), cx = ox + S(36) + R, cy = top + S(172) + R, D = R * 2 / 0.74, rf = D * 0.262, cyf = cy + D * 0.02;
+    { const kmh = rk.active ? rk.vel.length() * 3.6 : 0, R = S(112), cx = ox + S(36) + R, cy = top + S(212) + R, D = R * 2 / 0.74, rf = D * 0.262, cyf = cy + D * 0.02;
       // echelle : la vitesse max de la fusee dans cette partie (palier reacteur : sa vitesse limite ; sinon la plus grande vitesse atteinte)
       const S1 = E.save(g), rkS = E.rocket(S1.rk), ref = (rkS.tier >= 2 ? rkS.vmax : E.launcher(S1.la).speed) * 3.6; if (!g._spk || g._spkRun !== run) { g._spk = ref; g._spkRun = run; } g._spk = Math.max(g._spk, kmh);
       const dialMax = Math.max(60, g._spk), f = Math.min(1, kmh / dialMax), high = f >= 0.72, low = f < 0.3 && rk.active, atMax = f >= 0.97, blink = Math.floor(now / 260) % 2 === 0;
@@ -479,7 +479,7 @@
     UI.currencyPill(ctx, null, ox + S(36), y, w, h, 'coin', s);
   };
   // le bouton de pause (element de page) prend le meme habillage : carre chanfreine sombre, deux barres jaunes
-  try { const st = document.createElement('style'); st.textContent = 'body.cc-evo .cc-pause{top:calc(env(safe-area-inset-top,0px) + 2.2vh);left:calc(50% - min(50vw,31vh) + 3.4vw);width:min(11vw,10vh,64px);height:min(11vw,10vh,64px);max-width:none;border-radius:22%;border:0;box-shadow:none;background:rgba(120,165,225,0.62);clip-path:none;border-radius:22%}body.cc-evo .cc-pause::before{content:"";position:absolute;top:24%;height:52%;left:30%;right:auto;bottom:auto;width:14%;background:#FFFFFF;border-radius:3px;box-shadow:none}body.cc-evo .cc-pause::after{content:"";position:absolute;top:24%;height:52%;right:30%;left:auto;bottom:auto;width:14%;background:#FFFFFF;border-radius:3px;box-shadow:none}'; document.head.appendChild(st); } catch (e) { /* style facultatif */ }
+  try { const st = document.createElement('style'); st.textContent = 'body.cc-evo .cc-pause{top:calc(max(env(safe-area-inset-top,0px),var(--cc-safe-top,0px)) + 2.2vh);left:calc(50% - min(50vw,31vh) + 3.4vw);width:min(11vw,10vh,64px);height:min(11vw,10vh,64px);max-width:none;border-radius:22%;border:0;box-shadow:none;background:rgba(120,165,225,0.62);clip-path:none;border-radius:22%}body.cc-evo .cc-pause::before{content:"";position:absolute;top:24%;height:52%;left:30%;right:auto;bottom:auto;width:14%;background:#FFFFFF;border-radius:3px;box-shadow:none}body.cc-evo .cc-pause::after{content:"";position:absolute;top:24%;height:52%;right:30%;left:auto;bottom:auto;width:14%;background:#FFFFFF;border-radius:3px;box-shadow:none}'; document.head.appendChild(st); } catch (e) { /* style facultatif */ }
 
   { const _hud = Home.evoUI.hud;   // v263 : au choc, la vitesse, la progression et le carburant disparaissent en fondu
     Home.evoUI.hud = function (ctx, g) {

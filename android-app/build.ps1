@@ -18,6 +18,9 @@ $h = [IO.File]::ReadAllText($idx)
 $h = [regex]::Replace($h, '<link rel="preconnect" href="https://fonts[^>]*>', '')
 $h = [regex]::Replace($h, '<link rel="stylesheet" href="https://fonts.googleapis.com[^>]*>', '')
 [IO.File]::WriteAllText($idx, $h)
+# 1c) v338 : tous les scripts du jeu en UN seul fichier (l'appli chargeait ~190 fichiers un par un : demarrage lent)
+& node (Join-Path $repo 'tools/bundle.js') $assets index.html
+if ($LASTEXITCODE -ne 0) { throw 'bundle impossible' }
 # 2) bundle
 $g = (Get-ChildItem (Join-Path $env:USERPROFILE '.gradle\wrapper\dists\gradle-8.14.3-all\*\gradle-8.14.3\bin\gradle.bat') | Select-Object -First 1).FullName
 Push-Location $root

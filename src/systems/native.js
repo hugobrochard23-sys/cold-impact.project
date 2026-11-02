@@ -4,6 +4,8 @@
 (function () {
   const B = window.AndroidBridge; if (!B || !CC.Ads) return;
   const N = CC.Native = { on: true, prices: {}, cfg: { from: 5, every: 2, gap: 90 } }, cbs = {}; let seq = 0;
+  // v338 : dit a l'appli quand on vole : en vol, plus aucun chargement de pub (le SDK de pub faisait saccader le jeu)
+  try { if (B.flying) { let last = null; setInterval(() => { const f = !!(CC.game && (CC.game.state === 'FLIGHT' || CC.game.state === 'LAUNCH')); if (f !== last) { last = f; try { B.flying(f); } catch (e) { /* ignore */ } } }, 400); } } catch (e) { /* ignore */ }
   const toast = (m) => { try { CC.Home.toast(CC.game.ui, m); } catch (e) { /* ignore */ } };
   window.__nat = (id, st) => { const f = cbs[id]; if (f) { delete cbs[id]; f(st); } };
   window.__natPrices = (json) => { try { Object.assign(N.prices, JSON.parse(json)); } catch (e) { /* ignore */ } };

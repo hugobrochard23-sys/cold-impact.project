@@ -1,6 +1,9 @@
 package com.coldimpact.game;
 
 import android.app.Activity;
+import android.os.Build;
+import android.view.DisplayCutout;
+import android.view.WindowInsets;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import com.android.billingclient.api.AcknowledgePurchaseParams;
@@ -42,6 +45,7 @@ public class NativeBridge {
     private RewardedAd rewarded;
     private InterstitialAd interstitial;
     private boolean loadingR, loadingI, adsReady, jsReady;
+    private volatile boolean inFlight, pendingR, pendingI;   // v338 : pas de chargement de pub pendant le vol (le SDK de pub saccadait le jeu)
     private final AtomicBoolean adsInit = new AtomicBoolean(false);
     private BillingClient billing;
     private final List<ProductDetails> details = new ArrayList<>();
@@ -61,6 +65,21 @@ public class NativeBridge {
         if (consent.canRequestAds()) initAds();
         connectBilling();
     }
+
+    /** appele par le jeu : vrai pendant un vol. En vol on ne charge aucune pub ; elles se chargent des le retour au menu. */
+    @JavascriptInterface public void flying(final boolean f) {
+        inFlight = f;
+        if (!f) act.runOnUiThread(() -> { if (pendingR) { pendingR = false; loadRewarded(); } if (pendingI) { pendingI = false; loadInterstitial(); } });
+    }
+    /** hauteur (en px CSS = dp) a laisser libre en haut : encoche / camera ou barre d'etat */
+    @JavascriptInterface public float topInset() {
+        float d = act.getResources().getDisplayMetrics().density; int px = 0;
+        try {
+            int id = act.getResources().getIdentifier("status_bar_height", "dimen", "android"); if (id > 0) px = act.getResources().getDimensionPixelSize(id);
+            if (Build.VERSION.SDK_INT >= 28) { WindowInsets wi = act.getWindow().getDecorView().getRootWindowInsets(); if (wi != null) { DisplayCutout dc = wi.getDisplayCutout(); if (dc != null) px = Math.max(px, dc.getSafeInsetTop()); } }
+        } catch (Throwable t) { /* ignore */ }
+        return px / d;
+    }
     public void resume() { if (billing != null && billing.isReady()) restore(); }
     private void js(final String code) { act.runOnUiThread(() -> web.evaluateJavascript(code, null)); }
 
@@ -70,14 +89,14 @@ public class NativeBridge {
         act.runOnUiThread(() -> MobileAds.initialize(act, st -> { adsReady = true; loadRewarded(); loadInterstitial(); }));
     }
     private void loadRewarded() {
-        if (!adsReady || loadingR || rewarded != null) return; loadingR = true;
+        if (!adsReady || loadingR || rewarded != null) return; if (inFlight) { pendingR = true; return; } loadingR = true;
         RewardedAd.load(act, rewardedUnit, new AdRequest.Builder().build(), new RewardedAdLoadCallback() {
             @Override public void onAdLoaded(RewardedAd ad) { rewarded = ad; loadingR = false; }
             @Override public void onAdFailedToLoad(LoadAdError e) { rewarded = null; loadingR = false; }
         });
     }
     private void loadInterstitial() {
-        if (!adsReady || loadingI || interstitial != null) return; loadingI = true;
+        if (!adsReady || loadingI || interstitial != null) return; if (inFlight) { pendingI = true; return; } loadingI = true;
         InterstitialAd.load(act, interstitialUnit, new AdRequest.Builder().build(), new InterstitialAdLoadCallback() {
             @Override public void onAdLoaded(InterstitialAd ad) { interstitial = ad; loadingI = false; }
             @Override public void onAdFailedToLoad(LoadAdError e) { interstitial = null; loadingI = false; }
