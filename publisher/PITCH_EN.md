@@ -1,6 +1,6 @@
 # COLD IMPACT : publisher pitch (EN)
 
-> Fill the `[...]` placeholders before sending. Every claim below comes from the current build (v318). No retention/CPI figure is claimed because none has been measured yet.
+> Fill the `[...]` placeholders before sending. Every claim below comes from the current build (v338). No retention/CPI figure is claimed because none has been measured yet.
 
 ## Email (short version, ~120 words)
 
@@ -10,11 +10,12 @@ Hi [NAME],
 
 I'm [YOUR NAME], an independent developer. COLD IMPACT is a mobile action game where you charge a launch, release, then steer a missile in 3D through a destructible level, upgrade it, and fight a boss at the end.
 
-- **Hook:** the launch, then a big, readable, satisfying run (explosions, a waterfall drop, a dam breach, a boss).
+- **Hook:** the launch, then a big, readable, satisfying run (explosions, a waterfall drop, a flooded dam, an underwater base, a boss).
 - **Loop:** destroy enemies, earn coins, upgrade Engine / Warhead / Income, watch the missile visibly evolve.
 - **Content now:** 2 full levels (31 zones in total), 2 bosses, 2 missile lines, launcher upgrades, gems, reward chest, 28 skins.
 
-Playable (mobile browser): [LINK]
+Playable (mobile browser): https://hugobrochard23-sys.github.io/cold-impact.project/?evo=1
+Android (closed test): [PLAY LINK]
 30 s gameplay video: [LINK]
 Happy to adapt the build (SDKs, format) to your pipeline.
 
@@ -39,17 +40,17 @@ Thanks,
 
 1. **Second 0 to 2:** a missile locked on the pad, a finger holds, a huge launch.
 2. **Near misses:** torpedoes graze the missile, rocks and bridges pass inches away.
-3. **Big events:** a 64 m waterfall drop, a dam breach with a wall of water chasing you, boss reveal with a giant explosion.
+3. **Big events:** a 64 m waterfall drop, a dive from the river into a flooded dam and an underwater cave, boss reveal with a giant explosion.
 4. **Payoff:** the missile visibly evolves (floats, then tracks, then a final navy and cyan livery).
 
 ## Monetisation hooks already in the build
 
 - **Rewarded:** revive after a crash, double coins on the end screen, bonus on the chest, free gems (3 per day).
 - **Interstitial:** between the end screen and the next run only, never during play; frequency is configurable (currently: not before run 5, then every 2nd run, minimum 90 s apart).
-- **IAP:** ad-free packs and a starter pack are designed; **purchases and the ad SDK are placeholders**, to be connected by the publisher's SDK.
+- **IAP:** ad-free pack, starter pack and gems are wired to Google Play Billing in the Android build. The ad SDK is Google AdMob with **test ad units** (no real ad revenue); the publisher's own SDK can replace it.
 
 ## Honest status (so you do not discover it later)
 
 - No measured retention or CPI yet. We are looking for a publisher to run the first test.
-- Ads shown in the build are samples with invented brands, not a real ad network.
-- Built as a web game; a native Android wrapper project exists. A Unity port is **not** done.
+- The web build shows sample ads with invented brands. The Android build uses AdMob test ads.
+- Built as a web game; an Android wrapper (WebView) is published to a closed test on Google Play. A Unity port is **not** done; we can discuss it if your pipeline requires it.
