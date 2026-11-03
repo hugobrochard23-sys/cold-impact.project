@@ -33,4 +33,48 @@
   });
   document.addEventListener('mousemove', (e) => { if (J.on && !(CC.Touch && CC.Touch.active)) J.move(e.clientX, e.clientY); });
   window.addEventListener('mouseup', (e) => { if (e.button === 0 && !(CC.Touch && CC.Touch.active)) J.end(); });
+
+  /* v339 : PILOTAGE AU CURSEUR (ordinateur, mode EVO). Le curseur par rapport au CENTRE de l'ecran dirige la fusee, comme un joystick : curseur au centre = on garde le cap,
+   * a droite = elle tourne a droite, en haut = elle monte ; plus il s'eloigne, plus elle tourne vite. Aucun verrouillage du pointeur (pas de curseur piege, marche dans un iframe
+   * de portail). Clic gauche maintenu ou Espace = boost. Les fleches / WASD restent possibles en plus. Un anneau et un point montrent la commande. */
+  const D = J.desk = { x: 0, y: 0, in: false, boost: false, held: 0, t: 0 };
+  const DRATE = 1.9, DZ = 0.07;   // rad/s a pleine deflexion ; zone morte (part du rayon)
+  D.ok = (g) => !(CC.Touch && CC.Touch.active) && !!(CC.EVO && CC.EVO.on) && g.state === 'FLIGHT' && !g.paused && !g.ui.overlay;
+  D.lang = () => (CC.I18n && CC.I18n.lang === 'fr') ? 'fr' : 'en';
+  const geom = (input) => { const r = input.el.getBoundingClientRect(); return { r, cx: r.left + r.width / 2, cy: r.top + r.height / 2, R: Math.min(r.width, r.height) * 0.3 }; };
+  D.apply = (dt, input, game) => {
+    if (!D.in || !D.ok(game)) { D.held = 0; return; }
+    const G = geom(input), nx = (D.x - G.cx) / G.R, ny = (D.y - G.cy) / G.R, m = Math.hypot(nx, ny);
+    if (m < DZ) { D.held = 0; return; }
+    D.held += dt; const ramp = 0.6 + 0.4 * Math.min(1, D.held / 0.35), mag = Math.pow((Math.min(1, m) - DZ) / (1 - DZ), 1.3) * ramp;
+    const sens = [0.7, 1, 1.4][game.settings.touchSens !== undefined ? game.settings.touchSens : 1];
+    input.addAim(-(nx / m) * mag * DRATE * sens * dt, -(ny / m) * mag * DRATE * sens * dt * (game.settings.invertY ? -1 : 1));
+  };
+  D.draw = (ctx, game, ui) => {
+    if (!D.ok(game)) { D.t = 0; return; }
+    D.t += 1 / 60; const inp = game.input, rc = inp.el.getBoundingClientRect(), sc = inp.el.width / rc.width, G = geom(inp), c = inp.uiCoords(G.cx, G.cy), R0 = G.R * sc;
+    const cur = D.in ? inp.uiCoords(D.x, D.y) : c, fade = Math.min(1, D.t / 0.4);
+    ctx.save(); ctx.globalAlpha = 0.55 * fade;
+    ctx.beginPath(); ctx.arc(c.x, c.y, R0, 0, 6.2832); ctx.lineWidth = Math.max(2, R0 * 0.02); ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.setLineDash([R0 * 0.05, R0 * 0.07]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(c.x, c.y, Math.max(3, R0 * 0.025), 0, 6.2832); ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fill();
+    if (D.in) { ctx.globalAlpha = 0.75 * fade; ctx.beginPath(); ctx.moveTo(c.x, c.y); ctx.lineTo(cur.x, cur.y); ctx.lineWidth = Math.max(2, R0 * 0.02); ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.stroke();
+      ctx.beginPath(); ctx.arc(cur.x, cur.y, Math.max(6, R0 * 0.07), 0, 6.2832); ctx.fillStyle = D.boost ? '#ffd04a' : '#ffffff'; ctx.fill(); }
+    ctx.restore();
+    // consigne : les premieres secondes des 3 premiers vols
+    let n = 0; try { n = parseInt(localStorage.getItem('coldimpact.deskHint') || '0', 10) || 0; } catch (e) { /* ignore */ }
+    if (n < 3 || D.counted === 'again') {
+      if (!D.counted) { D.counted = true; try { localStorage.setItem('coldimpact.deskHint', String(n + 1)); } catch (e) { /* ignore */ } }
+      const a = D.t < 8 ? Math.min(1, D.t / 0.4) * Math.min(1, (8 - D.t) / 0.6) : 0;
+      if (a > 0) {
+        const fr = D.lang() === 'fr', l1 = fr ? 'BOUGE LA SOURIS POUR DIRIGER' : 'MOVE THE MOUSE TO STEER', l2 = fr ? 'CLIC MAINTENU OU ESPACE = BOOST' : 'HOLD CLICK OR SPACE = BOOST', W = ctx.canvas.width, H = ctx.canvas.height, px = Math.max(16, Math.round(H * 0.034));
+        ctx.save(); ctx.globalAlpha = a; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '900 ' + px + 'px system-ui, sans-serif'; ctx.lineWidth = px * 0.22; ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(8,24,56,0.9)'; ctx.fillStyle = '#ffffff';
+        const y1 = H * 0.78; ctx.strokeText(l1, W / 2, y1); ctx.fillText(l1, W / 2, y1); ctx.fillStyle = '#ffd04a'; ctx.strokeText(l2, W / 2, y1 + px * 1.5); ctx.fillText(l2, W / 2, y1 + px * 1.5); ctx.restore();
+      }
+    }
+  };
+  document.addEventListener('mousemove', (e) => { D.x = e.clientX; D.y = e.clientY; D.in = true; });
+  document.addEventListener('mousedown', (e) => { const g = CC.game; if (g && e.button === 0 && D.ok(g)) D.boost = true; });
+  window.addEventListener('mouseup', (e) => { if (e.button === 0) D.boost = false; });
+  window.addEventListener('blur', () => { D.boost = false; });
+  setInterval(() => { const g = CC.game; if (g && g.state !== 'FLIGHT') { D.counted = false; D.boost = false; } }, 500);
 })();

@@ -86,6 +86,7 @@
       else if (this.overlay === 'shop') { this.buttons = []; if (!this.shop) this.shop = new CC.Shop(this); this.shop.draw(ctx, game, W, H); }
       else if (this.overlay === 'ad' && game.ads) { this.buttons = []; game.ads.draw(ctx, game, W, H, this); }
       if (game.state === 'MENU' && !this.overlay && game.ads && CC.CONFIG.ads.banner && !game.padMode) this.drawMenuBanner(ctx, game, W, H);
+      if (CC.Joy && CC.Joy.desk) CC.Joy.desk.draw(ctx, game, this);   // v339 : anneau et point du pilotage au curseur (ordinateur)
       if (false && CC.Joy) CC.Joy.draw(ctx, game, this);   // v267 : mini joystick
       if (this.reveal && CC.Home.drawReveal) CC.Home.drawReveal(this, ctx, game, W, H);   // v086 : ouverture animée des caisses et coffres
       if (game.notice) {   // v031 : message passager (achat confirmé au retour du paiement)
@@ -461,8 +462,8 @@
         ['SOUND FX', Math.round(s.sfx * 100) + '%', (d) => { s.sfx = U.clamp(Math.round((s.sfx + d * 0.1) * 10) / 10, 0, 1); }],
         ['POST FX', s.postfx ? 'ON' : 'OFF', () => { s.postfx = !s.postfx; }],
         ['SHOW FPS', game.debug ? 'ON' : 'OFF', () => { game.debug = !game.debug; }],
-        ['SAMPLE ADS', s.ads === false ? 'OFF' : 'ON', () => { s.ads = s.ads === false; }],
-      ];
+        (CC.Portal && CC.Portal.on) ? null : ['SAMPLE ADS', s.ads === false ? 'OFF' : 'ON', () => { s.ads = s.ads === false; }],
+      ].filter(Boolean);
       rows.forEach((row, i) => {
         const y = H * (0.26 + i * 0.07);
         this.text(ctx, row[0], W * 0.3, y, px, '#d8d8d8');

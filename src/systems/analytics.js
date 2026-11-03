@@ -47,7 +47,7 @@
 
   // ---------- envoi optionnel ----------
   function flush(beacon) {
-    if (!url || !Q.length) return;
+    if (!url || !Q.length || (CC.Portal && CC.Portal.on)) return;   // v339 : portail : aucune donnee envoyee a l'exterieur
     const body = JSON.stringify({ id: D.id, ver: (window.CC_V || ''), ev: Q.slice() });
     try {
       if (beacon && navigator.sendBeacon) { if (navigator.sendBeacon(url, body)) { Q.length = 0; wr(QKEY, Q); } return; }
@@ -57,7 +57,7 @@
   setInterval(() => flush(false), 30000);
   window.addEventListener('pagehide', () => { tick(); save(); flush(true); });
   try { url = localStorage.getItem('coldimpact.statsurl') || ''; } catch (e) { /* ignore */ }
-  try { fetch('adcfg.json?t=' + Date.now()).then((r) => r.json()).then((c) => { if (c && typeof c.stats === 'string') { url = c.stats; try { localStorage.setItem('coldimpact.statsurl', url); } catch (e) { /* ignore */ } } }).catch(() => {}); } catch (e) { /* ignore */ }
+  try { if (!(CC.Portal && CC.Portal.on)) fetch('adcfg.json?t=' + Date.now()).then((r) => r.json()).then((c) => { if (c && typeof c.stats === 'string') { url = c.stats; try { localStorage.setItem('coldimpact.statsurl', url); } catch (e) { /* ignore */ } } }).catch(() => {}); } catch (e) { /* ignore */ }
 
   // ---------- chiffres ----------
   St.report = () => {

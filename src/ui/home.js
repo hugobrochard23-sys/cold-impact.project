@@ -506,14 +506,14 @@
       ['COMMANDES', (s.ctl || 'free') === 'simple' ? 'SIMPLES' : 'LIBRES', () => { s.ctl = (s.ctl || 'free') === 'simple' ? 'free' : 'simple'; game.applySettings(); }],
       ['SENSIBILITE', ['DOUCE', 'NORMALE', 'VIVE'][s.touchSens !== undefined ? s.touchSens : 1], () => { s.touchSens = ((s.touchSens !== undefined ? s.touchSens : 1) + 1) % 3; game.applySettings(); }],
       ['VIBRATION', vib[vibV], () => { s.vibration = (vibV + 1) % 4; if (CC.Haptics) { CC.Haptics.setLevel(s.vibration); CC.Haptics.tick('fire'); } game.applySettings(); }],
-      CC.Native && CC.Native.on ? ['CONFIDENTIALITÉ PUBS', 'GO', () => CC.Native.privacy()] : ['PUBS D\'EXEMPLE', s.ads === false ? 'NON' : 'OUI', () => { s.ads = s.ads === false; game.applySettings(); }],
+      CC.Native && CC.Native.on ? ['CONFIDENTIALITÉ PUBS', 'GO', () => CC.Native.privacy()] : (CC.Portal && CC.Portal.on) ? null : ['PUBS D\'EXEMPLE', s.ads === false ? 'NON' : 'OUI', () => { s.ads = s.ads === false; game.applySettings(); }],
       ['REINITIALISER', ui._rst && performance.now() - ui._rst < 4000 ? 'SUR ?' : 'GO', () => {   // v068 : remet la progression à zéro (deux touches)
         if (ui._rst && performance.now() - ui._rst < 4000) { try { localStorage.removeItem('coldimpact.save'); localStorage.removeItem('closecall.save'); } catch (e) { /* ignoré */ } location.reload(); } else ui._rst = performance.now();
       }],
       ['CODE DE SAUVEGARDE', 'COPIER', () => { const c = game.meta.exportCode(); if (!c) return; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(() => CC.Home.toast(ui, 'CODE COPIE : COLLE-LE QUELQUE PART'), () => window.prompt('Copie ce code', c)); else window.prompt('Copie ce code', c); }],
       ['RESTAURER UN CODE', 'COLLER', () => { const c = window.prompt('Colle ton code de sauvegarde'); if (c) { if (game.meta.importCode(c)) location.reload(); else CC.Home.toast(ui, 'CODE INVALIDE'); } }],
       ['REVOIR LE TUTO', 'GO', () => { s.tutorialDone = false; s.tutorialFlights = 0; game.progress.P.launches = 0; game.applySettings(); ui.overlay = null; }],
-    ];
+    ].filter(Boolean);   // v339 : en mode portail, la ligne des pubs d'exemple disparait
     const gap = HH * 0.012, rh = Math.min(u * 0.15, HH * 0.085, (HH * 0.8) / rows.length - gap), y0 = Y(0.13), x0 = W * 0.06, w = W * 0.88;
     rows.forEach((r, i) => {
       const y = y0 + i * (rh + gap), on = inRect(ui, x0, y, w, rh);

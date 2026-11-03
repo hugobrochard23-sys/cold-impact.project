@@ -40,7 +40,7 @@
         const r = el.getBoundingClientRect();
         const x = (e.clientX - r.left) * (el.width / r.width), y = (e.clientY - r.top) * (el.height / r.height) - ((game.ui && game.ui.offsetY) || 0);
         if (this.uiPress(x, y, e.button)) return;
-        if (!this.locked && !game.testMode) this.requestLock();
+        if (!this.locked && !game.testMode && !(CC.EVO && CC.EVO.on)) this.requestLock();   // v339 : en EVO plus de verrouillage du pointeur (pilotage au curseur)
         if (e.button === 0) this.fireEdge = true;
         if (e.button === 2) { this.grappleHeld = true; this.grappleEdge = true; }
       });
@@ -123,13 +123,14 @@
       if (turnRight) this.addAim(-ar, 0);
       if (pitchUp) this.addAim(0, ar);
       if (pitchDown) this.addAim(0, -ar); }
+      if (CC.Joy && CC.Joy.desk) CC.Joy.desk.apply(dt, this, this.game);   // v339 : pilotage au curseur (ordinateur)
       const t = this.touch;   // v022 : écran tactile (src/input/touch.js) : le glissé agit directement via addAim, ici seul le moteur
       this.constrainAim(dt);
       const st = {
         aimQ: (this._stQ || (this._stQ = new THREE.Quaternion())).copy(this.aimQ),   // v030 : lu aussitôt par le jeu
         fire: this.fireEdge, grappleHeld: this.grappleHeld, grappleEdge: this.grappleEdge,
         retro: !!(k.ShiftLeft || k.ShiftRight),
-        thrust: !!k.Space || !!(t && t.thrust),
+        thrust: !!k.Space || !!(t && t.thrust) || !!(CC.Joy && CC.Joy.desk && CC.Joy.desk.boost),
       };
       this.fireEdge = false; this.grappleEdge = false; this.edges = {};
       return st;

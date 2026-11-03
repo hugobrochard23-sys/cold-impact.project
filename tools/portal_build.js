@@ -1,0 +1,26 @@
+/* v339 : paquet pour un portail de jeux web. Usage : node tools/portal_build.js <playgama|poki|crazygames|test>
+ * Sortie : dist/portal-<id>/ (le jeu, un seul game.bundle.js, sans polices Google ni version.json) et dist/COLD_IMPACT_<id>.zip (index.html a la racine).
+ * La page declare window.CC_PORTAL = '<id>' : le mode portail de src/systems/portal.js s'active (vraies pubs du portail, aucun achat, aucune statistique envoyee). */
+const fs = require('fs'), path = require('path'), { execFileSync } = require('child_process');
+const id = (process.argv[2] || '').toLowerCase();
+if (!/^(playgama|poki|crazygames|test)$/.test(id)) { console.error('Usage : node tools/portal_build.js <playgama|poki|crazygames|test>'); process.exit(1); }
+const root = path.resolve(__dirname, '..'), out = path.join(root, 'dist', 'portal-' + id);
+fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(out, { recursive: true });
+for (const f of ['index.html', 'style.css', 'game.js']) if (fs.existsSync(path.join(root, f))) fs.copyFileSync(path.join(root, f), path.join(out, f));
+for (const d of ['src', 'assets']) fs.cpSync(path.join(root, d), path.join(out, d), { recursive: true, filter: (p) => !/[\\/]_spare([\\/]|$)/.test(p) });
+let h = fs.readFileSync(path.join(out, 'index.html'), 'utf8');
+h = h.replace(/<link rel="preconnect" href="https:\/\/fonts[^>]*>/g, '').replace(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com[^>]*>/g, '');   // aucune requete externe
+h = h.replace(/<script>\(function \(\) \{ var V = ''; try \{ var x = new XMLHttpRequest\(\); x\.open\('GET', 'version\.json[^\n]*\n/, "<link rel=\"stylesheet\" href=\"style.css\">\n  <script>var V = '';</script>\n");   // plus de version.json (requete synchrone) ; la feuille de style se charge normalement
+const sdk = { playgama: '<script src="https://bridge.playgama.com/v2/stable/playgama-bridge.js"></script>', poki: '<script src="https://game-cdn.poki.com/scripts/v2/poki-sdk.js"></script>', crazygames: '<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>', test: '' }[id];
+h = h.replace(/    try \{ var x = new XMLHttpRequest\(\); x\.open\('GET', 'version\.json[^\n]*\n/, '');   // 2e lecture de version.json (liste des scripts) : retiree aussi
+h = h.replace('<head>','<head>\n  <script>window.CC_PORTAL=' + JSON.stringify(id) + ';</script>' + (sdk ? '\n  ' + sdk : ''));
+fs.writeFileSync(path.join(out, 'index.html'), h);
+execFileSync(process.execPath, [path.join(root, 'tools', 'bundle.js'), out, 'index.html'], { stdio: 'inherit' });
+// le bundle contient tous les scripts : on retire les .js sources du paquet (il n'y a pas d'autre fichier dans src)
+const strip = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) { strip(p); try { fs.rmdirSync(p); } catch (x) { /* non vide */ } } else if (/\.js$/.test(e.name)) fs.unlinkSync(p); } };
+strip(path.join(out, 'src')); try { fs.rmdirSync(path.join(out, 'src')); } catch (x) { /* non vide : on le garde */ }
+if (id === 'playgama') fs.writeFileSync(path.join(out, 'playgama-bridge-config.json'), '{}\n');
+let n = 0, bytes = 0; const walk = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else { n++; bytes += fs.statSync(p).size; } } }; walk(out);
+const zip = path.join(root, 'dist', 'COLD_IMPACT_' + id + '.zip'); fs.rmSync(zip, { force: true });
+execFileSync('python', ['-c', "import zipfile,os,sys\nz=zipfile.ZipFile(sys.argv[2],'w',zipfile.ZIP_DEFLATED,9)\nb=sys.argv[1]\nfor r,_,fs in os.walk(b):\n  for f in fs:\n    p=os.path.join(r,f); z.write(p,os.path.relpath(p,b).replace(os.sep,'/'))\nz.close()", out, zip]);
+console.log('portail', id, ':', n, 'fichiers,', (bytes / 1e6).toFixed(1), 'Mo ->', path.relative(root, out), '+', path.relative(root, zip), '(' + (fs.statSync(zip).size / 1e6).toFixed(1) + ' Mo)');
