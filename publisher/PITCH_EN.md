@@ -16,7 +16,7 @@ I'm an independent developer (studio name: PC Code). COLD IMPACT is a mobile act
 
 Playable (mobile browser): https://hugobrochard23-sys.github.io/cold-impact.project/?evo=1
 Android (Google Play closed test, send me your Google account and I will add you): https://play.google.com/apps/testing/com.king6code.coldimpactmissions
-30 s gameplay video: [VIDEO LINK]
+30 s gameplay video: https://youtu.be/nDlzOlXTis4
 Happy to adapt the build (SDKs, format) to your pipeline.
 
 Thanks,
