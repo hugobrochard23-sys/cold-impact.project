@@ -6,21 +6,22 @@
 
 **Subject:** COLD IMPACT : one-touch missile action with a strong upgrade loop (playable link + 30 s video)
 
-Hi [NAME],
+Hi team,
 
-I'm [YOUR NAME], an independent developer. COLD IMPACT is a mobile action game where you charge a launch, release, then steer a missile in 3D through a destructible level, upgrade it, and fight a boss at the end.
+I'm an independent developer (studio name: PC Code). COLD IMPACT is a mobile action game where you charge a launch, release, then steer a missile in 3D through a destructible level, upgrade it, and fight a boss at the end.
 
-- **Hook:** the launch, then a big, readable, satisfying run (explosions, a waterfall drop, a flooded dam, an underwater base, a boss).
+- **Hook:** the launch, then a big, readable, satisfying run (explosions, a waterfall drop, a river dam, an underwater base, a boss).
 - **Loop:** destroy enemies, earn coins, upgrade Engine / Warhead / Income, watch the missile visibly evolve.
 - **Content now:** 2 full levels (31 zones in total), 2 bosses, 2 missile lines, launcher upgrades, gems, reward chest, 28 skins.
 
 Playable (mobile browser): https://hugobrochard23-sys.github.io/cold-impact.project/?evo=1
-Android (closed test): [PLAY LINK]
-30 s gameplay video: [LINK]
+Android (Google Play closed test, send me your Google account and I will add you): https://play.google.com/apps/testing/com.king6code.coldimpactmissions
+30 s gameplay video: [VIDEO LINK]
 Happy to adapt the build (SDKs, format) to your pipeline.
 
 Thanks,
-[NAME]
+PC Code
+alistpassecoutrin@gmail.com
 
 ## One-pager
 
@@ -40,7 +41,7 @@ Thanks,
 
 1. **Second 0 to 2:** a missile locked on the pad, a finger holds, a huge launch.
 2. **Near misses:** torpedoes graze the missile, rocks and bridges pass inches away.
-3. **Big events:** a 64 m waterfall drop, a dive from the river into a flooded dam and an underwater cave, boss reveal with a giant explosion.
+3. **Big events:** a 64 m waterfall drop, a dive from the river into an underwater cave and base, boss reveal with a giant explosion.
 4. **Payoff:** the missile visibly evolves (floats, then tracks, then a final navy and cyan livery).
 
 ## Monetisation hooks already in the build
