@@ -34,39 +34,54 @@
   document.addEventListener('mousemove', (e) => { if (J.on && !(CC.Touch && CC.Touch.active)) J.move(e.clientX, e.clientY); });
   window.addEventListener('mouseup', (e) => { if (e.button === 0 && !(CC.Touch && CC.Touch.active)) J.end(); });
 
-  /* v339 : PILOTAGE AU CURSEUR (ordinateur, mode EVO). Le curseur par rapport au CENTRE de l'ecran dirige la fusee, comme un joystick : curseur au centre = on garde le cap,
-   * a droite = elle tourne a droite, en haut = elle monte ; plus il s'eloigne, plus elle tourne vite. Aucun verrouillage du pointeur (pas de curseur piege, marche dans un iframe
-   * de portail). Clic gauche maintenu ou Espace = boost. Les fleches / WASD restent possibles en plus. Un anneau et un point montrent la commande. */
+  /* v340 : PILOTAGE A LA SOURIS (ordinateur, mode EVO), refait : la fusee VISE le point de l'ecran ou se trouve le curseur. L'ecart entre le curseur et le centre de l'ecran est converti
+   * en vrai angle de vue (champ de vision de la camera) : on pointe un ennemi a l'ecran, la fusee tourne pour l'amener au centre, d'autant plus vite que l'angle est grand
+   * (curseur au centre = cap garde). Plus d'anneau ni de trait : un petit viseur suit le curseur. Aucun verrouillage du pointeur (marche dans l'iframe d'un portail) ; si la
+   * souris quitte la fenetre la commande s'arrete. Clic gauche maintenu ou Espace = boost. Les fleches / WASD restent possibles en plus. */
   const D = J.desk = { x: 0, y: 0, in: false, boost: false, held: 0, t: 0 };
-  const DRATE = 1.9, DZ = 0.07;   // rad/s a pleine deflexion ; zone morte (part du rayon)
+  const YAWMAX = 0.82, PITMAX = 0.66, REACHX = 0.62, REACHY = 0.6, CURVE = 1.3, DZ = 0.05, FOLLOW = 6, MAXR = 2.1;   // v342 : grands gestes de poignet, pas de precision : cap max (rad) atteint a 62 % / 60 % du demi-ecran, courbe douce au centre (CURVE), virage plafonne (MAXR rad/s) et qui s'adoucit en arrivant (FOLLOW)
   D.ok = (g) => !(CC.Touch && CC.Touch.active) && !!(CC.EVO && CC.EVO.on) && g.state === 'FLIGHT' && !g.paused && !g.ui.overlay;
   D.lang = () => (CC.I18n && CC.I18n.lang === 'fr') ? 'fr' : 'en';
-  const geom = (input) => { const r = input.el.getBoundingClientRect(); return { r, cx: r.left + r.width / 2, cy: r.top + r.height / 2, R: Math.min(r.width, r.height) * 0.3 }; };
+  const _e = new THREE.Euler();
   D.apply = (dt, input, game) => {
-    if (!D.in || !D.ok(game)) { D.held = 0; return; }
-    const G = geom(input), nx = (D.x - G.cx) / G.R, ny = (D.y - G.cy) / G.R, m = Math.hypot(nx, ny);
-    if (m < DZ) { D.held = 0; return; }
-    D.held += dt; const ramp = 0.6 + 0.4 * Math.min(1, D.held / 0.35), mag = Math.pow((Math.min(1, m) - DZ) / (1 - DZ), 1.3) * ramp;
-    const sens = [0.7, 1, 1.4][game.settings.touchSens !== undefined ? game.settings.touchSens : 1];
-    input.addAim(-(nx / m) * mag * DRATE * sens * dt, -(ny / m) * mag * DRATE * sens * dt * (game.settings.invertY ? -1 : 1));
+    if (!D.ok(game)) { D.fly = 0; return; }
+    D.fly = (D.fly || 0) + dt;
+    const k = input.keys, run = game.endlessRun, r = input.el.getBoundingClientRect(), cam = game.camera;
+    if (!D.in || !run || !run.T || !cam || !r.width || !r.height || k.ArrowLeft || k.ArrowRight || k.ArrowUp || k.ArrowDown || k.KeyA || k.KeyD || k.KeyW || k.KeyS || k.KeyQ || k.KeyZ) return;   // clavier utilise : la souris se tait
+    // cap de reference : vers un point de la route un peu devant (la fusee rejoint toujours la piste, comme le pilote automatique du banc de test) ; curseur au centre = on suit la route
+    const T = run.T, rk = game.rocket, dd = run.dist + Math.max(48, rk.speed * 1.0), pt = T.at(dd, T.laneX(dd), T.laneY(dd) + 1.5), fx = pt[0] - rk.pos.x, fy = pt[1] - rk.pos.y, fz = pt[2] - rk.pos.z, fl = Math.hypot(fx, fy, fz) || 1;
+    const t0 = T.at(run.dist, T.laneX(run.dist), 0), t1 = T.at(run.dist + 40, T.laneX(run.dist + 40), 0), ty = Math.atan2(-(t1[0] - t0[0]), -(t1[2] - t0[2])), py = Math.atan2(-fx, -fz);
+    const ry = ty + 0.15 * Math.atan2(Math.sin(py - ty), Math.cos(py - ty)), rp = Math.asin(Math.max(-0.97, Math.min(0.97, fy / fl)));   // cap lateral : surtout le sens de la route (rappel leger vers la piste) ; hauteur : vers la piste
+    // curseur -> ecart de cap (en angle de vue : le centre = cap de la route)
+    const tv = Math.tan(cam.fov * Math.PI / 360), th = tv * (r.width / r.height);
+    const nx = Math.max(-1, Math.min(1, (D.x - (r.left + r.width / 2)) / (r.width / 2) / REACHX)), ny = Math.max(-1, Math.min(1, (D.y - (r.top + r.height / 2)) / (r.height / 2) / REACHY));   // v341 : cap max atteint a 40 % (horizontal) / 38 % (vertical) du demi-ecran : un petit geste suffit
+    const sens = [0.8, 1, 1.3][game.settings.touchSens !== undefined ? game.settings.touchSens : 1], on = Math.min(1, D.fly / 0.6), ease = on * on * (3 - 2 * on);   // les 0,6 premieres secondes : on garde le cap
+    const dz = (v) => { const a = Math.abs(v); return a < DZ ? 0 : Math.sign(v) * Math.pow((a - DZ) / (1 - DZ), CURVE); }, sx = dz(nx), sy = dz(ny);   // zone morte au centre + courbe progressive : doux pres du centre, plus net vers les bords
+    const wy = ry - sx * YAWMAX * sens * ease, wp = Math.max(-1.2, Math.min(1.2, rp - sy * PITMAX * sens * ease * (game.settings.invertY ? -1 : 1)));
+    _e.setFromQuaternion(input.aimQ, 'YXZ'); let cy = _e.y, cp = _e.x;
+    let ey = wy - cy; ey = Math.atan2(Math.sin(ey), Math.cos(ey)); const ep = wp - cp, m = Math.hypot(ey, ep) || 1e-6;
+    const step = Math.min(m, Math.min(MAXR, m * FOLLOW) * dt), q = step / m;
+    input.setAim(cy + ey * q, cp + ep * q);
   };
   D.draw = (ctx, game, ui) => {
-    if (!D.ok(game)) { D.t = 0; return; }
-    D.t += 1 / 60; const inp = game.input, rc = inp.el.getBoundingClientRect(), sc = inp.el.width / rc.width, G = geom(inp), c = inp.uiCoords(G.cx, G.cy), R0 = G.R * sc;
-    const cur = D.in ? inp.uiCoords(D.x, D.y) : c, fade = Math.min(1, D.t / 0.4);
-    ctx.save(); ctx.globalAlpha = 0.55 * fade;
-    ctx.beginPath(); ctx.arc(c.x, c.y, R0, 0, 6.2832); ctx.lineWidth = Math.max(2, R0 * 0.02); ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.setLineDash([R0 * 0.05, R0 * 0.07]); ctx.stroke(); ctx.setLineDash([]);
-    ctx.beginPath(); ctx.arc(c.x, c.y, Math.max(3, R0 * 0.025), 0, 6.2832); ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fill();
-    if (D.in) { ctx.globalAlpha = 0.75 * fade; ctx.beginPath(); ctx.moveTo(c.x, c.y); ctx.lineTo(cur.x, cur.y); ctx.lineWidth = Math.max(2, R0 * 0.02); ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.stroke();
-      ctx.beginPath(); ctx.arc(cur.x, cur.y, Math.max(6, R0 * 0.07), 0, 6.2832); ctx.fillStyle = D.boost ? '#ffd04a' : '#ffffff'; ctx.fill(); }
-    ctx.restore();
+    const on = D.ok(game);
+    try { const cur = on ? 'none' : ''; if (D.cur !== cur) { D.cur = cur; document.documentElement.style.cursor = cur; } } catch (e) { /* ignore */ }
+    if (!on) { D.t = 0; return; }
+    D.t += 1 / 60; const inp = game.input, rc = inp.el.getBoundingClientRect(), sc = inp.el.width / rc.width, fade = Math.min(1, D.t / 0.3);
+    if (D.in) {   // petit viseur au curseur (jaune quand le boost est tenu)
+      const c = inp.uiCoords(D.x, D.y), r0 = Math.max(9, inp.el.height * 0.016), col = D.boost ? '#ffd04a' : '#ffffff';
+      ctx.save(); ctx.globalAlpha = 0.9 * fade; ctx.lineWidth = Math.max(2, r0 * 0.2); ctx.strokeStyle = col; ctx.shadowColor = 'rgba(8,24,56,0.8)'; ctx.shadowBlur = r0 * 0.4;
+      ctx.beginPath(); ctx.arc(c.x, c.y, r0, 0, 6.2832); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(c.x - r0 * 1.7, c.y); ctx.lineTo(c.x - r0 * 0.55, c.y); ctx.moveTo(c.x + r0 * 0.55, c.y); ctx.lineTo(c.x + r0 * 1.7, c.y); ctx.moveTo(c.x, c.y - r0 * 1.7); ctx.lineTo(c.x, c.y - r0 * 0.55); ctx.moveTo(c.x, c.y + r0 * 0.55); ctx.lineTo(c.x, c.y + r0 * 1.7); ctx.stroke();
+      ctx.restore();
+    }
     // consigne : les premieres secondes des 3 premiers vols
     let n = 0; try { n = parseInt(localStorage.getItem('coldimpact.deskHint') || '0', 10) || 0; } catch (e) { /* ignore */ }
     if (n < 3 || D.counted === 'again') {
       if (!D.counted) { D.counted = true; try { localStorage.setItem('coldimpact.deskHint', String(n + 1)); } catch (e) { /* ignore */ } }
       const a = D.t < 8 ? Math.min(1, D.t / 0.4) * Math.min(1, (8 - D.t) / 0.6) : 0;
       if (a > 0) {
-        const fr = D.lang() === 'fr', l1 = fr ? 'BOUGE LA SOURIS POUR DIRIGER' : 'MOVE THE MOUSE TO STEER', l2 = fr ? 'CLIC MAINTENU OU ESPACE = BOOST' : 'HOLD CLICK OR SPACE = BOOST', W = ctx.canvas.width, H = ctx.canvas.height, px = Math.max(16, Math.round(H * 0.034));
+        const fr = D.lang() === 'fr', l1 = fr ? 'LA FUSEE SUIT LA SOURIS' : 'THE ROCKET FOLLOWS THE MOUSE', l2 = fr ? 'CLIC MAINTENU OU ESPACE = BOOST' : 'HOLD CLICK OR SPACE = BOOST', W = ctx.canvas.width, H = ctx.canvas.height, px = Math.max(16, Math.round(H * 0.034));
         ctx.save(); ctx.globalAlpha = a; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '900 ' + px + 'px system-ui, sans-serif'; ctx.lineWidth = px * 0.22; ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(8,24,56,0.9)'; ctx.fillStyle = '#ffffff';
         const y1 = H * 0.78; ctx.strokeText(l1, W / 2, y1); ctx.fillText(l1, W / 2, y1); ctx.fillStyle = '#ffd04a'; ctx.strokeText(l2, W / 2, y1 + px * 1.5); ctx.fillText(l2, W / 2, y1 + px * 1.5); ctx.restore();
       }
@@ -75,6 +90,7 @@
   document.addEventListener('mousemove', (e) => { D.x = e.clientX; D.y = e.clientY; D.in = true; });
   document.addEventListener('mousedown', (e) => { const g = CC.game; if (g && e.button === 0 && D.ok(g)) D.boost = true; });
   window.addEventListener('mouseup', (e) => { if (e.button === 0) D.boost = false; });
-  window.addEventListener('blur', () => { D.boost = false; });
+  window.addEventListener('blur', () => { D.boost = false; D.in = false; });
+  document.documentElement.addEventListener('mouseleave', () => { D.in = false; D.boost = false; });   // souris sortie de la fenetre / de l'iframe : plus de commande
   setInterval(() => { const g = CC.game; if (g && g.state !== 'FLIGHT') { D.counted = false; D.boost = false; } }, 500);
 })();

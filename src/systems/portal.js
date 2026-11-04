@@ -57,9 +57,10 @@
         else { if (b.advertisement.isInterstitialSupported === false) { done(true); return; } A.playgama.cbI = done; b.advertisement.showInterstitial(); }
       } catch (e) { done(false); }
     },
-    start() { /* pas de message de partie obligatoire chez Playgama */ },
+    start() { try { window.bridge && P.ready && window.bridge.platform.sendMessage('level_started'); } catch (e) { /* ignore */ } },
     stop() { },
-    loaded() { try { window.bridge && window.bridge.platform.sendMessage('game_ready'); note('game_ready'); } catch (e) { /* ignore */ } },
+    // v340 : « game_ready » est reessaye tant que le pont n'est pas initialise (avant, un envoi trop tot etait perdu : Playgama refusait le build)
+    loaded() { let n = 0; const go = () => { try { if (window.bridge && P.ready) { window.bridge.platform.sendMessage('game_ready'); note('game_ready'); return; } } catch (e) { /* ignore */ } if (++n < 240) setTimeout(go, 500); else note('game_ready abandonne'); }; go(); },
   };
   A.crazygames = {
     init() { (window.CrazyGames ? Promise.resolve() : loadScript('https://sdk.crazygames.com/crazygames-sdk-v3.js')).then(() => window.CrazyGames.SDK.init()).then(() => { P.ready = true; note('crazygames ready'); }).catch(() => note('crazygames init failed')); },

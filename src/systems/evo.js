@@ -8,7 +8,7 @@
  * Le monde est la zone CAMPAGNE (src/world/zones_evo.js) : grands espaces, puis des morceaux de canyon, barrage, souterrain, base de lancement, base aérienne. */
 (function () {
   const U = CC.U, V = THREE.Vector3;
-  const EVO = CC.EVO = { on: /[?&]evo=1/.test(location.search) };
+  const EVO = CC.EVO = { on: /[?&]evo=1/.test(location.search) || !!window.CC_PORTAL };   // v340 : un paquet portail (Playgama...) n'a pas d'adresse a parametres : il lance toujours la version actuelle (niveaux 1 et 2)
   if (!EVO.on) return;
   const C = CC.CONFIG;
   C.pad.chargeTime = 0.55; C.pad.reloadTime = 0.35;
