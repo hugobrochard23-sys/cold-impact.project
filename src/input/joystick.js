@@ -39,7 +39,7 @@
    * (curseur au centre = cap garde). Plus d'anneau ni de trait : un petit viseur suit le curseur. Aucun verrouillage du pointeur (marche dans l'iframe d'un portail) ; si la
    * souris quitte la fenetre la commande s'arrete. Clic gauche maintenu ou Espace = boost. Les fleches / WASD restent possibles en plus. */
   const D = J.desk = { x: 0, y: 0, in: false, boost: false, held: 0, t: 0 };
-  const YAWMAX = 0.82, PITMAX = 0.66, REACHX = 0.62, REACHY = 0.6, CURVE = 1.3, DZ = 0.05, FOLLOW = 6, MAXR = 2.1;   // v342 : grands gestes de poignet, pas de precision : cap max (rad) atteint a 62 % / 60 % du demi-ecran, courbe douce au centre (CURVE), virage plafonne (MAXR rad/s) et qui s'adoucit en arrivant (FOLLOW)
+  const YAWMAX = 0.82, PITMAX = 0.66, REACHX = 0.56, REACHY = 0.54, CURVE = 1.3, DZ = 0.05, FOLLOW = 6, MAXR = 2.1;   // v342 : grands gestes de poignet, pas de precision : cap max (rad) atteint a 62 % / 60 % du demi-ecran, courbe douce au centre (CURVE), virage plafonne (MAXR rad/s) et qui s'adoucit en arrivant (FOLLOW)
   D.ok = (g) => !(CC.Touch && CC.Touch.active) && !!(CC.EVO && CC.EVO.on) && g.state === 'FLIGHT' && !g.paused && !g.ui.overlay;
   D.lang = () => (CC.I18n && CC.I18n.lang === 'fr') ? 'fr' : 'en';
   const _e = new THREE.Euler();
