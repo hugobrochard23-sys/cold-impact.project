@@ -202,13 +202,15 @@
     UI.shopStall(ctx, lx, ly - S(6), bs, now); UI.tap(ui, lx, ly, bs, bs, () => { ui.overlay = 'evoShop'; });
     if (!(game.meta && game.meta.noAds) && !(CC.Portal && CC.Portal.on)) { const y = ly + bs + S(28); UI.noAdsBadge(ctx, lx, y, bs); UI.tap(ui, lx, y, bs, bs, () => { game.evoNoAds = true; }); }
     { const y = ly + (bs + S(28)) * ((game.meta && game.meta.noAds) ? 1 : 2); if (Home.drawGemTile) Home.drawGemTile(ui, ctx, game, lx, y, bs, now); }
-    { const unlocked = S0.runs >= 3, ready = E.chestReady(game), wait = Math.max(0, (S0.chestAt || 0) - Date.now()), rx0 = ox + cw - S(36) - bs, y = ly, pulse = 0.5 + 0.5 * Math.sin(now / 240);
-      UI.chestFrame(ctx, rx0, y, bs, ready, unlocked, now);
+    { const fast = E.fast && E.fast(), unlocked = fast || S0.runs >= 3, wait = Math.max(0, (S0.chestAt || 0) - Date.now()), cb = fast ? bs * 1.4 : bs, rx0 = ox + cw - S(36) - cb, y = ly, pulse = 0.5 + 0.5 * Math.sin(now / 240);
+      let pct = fast ? E.chestPct(game) : 1; if (fast && game.evoChestAnim) { const A = game.evoChestAnim, q = U.clamp((now - A.t0) / 1300, 0, 1); pct = A.from + (A.to - A.from) * (1 - Math.pow(1 - q, 3)); if (q >= 1) game.evoChestAnim = null; }   // v343 : le coffre se remplit sous les yeux du joueur apres le vol
+      const ready = E.chestReady(game) && (!fast || pct >= 0.999);
+      UI.chestFrame(ctx, rx0, y, cb, ready, unlocked, now, fast ? pct : undefined);
 
       // (lueur du coffre pret : voir UI.chestFrame)
-      if (unlocked && ready) { const ow = bs * 1.3, oh = S(78), ox2 = rx0 + bs / 2 - ow / 2, oy = y + bs - S(30), f = UI.greenButton(ctx, ox2, oy, ow, oh, { cat: 'la' }); UI.outlined(ctx, 'OUVRIR', ox2 + ow / 2, f.y + f.h * 0.5, UI.fit(ctx, 'OUVRIR', ow * 0.86, f.h * 0.5), '#FFFFFF'); }
-      { const lab = !unlocked || ready ? '' : secFmt(wait); if (lab) UI.outlined(ctx, lab, rx0 + bs / 2, y + bs + S(34), UI.fit(ctx, lab, bs * 1.2, S(36)), '#F0EDE4'); }
-      if (unlocked) UI.tap(ui, rx0 - S(10), y, bs + S(20), bs + S(86), () => { if (!game.evoChest && E.chestReady(game)) { game.evoChest = { st: 'wait', t0: performance.now() }; } }); ui.buttons[ui.buttons.length - 1].snd = 'mute';   // v267 : le son du coffre n'arrive qu'au 2e toucher
+      if (unlocked && ready) { const ow = cb * 1.3, oh = S(78), ox2 = rx0 + cb / 2 - ow / 2, oy = y + cb - S(30), f = UI.greenButton(ctx, ox2, oy, ow, oh, { cat: 'la' }); UI.outlined(ctx, 'OUVRIR', ox2 + ow / 2, f.y + f.h * 0.5, UI.fit(ctx, 'OUVRIR', ow * 0.86, f.h * 0.5), '#FFFFFF'); }
+      { const lab = fast ? (ready ? '' : Math.round(pct * 100) + '%') : (!unlocked || ready ? '' : secFmt(wait)); if (lab) UI.outlined(ctx, lab, rx0 + cb / 2, y + cb + S(36), UI.fit(ctx, lab, cb * 1.2, fast ? S(48) : S(36)), '#F0EDE4'); }
+      if (unlocked) UI.tap(ui, rx0 - S(10), y, cb + S(20), cb + S(86), () => { if (!game.evoChest && E.chestReady(game)) { game.evoChest = { st: 'wait', t0: performance.now() }; } }); ui.buttons[ui.buttons.length - 1].snd = 'mute';   // v267 : le son du coffre n'arrive qu'au 2e toucher
       if (E.stage) { const y2 = T0 + S(176) + S(104) - S(100);
         if (game.evoLvPop) { const stg = E.stage(game), pw = S(420), rh = S(104), px0 = cx - pw / 2 + S(30), py0 = y2 + S(100); hit(ui, px0, py0, pw, rh * 2, () => {}); UI.panel(ctx, px0, py0 - S(10), pw, rh * 2 + S(20), { c: S(24), border: T.white });
           for (let nn = 1; nn <= 2; nn++) { const yy = py0 + (nn - 1) * rh, open = true, on = stg === nn; if (on) { ctx.fillStyle = 'rgba(255,230,0,0.14)'; ctx.fillRect(px0 + S(6), yy + S(4), pw - S(12), rh - S(8)); } UI.text(ctx, 'NIVEAU ' + nn, px0 + S(30), yy + rh / 2, S(44), open ? T.white : T.dim, { align: 'left', shadow: false }); if (!open) UI.glyph(ctx, 'lock', px0 + pw - S(50), yy + rh / 2, S(26), T.dim); hit(ui, px0, yy, pw, rh, () => { game.evoLvPop = false; if (open && !on) E.switchStage(game, nn); }); }

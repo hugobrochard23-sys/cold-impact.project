@@ -99,7 +99,8 @@
     run(this, 'interstitial', () => { this.lastAd = this.now(); this.sinceAd = 0; if (then) then(); });
   };
   // pause naturelle apres le rapport de vol : a partir du 2e vol, jamais moins de 70 s apres une autre pub (le portail decide en plus de sa propre frequence)
-  if (CC.EVO) CC.EVO.adDue = (g, S) => !!(g.ads && g.ads.forced() && S.runs >= 2 && g.ads.now() - g.ads.lastAd >= 70);
+  // v343 : plus doux : a partir du 3e vol, au moins 150 s apres une autre pub et pas avant 3 min de session (les joueurs qui ferment juste apres une pub etaient trop nombreux)
+  if (CC.EVO) CC.EVO.adDue = (g, S) => !!(g.ads && g.ads.forced() && S.runs >= 3 && g.ads.now() - g.ads.lastAd >= 150 && performance.now() >= 180000);
 
   // ---------- etat de partie / chargement ----------
   setInterval(() => {

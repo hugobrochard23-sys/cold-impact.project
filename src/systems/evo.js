@@ -20,7 +20,10 @@
   const RK_TIERS = ['TUBE DE CARTON', 'AVION A AILES', 'REACTEUR', 'TURBO'], LA_TIERS = ['RAMPE EN BOIS', 'RAIL', 'CATAPULTE'];
   const RK_NEXT = ['AILES', 'REACTEUR', 'TURBO', 'MAX'], LA_NEXT = ['RAIL', 'CATAPULTE', 'MAX'];
   const RK_NEXT2 = ['HYDROFOILS', 'HYDROJET', 'AMPHIBIE', 'MAX'];
-  EVO.isS2 = () => !!(EVO.stage && CC.game && EVO.stage(CC.game) === 2);
+  // v343 : MODE ORDINATEUR / PORTAIL (portail, ou ?pc=1 pour tester) : debut de progression plus rapide, coffre qui se remplit vol apres vol (la progression mobile validee reste inchangee)
+  EVO.fast = () => !!((CC.Portal && CC.Portal.on) || /[?&]pc=1/.test(location.search));
+  EVO.CHEST_N = 3;   // nombre de vols (equivalents) pour remplir le coffre
+  EVO.isS2 = () =>!!(EVO.stage && CC.game && EVO.stage(CC.game) === 2);
   EVO.rkNext = () => (EVO.isS2() ? RK_NEXT2 : RK_NEXT);
   const COIN_COST = [150, 250, 420, 700, 1100];
   const MAXN = { rk: 99999, la: 99999, cm: 99999 };   // v158 : plus de maximum : le carburant grandit avec chaque amelioration, a l'infini
@@ -35,6 +38,7 @@
     if (S.t0 === undefined) { S.t0 = 0; S.marks = {}; }
     if (S.gems === undefined) { S.gems = 0; S.chestAt = 0; }
     if (!S.seen) S.seen = {};
+    if (EVO.fast() && !S.fastInit) { S.fastInit = 1; if (!S.runs && !S.coins) S.coins = 200; S.cf = S.cf || 0; }   // v343 : pieces de depart (une 1re amelioration achetable tout de suite)
     if (S.eco !== 194) { S.eco = 194; if (S.runs > 0 || S.rk > 0 || S.la > 0 || S.cm > 0) { S.rk = 0; S.la = 0; S.cm = 0; S.coins = 0; S.best = 0; S.runs = 0; S.t0 = 0; S.marks = {}; S.clr1 = 0; } }   // v194 : nouvelle economie (calquee sur la reference) : la progression des anciens prix est remise a zero une seule fois (gemmes, apparences et reglages sont conserves)
     if (!EVO._cheat) {
       EVO._cheat = 1; const q = (k) => { const m = new RegExp('[?&]' + k + '=(\\d+)').exec(location.search); return m ? parseInt(m[1], 10) : null; };
@@ -348,7 +352,8 @@
   EVO.tick = (g, dt) => {
     const ev = g.evo, rk = g.rocket, run = g.endlessRun; if (!ev || !run || g.state !== 'FLIGHT' || !rk.active) { if (g.rig) g.rig.fallK = (g.rig.fallK || 0) * Math.max(0, 1 - dt * 4); return; }
     const S = EVO.save(g), r = EVO.rocket(S.rk), sp = rk.vel.length();
-    ev.maxD = Math.max(ev.maxD, run.dist); if (run.dist < TU('capD') && sp > TU('capV')) rk.vel.multiplyScalar(Math.pow(Math.max(0.9, TU('capV') / sp), dt * 6));   // v194 : sur les 190 premiers metres (rampe, porte du camp) la vitesse est plafonnee : le decor de depart n'est pas fait pour 80 m/s
+    ev.ft = (ev.ft || 0) + dt;   // v343 : secondes de vol reel (remplissage du coffre)
+    ev.maxD =Math.max(ev.maxD, run.dist); if (run.dist < TU('capD') && sp > TU('capV')) rk.vel.multiplyScalar(Math.pow(Math.max(0.9, TU('capV') / sp), dt * 6));   // v194 : sur les 190 premiers metres (rampe, porte du camp) la vitesse est plafonnee : le decor de depart n'est pas fait pour 80 m/s
     C.endless.fuelTarget = 0;
     { const W = CC.Zones.evoWater; if (W) { const dy = rk.pos.y - W.y; if (W.prev !== undefined && W.prev * dy < 0 && run.dist > W.d0 - 30 && run.dist < W.d1 + 30) { const fx = g.effects, pp = rk.pos.clone(); pp.y = W.y; fx.ring(pp, new V(0, 1, 0), 0.4, 7, 0.6, '#d6eefc', 0.8); fx.ring(pp, new V(0, 1, 0), 0.2, 4, 0.45, '#ffffff', 0.7); g.rig.shake = Math.max(g.rig.shake, 0.25); g.audio.play('uiTick'); } W.prev = dy; } }
     const CH = EVO.chapters;   // v123 : bandeau et prime à chaque nouveau chapitre franchi
@@ -613,7 +618,7 @@
   // ---------- fin d'un vol : on revient sur le lanceur avec le récap ----------
   EVO.beginEnd = (g) => {
     if (g.evo && g.evo.preview) { EVO.endTumble(g); g.evoPreview = false; g.evoLast = { zone2: true, t0: 0 }; g.goHome({}); return; }   // l'epave et le drapeau restent visibles sous le rapport (nettoyes au depart)
-    const S = EVO.save(g), ev = g.evo || { kills: 0, coins: 0, maxD: 0 }, run = g.endlessRun, dist = Math.round(Math.max(ev.maxD, run ? run.dist : 0)), m = EVO.mult(S.cm);
+    const S = EVO.save(g), ev = g.evo || { kills: 0, coins: 0, maxD: 0 }, run = g.endlessRun, dist = Math.round(Math.max(ev.maxD, run ? run.dist : 0)), m = EVO.mult(S.cm) * (EVO.fast() && !EVO.isS2() && S.rk < 10 ? 2.5 : 1);   // v343 : mode ordinateur : gains x2,5 tant que le palier REACTEUR n'est pas atteint (ailes en ~2 min)
     const sd = Math.round(dist * EVO.SCORE_K(g)), distCoins = Math.floor(sd * m), lines = [['DISTANCE ' + sd + ' M', distCoins]];
     if (ev.kills) lines.push(['ENNEMIS ' + ev.kills, ev.coins - (ev.bossHits ? Math.round(150 * m) * ev.bossHits : 0)]);
     if (ev.bossHits) lines.push(['COUPS AU BOSS ' + ev.bossHits, Math.round(150 * m) * ev.bossHits]);
@@ -622,6 +627,7 @@
     for (const mk of [100, 300, 600, 1000, 1500, 2000, 2500, 3000]) if (dist >= mk) EVO.mark(g, 'd' + mk);
     if (g.crashKind === 'weak') EVO.mark(g, 'weak');
     if (record) S.best = dist; S.coins += total; S.runs++; S.kills += ev.kills;
+    if (EVO.fast()) { const cf0 = S.cf || 0, add = Math.max(0.5, Math.min(1, (ev.ft || 0) / 20)); S.cf = Math.min(EVO.CHEST_N, cf0 + add); g.evoChestAnim = { from: cf0 / EVO.CHEST_N, to: S.cf / EVO.CHEST_N, t0: performance.now() + 700 }; }   // v343 : coffre : chaque vol le remplit (un vol de 20 s ou plus = un tiers, minimum un demi-tiers)
     const r = EVO.rocket(S.rk);
     g.evoLast = { dist, kills: ev.kills, lines, total, record, cause: g.crashKind === 'stalled' ? (r.tier >= 2 && g.rocket.fuel <= 0.5 ? 'PLUS DE CARBURANT' : EVO.isS2() ? 'PLUS D ELAN' : 'ELLE EST TOMBEE') : g.causeOf(g.crashKind), doubled: false, t0: 0, crash: g.crashKind,
       detail: g.crashKind === 'weak' && g.evoWeak ? 'ENNEMI ' + g.evoWeak.hp + ' PV : TES DEGATS ' + g.evoWeak.dmg.toFixed(1) : g.crashKind === 'stalled' ? (r.tier >= 2 ? 'DETRUIS DES ENNEMIS POUR RECHARGER' : 'AMELIORE LA FUSEE : ELLE IRA PLUS LOIN') : 'GLISSE LE DOIGT POUR ESQUIVER' };
@@ -650,10 +656,11 @@
     if ((S.gems || 0) >= gc) pay(); else g.ui.overlay = 'evoShop';   // v264 : pas assez de gemmes : on va a la boutique (plus de pub directe)
   };
   // coffre : disponible des le 3e vol, puis toutes les 2 heures
-  EVO.chestReady = (g) => { const S = EVO.save(g); return S.runs >= 3 && Date.now() >= (S.chestAt || 0); };
+  EVO.chestReady = (g) => { const S = EVO.save(g); if (EVO.fast()) return (S.cf || 0) >= EVO.CHEST_N - 0.001; return S.runs >= 3 && Date.now() >= (S.chestAt || 0); };
+  EVO.chestPct = (g) => { const S = EVO.save(g); return EVO.fast() ? Math.min(1, (S.cf || 0) / EVO.CHEST_N) : (EVO.chestReady(g) ? 1 : 0); };
   EVO.openChest = (g) => {
     const S = EVO.save(g); if (!EVO.chestReady(g) || g.evoChest) return;
-    const coins = Math.max(150, Math.round((EVO.isS2() ? EVO.cost2('rk', S.rk) : EVO.cost('rk', S.rk)) * 0.7)); S.coins += coins; S.gems = (S.gems || 0) + 1; S.chestAt = Date.now() + 2 * 3600 * 1000; g.writeSave();
+    const fast = EVO.fast(), cst = EVO.isS2() ? EVO.cost2('rk', S.rk) : EVO.cost('rk', S.rk), coins = fast ? Math.max(300, Math.round(cst * 1.6)) : Math.max(150, Math.round(cst * 0.7)); S.coins += coins; S.gems = (S.gems || 0) + 1; if (fast) S.cf = 0; else S.chestAt = Date.now() + 2 * 3600 * 1000; g.writeSave();   // v343 : mode ordinateur : le coffre se vide et se remplit a nouveau (pas d'attente de 2 h), recompense plus grosse
     g.evoChest = { t0: performance.now(), coins, gems: 1 }; if (CC.Haptics) CC.Haptics.tick('warn'); g.telemetry.event('evoChest', { coins });
   };
   EVO.start = (g) => { if (g.evoAnim || g.evoAim) return; EVO.startAim(g); };

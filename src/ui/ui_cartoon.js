@@ -148,11 +148,24 @@
     UI.outlined(ctx, free + '/3', x + s / 2, y + s * 0.92, s * 0.3, free > 0 ? C.white : '#b9c2cc', '#000000', { keep: true, ow: 0.22 });
   };
   // coffre : cadre a facettes bleu acier, coffre d'origine, lueur doree quand il est pret
-  UI.chestFrame = (ctx, x, y, s, ready, unlocked, now) => {
+  // v343 : coffre noir (silhouette) rempli en couleur a hauteur de `fill` (0..1) : on voit tout de suite qu'il faut jouer plusieurs vols
+  const CHF = { c: null, d: null, k: '' };
+  const chestFilled = (ctx, cx, cy, size, fill) => {
+    const im = UI.art('chest'); if (!im) return false; const pad = Math.ceil(size * 0.12), cs = Math.ceil(size + pad * 2), key = cs + ':' + im.naturalWidth;
+    if (CHF.k !== key) {
+      const mk = () => { const c = document.createElement('canvas'); c.width = c.height = cs; return c; }, a = mk(), b = mk(), ax = a.getContext('2d'), bx = b.getContext('2d'), k = size / Math.max(im.naturalWidth, im.naturalHeight), w = im.naturalWidth * k, h = im.naturalHeight * k;
+      ax.imageSmoothingQuality = 'high'; ax.drawImage(im, (cs - w) / 2, (cs - h) / 2, w, h); bx.drawImage(a, 0, 0); bx.globalCompositeOperation = 'source-atop'; bx.fillStyle = 'rgba(14,18,26,0.93)'; bx.fillRect(0, 0, cs, cs);
+      CHF.c = a; CHF.d = b; CHF.k = key;
+    }
+    const kk = size / Math.max(im.naturalWidth, im.naturalHeight), ih = im.naturalHeight * kk, x0 = cx - cs / 2, y0 = cy - cs / 2, cut = (cs - ih) / 2 + ih * (1 - Math.max(0, Math.min(1, fill)));   // remplissage mesure sur la hauteur reelle du coffre
+    ctx.drawImage(CHF.d, x0, y0, cs, cs); if (fill > 0) { ctx.save(); ctx.beginPath(); ctx.rect(x0, y0 + cut, cs, cs - cut); ctx.clip(); ctx.drawImage(CHF.c, x0, y0, cs, cs); ctx.restore(); }
+    return true;
+  };
+  UI.chestFrame = (ctx, x, y, s, ready, unlocked, now, fill) => {
     const cx = x + s / 2, cy = y + s / 2, r = s * 0.48, ow = Math.max(2, S(4));
     ctx.save(); if (ready && unlocked) { const ph = ((now || 0) % 2600) / 2600, k = ph < 0.3 ? ph / 0.3 : 1; if (k < 1) { const a = Math.sin(k * Math.PI * 7) * (1 - k) * 0.2, sc = 1 + 0.06 * Math.sin(k * Math.PI); ctx.translate(cx, cy + r * 0.6); ctx.rotate(a); ctx.scale(sc, sc); ctx.translate(-cx, -(cy + r * 0.6)); } }
     ctx.beginPath(); ctx.arc(cx, cy, r + ow, 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); ctx.fillStyle = '#F39C12'; ctx.fill();
-    ctx.save(); if (!unlocked) ctx.globalAlpha = 0.6; ctx.shadowColor = 'rgba(60,30,0,0.4)'; ctx.shadowOffsetY = S(5); ctx.shadowBlur = 0; if (!UI.artImg(ctx, 'chest', cx, cy - r * 0.06, s * 1.08)) UI.icon(ctx, 'chest_open', cx, cy, s * 0.9); ctx.restore(); if (!unlocked) UI.glyph(ctx, 'lock', cx, cy + r * 0.1, s * 0.2, '#F0EDE4');
+    ctx.save(); if (!unlocked) ctx.globalAlpha = 0.6; ctx.shadowColor = 'rgba(60,30,0,0.4)'; ctx.shadowOffsetY = S(5); ctx.shadowBlur = 0; if (!((fill !== undefined && fill < 0.999 && chestFilled(ctx, cx, cy - r * 0.06, s * 1.08, fill)) || UI.artImg(ctx, 'chest', cx, cy - r * 0.06, s * 1.08))) UI.icon(ctx, 'chest_open', cx, cy, s * 0.9); ctx.restore(); if (!unlocked) UI.glyph(ctx, 'lock', cx, cy + r * 0.1, s * 0.2, '#F0EDE4');
     ctx.restore();
   };
   // petite plaque orange (OUVRIR, temps restant)

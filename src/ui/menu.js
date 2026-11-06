@@ -3,6 +3,35 @@
 (function () {
   CC.LOADIMG = new Image(); CC.LOADIMG.src = 'assets/ui/loading.jpg';   // v319 : ecran de chargement illustre
   const U = CC.U;
+  // v343 : ecran de chargement PAYSAGE (ordinateur) dessine dans le style cartoon du jeu (ciel, collines, nuages, fusee) : l'image portrait etait rognee sur un ecran large
+  CC.loadPC = (ctx, W, H, T0) => {
+    const t = performance.now() / 1000, TAU = 6.2832; ctx.save(); ctx.translate(0, T0);
+    let g = ctx.createLinearGradient(0, 0, 0, H * 0.72); g.addColorStop(0, '#3FA9F0'); g.addColorStop(1, '#D4F0FF'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    const sx = W * 0.83, sy = H * 0.2, sr = H * 0.085;
+    for (const [m, a] of [[2.6, 0.22], [1.8, 0.4]]) { ctx.fillStyle = 'rgba(255,246,196,' + a + ')'; ctx.beginPath(); ctx.arc(sx, sy, sr * m, 0, TAU); ctx.fill(); }
+    ctx.fillStyle = '#FFE680'; ctx.beginPath(); ctx.arc(sx, sy, sr, 0, TAU); ctx.fill();
+    const cloud = (bx, sp, y, s) => { const x = ((bx + t * sp) % (W + s * 8)) - s * 4; ctx.fillStyle = 'rgba(255,255,255,0.96)'; for (const [dx, dy, r] of [[0, 0, 0.55], [0.8, -0.32, 0.72], [1.7, -0.05, 0.6], [0.9, 0.12, 0.62], [2.4, 0.1, 0.42]]) { ctx.beginPath(); ctx.arc(x + dx * s, y + dy * s, r * s, 0, TAU); ctx.fill(); } };
+    cloud(W * 0.08, 16, H * 0.2, H * 0.07); cloud(W * 0.55, 11, H * 0.12, H * 0.05); cloud(W * 0.9, 20, H * 0.36, H * 0.045);
+    const hill = (y0, amp, cyc, ph, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, H); for (let x = 0; x <= W + 1; x += W / 60) { const u = x / W * TAU * cyc; ctx.lineTo(x, y0 + Math.sin(u + ph) * amp + Math.sin(u * 2.3 + ph * 1.7) * amp * 0.35); } ctx.lineTo(W, H); ctx.closePath(); ctx.fill(); };
+    hill(H * 0.66, H * 0.045, 1.3, 0.6, '#9ED98F'); hill(H * 0.74, H * 0.04, 1.9, 2.1, '#6CC262'); hill(H * 0.84, H * 0.035, 1.5, 4.0, '#46A94F');
+    for (const [fx, fy, fs] of [[0.07, 0.8, 1], [0.15, 0.86, 1.3], [0.9, 0.82, 1.1], [0.96, 0.89, 1.4], [0.27, 0.9, 1.0], [0.8, 0.92, 1.2]]) { const x = W * fx, y = H * fy, s = H * 0.05 * fs; ctx.fillStyle = '#2E8B4A'; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(x, y - s * (1.9 - i * 0.2)); ctx.lineTo(x - s * (0.55 + i * 0.22), y - s * (0.75 - i * 0.55)); ctx.lineTo(x + s * (0.55 + i * 0.22), y - s * (0.75 - i * 0.55)); ctx.closePath(); ctx.fill(); } ctx.fillStyle = '#7A4A2A'; ctx.fillRect(x - s * 0.08, y + s * 0.4, s * 0.16, s * 0.35); }
+    // fusee en vol (nez en haut a droite), traînee de fumee, flamme
+    const L = H * 0.4, cx = W * 0.5, cy = H * 0.5 + Math.sin(t * 2) * H * 0.012, an = -0.32 + Math.sin(t * 1.3) * 0.02, ow = Math.max(2, H * 0.007), line = '#10213A';
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(an);
+    for (let i = 0; i < 9; i++) { const k = i / 8, px = -L * (0.6 + k * 1.15), r = H * (0.032 + k * 0.05), a = 0.9 - k * 0.8, wob = Math.sin(t * 3 + i) * H * 0.006; ctx.fillStyle = 'rgba(255,255,255,' + a + ')'; ctx.beginPath(); ctx.arc(px, wob, r, 0, TAU); ctx.fill(); }
+    const fl = 1 + Math.sin(t * 28) * 0.12; ctx.fillStyle = '#FF9D1E'; ctx.beginPath(); ctx.moveTo(-L * 0.5, -L * 0.07); ctx.lineTo(-L * (0.5 + 0.33 * fl), 0); ctx.lineTo(-L * 0.5, L * 0.07); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#FFE15A'; ctx.beginPath(); ctx.moveTo(-L * 0.5, -L * 0.04); ctx.lineTo(-L * (0.5 + 0.2 * fl), 0); ctx.lineTo(-L * 0.5, L * 0.04); ctx.closePath(); ctx.fill();
+    ctx.lineJoin = 'round'; ctx.lineWidth = ow; ctx.strokeStyle = line;
+    for (const s of [-1, 1]) { ctx.fillStyle = '#E8453A'; ctx.beginPath(); ctx.moveTo(-L * 0.18, s * L * 0.08); ctx.lineTo(-L * 0.5, s * L * 0.27); ctx.lineTo(-L * 0.5, s * L * 0.08); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+    ctx.fillStyle = '#F4F7FB'; ctx.beginPath(); ctx.moveTo(L * 0.5, 0); ctx.quadraticCurveTo(L * 0.3, -L * 0.115, -L * 0.1, -L * 0.115); ctx.lineTo(-L * 0.5, -L * 0.115); ctx.lineTo(-L * 0.5, L * 0.115); ctx.lineTo(-L * 0.1, L * 0.115); ctx.quadraticCurveTo(L * 0.3, L * 0.115, L * 0.5, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#E8453A'; ctx.beginPath(); ctx.moveTo(L * 0.5, 0); ctx.quadraticCurveTo(L * 0.38, -L * 0.1, L * 0.2, -L * 0.108); ctx.lineTo(L * 0.2, L * 0.108); ctx.quadraticCurveTo(L * 0.38, L * 0.1, L * 0.5, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#2A78D6'; ctx.fillRect(-L * 0.36, -L * 0.113, L * 0.08, L * 0.226); ctx.fillRect(-L * 0.22, -L * 0.113, L * 0.04, L * 0.226);
+    ctx.fillStyle = '#8FD6FF'; ctx.beginPath(); ctx.arc(L * 0.02, 0, L * 0.06, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.arc(L * 0.005, -L * 0.02, L * 0.018, 0, TAU); ctx.fill();
+    ctx.restore();
+    // titre
+    const tpx = H * 0.13, ty = H * 0.17; ctx.font = '900 ' + tpx + 'px "Arial Black", Impact, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineWidth = tpx * 0.16; ctx.strokeStyle = '#10213A'; ctx.strokeText('COLD IMPACT', W / 2, ty + tpx * 0.06); ctx.fillStyle = '#FFD23A'; ctx.fillText('COLD IMPACT', W / 2, ty);
+    const gr = ctx.createLinearGradient(0, H * 0.78, 0, H); gr.addColorStop(0, 'rgba(4,20,12,0)'); gr.addColorStop(1, 'rgba(4,20,12,0.7)'); ctx.fillStyle = gr; ctx.fillRect(0, H * 0.78, W, H * 0.22);
+    ctx.restore();
+  };
 
   class UI {
     constructor(game) { this.game = game; this.buttons = []; this.hover = -1; this.mouse = { x: -1, y: -1 }; this.overlay = null; }
@@ -97,7 +126,8 @@
       }
       if (game.state === 'BOOT' || game.warm) {
         const im = CC.LOADIMG, T0 = -(this.offsetY || 0), HF = this.fullH || H;
-        if (im && im.complete && im.naturalWidth) { const k = Math.max(W / im.naturalWidth, HF / im.naturalHeight), dw = im.naturalWidth * k, dh = im.naturalHeight * k; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(im, W - dw, T0 + (HF - dh) / 2, dw, dh); const gr = ctx.createLinearGradient(0, T0 + HF * 0.78, 0, T0 + HF); gr.addColorStop(0, 'rgba(4,10,24,0)'); gr.addColorStop(1, 'rgba(4,10,24,0.72)'); ctx.fillStyle = gr; ctx.fillRect(0, T0 + HF * 0.78, W, HF * 0.22); } else this.dim(ctx, W, H, 1);
+        if (W > HF * 1.15 && CC.loadPC) CC.loadPC(ctx, W, HF, T0);
+        else if (im && im.complete && im.naturalWidth) { const k = Math.max(W / im.naturalWidth, HF / im.naturalHeight), dw = im.naturalWidth * k, dh = im.naturalHeight * k; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(im, W - dw, T0 + (HF - dh) / 2, dw, dh); const gr = ctx.createLinearGradient(0, T0 + HF * 0.78, 0, T0 + HF); gr.addColorStop(0, 'rgba(4,10,24,0)'); gr.addColorStop(1, 'rgba(4,10,24,0.72)'); ctx.fillStyle = gr; ctx.fillRect(0, T0 + HF * 0.78, W, HF * 0.22); } else this.dim(ctx, W, H, 1);
         const yb = T0 + HF * 0.9; this.text(ctx, 'CHARGEMENT...', W / 2, yb, H * 0.0035, col.white, { align: 'center' }); if (game.warm) { const bw = W * 0.5, bh = Math.max(3, H * 0.008), bx = (W - bw) / 2, by = yb + H * 0.045; ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(bx, by, bw, bh); ctx.fillStyle = col.white; ctx.fillRect(bx, by, bw * Math.min(1, game.warm.st.p), bh); }
       }
       if (game.genDebug && game.level && game.level.plan && CC.Gen.drawDebugOverlay && !this.overlay) CC.Gen.drawDebugOverlay(ctx, game, W, H, this);   // v032
