@@ -1078,7 +1078,7 @@
           break;
         case 'CRASHED':
           this.impactT += dt;
-          if (this.evo && this.evoReport && this.ui.overlay !== 'evoReport' && this.ui.overlay !== 'ad') this.ui.overlay = 'evoReport';   // v157 : filet : jamais d'ecran vide apres une pub
+          if (this.evo && this.evoReport && this.ui.overlay !== 'evoReport' && this.ui.overlay !== 'evoChest' && this.ui.overlay !== 'ad') this.ui.overlay = 'evoReport';   // v157 : filet : jamais d'ecran vide apres une pub
           if (this.endlessRun) {   // v033 : une seule vie ; v034 : une chance de continuer (publicité récompensée) avant l'écran de fin
             if (this.impactT > (this.evoTumble ? this.evoTumble.dur : 0.9)) {
               // v093 : niveaux 1-3 : pas d'écran, la partie se relance aussitôt (essayer = instantané)
@@ -1258,7 +1258,8 @@
       if (this.fadeIn > 0) this.fadeIn = Math.max(0, this.fadeIn - dt);
       let sdt = dt; if (this.hitStop > 0) { this.hitStop -= dt; sdt = dt * (this.hitScale || 0.18); if (this.hitStop <= 0) this.hitScale = 0; }
       if (this.chromaBurst) this.chromaBurst = this.chromaBurst < 0.001 ? 0 : this.chromaBurst * 0.95;   // v066 : ralenti à chaque destruction
-      const tutHold = CC.Tutorial && this.state === 'FLIGHT' && !this.paused ? CC.Tutorial.update(this, dt) : false;   // v089 : tutoriel interactif = jeu figé tant que le geste n'est pas fait
+      let tutHold = CC.Tutorial && this.state === 'FLIGHT' && !this.paused ? CC.Tutorial.update(this, dt) : false;
+      if (!tutHold && CC.Joy && CC.Joy.desk && CC.Joy.desk.tutHold) tutHold = CC.Joy.desk.tutHold(this, dt);   // v344 : tutoriel PC (fleche) : jeu fige au tout premier vol   // v089 : tutoriel interactif = jeu figé tant que le geste n'est pas fait
       if (this.warm) { const t0 = performance.now(); try { for (;;) { if (this.warm.gen.next().done) { this.warm = null; break; } if (performance.now() - t0 > 12) break; } } catch (err) { this.warm = null; } }
       if (!this.paused && this.state !== 'BOOT' && !this.warm && !tutHold) this.safe(() => this.update(this.endlessRun && this.state === 'CRASHED' && this.impactT < 0.6 ? sdt * 0.35 : sdt));   // v040 : ralenti sur la collision
       else { this.input.poll(0); this.rig.update(0); }

@@ -75,22 +75,39 @@
       ctx.beginPath(); ctx.moveTo(c.x - r0 * 1.7, c.y); ctx.lineTo(c.x - r0 * 0.55, c.y); ctx.moveTo(c.x + r0 * 0.55, c.y); ctx.lineTo(c.x + r0 * 1.7, c.y); ctx.moveTo(c.x, c.y - r0 * 1.7); ctx.lineTo(c.x, c.y - r0 * 0.55); ctx.moveTo(c.x, c.y + r0 * 0.55); ctx.lineTo(c.x, c.y + r0 * 1.7); ctx.stroke();
       ctx.restore();
     }
-    // consigne : les premieres secondes des 3 premiers vols
-    let n = 0; try { n = parseInt(localStorage.getItem('coldimpact.deskHint') || '0', 10) || 0; } catch (e) { /* ignore */ }
-    if (n < 3 || D.counted === 'again') {
-      if (!D.counted) { D.counted = true; try { localStorage.setItem('coldimpact.deskHint', String(n + 1)); } catch (e) { /* ignore */ } }
-      const a = D.t < 8 ? Math.min(1, D.t / 0.4) * Math.min(1, (8 - D.t) / 0.6) : 0;
-      if (a > 0) {
-        const fr = D.lang() === 'fr', l1 = fr ? 'LA FUSEE SUIT LA SOURIS' : 'THE ROCKET FOLLOWS THE MOUSE', l2 = fr ? 'CLIC MAINTENU OU ESPACE = BOOST' : 'HOLD CLICK OR SPACE = BOOST', W = ctx.canvas.width, H = ctx.canvas.height, px = Math.max(16, Math.round(H * 0.034));
-        ctx.save(); ctx.globalAlpha = a; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '900 ' + px + 'px system-ui, sans-serif'; ctx.lineWidth = px * 0.22; ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(8,24,56,0.9)'; ctx.fillStyle = '#ffffff';
-        const y1 = H * 0.78; ctx.strokeText(l1, W / 2, y1); ctx.fillText(l1, W / 2, y1); ctx.fillStyle = '#ffd04a'; ctx.strokeText(l2, W / 2, y1 + px * 1.5); ctx.fillText(l2, W / 2, y1 + px * 1.5); ctx.restore();
+    // v344 : tutoriel PC sans phrases : au tout premier vol le jeu s'arrete, une grande fleche transparente monte en boucle ; la fusee repart des que le joueur bouge la souris / touche une fleche
+    if (D.th) {
+      const W = ctx.canvas.width, H = ctx.canvas.height, ph = (D.tt * 0.75) % 1, fr = D.lang() === 'fr', sz = H * 0.1;
+      ctx.save(); ctx.fillStyle = 'rgba(6,14,30,0.38)'; ctx.fillRect(0, 0, W, H);
+      for (let i = 0; i < 3; i++) {
+        const p = (ph + i / 3) % 1, a = Math.sin(Math.PI * p) * 0.6, cx = W / 2, cy = H * 0.66 - p * H * 0.3;
+        ctx.globalAlpha = a; ctx.beginPath(); ctx.moveTo(cx, cy - sz); ctx.lineTo(cx + sz * 0.85, cy + sz * 0.1); ctx.lineTo(cx + sz * 0.32, cy + sz * 0.1); ctx.lineTo(cx + sz * 0.32, cy + sz * 0.8); ctx.lineTo(cx - sz * 0.32, cy + sz * 0.8); ctx.lineTo(cx - sz * 0.32, cy + sz * 0.1); ctx.lineTo(cx - sz * 0.85, cy + sz * 0.1); ctx.closePath();
+        ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(3, sz * 0.07); ctx.strokeStyle = '#2f7de0'; ctx.stroke();
       }
+      ctx.globalAlpha = 0.95; const px = Math.max(16, Math.round(H * 0.04)), kw = px * 1.9, ky = H * 0.88, lab = fr ? 'SOURIS' : 'MOUSE', ou = fr ? 'OU' : 'OR';
+      ctx.font = '900 ' + px + 'px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineWidth = px * 0.22; ctx.strokeStyle = 'rgba(8,24,56,0.9)';
+      const w1 = ctx.measureText(lab).width, w2 = ctx.measureText(ou).width, gap = px * 0.9, tot = w1 + w2 + kw + gap * 2, x0 = W / 2 - tot / 2, kx = x0 + w1 + gap + w2 + gap + kw / 2; ctx.textAlign = 'left';
+      ctx.strokeStyle = 'rgba(8,24,56,0.9)'; ctx.lineWidth = px * 0.22; ctx.fillStyle = '#ffffff'; ctx.strokeText(lab, x0, ky); ctx.fillText(lab, x0, ky); ctx.fillStyle = '#ffd04a'; ctx.strokeText(ou, x0 + w1 + gap, ky); ctx.fillText(ou, x0 + w1 + gap, ky); ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#2f7de0'; ctx.lineWidth = px * 0.14; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(kx - kw / 2, ky - kw / 2, kw, kw, px * 0.35) : ctx.rect(kx - kw / 2, ky - kw / 2, kw, kw); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#16305e'; ctx.fillText('↑', kx, ky + px * 0.04);
+      ctx.restore();
     }
+  };
+  // gel du tout premier vol (PC / portail) : appele par game.js avant la simulation ; renvoie vrai tant que le joueur n'a pas bouge
+  D.tutHold = (g, dt) => {
+    const E = CC.EVO, S = E && E.save ? E.save(g) : null;
+    if (!S || S.tutPC || !(E.fast && E.fast()) || (CC.Touch && CC.Touch.active) || g.state !== 'FLIGHT' || g.paused || g.ui.overlay) { D.th = false; return false; }
+    D.tt = (D.tt || 0) + dt; const k = g.input.keys;
+    if (!D.th) { if (g.flightTime > 0.9 && !D.thDone) { D.th = true; D.mx0 = null; D.tt = 0; } else return false; }
+    if (D.mx0 == null && D.in) { D.mx0 = D.x; D.my0 = D.y; }
+    const moved = D.in && D.mx0 != null && Math.hypot(D.x - D.mx0, D.y - D.my0) > 45, key = k.ArrowLeft || k.ArrowRight || k.ArrowUp || k.ArrowDown || k.KeyA || k.KeyD || k.KeyW || k.KeyS || k.KeyQ || k.KeyZ || k.Space;
+    if (moved || key || D.boost) { D.th = false; D.thDone = true; S.tutPC = 1; g.writeSave(); if (g.audio) g.audio.play('card'); return false; }
+    return true;
   };
   document.addEventListener('mousemove', (e) => { D.x = e.clientX; D.y = e.clientY; D.in = true; });
   document.addEventListener('mousedown', (e) => { const g = CC.game; if (g && e.button === 0 && D.ok(g)) D.boost = true; });
   window.addEventListener('mouseup', (e) => { if (e.button === 0) D.boost = false; });
   window.addEventListener('blur', () => { D.boost = false; D.in = false; });
   document.documentElement.addEventListener('mouseleave', () => { D.in = false; D.boost = false; });   // souris sortie de la fenetre / de l'iframe : plus de commande
-  setInterval(() => { const g = CC.game; if (g && g.state !== 'FLIGHT') { D.counted = false; D.boost = false; } }, 500);
+  setInterval(() => { const g = CC.game; if (g && g.state !== 'FLIGHT') { D.counted = false; D.boost = false; D.th = false; D.thDone = false; } }, 500);
 })();

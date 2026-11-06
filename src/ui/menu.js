@@ -105,6 +105,7 @@
       else if (this.overlay === 'evoShop') { this.buttons = []; CC.Home.drawEvoShop(this, ctx, game, W, H); }   // v159
       else if (this.overlay === 'evoSkins') { this.buttons = []; CC.Home.drawEvoSkins(this, ctx, game, W, H); }   // v159
       else if (this.overlay === 'evoReport') { this.buttons = []; CC.Home.drawEvoReport(this, ctx, game, W, H); }   // v152
+      else if (this.overlay === 'evoChest') { this.buttons = []; CC.Home.drawEvoChest(this, ctx, game, W, H); }   // v344
       else if (this.overlay === 'evoWin') { this.buttons = []; CC.Home.drawEvoWin(this, ctx, game, W, H); }   // v143
       else if (this.overlay === 'evoCine') { this.buttons = []; CC.EVO.drawCine(this, ctx, game, W, H); }   // v142
       else if (this.overlay === 'evoIntro') { this.buttons = []; CC.Home.drawEvoIntro(this, ctx, game, W, H); }   // v130

@@ -260,6 +260,34 @@
     hit(ui, 0, 0, W, H, () => {}, true);
   };
 
+  // v344 : mode PC / portail : apres SUIVANT du rapport, ecran COFFRE : il se remplit sous les yeux du joueur (noir -> couleur) pour qu'il comprenne qu'il faut plusieurs vols
+  Home.afterReportStep = function (game) {
+    const E = CC.EVO, A = game.evoChestAnim;
+    if (E.fast && E.fast() && A && game.evoReport && game.ui.overlay === 'evoReport') { game.evoChestScr = { t0: performance.now(), from: A.from, to: A.to }; game.evoChestAnim = null; game.ui.overlay = 'evoChest'; }
+    else E.afterReport(game);
+  };
+  Home.drawEvoChest = function (ui, ctx, game, W, H) {
+    const F = frame(ui, ctx, W, H), { HH, Y, T0, cw, cx } = F, E = CC.EVO, sc = game.evoChestScr, now = performance.now();
+    if (!sc) { E.afterReport(game); return; }
+    const tt = (now - sc.t0) / 1000, q = U.clamp((tt - 0.6) / 1.8, 0, 1), pct = sc.from + (sc.to - sc.from) * (1 - Math.pow(1 - q, 3)), full = sc.to >= 0.999;
+    { const g = ctx.createLinearGradient(0, T0, 0, T0 + HH); g.addColorStop(0, 'rgba(10,11,14,0.78)'); g.addColorStop(1, 'rgba(10,11,14,0.9)'); ctx.fillStyle = g; ctx.fillRect(0, T0, W, HH); }
+    const pop = U.clamp(tt / 0.3, 0, 1);
+    UI.text(ctx, 'COFFRE', cx, Y(0.17), UI.fit(ctx, 'COFFRE', cw * 0.8, S(100)), T.yellow, { outline: true });
+    const cb = cw * 0.46, cyy = Y(0.4) - cb / 2, wob = q > 0 && q < 1 ? Math.sin(now / 45) * 0.012 : 0;
+    ctx.save(); ctx.globalAlpha = pop; ctx.translate(cx, cyy + cb / 2); ctx.rotate(wob); ctx.translate(-cx, -(cyy + cb / 2));
+    UI.chestFrame(ctx, cx - cb / 2, cyy, cb, full && q >= 1, true, now, pct);
+    ctx.restore();
+    // jauge en 3 vols
+    const bw = cw * 0.7, bh = cw * 0.05, bx = cx - bw / 2, by = Y(0.4) + cb / 2 + cw * 0.07;
+    UI.panel(ctx, bx - 6, by - 6, bw + 12, bh + 12, { c: bh, fill: 'rgba(0,0,0,0.5)', border: T.border2, bw: 3 });
+    ctx.save(); UI.rrect(ctx, bx, by, bw, bh, bh / 2); ctx.clip(); ctx.fillStyle = '#FFC400'; ctx.fillRect(bx, by, bw * pct, bh); ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillRect(bx, by, bw * pct, bh * 0.4); ctx.fillStyle = 'rgba(0,0,0,0.55)'; for (let k = 1; k < E.CHEST_N; k++) ctx.fillRect(bx + bw * k / E.CHEST_N - 2, by, 4, bh); ctx.restore();
+    UI.text(ctx, Math.round(pct * 100) + '%', cx, by + bh + cw * 0.075, cw * 0.1, T.white, { outline: true });
+    const left = Math.max(1, Math.ceil((1 - sc.to) * E.CHEST_N - 0.001)), msg = full ? 'COFFRE PLEIN ! OUVRE-LE AU HANGAR' : (left === 1 ? 'ENCORE 1 VOL POUR L\'OUVRIR' : 'ENCORE ' + left + ' VOLS POUR L\'OUVRIR');
+    if (tt > 1.2) { ctx.save(); ctx.globalAlpha = U.clamp((tt - 1.2) / 0.4, 0, 1); UI.text(ctx, msg, cx, by + bh + cw * 0.2, UI.fit(ctx, msg, cw * 0.9, cw * 0.058), T.white, { outline: true }); ctx.restore(); }
+    if (tt > 2.4) { const w = cw * 0.6, h = cw * 0.16, x = cx - w / 2, y = Y(0.86), pulse = 1 + 0.03 * Math.sin(now / 200); ctx.save(); ctx.translate(cx, y + h / 2); ctx.scale(pulse, pulse); ctx.translate(-cx, -(y + h / 2)); UI.btnPrimary(ctx, x, y, w, h, 'SUIVANT'); ctx.restore(); UI.tap(ui, x, y, w, h, () => { game.evoChestScr = null; E.afterReport(game); }); }
+    hit(ui, 0, 0, W, H, () => {}, true);
+  };
+
   // ---------- RAPPORT DE MISSION (sur le lieu du crash) ----------
   Home.drawEvoReport = function (ui, ctx, game, W, H) {
     const F = frame(ui, ctx, W, H), { HH, Y, T0, cw, ox, cx } = F, E = CC.EVO, S0 = E.save(game), last = game.evoLast, now = performance.now();
@@ -320,8 +348,8 @@
           if (tt > tMul + 0.15) UI.tap(ui, bx, b2y, wA, b2h, () => { if (last.mult) return; last.mult = { m: mv, p: pos }; game.audio.play('uiTick'); setTimeout(() => game.ads.rewarded(() => { E.multiply(game, mv); release(); }, null, 'coins', 'PIÈCES X' + (mv === 1.5 ? '1,5' : mv) + '   +' + U.formatInt(Math.round(last.total * (mv - 1)))), 420); }); }
         else UI.text(ctx, 'BONUS X' + (last.doubled === 1.5 ? '1,5' : last.doubled) + ' AJOUTÉ', bx + wA / 2, b2y + b2h / 2, UI.fit(ctx, 'BONUS X1,5 AJOUTÉ', wA * 0.9, S(54)), T.yellow, { outline: true });
         ctx.restore(); }
-      if (aN > 0) { ctx.save(); ctx.globalAlpha = aN; const nx = bx + bw - wB, f2 = UI.greenButton(ctx, nx, b2y, wB, b2h, { cat: 'mx' }); UI.outlined(ctx, 'SUIVANT', nx + wB / 2, f2.y + f2.h * 0.5, UI.fit(ctx, 'SUIVANT', wB * 0.84, f2.h * 0.34), '#FFFFFF'); ctx.restore(); if (tt > tNext + 0.1) UI.tap(ui, nx, b2y, wB, b2h, () => { release(); E.afterReport(game); }); }
-    } else { const aN = U.clamp((tt - tMul + 0.3) / 0.3, 0, 1); if (aN > 0) { const bw = cw * 0.6, b2h = S(150), b2y = by0 + S(40), nx = cx - bw / 2; ctx.save(); ctx.globalAlpha = aN; UI.btnPrimary(ctx, nx, b2y, bw, b2h, 'SUIVANT'); ctx.restore(); if (aN > 0.6) UI.tap(ui, nx, b2y, bw, b2h, () => { release(); E.afterReport(game); }); } }
+      if (aN > 0) { ctx.save(); ctx.globalAlpha = aN; const nx = bx + bw - wB, f2 = UI.greenButton(ctx, nx, b2y, wB, b2h, { cat: 'mx' }); UI.outlined(ctx, 'SUIVANT', nx + wB / 2, f2.y + f2.h * 0.5, UI.fit(ctx, 'SUIVANT', wB * 0.84, f2.h * 0.34), '#FFFFFF'); ctx.restore(); if (tt > tNext + 0.1) UI.tap(ui, nx, b2y, wB, b2h, () => { release(); Home.afterReportStep(game); }); }
+    } else { const aN = U.clamp((tt - tMul + 0.3) / 0.3, 0, 1); if (aN > 0) { const bw = cw * 0.6, b2h = S(150), b2y = by0 + S(40), nx = cx - bw / 2; ctx.save(); ctx.globalAlpha = aN; UI.btnPrimary(ctx, nx, b2y, bw, b2h, 'SUIVANT'); ctx.restore(); if (aN > 0.6) UI.tap(ui, nx, b2y, bw, b2h, () => { release(); Home.afterReportStep(game); }); } }
     flyDraw(ctx, game, F, now);
   };
 
