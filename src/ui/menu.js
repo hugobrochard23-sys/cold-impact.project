@@ -33,7 +33,7 @@
     ctx.restore();
   };
   const drawTitle = (ctx, W, H) => {
-    const tpx = H * 0.13, ty = H * 0.17; ctx.font = '900 ' + tpx + 'px "Arial Black", Impact, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineWidth = tpx * 0.16; ctx.strokeStyle = '#10213A'; ctx.strokeText('COLD IMPACT', W / 2, ty + tpx * 0.06); ctx.fillStyle = '#FFD23A'; ctx.fillText('COLD IMPACT', W / 2, ty);
+    const tpx = H * 0.13, ty = H * 0.17; ctx.font = '900 ' + tpx + 'px "Arial Black", Impact, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineWidth = tpx * 0.16; ctx.strokeStyle = '#10213A'; ctx.strokeText('COLD IMPACT', W / 2, ty + tpx * 0.06); ctx.shadowColor = 'rgba(8,24,56,0.5)'; ctx.shadowBlur = tpx * 0.2; ctx.shadowOffsetY = tpx * 0.05; ctx.fillStyle = '#FFFFFF'; ctx.fillText('COLD IMPACT', W / 2, ty); ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
     ctx.restore();
   };
 
