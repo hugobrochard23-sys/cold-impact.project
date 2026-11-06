@@ -4,8 +4,10 @@
   CC.LOADIMG = new Image(); CC.LOADIMG.src = 'assets/ui/loading.jpg';   // v319 : ecran de chargement illustre
   const U = CC.U;
   // v343 : ecran de chargement PAYSAGE (ordinateur) dessine dans le style cartoon du jeu (ciel, collines, nuages, fusee) : l'image portrait etait rognee sur un ecran large
+  CC.LOADIMG_PC = new Image(); CC.LOADIMG_PC.src = 'assets/ui/loading_pc.jpg';   // v344 : image paysage generee (Gemini) ; si elle manque, le decor dessine ci-dessous la remplace
   CC.loadPC = (ctx, W, H, T0) => {
-    const t = performance.now() / 1000, TAU = 6.2832; ctx.save(); ctx.translate(0, T0);
+    const t = performance.now() / 1000, TAU = 6.2832, im = CC.LOADIMG_PC; ctx.save(); ctx.translate(0, T0);
+    if (im && im.complete && im.naturalWidth) { const k = Math.max(W / im.naturalWidth, H / im.naturalHeight), dw = im.naturalWidth * k, dh = im.naturalHeight * k; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(im, (W - dw) / 2, (H - dh) / 2, dw, dh); drawTitle(ctx, W, H); ctx.restore(); return; }
     let g = ctx.createLinearGradient(0, 0, 0, H * 0.72); g.addColorStop(0, '#3FA9F0'); g.addColorStop(1, '#D4F0FF'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     const sx = W * 0.83, sy = H * 0.2, sr = H * 0.085;
     for (const [m, a] of [[2.6, 0.22], [1.8, 0.4]]) { ctx.fillStyle = 'rgba(255,246,196,' + a + ')'; ctx.beginPath(); ctx.arc(sx, sy, sr * m, 0, TAU); ctx.fill(); }
@@ -27,9 +29,11 @@
     ctx.fillStyle = '#2A78D6'; ctx.fillRect(-L * 0.36, -L * 0.113, L * 0.08, L * 0.226); ctx.fillRect(-L * 0.22, -L * 0.113, L * 0.04, L * 0.226);
     ctx.fillStyle = '#8FD6FF'; ctx.beginPath(); ctx.arc(L * 0.02, 0, L * 0.06, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.arc(L * 0.005, -L * 0.02, L * 0.018, 0, TAU); ctx.fill();
     ctx.restore();
-    // titre
+    drawTitle(ctx, W, H);
+    ctx.restore();
+  };
+  const drawTitle = (ctx, W, H) => {
     const tpx = H * 0.13, ty = H * 0.17; ctx.font = '900 ' + tpx + 'px "Arial Black", Impact, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineWidth = tpx * 0.16; ctx.strokeStyle = '#10213A'; ctx.strokeText('COLD IMPACT', W / 2, ty + tpx * 0.06); ctx.fillStyle = '#FFD23A'; ctx.fillText('COLD IMPACT', W / 2, ty);
-    const gr = ctx.createLinearGradient(0, H * 0.78, 0, H); gr.addColorStop(0, 'rgba(4,20,12,0)'); gr.addColorStop(1, 'rgba(4,20,12,0.7)'); ctx.fillStyle = gr; ctx.fillRect(0, H * 0.78, W, H * 0.22);
     ctx.restore();
   };
 

@@ -77,19 +77,17 @@
     }
     // v344 : tutoriel PC sans phrases : au tout premier vol le jeu s'arrete, une grande fleche transparente monte en boucle ; la fusee repart des que le joueur bouge la souris / touche une fleche
     if (D.th) {
-      const W = ctx.canvas.width, H = ctx.canvas.height, ph = (D.tt * 0.75) % 1, fr = D.lang() === 'fr', sz = H * 0.1;
-      ctx.save(); ctx.fillStyle = 'rgba(6,14,30,0.38)'; ctx.fillRect(0, 0, W, H);
-      for (let i = 0; i < 3; i++) {
-        const p = (ph + i / 3) % 1, a = Math.sin(Math.PI * p) * 0.6, cx = W / 2, cy = H * 0.66 - p * H * 0.3;
-        ctx.globalAlpha = a; ctx.beginPath(); ctx.moveTo(cx, cy - sz); ctx.lineTo(cx + sz * 0.85, cy + sz * 0.1); ctx.lineTo(cx + sz * 0.32, cy + sz * 0.1); ctx.lineTo(cx + sz * 0.32, cy + sz * 0.8); ctx.lineTo(cx - sz * 0.32, cy + sz * 0.8); ctx.lineTo(cx - sz * 0.32, cy + sz * 0.1); ctx.lineTo(cx - sz * 0.85, cy + sz * 0.1); ctx.closePath();
-        ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(3, sz * 0.07); ctx.strokeStyle = '#2f7de0'; ctx.stroke();
-      }
-      ctx.globalAlpha = 0.95; const px = Math.max(16, Math.round(H * 0.04)), kw = px * 1.9, ky = H * 0.88, lab = fr ? 'SOURIS' : 'MOUSE', ou = fr ? 'OU' : 'OR';
-      ctx.font = '900 ' + px + 'px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineWidth = px * 0.22; ctx.strokeStyle = 'rgba(8,24,56,0.9)';
-      const w1 = ctx.measureText(lab).width, w2 = ctx.measureText(ou).width, gap = px * 0.9, tot = w1 + w2 + kw + gap * 2, x0 = W / 2 - tot / 2, kx = x0 + w1 + gap + w2 + gap + kw / 2; ctx.textAlign = 'left';
-      ctx.strokeStyle = 'rgba(8,24,56,0.9)'; ctx.lineWidth = px * 0.22; ctx.fillStyle = '#ffffff'; ctx.strokeText(lab, x0, ky); ctx.fillText(lab, x0, ky); ctx.fillStyle = '#ffd04a'; ctx.strokeText(ou, x0 + w1 + gap, ky); ctx.fillText(ou, x0 + w1 + gap, ky); ctx.textAlign = 'center';
-      ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#2f7de0'; ctx.lineWidth = px * 0.14; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(kx - kw / 2, ky - kw / 2, kw, kw, px * 0.35) : ctx.rect(kx - kw / 2, ky - kw / 2, kw, kw); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#16305e'; ctx.fillText('↑', kx, ky + px * 0.04);
+      const W = ctx.canvas.width, H = ctx.canvas.height, p = (D.tt * 0.8) % 1, fr = D.lang() === 'fr', sz = H * 0.1, UI = CC.UI2;
+      ctx.save(); ctx.fillStyle = 'rgba(6,14,30,0.3)'; ctx.fillRect(0, 0, W, H);
+      { const cx = W / 2, cy = H * 0.7 - p * H * 0.32; ctx.globalAlpha = Math.sin(Math.PI * p) * 0.6; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(cx, cy - sz); ctx.lineTo(cx + sz * 0.85, cy + sz * 0.1); ctx.lineTo(cx + sz * 0.32, cy + sz * 0.1); ctx.lineTo(cx + sz * 0.32, cy + sz * 0.8); ctx.lineTo(cx - sz * 0.32, cy + sz * 0.8); ctx.lineTo(cx - sz * 0.32, cy + sz * 0.1); ctx.lineTo(cx - sz * 0.85, cy + sz * 0.1); ctx.closePath(); ctx.fill(); }   // une seule fleche blanche, sans contour, transparente, qui monte en boucle
+      ctx.globalAlpha = 1; const px = Math.max(20, Math.round(H * 0.05)), kw = px * 1.7, ky = H * 0.9, lab = fr ? 'SOURIS' : 'MOUSE', ou = fr ? 'OU' : 'OR' + String.fromCharCode(8203), gap = px * 0.8;
+      const w1 = UI.tw(ctx, lab, px), w2 = UI.tw(ctx, ou, px), tot = w1 + w2 + kw + gap * 2, x0 = W / 2 - tot / 2, kx = x0 + w1 + gap + w2 + gap, kt = ky - kw / 2, d = kw * 0.16, r = kw * 0.2;
+      UI.outlined(ctx, lab, x0 + w1 / 2, ky, px, '#FFFFFF'); UI.outlined(ctx, ou, x0 + w1 + gap + w2 / 2, ky, px, '#FFFFFF');
+      const rr = (x, y, w, h, q) => { ctx.beginPath(); ctx.moveTo(x + q, y); ctx.arcTo(x + w, y, x + w, y + h, q); ctx.arcTo(x + w, y + h, x, y + h, q); ctx.arcTo(x, y + h, x, y, q); ctx.arcTo(x, y, x + w, y, q); ctx.closePath(); };
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = d * 1.2; ctx.shadowOffsetY = d * 0.8; rr(kx, kt + d, kw, kw, r); ctx.fillStyle = '#6a7384'; ctx.fill(); ctx.restore();   // epaisseur de la touche (relief) + ombre portee
+      rr(kx, kt + d * 0.5, kw, kw, r); ctx.fillStyle = '#8f98aa'; ctx.fill(); ctx.lineWidth = kw * 0.025; ctx.strokeStyle = '#3d4455'; ctx.stroke();
+      { const g = ctx.createLinearGradient(0, kt, 0, kt + kw * 0.9); g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#cfd5e1'); rr(kx + kw * 0.06, kt + kw * 0.04, kw * 0.88, kw * 0.84, r * 0.8); ctx.fillStyle = g; ctx.fill(); ctx.lineWidth = kw * 0.02; ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.stroke(); }   // dessus de la touche, plus clair
+      { const cx = kx + kw / 2, cy = kt + kw * 0.46, s = kw * 0.2; ctx.fillStyle = '#2b3347'; ctx.beginPath(); ctx.moveTo(cx, cy - s * 1.3); ctx.lineTo(cx + s * 1.1, cy - s * 0.1); ctx.lineTo(cx + s * 0.4, cy - s * 0.1); ctx.lineTo(cx + s * 0.4, cy + s * 1.2); ctx.lineTo(cx - s * 0.4, cy + s * 1.2); ctx.lineTo(cx - s * 0.4, cy - s * 0.1); ctx.lineTo(cx - s * 1.1, cy - s * 0.1); ctx.closePath(); ctx.fill(); }
       ctx.restore();
     }
   };
