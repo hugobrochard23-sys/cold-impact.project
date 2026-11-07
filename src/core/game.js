@@ -409,7 +409,8 @@
       const pad = this.pad, PC = CC.CONFIG.pad, rk = this.rocket;
       this.input.setAim(0, pad.pitch); this.rig.setAim(0, pad.pitch);
       this.acc = 0;
-      rk.launch(pad.origin.clone(), pad.dir.clone(), { speed: this.evo ? CC.EVO.launchSpeed(this) : PC.launchSpeed, ignited: true, freeBoost: this.evo ? 0 : PC.freeBoost });
+      const ldir = pad.dir.clone(); if (this.evo && CC.EVO.fast() && CC.EVO.isS2()) { ldir.y += 0.5; ldir.normalize(); const lp = Math.asin(ldir.y); this.input.setAim(0, lp); this.rig.setAim(0, lp); }   // v348 : niveau 2 sur PC / portail : depart releve (la rampe pique a -19 degres : sans bien viser on finissait dans le sol)
+      rk.launch(pad.origin.clone(), ldir, { speed: this.evo ? CC.EVO.launchSpeed(this) : PC.launchSpeed, ignited: true, freeBoost: this.evo ? 0 : PC.freeBoost });
       rk.fuelMax = CC.CONFIG.endless.fuelMax + this.progress.fuelBonus(); rk.fuel = Math.min(rk.fuelMax, CC.CONFIG.endless.fuelStart + this.progress.fuelBonus() + (this.assistFuel || 0));
       if (this.evo) CC.EVO.onLaunch(this);   // v119 : stats de la fusée et du lanceur
       pad.ignite(); this.audio.play('padIgnite');
