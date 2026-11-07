@@ -34,6 +34,8 @@
 
   // ---------- sauvegarde ----------
   EVO.saveBase = (g) => {
+    // v348 : lien de test « depart a zero » : ?fresh=<jeton> efface la progression une seule fois par onglet (un nouveau jeton, ou un nouvel onglet, la remet a zero)
+    if (!EVO._fresh) { EVO._fresh = 1; const m = /[?&]fresh=([\w-]+)/.exec(location.search); if (m) { let last = ''; try { last = sessionStorage.getItem('cc.fresh') || ''; } catch (e) { /* ignore */ } if (last !== m[1]) { try { sessionStorage.setItem('cc.fresh', m[1]); } catch (e) { /* ignore */ } g.save.evo = null; try { if (g.writeSave) g.writeSave(); } catch (e) { /* ignore */ } } } }
     const S = g.save.evo = g.save.evo || { coins: 0, rk: 0, la: 0, cm: 0, best: 0, runs: 0, kills: 0, cleared: 0 };
     if (S.t0 === undefined) { S.t0 = 0; S.marks = {}; }
     if (S.gems === undefined) { S.gems = 0; S.chestAt = 0; }
