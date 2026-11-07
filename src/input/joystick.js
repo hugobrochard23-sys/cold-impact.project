@@ -2,7 +2,9 @@
  * Plus la boule s'eloigne du centre, plus la fusee tourne vite dans cette direction (haut = monte, droite = tourne a droite). Les fleches du clavier ne servent plus. */
 (function () {
   const J = CC.Joy = { on: false, ax: 0, ay: 0, kx: 0, ky: 0, fade: 0 };
-  const evo = () => false;   // v273 : joystick desactive (retour au glisse d'avant)
+  // v351 : sur ORDINATEUR (souris / pave tactile) le mini joystick est de retour, avec les reglages d'avant (v267-v272) : clic = le joystick se pose sous le curseur, glisser = la fusee tourne (plus on s'eloigne, plus vite), relacher = elle garde son cap. Comme le doigt sur mobile. ?mouse=aim rend l'ancien pilotage au curseur.
+  const evo = () => J.stick();
+  J.stick = () => !(CC.Touch && CC.Touch.active) && !!(CC.EVO && CC.EVO.on) && !/[?&]mouse=aim/.test(location.search);
   const R = () => Math.max(46, Math.min(84, 0.145 * Math.min(window.innerWidth, window.innerHeight)));   // rayon du grand cercle (px ecran)
   J.begin = (x, y) => { J.held = 0; J.on = true; J.ax = J.kx = x; J.ay = J.ky = y; J.fade = 1; };
   J.move = (x, y) => { if (!J.on) return; const r = R(), dx = x - J.ax, dy = y - J.ay, l = Math.hypot(dx, dy); if (l > r) { J.kx = J.ax + dx / l * r; J.ky = J.ay + dy / l * r; } else { J.kx = x; J.ky = y; } };
@@ -44,7 +46,7 @@
   D.lang = () => (CC.I18n && CC.I18n.lang === 'fr') ? 'fr' : 'en';
   const _e = new THREE.Euler();
   D.apply = (dt, input, game) => {
-    if (!D.ok(game)) { D.fly = 0; return; }
+    if (!D.ok(game) || J.stick()) { D.fly = 0; return; }
     D.fly = (D.fly || 0) + dt;
     const k = input.keys, run = game.endlessRun, r = input.el.getBoundingClientRect(), cam = game.camera;
     if (!D.in || !run || !run.T || !cam || !r.width || !r.height || k.ArrowLeft || k.ArrowRight || k.ArrowUp || k.ArrowDown || k.KeyA || k.KeyD || k.KeyW || k.KeyS || k.KeyQ || k.KeyZ) return;   // clavier utilise : la souris se tait
@@ -65,10 +67,10 @@
   };
   D.draw = (ctx, game, ui) => {
     const on = D.ok(game);
-    try { const cur = on ? 'none' : ''; if (D.cur !== cur) { D.cur = cur; document.documentElement.style.cursor = cur; } } catch (e) { /* ignore */ }
+    try { const cur = on && !J.stick() ? 'none' : ''; if (D.cur !== cur) { D.cur = cur; document.documentElement.style.cursor = cur; } } catch (e) { /* ignore */ }
     if (!on) { D.t = 0; return; }
     D.t += 1 / 60; const inp = game.input, rc = inp.el.getBoundingClientRect(), sc = inp.el.width / rc.width, fade = Math.min(1, D.t / 0.3);
-    if (D.in) {   // petit viseur au curseur (jaune quand le boost est tenu)
+    if (D.in && !J.stick()) {   // petit viseur au curseur (jaune quand le boost est tenu)
       const c = inp.uiCoords(D.x, D.y), r0 = Math.max(9, inp.el.height * 0.016), col = D.boost ? '#ffd04a' : '#ffffff';
       ctx.save(); ctx.globalAlpha = 0.9 * fade; ctx.lineWidth = Math.max(2, r0 * 0.2); ctx.strokeStyle = col; ctx.shadowColor = 'rgba(8,24,56,0.8)'; ctx.shadowBlur = r0 * 0.4;
       ctx.beginPath(); ctx.arc(c.x, c.y, r0, 0, 6.2832); ctx.stroke();
@@ -80,7 +82,7 @@
       const W = ctx.canvas.width, H = ctx.canvas.height, p = (D.tt * 0.8) % 1, fr = D.lang() === 'fr', sz = H * 0.1, UI = CC.UI2;
       ctx.save(); ctx.fillStyle = 'rgba(6,14,30,0.3)'; ctx.fillRect(0, 0, W, H);
       { const cx = W / 2, cy = H * 0.7 - p * H * 0.32; ctx.globalAlpha = Math.sin(Math.PI * p) * 0.6; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(cx, cy - sz); ctx.lineTo(cx + sz * 0.85, cy + sz * 0.1); ctx.lineTo(cx + sz * 0.32, cy + sz * 0.1); ctx.lineTo(cx + sz * 0.32, cy + sz * 0.8); ctx.lineTo(cx - sz * 0.32, cy + sz * 0.8); ctx.lineTo(cx - sz * 0.32, cy + sz * 0.1); ctx.lineTo(cx - sz * 0.85, cy + sz * 0.1); ctx.closePath(); ctx.fill(); }   // une seule fleche blanche, sans contour, transparente, qui monte en boucle
-      ctx.globalAlpha = 1; const px = Math.max(20, Math.round(H * 0.05)), kw = px * 1.7, ky = H * 0.9, lab = fr ? 'SOURIS' : 'MOUSE', ou = fr ? 'OU' : 'OR' + String.fromCharCode(8203), gap = px * 0.8;
+      ctx.globalAlpha = 1; const px = Math.max(20, Math.round(H * 0.05)), kw = px * 1.7, ky = H * 0.9, lab = J.stick() ? (fr ? 'CLIC' : 'CLICK') : (fr ? 'SOURIS' : 'MOUSE'), ou = fr ? 'OU' : 'OR' + String.fromCharCode(8203), gap = px * 0.8;
       const w1 = UI.tw(ctx, lab, px), w2 = UI.tw(ctx, ou, px), tot = w1 + w2 + kw + gap * 2, x0 = W / 2 - tot / 2, kx = x0 + w1 + gap + w2 + gap, kt = ky - kw / 2, d = kw * 0.16, r = kw * 0.2;
       UI.outlined(ctx, lab, x0 + w1 / 2, ky, px, '#FFFFFF'); UI.outlined(ctx, ou, x0 + w1 + gap + w2 / 2, ky, px, '#FFFFFF');
       const rr = (x, y, w, h, q) => { ctx.beginPath(); ctx.moveTo(x + q, y); ctx.arcTo(x + w, y, x + w, y + h, q); ctx.arcTo(x + w, y + h, x, y + h, q); ctx.arcTo(x, y + h, x, y, q); ctx.arcTo(x, y, x + w, y, q); ctx.closePath(); };
@@ -99,7 +101,7 @@
     if (!D.th) { if (g.flightTime > 0.9 && !D.thDone) { D.th = true; if (CC.Stats) CC.Stats.log("tutorial_shown"); D.mx0 = null; D.mv = 0; D.tt = 0; } else return false; }
     if (D.tt < 1.3) { D.mv = 0; D.mx0 = D.in ? D.x : null; D.my0 = D.in ? D.y : null; return true; }   // v347 : pause minimale de 1,3 s : un joueur qui bougeait deja la souris voit quand meme la consigne ; seuls les gestes APRES ce delai comptent
     if (D.mx0 == null && D.in) { D.mx0 = D.x; D.my0 = D.y; }
-    const moved = (D.in && D.mx0 != null && Math.hypot(D.x - D.mx0, D.y - D.my0) > 45) || (D.mv || 0) > 60, key = k.ArrowLeft || k.ArrowRight || k.ArrowUp || k.ArrowDown || k.KeyA || k.KeyD || k.KeyW || k.KeyS || k.KeyQ || k.KeyZ || k.Space;
+    const moved = !J.stick() && ((D.in && D.mx0 != null && Math.hypot(D.x - D.mx0, D.y - D.my0) > 45) || (D.mv || 0) > 60), key = k.ArrowLeft || k.ArrowRight || k.ArrowUp || k.ArrowDown || k.KeyA || k.KeyD || k.KeyW || k.KeyS || k.KeyQ || k.KeyZ || k.Space;
     if (moved || key || D.boost) { D.th = false; D.thDone = true; S.tutPC = 1; g.writeSave(); if (CC.Stats) CC.Stats.log("tutorial_completed", { sec: Math.round(D.tt * 10) / 10 }); if (g.audio) g.audio.play('card'); return false; }
     return true;
   };

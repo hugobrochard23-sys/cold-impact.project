@@ -123,6 +123,7 @@
       if (turnRight) this.addAim(-ar, 0);
       if (pitchUp) this.addAim(0, ar);
       if (pitchDown) this.addAim(0, -ar); }
+      if (CC.Joy && CC.Joy.stick && CC.Joy.stick()) CC.Joy.apply(dt, this, this.game);   // v351 : mini joystick (ordinateur)
       if (CC.Joy && CC.Joy.desk) CC.Joy.desk.apply(dt, this, this.game);   // v339 : pilotage au curseur (ordinateur)
       const t = this.touch;   // v022 : écran tactile (src/input/touch.js) : le glissé agit directement via addAim, ici seul le moteur
       this.constrainAim(dt);
