@@ -9,7 +9,7 @@
   EVO.showHome = (g) => {
     if (g.evoNext) { const f = g.evoNext; g.evoNext = null; f(); return; }
     const S = EVO.save(g);
-    if (!S.intro && !g.testMode && EVO.stage(g) === 1) EVO.startIntro(g); else g.ui.overlay = 'evo';
+    if (!S.intro && !g.testMode && (EVO.stage(g) === 1 || EVO.saveBase(g).ab === 'B')) EVO.startIntro(g); else g.ui.overlay = 'evo';
   };
   // v278 : plus de cinematique : 2 s de zoom sur la vraie fusee (la camera part de tres haut et arrive derriere elle), puis l'ecran de visee ; on peut deja viser
   EVO.startIntro = (g) => { EVO.save(g).intro = 1; g.writeSave(); EVO.dropIn(g); };

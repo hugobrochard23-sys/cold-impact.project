@@ -96,11 +96,11 @@
     const E = CC.EVO, S = E && E.save ? E.save(g) : null;
     if (!S || S.tutPC || !(E.fast && E.fast()) || (CC.Touch && CC.Touch.active) || g.state !== 'FLIGHT' || g.paused || g.ui.overlay) { D.th = false; return false; }
     D.tt = (D.tt || 0) + dt; const k = g.input.keys;
-    if (!D.th) { if (g.flightTime > 0.9 && !D.thDone) { D.th = true; D.mx0 = null; D.mv = 0; D.tt = 0; } else return false; }
+    if (!D.th) { if (g.flightTime > 0.9 && !D.thDone) { D.th = true; if (CC.Stats) CC.Stats.log("tutorial_shown"); D.mx0 = null; D.mv = 0; D.tt = 0; } else return false; }
     if (D.tt < 1.3) { D.mv = 0; D.mx0 = D.in ? D.x : null; D.my0 = D.in ? D.y : null; return true; }   // v347 : pause minimale de 1,3 s : un joueur qui bougeait deja la souris voit quand meme la consigne ; seuls les gestes APRES ce delai comptent
     if (D.mx0 == null && D.in) { D.mx0 = D.x; D.my0 = D.y; }
     const moved = (D.in && D.mx0 != null && Math.hypot(D.x - D.mx0, D.y - D.my0) > 45) || (D.mv || 0) > 60, key = k.ArrowLeft || k.ArrowRight || k.ArrowUp || k.ArrowDown || k.KeyA || k.KeyD || k.KeyW || k.KeyS || k.KeyQ || k.KeyZ || k.Space;
-    if (moved || key || D.boost) { D.th = false; D.thDone = true; S.tutPC = 1; g.writeSave(); if (g.audio) g.audio.play('card'); return false; }
+    if (moved || key || D.boost) { D.th = false; D.thDone = true; S.tutPC = 1; g.writeSave(); if (CC.Stats) CC.Stats.log("tutorial_completed", { sec: Math.round(D.tt * 10) / 10 }); if (g.audio) g.audio.play('card'); return false; }
     return true;
   };
   document.addEventListener('mousemove', (e) => { D.x = e.clientX; D.y = e.clientY; D.in = true; if (D.th) D.mv = (D.mv || 0) + Math.hypot(e.movementX || 0, e.movementY || 0); });   // v345 : le tuto compte le mouvement reel de la souris (meme si elle n'etait pas encore dans la fenetre)

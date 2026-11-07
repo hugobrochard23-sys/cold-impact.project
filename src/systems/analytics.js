@@ -19,6 +19,7 @@
 
   St.log = (name, data) => {
     try {
+      if (CC.Portal && CC.Portal.ev && name !== 'session_start' && name !== 'session_pause') CC.Portal.ev(name, data);   // v348 : evenements envoyes a l'analytique du portail (Playgama)
       const e = Object.assign({ n: name, t: Date.now(), s: D.sessions }, data || {});
       D.ev[name] = (D.ev[name] || 0) + 1;
       D.last.push(e); if (D.last.length > 200) D.last.shift();

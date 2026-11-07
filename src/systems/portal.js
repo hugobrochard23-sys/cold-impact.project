@@ -100,11 +100,38 @@
   };
   // pause naturelle apres le rapport de vol : a partir du 2e vol, jamais moins de 70 s apres une autre pub (le portail decide en plus de sa propre frequence)
   // v343 : plus doux : a partir du 3e vol, au moins 150 s apres une autre pub et pas avant 3 min de session (les joueurs qui ferment juste apres une pub etaient trop nombreux)
-  if (CC.EVO) CC.EVO.adDue = (g, S) => !!(g.ads && g.ads.forced() && S.runs >= 3 && g.ads.now() - g.ads.lastAd >= 150 && performance.now() >= 180000);
+  // v348 : AUCUNE pub pendant les 5 premieres minutes (39,7 % des joueurs fermaient le jeu juste apres une pub) ; ensuite seulement au rapport de vol
+  if (CC.EVO) CC.EVO.adDue = (g, S) => !!(g.ads && g.ads.forced() && S.runs >= 3 && g.ads.now() - g.ads.lastAd >= 150 && performance.now() >= 300000);
+
+  // ---------- evenements de mesure (analytique Playgama : bridge.analytics.send) ----------
+  // Chaque evenement porte : ab (variante du test A/B), v (version), ts (secondes depuis l'ouverture), scr (ecran), stage, runs.
+  const evQ = [];
+  const scrOf = (g) => (g.ui && g.ui.overlay) || g.state || '';
+  const sendEv = (name, o) => { const b = window.bridge; if (id !== 'playgama') { note('ev ' + name); return true; } if (!b || !P.ready || !b.analytics || typeof b.analytics.send !== 'function') return false; try { b.analytics.send(name, o); note('ev ' + name); } catch (e) { /* ignore */ } return true; };
+  P.ev = (name, data) => {
+    try {
+      const g = G(), S = g && g.save && g.save.evo, o = {};
+      if (data) for (const k in data) { const v = data[k]; if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') o[k] = typeof v === 'string' ? v.slice(0, 40) : v; }
+      o.ab = (S && S.ab) || 'old'; o.v = String(window.CC_VERSION || ''); o.ts = Math.round(performance.now() / 1000);
+      if (g) { o.scr = scrOf(g); o.stage = (CC.EVO && CC.EVO.stage) ? CC.EVO.stage(g) : 1; o.runs = (S && S.runs) || 0; }
+      if (!sendEv(name, o)) { evQ.push([name, o]); if (evQ.length > 80) evQ.shift(); }
+    } catch (e) { /* ignore */ }
+  };
+  let lastScr = '', lastBeat = 0;
+  const trackScr = (g) => {
+    const s = scrOf(g); if (s !== lastScr) { const prev = lastScr; lastScr = s; if (prev) P.ev('screen', { to: s, from: prev }); }
+    const now = performance.now(); if (now - lastBeat >= 20000 && !document.hidden) { lastBeat = now; P.ev('alive', {}); }
+    if (P.ready && evQ.length) { while (evQ.length) { const e = evQ[0]; if (!sendEv(e[0], e[1])) break; evQ.shift(); } }
+  };
+  document.addEventListener('visibilitychange', () => { P.ev(document.hidden ? 'tab_hidden' : 'tab_shown', {}); });
+  window.addEventListener('pagehide', () => { P.ev('page_exit', {}); });
+  { const _o = Ads.open; /* pubs : fin de l'interstitielle, pour voir qui part apres une pub */
+    Ads.open = function (kind, then) { return _o.call(this, kind, then && kind === 'interstitial' ? function () { P.ev('ad_end', { kind: 'interstitial' }); then(); } : then); }; }   // le debut des pubs est deja note par analytics.js (ad_interstitial, ad_rewarded_request / done)
 
   // ---------- etat de partie / chargement ----------
   setInterval(() => {
     const g = G(); if (!g) return;
+    trackScr(g);
     if (!P.loaded && g.ui && (g.ui.overlay === 'evo' || g.padMode || g.state === 'LAUNCH')) { P.loaded = true; AD.loaded(); }
     const play = g.state === 'FLIGHT' && !g.paused && !g.ui.overlay;
     if (play !== P.playing) { P.playing = play; if (play) AD.start(); else AD.stop(); }
