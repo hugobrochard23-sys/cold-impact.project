@@ -622,7 +622,7 @@
   // ---------- fin d'un vol : on revient sur le lanceur avec le récap ----------
   EVO.beginEnd = (g) => {
     if (g.evo && g.evo.preview) { EVO.endTumble(g); g.evoPreview = false; g.evoLast = { zone2: true, t0: 0 }; g.goHome({}); return; }   // l'epave et le drapeau restent visibles sous le rapport (nettoyes au depart)
-    const S = EVO.save(g), ev = g.evo || { kills: 0, coins: 0, maxD: 0 }, run = g.endlessRun, dist = Math.round(Math.max(ev.maxD, run ? run.dist : 0)), m = EVO.mult(S.cm) * (EVO.fast() && S.rk < (EVO.isS2() ? 12 : 10) ? 2.5 : 1);   // v343 : mode ordinateur : gains x2,5 tant que le palier REACTEUR n'est pas atteint (ailes en ~2 min)
+    const S = EVO.save(g), ev = g.evo || { kills: 0, coins: 0, maxD: 0 }, run = g.endlessRun, dist = Math.round(Math.max(ev.maxD, run ? run.dist : 0)), m = EVO.mult(S.cm) * (EVO.fast() && S.rk < (EVO.isS2() ? 12 : 10) ? 4 : 1);   // v343 : mode ordinateur : gains x2,5 tant que le palier REACTEUR n'est pas atteint (ailes en ~2 min)
     const sd = Math.round(dist * EVO.SCORE_K(g)), distCoins = Math.floor(sd * m), lines = [['DISTANCE ' + sd + ' M', distCoins]];
     if (ev.kills) lines.push(['ENNEMIS ' + ev.kills, ev.coins - (ev.bossHits ? Math.round(150 * m) * ev.bossHits : 0)]);
     if (ev.bossHits) lines.push(['COUPS AU BOSS ' + ev.bossHits, Math.round(150 * m) * ev.bossHits]);
