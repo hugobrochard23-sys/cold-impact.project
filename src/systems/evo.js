@@ -43,7 +43,8 @@
     if (EVO.fast() && !S.fastInit) { S.fastInit = 1; if (!S.runs && !S.coins) S.coins = 200; S.cf = S.cf || 0; }   // v343 : pieces de depart (une 1re amelioration achetable tout de suite)
     if (S.eco !== 194) { S.eco = 194; if (S.runs > 0 || S.rk > 0 || S.la > 0 || S.cm > 0) { S.rk = 0; S.la = 0; S.cm = 0; S.coins = 0; S.best = 0; S.runs = 0; S.t0 = 0; S.marks = {}; S.clr1 = 0; } }   // v194 : nouvelle economie (calquee sur la reference) : la progression des anciens prix est remise a zero une seule fois (gemmes, apparences et reglages sont conserves)
     // v348 : TEST A/B du depart (mode portail, nouveaux joueurs seulement ; ?ab=A ou ?ab=B pour forcer) : A = niveau 1 avec les AILES des le depart, B = niveau 2 (torpille a ailerons). La variante est envoyee a Playgama avec chaque evenement.
-    if (EVO.fast() && !S.ab && !S.runs && !(S.rk > 0) && !S.stage) { const q = /[?&]ab=([ab])/i.exec(location.search); S.ab = q ? q[1].toUpperCase() : (Math.random() < 0.5 ? 'A' : 'B'); if (S.ab === 'A') S.rk = 5; else { S.stage = 2; EVO.stage2(S).rk = 5; } }
+    // v352 : plus de test A/B : sur le portail / ordinateur tout le monde demarre au niveau 1 AVEC LES AILES (palier 5 : l'avion a ailes), nouveaux joueurs seulement
+    if (EVO.fast() && !S.wingsInit && !S.runs && !(S.rk > 0) && !S.stage) { S.wingsInit = 1; S.rk = 5; }
     if (!EVO._cheat) {
       EVO._cheat = 1; const q = (k) => { const m = new RegExp('[?&]' + k + '=(\\d+)').exec(location.search); return m ? parseInt(m[1], 10) : null; };
       const T = (/[?&]lv=2/.test(location.search) || S.stage === 2) ? EVO.stage2(S) : S;   // les triches de test visent le niveau en cours

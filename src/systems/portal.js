@@ -100,8 +100,8 @@
   };
   // pause naturelle apres le rapport de vol : a partir du 2e vol, jamais moins de 70 s apres une autre pub (le portail decide en plus de sa propre frequence)
   // v343 : plus doux : a partir du 3e vol, au moins 150 s apres une autre pub et pas avant 3 min de session (les joueurs qui ferment juste apres une pub etaient trop nombreux)
-  // v348 : AUCUNE pub pendant les 5 premieres minutes (39,7 % des joueurs fermaient le jeu juste apres une pub) ; ensuite seulement au rapport de vol
-  if (CC.EVO) CC.EVO.adDue = (g, S) => !!(g.ads && g.ads.forced() && S.runs >= 3 && g.ads.now() - g.ads.lastAd >= 150 && performance.now() >= 300000);
+  // v352 : AUCUNE pub pendant les 4 premieres minutes (minimum de la Sandbox : 0,30 pub par partie ; marge sinon)  // v348 : AUCUNE pub pendant les 5 premieres minutes (39,7 % des joueurs fermaient le jeu juste apres une pub) ; ensuite seulement au rapport de vol
+  if (CC.EVO) CC.EVO.adDue = (g, S) => !!(g.ads && g.ads.forced() && S.runs >= 3 && g.ads.now() - g.ads.lastAd >= 150 && performance.now() >= 240000);
 
   // ---------- evenements de mesure (analytique Playgama : bridge.analytics.send) ----------
   // Chaque evenement porte : ab (variante du test A/B), v (version), ts (secondes depuis l'ouverture), scr (ecran), stage, runs.
@@ -112,7 +112,7 @@
     try {
       const g = G(), S = g && g.save && g.save.evo, o = {};
       if (data) for (const k in data) { const v = data[k]; if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') o[k] = typeof v === 'string' ? v.slice(0, 40) : v; }
-      o.ab = (S && S.ab) || 'old'; o.v = String(window.CC_VERSION || ''); o.ts = Math.round(performance.now() / 1000);
+      o.ab = 'k'; o.v = String(window.CC_VERSION || ''); o.ts = Math.round(performance.now() / 1000);
       if (g) { o.scr = scrOf(g); o.stage = (CC.EVO && CC.EVO.stage) ? CC.EVO.stage(g) : 1; o.runs = (S && S.runs) || 0; }
       if (!sendEv(name, o)) { evQ.push([name, o]); if (evQ.length > 80) evQ.shift(); }
     } catch (e) { /* ignore */ }

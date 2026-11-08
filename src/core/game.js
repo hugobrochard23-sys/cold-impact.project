@@ -984,6 +984,7 @@
       if (typeof document !== 'undefined' && document.activeElement && document.activeElement.tagName === 'INPUT') return;   // saisie d'une graine
       this.audio.init(); this.audio.resume();
       const inGame = ['AIM', 'FLIGHT', 'IMPACT', 'CRASHED', 'RESPAWN'].includes(this.state);
+      if (k === 'Space' && this.state === 'LAUNCH' && this.evoAim && !this.ui.overlay && CC.EVO) { if (this.evoAim.auto) CC.EVO.lock(this); else CC.EVO.holdStart(this); return; }   // v352 : lancement au clavier : ESPACE maintenu = la jauge monte, on relache pour propulser
       if ((k === 'Space' || k === 'Enter') && this.state === 'MENU' && this.padMode && !this.ui.overlay) { this.beginLaunch(); return; }   // v034 : au clavier, Espace lance
       if (k === 'Escape') {
         if (this.state === 'REVIVE' || this.state === 'LAUNCH') return;

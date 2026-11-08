@@ -4,7 +4,8 @@
   const J = CC.Joy = { on: false, ax: 0, ay: 0, kx: 0, ky: 0, fade: 0 };
   // v351 : sur ORDINATEUR (souris / pave tactile) le mini joystick est de retour, avec les reglages d'avant (v267-v272) : clic = le joystick se pose sous le curseur, glisser = la fusee tourne (plus on s'eloigne, plus vite), relacher = elle garde son cap. Comme le doigt sur mobile. ?mouse=aim rend l'ancien pilotage au curseur.
   const evo = () => J.stick();
-  J.stick = () => !(CC.Touch && CC.Touch.active) && !!(CC.EVO && CC.EVO.on) && !/[?&]mouse=aim/.test(location.search);
+  J.stick = () => false;   // v352 : joystick a la souris abandonne : sur ordinateur le jeu se joue 100 % au clavier (fleches + Espace)
+  J.kb = () => !(CC.Touch && CC.Touch.active) && !!(CC.EVO && CC.EVO.on && CC.EVO.fast && CC.EVO.fast()) && !/[?&]mouse=(aim|on)/.test(location.search);   // v352 : mode clavier seul (portail / ?pc=1) : la souris ne pilote plus et ne fait plus de boost
   const R = () => Math.max(46, Math.min(84, 0.145 * Math.min(window.innerWidth, window.innerHeight)));   // rayon du grand cercle (px ecran)
   J.begin = (x, y) => { J.held = 0; J.on = true; J.ax = J.kx = x; J.ay = J.ky = y; J.fade = 1; };
   J.move = (x, y) => { if (!J.on) return; const r = R(), dx = x - J.ax, dy = y - J.ay, l = Math.hypot(dx, dy); if (l > r) { J.kx = J.ax + dx / l * r; J.ky = J.ay + dy / l * r; } else { J.kx = x; J.ky = y; } };
@@ -46,7 +47,7 @@
   D.lang = () => (CC.I18n && CC.I18n.lang === 'fr') ? 'fr' : 'en';
   const _e = new THREE.Euler();
   D.apply = (dt, input, game) => {
-    if (!D.ok(game) || J.stick()) { D.fly = 0; return; }
+    if (!D.ok(game) || J.stick() || J.kb()) { D.fly = 0; return; }
     D.fly = (D.fly || 0) + dt;
     const k = input.keys, run = game.endlessRun, r = input.el.getBoundingClientRect(), cam = game.camera;
     if (!D.in || !run || !run.T || !cam || !r.width || !r.height || k.ArrowLeft || k.ArrowRight || k.ArrowUp || k.ArrowDown || k.KeyA || k.KeyD || k.KeyW || k.KeyS || k.KeyQ || k.KeyZ) return;   // clavier utilise : la souris se tait
@@ -65,50 +66,56 @@
     const step = Math.min(m, Math.min(MAXR, m * FOLLOW) * dt), q = step / m;
     input.setAim(cy + ey * q, cp + ep * q);
   };
+  // v352 : touche en relief (fleche haut / gauche / droite) ; pressed = enfoncee ; dir : 0 haut, 1 gauche, 2 droite
+  const keycap = (ctx, cx, cy, kw, dir, pressed, alpha) => {
+    const d = kw * 0.16 * (pressed ? 0.3 : 1), r = kw * 0.2, kt = cy - kw / 2 + (kw * 0.16 - d), x = cx - kw / 2;
+    const rr = (x0, y0, w, h, q) => { ctx.beginPath(); ctx.moveTo(x0 + q, y0); ctx.arcTo(x0 + w, y0, x0 + w, y0 + h, q); ctx.arcTo(x0 + w, y0 + h, x0, y0 + h, q); ctx.arcTo(x0, y0 + h, x0, y0, q); ctx.arcTo(x0, y0, x0 + w, y0, q); ctx.closePath(); };
+    ctx.save(); ctx.globalAlpha = alpha;
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = d * 1.2; ctx.shadowOffsetY = d * 0.8; rr(x, kt + d, kw, kw, r); ctx.fillStyle = '#6a7384'; ctx.fill(); ctx.restore();
+    rr(x, kt + d * 0.5, kw, kw, r); ctx.fillStyle = '#8f98aa'; ctx.fill(); ctx.lineWidth = kw * 0.025; ctx.strokeStyle = '#3d4455'; ctx.stroke();
+    { const g = ctx.createLinearGradient(0, kt, 0, kt + kw * 0.9); g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#cfd5e1'); rr(x + kw * 0.06, kt + kw * 0.04 + d * 0.3, kw * 0.88, kw * 0.84, r * 0.8); ctx.fillStyle = g; ctx.fill(); ctx.lineWidth = kw * 0.02; ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.stroke(); }
+    { const ax = cx, ay = kt + kw * 0.46 + d * 0.3, q = kw * 0.2; ctx.translate(ax, ay); ctx.rotate(dir === 1 ? -Math.PI / 2 : dir === 2 ? Math.PI / 2 : 0); ctx.fillStyle = '#2b3347'; ctx.beginPath(); ctx.moveTo(0, -q * 1.3); ctx.lineTo(q * 1.1, -q * 0.1); ctx.lineTo(q * 0.4, -q * 0.1); ctx.lineTo(q * 0.4, q * 1.2); ctx.lineTo(-q * 0.4, q * 1.2); ctx.lineTo(-q * 0.4, -q * 0.1); ctx.lineTo(-q * 1.1, -q * 0.1); ctx.closePath(); ctx.fill(); }
+    ctx.restore();
+  };
+  D.keycap = keycap;
   D.draw = (ctx, game, ui) => {
     const on = D.ok(game);
-    try { const cur = on && !J.stick() ? 'none' : ''; if (D.cur !== cur) { D.cur = cur; document.documentElement.style.cursor = cur; } } catch (e) { /* ignore */ }
+    try { document.documentElement.style.cursor = ''; } catch (e) { /* ignore */ }
     if (!on) { D.t = 0; return; }
-    D.t += 1 / 60; const inp = game.input, rc = inp.el.getBoundingClientRect(), sc = inp.el.width / rc.width, fade = Math.min(1, D.t / 0.3);
-    if (D.in && !J.stick()) {   // petit viseur au curseur (jaune quand le boost est tenu)
-      const c = inp.uiCoords(D.x, D.y), r0 = Math.max(9, inp.el.height * 0.016), col = D.boost ? '#ffd04a' : '#ffffff';
-      ctx.save(); ctx.globalAlpha = 0.9 * fade; ctx.lineWidth = Math.max(2, r0 * 0.2); ctx.strokeStyle = col; ctx.shadowColor = 'rgba(8,24,56,0.8)'; ctx.shadowBlur = r0 * 0.4;
-      ctx.beginPath(); ctx.arc(c.x, c.y, r0, 0, 6.2832); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(c.x - r0 * 1.7, c.y); ctx.lineTo(c.x - r0 * 0.55, c.y); ctx.moveTo(c.x + r0 * 0.55, c.y); ctx.lineTo(c.x + r0 * 1.7, c.y); ctx.moveTo(c.x, c.y - r0 * 1.7); ctx.lineTo(c.x, c.y - r0 * 0.55); ctx.moveTo(c.x, c.y + r0 * 0.55); ctx.lineTo(c.x, c.y + r0 * 1.7); ctx.stroke();
-      ctx.restore();
+    D.t += 1 / 60; const inp = game.input, k = inp.keys;
+    if (!J.kb() && D.in && !J.stick()) {   // ancien pilotage au curseur (?mouse=aim) : petit viseur
+      const rc = inp.el.getBoundingClientRect(), fade0 = Math.min(1, D.t / 0.3), c = inp.uiCoords(D.x, D.y), r0 = Math.max(9, inp.el.height * 0.016), col = D.boost ? '#ffd04a' : '#ffffff';
+      ctx.save(); ctx.globalAlpha = 0.9 * fade0; ctx.lineWidth = Math.max(2, r0 * 0.2); ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(c.x, c.y, r0, 0, 6.2832); ctx.stroke(); ctx.restore();
     }
-    // v344 : tutoriel PC sans phrases : au tout premier vol le jeu s'arrete, une grande fleche transparente monte en boucle ; la fusee repart des que le joueur bouge la souris / touche une fleche
+    const W = ctx.canvas.width, H = ctx.canvas.height;
+    // v352 : tutoriel clavier : au tout premier vol le jeu s'arrete, une grande fleche transparente monte en boucle et la touche FLECHE HAUT est montree (aucun texte) ; la fusee repart des qu'on appuie dessus
     if (D.th) {
-      const W = ctx.canvas.width, H = ctx.canvas.height, p = (D.tt * 0.8) % 1, fr = D.lang() === 'fr', sz = H * 0.1, UI = CC.UI2;
+      const p = (D.tt * 0.8) % 1, sz = H * 0.1;
       ctx.save(); ctx.fillStyle = 'rgba(6,14,30,0.3)'; ctx.fillRect(0, 0, W, H);
-      { const cx = W / 2, cy = H * 0.7 - p * H * 0.32; ctx.globalAlpha = Math.sin(Math.PI * p) * 0.6; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(cx, cy - sz); ctx.lineTo(cx + sz * 0.85, cy + sz * 0.1); ctx.lineTo(cx + sz * 0.32, cy + sz * 0.1); ctx.lineTo(cx + sz * 0.32, cy + sz * 0.8); ctx.lineTo(cx - sz * 0.32, cy + sz * 0.8); ctx.lineTo(cx - sz * 0.32, cy + sz * 0.1); ctx.lineTo(cx - sz * 0.85, cy + sz * 0.1); ctx.closePath(); ctx.fill(); }   // une seule fleche blanche, sans contour, transparente, qui monte en boucle
-      ctx.globalAlpha = 1; const px = Math.max(20, Math.round(H * 0.05)), kw = px * 1.7, ky = H * 0.9, lab = J.stick() ? (fr ? 'CLIC' : 'CLICK') : (fr ? 'SOURIS' : 'MOUSE'), ou = fr ? 'OU' : 'OR' + String.fromCharCode(8203), gap = px * 0.8;
-      const w1 = UI.tw(ctx, lab, px), w2 = UI.tw(ctx, ou, px), tot = w1 + w2 + kw + gap * 2, x0 = W / 2 - tot / 2, kx = x0 + w1 + gap + w2 + gap, kt = ky - kw / 2, d = kw * 0.16, r = kw * 0.2;
-      UI.outlined(ctx, lab, x0 + w1 / 2, ky, px, '#FFFFFF'); UI.outlined(ctx, ou, x0 + w1 + gap + w2 / 2, ky, px, '#FFFFFF');
-      const rr = (x, y, w, h, q) => { ctx.beginPath(); ctx.moveTo(x + q, y); ctx.arcTo(x + w, y, x + w, y + h, q); ctx.arcTo(x + w, y + h, x, y + h, q); ctx.arcTo(x, y + h, x, y, q); ctx.arcTo(x, y, x + w, y, q); ctx.closePath(); };
-      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = d * 1.2; ctx.shadowOffsetY = d * 0.8; rr(kx, kt + d, kw, kw, r); ctx.fillStyle = '#6a7384'; ctx.fill(); ctx.restore();   // epaisseur de la touche (relief) + ombre portee
-      rr(kx, kt + d * 0.5, kw, kw, r); ctx.fillStyle = '#8f98aa'; ctx.fill(); ctx.lineWidth = kw * 0.025; ctx.strokeStyle = '#3d4455'; ctx.stroke();
-      { const g = ctx.createLinearGradient(0, kt, 0, kt + kw * 0.9); g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#cfd5e1'); rr(kx + kw * 0.06, kt + kw * 0.04, kw * 0.88, kw * 0.84, r * 0.8); ctx.fillStyle = g; ctx.fill(); ctx.lineWidth = kw * 0.02; ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.stroke(); }   // dessus de la touche, plus clair
-      { const cx = kx + kw / 2, cy = kt + kw * 0.46, s = kw * 0.2; ctx.fillStyle = '#2b3347'; ctx.beginPath(); ctx.moveTo(cx, cy - s * 1.3); ctx.lineTo(cx + s * 1.1, cy - s * 0.1); ctx.lineTo(cx + s * 0.4, cy - s * 0.1); ctx.lineTo(cx + s * 0.4, cy + s * 1.2); ctx.lineTo(cx - s * 0.4, cy + s * 1.2); ctx.lineTo(cx - s * 0.4, cy - s * 0.1); ctx.lineTo(cx - s * 1.1, cy - s * 0.1); ctx.closePath(); ctx.fill(); }
+      { const cx = W / 2, cy = H * 0.7 - p * H * 0.32; ctx.globalAlpha = Math.sin(Math.PI * p) * 0.6; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(cx, cy - sz); ctx.lineTo(cx + sz * 0.85, cy + sz * 0.1); ctx.lineTo(cx + sz * 0.32, cy + sz * 0.1); ctx.lineTo(cx + sz * 0.32, cy + sz * 0.8); ctx.lineTo(cx - sz * 0.32, cy + sz * 0.8); ctx.lineTo(cx - sz * 0.32, cy + sz * 0.1); ctx.lineTo(cx - sz * 0.85, cy + sz * 0.1); ctx.closePath(); ctx.fill(); }
+      ctx.globalAlpha = 1; const kw = Math.max(46, Math.round(H * 0.1)); keycap(ctx, W / 2, H * 0.88, kw, 0, Math.floor(D.tt * 2.4) % 2 === 1, 1);   // la touche s'enfonce en boucle
       ctx.restore();
+    } else if (D.k2 > 0) {   // juste apres : les touches GAUCHE / DROITE, en discret, quelques secondes (ou jusqu'au 1er appui)
+      D.k2 -= 1 / 60; if (k.ArrowLeft || k.ArrowRight || k.KeyA || k.KeyD || k.KeyQ) D.k2 = Math.min(D.k2, 0.4);
+      const a = Math.min(1, D.k2 / 0.4) * 0.85, kw = Math.max(40, Math.round(H * 0.075)), cy = H * 0.9, off = kw * 0.75;
+      keycap(ctx, W / 2 - off, cy, kw, 1, !!k.ArrowLeft, a); keycap(ctx, W / 2 + off, cy, kw, 2, !!k.ArrowRight, a);
     }
   };
-  // gel du tout premier vol (PC / portail) : appele par game.js avant la simulation ; renvoie vrai tant que le joueur n'a pas bouge
+  // gel du tout premier vol (PC / portail) : appele par game.js avant la simulation ; renvoie vrai tant que le joueur n'a pas appuye sur FLECHE HAUT
   D.tutHold = (g, dt) => {
     const E = CC.EVO, S = E && E.save ? E.save(g) : null;
     if (!S || S.tutPC || !(E.fast && E.fast()) || (CC.Touch && CC.Touch.active) || g.state !== 'FLIGHT' || g.paused || g.ui.overlay) { D.th = false; return false; }
     D.tt = (D.tt || 0) + dt; const k = g.input.keys;
-    if (!D.th) { if (g.flightTime > 0.9 && !D.thDone) { D.th = true; if (CC.Stats) CC.Stats.log("tutorial_shown"); D.mx0 = null; D.mv = 0; D.tt = 0; } else return false; }
-    if (D.tt < 1.3) { D.mv = 0; D.mx0 = D.in ? D.x : null; D.my0 = D.in ? D.y : null; return true; }   // v347 : pause minimale de 1,3 s : un joueur qui bougeait deja la souris voit quand meme la consigne ; seuls les gestes APRES ce delai comptent
-    if (D.mx0 == null && D.in) { D.mx0 = D.x; D.my0 = D.y; }
-    const moved = !J.stick() && ((D.in && D.mx0 != null && Math.hypot(D.x - D.mx0, D.y - D.my0) > 45) || (D.mv || 0) > 60), key = k.ArrowLeft || k.ArrowRight || k.ArrowUp || k.ArrowDown || k.KeyA || k.KeyD || k.KeyW || k.KeyS || k.KeyQ || k.KeyZ || k.Space;
-    if (moved || key || D.boost) { D.th = false; D.thDone = true; S.tutPC = 1; g.writeSave(); if (CC.Stats) CC.Stats.log("tutorial_completed", { sec: Math.round(D.tt * 10) / 10 }); if (g.audio) g.audio.play('card'); return false; }
+    if (!D.th) { if (g.flightTime > 0.9 && !D.thDone) { D.th = true; if (CC.Stats) CC.Stats.log('tutorial_shown'); D.tt = 0; } else return false; }
+    if (D.tt < 1.3) return true;   // pause minimale : la consigne est toujours vue (les appuis faits pendant ce delai ne comptent pas)
+    const up = k.ArrowUp || k.KeyW || k.KeyZ, any = up || (!J.kb() && (D.boost || k.ArrowLeft || k.ArrowRight || k.ArrowDown || k.KeyA || k.KeyD || k.KeyS || k.KeyQ || k.Space));
+    if (any) { D.th = false; D.thDone = true; D.k2 = 7; S.tutPC = 1; g.writeSave(); if (CC.Stats) CC.Stats.log('tutorial_completed', { sec: Math.round(D.tt * 10) / 10 }); if (g.audio) g.audio.play('card'); return false; }
     return true;
   };
-  document.addEventListener('mousemove', (e) => { D.x = e.clientX; D.y = e.clientY; D.in = true; if (D.th) D.mv = (D.mv || 0) + Math.hypot(e.movementX || 0, e.movementY || 0); });   // v345 : le tuto compte le mouvement reel de la souris (meme si elle n'etait pas encore dans la fenetre)
-  document.addEventListener('mousedown', (e) => { const g = CC.game; if (g && e.button === 0 && D.ok(g)) D.boost = true; });
+  document.addEventListener('mousemove', (e) => { D.x = e.clientX; D.y = e.clientY; D.in = true; });
+  document.addEventListener('mousedown', (e) => { const g = CC.game; if (g && e.button === 0 && D.ok(g) && !J.kb()) D.boost = true; });   // v352 : en mode clavier la souris ne fait plus de boost
   window.addEventListener('mouseup', (e) => { if (e.button === 0) D.boost = false; });
   window.addEventListener('blur', () => { D.boost = false; D.in = false; });
-  document.documentElement.addEventListener('mouseleave', () => { D.in = false; D.boost = false; });   // souris sortie de la fenetre / de l'iframe : plus de commande
-  setInterval(() => { const g = CC.game; if (g && g.state !== 'FLIGHT') { D.counted = false; D.boost = false; D.th = false; D.thDone = false; } }, 500);
+  document.documentElement.addEventListener('mouseleave', () => { D.in = false; D.boost = false; });
+  setInterval(() => { const g = CC.game; if (g && g.state !== 'FLIGHT') { D.counted = false; D.boost = false; D.th = false; D.thDone = false; D.k2 = 0; } }, 500);
 })();

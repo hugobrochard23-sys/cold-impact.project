@@ -256,6 +256,12 @@
     ctx.restore();
     const pct = Math.round(ch * 100); UI.text(ctx, pct + '%', cx, ccy - R * 0.42, S(78), ch > 0 ? powerCol(ch) : T.dim, {});
     if (a.lock) { const k = U.clamp(a.lockT / 0.12, 0, 1); UI.text(ctx, a.word, cx, Y(0.45) - (1 - k) * S(30), UI.fit(ctx, a.word, cw * 0.92, S(110)) * (0.8 + 0.2 * k), powerCol(ch), { outline: true }); }
+    if (CC.Joy && CC.Joy.kb && CC.Joy.kb() && !a.lock && CC.Joy.desk && CC.Joy.desk.keycap) {   // v352 : consigne clavier : barre ESPACE en relief qui s'enfonce en boucle, puis RELACHE quand la jauge monte
+      const fr = !(CC.I18n && CC.I18n.lang && CC.I18n.lang !== 'fr'), txt = a.hold ? (fr ? 'RELACHE !' : 'RELEASE!') : (fr ? 'APPUIE SUR ESPACE' : 'PRESS SPACE'), ty = Y(0.3), kw = S(120), kx = cx - cw * 0.2, kh = S(86), pr = a.hold || Math.floor(now / 420) % 2 === 1, dd = S(12) * (pr ? 0.3 : 1);
+      ctx.save(); UI.outlined(ctx, txt, cx, ty - S(80), UI.fit(ctx, txt, cw * 0.9, S(78)), '#FFFFFF');
+      const bx0 = cx - cw * 0.22, bw0 = cw * 0.44; rr0(ctx, bx0, ty + S(6) + dd, bw0, kh, S(18)); ctx.fillStyle = '#6a7384'; ctx.fill(); rr0(ctx, bx0, ty + (S(12) - dd) * 0.5 + S(2), bw0, kh, S(18)); ctx.fillStyle = '#e8ecf4'; ctx.fill(); ctx.lineWidth = S(3); ctx.strokeStyle = '#3d4455'; ctx.stroke(); ctx.restore();
+      UI.text(ctx, fr ? 'ESPACE' : 'SPACE', cx, ty + (S(12) - dd) * 0.5 + S(2) + kh * 0.5, S(44), '#2b3347', {});
+    }
     if (!a.hold && !a.lock) { const bw = S(230), bh = S(92), bx = F.ox + S(36), by = F.T0 + S(40); rr0(ctx, bx, by + S(6), bw, bh, S(20)); ctx.fillStyle = '#A81818'; ctx.fill(); rr0(ctx, bx, by, bw, bh, S(20)); ctx.fillStyle = '#FF3B3B'; ctx.fill(); UI.outlined(ctx, 'Retour', bx + bw / 2, by + bh / 2, UI.fit(ctx, 'Retour', bw * 0.7, S(52)), '#FFFFFF'); game.evoBackRect = { x: bx, y: by, w: bw, h: bh }; } else game.evoBackRect = null;
     hit(ui, 0, 0, W, H, () => {}, true);
   };
