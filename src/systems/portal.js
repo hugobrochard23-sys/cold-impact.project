@@ -89,6 +89,21 @@
     },
     start() { }, stop() { }, loaded() { }
   };
+  A.gamemonetize = {   // v356 : GameMonetize (SDK api.gamemonetize.com/sdk.js, SDK_OPTIONS ecrit par tools/portal_build.js) : une seule pub (sdk.showBanner) ; la pub « recompensee » du jeu utilise la meme pub
+    cb: null, started: false,
+    init() {
+      let n = 0; const poll = () => { if (window.sdk && typeof window.sdk.showBanner === 'function') { P.ready = true; note('gm ready'); } else if (++n < 160) setTimeout(poll, 500); else note('gm sdk absent'); };
+      window.CC_GM = (e) => { try { note('gm ' + e.name); if (e.name === 'SDK_GAME_PAUSE') { A.gamemonetize.started = true; try { G().ads.duck(true); } catch (x) { /* ignore */ } } else if (e.name === 'SDK_GAME_START') { try { G().ads.duck(false); } catch (x) { /* ignore */ } const cb = A.gamemonetize.cb; A.gamemonetize.cb = null; if (cb) cb(true); } else if (e.name === 'SDK_READY') P.ready = true; } catch (x) { /* ignore */ } };
+      poll();
+    },
+    ad(kind, done) {
+      const s = window.sdk; if (!s || !P.ready || typeof s.showBanner !== 'function') { done(false); return; }
+      const g = A.gamemonetize; g.started = false; g.cb = done;
+      try { s.showBanner(); } catch (e) { g.cb = null; done(false); return; }
+      setTimeout(() => { if (g.cb === done && !g.started) { g.cb = null; done(false); } }, 7000);   // aucune pub n'a demarre : on continue le jeu
+    },
+    start() { }, stop() { }, loaded() { }
+  };
   const AD = A[id] || A.test;
   P.adapter = AD;
   try { AD.init(); } catch (e) { note('init error'); }

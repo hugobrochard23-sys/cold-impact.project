@@ -3,7 +3,7 @@
  * La page declare window.CC_PORTAL = '<id>' : le mode portail de src/systems/portal.js s'active (vraies pubs du portail, aucun achat, aucune statistique envoyee). */
 const fs = require('fs'), path = require('path'), { execFileSync } = require('child_process');
 const id = (process.argv[2] || '').toLowerCase();
-if (!/^(playgama|poki|crazygames|gamedistribution|test)$/.test(id)) { console.error('Usage : node tools/portal_build.js <playgama|poki|crazygames|gamedistribution|test> [gameId GameDistribution]'); process.exit(1); }
+if (!/^(playgama|poki|crazygames|gamedistribution|gamemonetize|test)$/.test(id)) { console.error('Usage : node tools/portal_build.js <playgama|poki|crazygames|gamedistribution|gamemonetize|test> [gameId]'); process.exit(1); }
 const root = path.resolve(__dirname, '..'), out = path.join(root, 'dist', 'portal-' + id);
 fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(out, { recursive: true });
 for (const f of ['index.html', 'style.css', 'game.js']) if (fs.existsSync(path.join(root, f))) fs.copyFileSync(path.join(root, f), path.join(out, f));
@@ -12,7 +12,8 @@ let h = fs.readFileSync(path.join(out, 'index.html'), 'utf8');
 h = h.replace(/<link rel="preconnect" href="https:\/\/fonts[^>]*>/g, '').replace(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com[^>]*>/g, '');   // aucune requete externe
 h = h.replace(/<script>\(function \(\) \{ var V = ''; try \{ var x = new XMLHttpRequest\(\); x\.open\('GET', 'version\.json[^\n]*\n/, "<link rel=\"stylesheet\" href=\"style.css\">\n  <script>var V = '';</script>\n");   // plus de version.json (requete synchrone) ; la feuille de style se charge normalement
 const gdTag = '<script>window["GD_OPTIONS"] = { gameId: ' + JSON.stringify(process.argv[3] || '00000000000000000000000000000000') + ', onEvent: function (e) { try { if (window.CC_GD) window.CC_GD(e); } catch (x) {} } };</script>\n  <script src="https://html5.api.gamedistribution.com/main.min.js" id="gamedistribution-jssdk"></script>';
-const sdk = { playgama: '<script src="https://bridge.playgama.com/v2/stable/playgama-bridge.js"></script>', poki: '<script src="https://game-cdn.poki.com/scripts/v2/poki-sdk.js"></script>', crazygames: '<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>', gamedistribution: gdTag, test: '' }[id];
+const gmTag = '<script>window.SDK_OPTIONS = { gameId: ' + JSON.stringify(process.argv[3] || '00000000000000000000000000000000') + ', onEvent: function (a) { try { if (window.CC_GM) window.CC_GM(a); } catch (x) {} } };</script>\n  <script>(function (a, b, c) { var d = a.getElementsByTagName(b)[0]; a.getElementById(c) || (a = a.createElement(b), a.id = c, a.src = "https://api.gamemonetize.com/sdk.js", d.parentNode.insertBefore(a, d)); })(document, "script", "gamemonetize-sdk");</script>';
+const sdk = { playgama: '<script src="https://bridge.playgama.com/v2/stable/playgama-bridge.js"></script>', poki: '<script src="https://game-cdn.poki.com/scripts/v2/poki-sdk.js"></script>', crazygames: '<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>', gamedistribution: gdTag, gamemonetize: gmTag, test: '' }[id];
 h = h.replace(/    try \{ var x = new XMLHttpRequest\(\); x\.open\('GET', 'version\.json[^\n]*\n/, '');   // 2e lecture de version.json (liste des scripts) : retiree aussi
 h = h.replace('<head>','<head>\n  <script>window.CC_PORTAL=' + JSON.stringify(id) + ';</script>' + (sdk ? '\n  ' + sdk : ''));
 fs.writeFileSync(path.join(out, 'index.html'), h);
