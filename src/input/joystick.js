@@ -72,7 +72,7 @@
     const rr = (x0, y0, w, h, q) => { ctx.beginPath(); ctx.moveTo(x0 + q, y0); ctx.arcTo(x0 + w, y0, x0 + w, y0 + h, q); ctx.arcTo(x0 + w, y0 + h, x0, y0 + h, q); ctx.arcTo(x0, y0 + h, x0, y0, q); ctx.arcTo(x0, y0, x0 + w, y0, q); ctx.closePath(); };
     ctx.save(); ctx.globalAlpha = alpha;
     ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = d * 1.2; ctx.shadowOffsetY = d * 0.8; rr(x, kt + d, kw, kw, r); ctx.fillStyle = '#6a7384'; ctx.fill(); ctx.restore();
-    rr(x, kt + d * 0.5, kw, kw, r); ctx.fillStyle = '#8f98aa'; ctx.fill(); ctx.lineWidth = kw * 0.025; ctx.strokeStyle = '#3d4455'; ctx.stroke();
+    rr(x, kt + d * 0.5, kw, kw, r); ctx.fillStyle = '#8f98aa'; ctx.fill();   // v353 : plus de contour noir
     { const g = ctx.createLinearGradient(0, kt, 0, kt + kw * 0.9); g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#cfd5e1'); rr(x + kw * 0.06, kt + kw * 0.04 + d * 0.3, kw * 0.88, kw * 0.84, r * 0.8); ctx.fillStyle = g; ctx.fill(); ctx.lineWidth = kw * 0.02; ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.stroke(); }
     { const ax = cx, ay = kt + kw * 0.46 + d * 0.3, q = kw * 0.2; ctx.translate(ax, ay); ctx.rotate(dir === 1 ? -Math.PI / 2 : dir === 2 ? Math.PI / 2 : 0); ctx.fillStyle = '#2b3347'; ctx.beginPath(); ctx.moveTo(0, -q * 1.3); ctx.lineTo(q * 1.1, -q * 0.1); ctx.lineTo(q * 0.4, -q * 0.1); ctx.lineTo(q * 0.4, q * 1.2); ctx.lineTo(-q * 0.4, q * 1.2); ctx.lineTo(-q * 0.4, -q * 0.1); ctx.lineTo(-q * 1.1, -q * 0.1); ctx.closePath(); ctx.fill(); }
     ctx.restore();
