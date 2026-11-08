@@ -259,6 +259,8 @@
     if (CC.Joy && CC.Joy.kb && CC.Joy.kb() && !a.lock && CC.Joy.desk && CC.Joy.desk.keycap) {   // v352 : consigne clavier : barre ESPACE en relief qui s'enfonce en boucle, puis RELACHE quand la jauge monte
       const fr = !(CC.I18n && CC.I18n.lang && CC.I18n.lang !== 'fr'), txt = a.hold ? (fr ? 'RELACHE !' : 'RELEASE!') : (fr ? 'APPUIE SUR ESPACE' : 'PRESS SPACE'), ty = Y(0.3), kw = S(120), kx = cx - cw * 0.2, kh = S(86), pr = a.hold || Math.floor(now / 420) % 2 === 1, dd = S(12) * (pr ? 0.3 : 1);
       ctx.save();   // v353 : plus de texte au-dessus de la barre Espace, plus de contour noir
+      if (a.hold && (a.fullT || 0) > 0) { const q = Math.min(1, a.fullT / 0.28), pop = 1 + 2.7 * Math.pow(q - 1, 3) + 1.7 * Math.pow(q - 1, 2), word = fr ? 'LÂCHE !' : 'RELEASE!', wpx = UI.fit(ctx, word, cw * 0.9, S(150)) * pop;   // v354 : « LACHE ! » apparait en pop a 100 % : gros texte bleu a contour noir, comme le compteur de vitesse
+        ctx.globalAlpha = Math.min(1, q * 2); UI.text(ctx, word, cx, ty - S(110), wpx, '#46A6FF', { stroke: true }); ctx.globalAlpha = 1; }
       const bx0 = cx - cw * 0.22, bw0 = cw * 0.44; rr0(ctx, bx0, ty + S(6) + dd, bw0, kh, S(18)); ctx.fillStyle = '#6a7384'; ctx.fill(); rr0(ctx, bx0, ty + (S(12) - dd) * 0.5 + S(2), bw0, kh, S(18)); ctx.fillStyle = '#e8ecf4'; ctx.fill(); ctx.restore();
       UI.text(ctx, fr ? 'ESPACE' : 'SPACE', cx, ty + (S(12) - dd) * 0.5 + S(2) + kh * 0.5, S(44), '#2b3347', { flat: true });
     }

@@ -328,6 +328,7 @@
       if (a.tk <= 0) { a.tk = 0.2 - 0.14 * a.ch; if (CC.Haptics) CC.Haptics.tick(a.ch > 0.8 ? 'warn' : 'touch'); try { if (g.audio.tone) g.audio.tone('triangle', 130 + 520 * a.ch, 140 + 540 * a.ch, 0.09, 0.05); } catch (e) { /* son facultatif */ } }
       g.rig.shake = Math.max(g.rig.shake, 0.08 * a.ch * a.ch);
       if (a.ch > 1) a.ch = 1;
+      if (a.ch >= 0.99) { a.fullT = (a.fullT || 0) + dt; if (a.fullT > 1.3 && CC.Joy && CC.Joy.kb && CC.Joy.kb()) EVO.release(g, false); } else a.fullT = 0;   // v354 : au clavier, a 100 % le jeu dit LACHE ! ; si le joueur garde Espace appuye, le lancement part tout seul apres 1,3 s
     } else if (!a.lock) a.ch = Math.max(0, (a.ch || 0) - dt * 2.5);
     g.pad.charge = U.clamp(0.1 + 0.9 * (a.ch || 0), 0, 1);
     if (a.lock) { a.lockT += dt; if (a.lockT > 0.14) { g.evoAimLast = a; g.pad.manual = false; g.fire(); g.evoAim = null; } }
