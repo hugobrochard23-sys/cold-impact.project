@@ -72,6 +72,23 @@
     stop() { try { window.CrazyGames.SDK.game.gameplayStop(); } catch (e) { /* ignore */ } },
     loaded() { try { window.CrazyGames.SDK.game.loadingStop(); } catch (e) { /* ignore */ } },
   };
+  A.gamedistribution = {   // v355 : GameDistribution (SDK html5.api.gamedistribution.com/main.min.js, GD_OPTIONS ecrit par tools/portal_build.js) : pubs interstitielles et recompensees
+    cb: null, got: false,
+    init() {
+      let n = 0; const poll = () => { if (window.gdsdk) { P.ready = true; note('gd ready'); } else if (++n < 160) setTimeout(poll, 500); else note('gd sdk absent'); };
+      window.CC_GD = (e) => { try { note('gd ' + e.name); if (e.name === 'SDK_GAME_PAUSE') { try { G().ads.duck(true); } catch (x) { /* ignore */ } } else if (e.name === 'SDK_GAME_START') { try { G().ads.duck(false); } catch (x) { /* ignore */ } } else if (e.name === 'SDK_REWARDED_WATCH_COMPLETE') A.gamedistribution.got = true; else if (e.name === 'SDK_READY') P.ready = true; } catch (x) { /* ignore */ } };
+      poll();
+    },
+    ad(kind, done) {
+      const s = window.gdsdk; if (!s || !P.ready || typeof s.showAd !== 'function') { done(false); return; }
+      A.gamedistribution.got = false;
+      try {
+        if (kind === 'rewarded') { const go = () => s.showAd('rewarded').then(() => done(!!A.gamedistribution.got)).catch(() => done(false)); if (typeof s.preloadAd === 'function') s.preloadAd('rewarded').then(go).catch(() => done(false)); else go(); }
+        else s.showAd().then(() => done(true)).catch(() => done(true));   // erreur de pub interstitielle : on continue le jeu
+      } catch (e) { done(false); }
+    },
+    start() { }, stop() { }, loaded() { }
+  };
   const AD = A[id] || A.test;
   P.adapter = AD;
   try { AD.init(); } catch (e) { note('init error'); }
