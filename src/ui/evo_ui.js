@@ -467,7 +467,7 @@
   Home.evoUI.hud = function (ctx, g, W, H, px) {
     const rk = g.rocket, run = g.endlessRun, E = CC.EVO, TT = run && run.T; if (!rk || !run) return;
     const u = H > W ? W : Math.min(W, H * 0.62), ox = (W - u) / 2; UI.begin(u, g.hudPr || 1); const top = H * 0.022 + (CC.safePx ? CC.safePx() : 0), now = performance.now();
-    if (E.rocket(E.save(g).rk).tier >= 2 && !(g.evo && g.evo.preview)) {
+    if (E.rocket(E.save(g).rk).tier >= 2 && !(g.evo && g.evo.preview) && !(E.mvp && E.mvp())) {   // v362 : MVP : carburant illimite, pas de jauge
       const fw = u * 0.46, fh = S(54), fx = ox + u * 0.29, fy = top + S(6), k = U.clamp((rk.active ? rk.fuel : rk.fuelMax) / Math.max(1, rk.fuelMax), 0, 1), lowF = k < 0.22, bl = Math.floor(now / 230) % 2 === 0;
       ctx.save(); rr0(ctx, fx, fy, fw, fh, fh / 2); ctx.fillStyle = 'rgba(0,0,0,0.38)'; ctx.fill(); ctx.lineWidth = S(5); ctx.strokeStyle = lowF && bl ? '#FF5A4A' : 'rgba(255,255,255,0.9)'; ctx.stroke();
       { const m = S(7), ix = fx + m, iy = fy + m, iw = fw - m * 2, ih = fh - m * 2; ctx.save(); rr0(ctx, ix, iy, iw, ih, ih / 2); ctx.clip();
