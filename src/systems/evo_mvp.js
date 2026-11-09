@@ -1,9 +1,8 @@
-/* v364 : MVP de niveaux courts (?mvp=a|b|c), tous sur la prairie penchee de evo_short.js. Tout est dans le style du jeu (UI canvas existant) :
- *  - ACCUEIL = le hangar avec START au milieu, une fleche gauche et une fleche droite de part et d'autre (touches du jeu) ; affiche a chaque fois ;
- *  - un seul niveau de 11 s a la fois, 10 niveaux ; carte de fin dans le style de MISSION ACCOMPLIE (etoiles = essais), SUIVANT / REJOUER / MENU ;
- *  - camera toujours identique ; carburant illimite ; plus de barre de lancement ; HUD = ancienne barre de progression mise a l'horizontale + chrono.
- * a = CURSEUR ou FLECHES (on bascule a tout moment) : la fusee avance seule. b = Espace / clic maintenu monte, relache descend (vue de cote, 8 anneaux).
- * c = comme a avec 2 fusees rivales et la place en haut. */
+/* v365 : MVP A (?mvp=a) : des niveaux courts faits avec les DECORS ET LES SCENES DEJA DANS LE JEU (aucune texture ni brique nouvelle).
+ * Chaque niveau = une zone existante + une suite de scenes existantes (vitres a casser, pentes, fosses, montagnes russes, grottes, eau...) ; la fusee
+ * avance a vitesse constante le long de la piste du niveau ; le joueur ne fait que la decaler (curseur ou fleches) pour viser les ennemis et eviter les murs.
+ * Camera : suit la piste du niveau (si le niveau descend, la camera descend ; si la fusee descend dans le niveau, la camera ne bouge pas).
+ * Accueil = le hangar avec START et les fleches ; mort = explosion et retour immediat au hangar ; fin = carte style MISSION ACCOMPLIE. */
 (function () {
   const E = CC.EVO; if (!E || !E.on) return;
   const mm = /[?&]mvp=([abc])/.exec(location.search), M = mm ? mm[1] : (/^[abc]$/.test(window.CC_MVP || '') ? window.CC_MVP : null);
@@ -11,213 +10,150 @@
   if (!M) return;
   try { localStorage.setItem('coldimpact.terms', '1'); } catch (e) { /* ignore */ }   // plus d'ecran de conditions
   const T3 = THREE, V = T3.Vector3, U = CC.U, UI = CC.UI2, Home = CC.Home;
-  const FIN = E.shortFin || 470, CTRL = M === 'b' ? 'b' : 'a', RIV = M === 'c', NLV = 10;
   CC.CONFIG.physics.gravity = 0;   // la fusee est pilotee directement (vitesse imposee)
   const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, String(v)); } catch (e) { /* facultatif */ } };
+
+  // ---------------------------------------------------------------- les niveaux : une zone existante + des scenes existantes
+  const LEVELS = [
+    null,
+    { name: 'PRAIRIE', zone: 'campagne', scenes: ['rampe', 'camp'], fin: 470, tilt: true, speed: 43 },   // 11 s : la prairie penchee, char / helico / camion / jeep
+    { name: 'VILLE', zone: 'city', speed: 45, scenes: [   // 24 s : la rue, on casse la vitre, on grimpe, on pique entre les immeubles
+      { n: 'passage', foes: [['tank', 0.5, -3], ['jeep', 0.8, 4]] }, 'vitrage',
+      { n: 'montee', foes: [['heli', 0.45, 0, 0], ['heli', 0.8, 3, 2]] }, { n: 'plongee', foes: [['heli', 0.5, -2, 0]] }] },
+    { name: 'JUNGLE', zone: 'jungle', speed: 46, scenes: [   // 24 s : sous la canopee, la riviere, la cascade, le temple
+      { n: 'canopee', foes: [['jeep', 0.3, -3], ['heli', 0.7, 2, -2]] }, { n: 'lianes', foes: [['heli', 0.5, -3, 0]] },
+      { n: 'cascade', foes: [['tank', 0.4, 3], ['heli', 0.75, 0, 0]] }, { n: 'temple', foes: [['heli', 0.5, 0, 0]] }] },
+    { name: 'OCEAN', zone: 'eolien', speed: 46, scenes: [   // 23 s : la mer, le champ d'eoliennes, les plateformes, les cargos
+      { n: 'champ', foes: [['gunboat', 0.4, -3], ['heli', 0.75, 2, 0]] }, { n: 'plateformes', foes: [['boat', 0.3, 3], ['heli', 0.7, -3, 0]] },
+      { n: 'champDense', foes: [['gunboat', 0.5, 0], ['heli', 0.8, 2, 0]] }, { n: 'cargos', foes: [['boat', 0.4, -3]] }] }
+  ];
+  const NLV = LEVELS.length - 1;
   let LV = Math.max(1, Math.min(NLV, parseInt(lsGet('cc.mvp.lv.' + M, '1'), 10) || 1));
+  { const z = /[?&]mvpz=(\w+)/.exec(location.search), sc = /[?&]mvps=([\w,]+)/.exec(location.search); if (z && sc && LV > 1) LEVELS[LV] = Object.assign({}, LEVELS[LV], { zone: z[1], scenes: sc[1].split(',') }); }   // essai d'un decor a la main
+  const cur = () => LEVELS[LV];
+  // ennemis ajoutes a une scene existante (meme methode que zones_evo.js) : [type, fraction de la scene, decalage lateral, decalage de hauteur] par rapport a la piste du niveau
+  const FOENAME = { heli: 'HELICO', tank: 'CHAR', truck: 'CAMION', jeep: 'JEEP', sam: 'SAM', boat: 'BATEAU' };
+  const withFoes = (zone, name, foes, tag) => {
+    const Z = CC.Zones.defs[zone], sc = Z && Z.scenes[name]; if (!sc) return null; const al = name + '_' + tag;
+    if (!Z.scenes[al]) Z.scenes[al] = Object.assign({}, sc, { build(S) {
+      sc.build.call(this, S);
+      for (const f of foes || []) {
+        const dc = S.d0 + f[1] * S.len, L = S.lane(dc), air = !!(CC.Roster && CC.Roster.isAir && CC.Roster.isAir(f[0]));
+        const heliPatrol = (SS, dd, lx, y) => [SS.at(dd, lx - 6, y), SS.at(dd + 8, lx, y + 2), SS.at(dd, lx + 6, y), SS.at(dd - 8, lx, y + 2)];
+        CC.Zones.evoFoe(S, f[0], dc, L.lx + (f[2] || 0), air ? L.y + (f[3] || 0) : 0, Object.assign({ name: FOENAME[f[0]] || f[0].toUpperCase(), keep: true, armed: false }, f[0] === 'heli' ? { patrol: heliPatrol, speed: 7 } : {}));
+      }
+    } });
+    return al;
+  };
   const fails = {};   // essais rates par niveau (pendant la session) : 0 = 3 etoiles
-  const NAMES = ['PRAIRIE', 'PRAIRIE', 'PRAIRIE', 'HAUTEURS', 'HAUTEURS', 'HAUTEURS', 'VILLE', 'VILLE', 'VILLE', 'FINALE'];
-  const baseSpeed = () => 42 + Math.round(LV * 1.2);
+  const SP = () => cur().speed || 44;
   const _rk = E.rocket;   // carburant illimite, jamais en panne
   E.rocket = (n) => { const r = _rk(n); return Object.assign({}, r, { tier: 2, fuel: 999 }); };
+  E.softCrash = () => false;   // la mort = une explosion simple, pas de roule-boule
+
+  // la fiche du niveau
+  const _ld = E.levelDef;
+  E.levelDef = (g) => {
+    if (E.isS2()) return _ld(g);
+    const L = cur(); E.chapters = [];
+    if (L.tilt) { E.shortTiltOff = false; E.shortFin = L.fin; return _ld(g); }   // niveau 1 : la prairie penchee (evo_short.js)
+    E.shortTiltOff = true; E.shortPad = L.pad || 0;
+    const Z = CC.Zones.defs[L.zone], sc = L.scenes.map((e) => (typeof e === 'string' ? e : withFoes(L.zone, e.n, e.foes, 'mv' + LV))).filter((n) => n && Z.scenes[n]); let tot = 0; for (const n of sc) tot += Z.scenes[n].len[0];
+    E.shortFin = tot + 25;   // la ligne est juste avant l'arene de fin
+    return E.baseDef({ zone: L.zone, len: tot + 160, scenes: sc, order: new Array(90).fill(L.zone), theme: CC.LM.THEMES[0], hp: 1, bossEnt: null });
+  };
+  E.mvpLevel = () => ({ lv: LV, L: cur() });
+  // pas de trajet de camera du hangar vers l'arriere : la vue de vol est la bonne tout de suite
+  if (CC.CameraRig) CC.CameraRig.prototype.startHandoff = function () { this.handT = -1; };
 
   // ---------------------------------------------------------------- entrees : souris OU fleches, on bascule a tout moment
-  const I = { cx: 0, cy: 0.5, hold: false, mode: 'mouse', k: {}, mx: -1, my: -1, ax: 0, ay: 0 };
-  const setC = (x, y) => { I.cx = x / window.innerWidth * 2 - 1; I.cy = y / window.innerHeight; };
+  const I = { cx: 0, cy: 0.5, mode: 'mouse', k: {}, mx: -1, my: -1, ax: 0, ay: 0 };
   const ARR = { ArrowLeft: 1, ArrowRight: 1, ArrowUp: 1, ArrowDown: 1, KeyA: 1, KeyD: 1, KeyW: 1, KeyS: 1 };
-  window.addEventListener('mousemove', (e) => { if (Math.abs(e.clientX - I.mx) + Math.abs(e.clientY - I.my) > 3) { I.mode = 'mouse'; } I.mx = e.clientX; I.my = e.clientY; setC(e.clientX, e.clientY); });
-  window.addEventListener('mousedown', (e) => { if (e.button === 0) { I.hold = true; setC(e.clientX, e.clientY); } });
-  window.addEventListener('mouseup', (e) => { if (e.button === 0) I.hold = false; });
-  window.addEventListener('touchstart', (e) => { I.hold = true; I.mode = 'mouse'; const t = e.touches[0]; if (t) setC(t.clientX, t.clientY); }, { passive: true });
+  const setC = (x, y) => { I.cx = x / window.innerWidth * 2 - 1; I.cy = y / window.innerHeight; };
+  window.addEventListener('mousemove', (e) => { if (Math.abs(e.clientX - I.mx) + Math.abs(e.clientY - I.my) > 3) I.mode = 'mouse'; I.mx = e.clientX; I.my = e.clientY; setC(e.clientX, e.clientY); });
+  window.addEventListener('mousedown', (e) => { if (e.button === 0) setC(e.clientX, e.clientY); });
+  window.addEventListener('touchstart', (e) => { I.mode = 'mouse'; const t = e.touches[0]; if (t) setC(t.clientX, t.clientY); }, { passive: true });
   window.addEventListener('touchmove', (e) => { const t = e.touches[0]; if (t) setC(t.clientX, t.clientY); }, { passive: true });
-  window.addEventListener('touchend', (e) => { if (!e.touches.length) I.hold = false; }, { passive: true });
-  window.addEventListener('keydown', (e) => {
-    I.k[e.code] = 1;
-    if (ARR[e.code]) { I.mode = 'keys'; const g = CC.game; if (g && g.state === 'FLIGHT') e.preventDefault(); }
-    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') I.hold = true;
-  });
-  window.addEventListener('keyup', (e) => { I.k[e.code] = 0; if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') I.hold = false; });
+  window.addEventListener('keydown', (e) => { I.k[e.code] = 1; if (ARR[e.code]) { I.mode = 'keys'; const g = CC.game; if (g && g.state === 'FLIGHT') e.preventDefault(); } });
+  window.addEventListener('keyup', (e) => { I.k[e.code] = 0; });
   E.mvpInput = I;
 
-  // ---------------------------------------------------------------- geometrie
+  // ---------------------------------------------------------------- geometrie le long de la piste du niveau
   const tf = new V(), nn = new V(), cc = new V(), ray = new V(), org = new V(), tmp = new V(), tmp2 = new V();
   const frame = (T, d) => {
     const a = T.at(d, 0, 0), b = T.at(d + 6, 0, 0), c1 = T.at(d, 1, 0);
     tf.set(b[0] - a[0], 0, b[2] - a[2]); if (tf.lengthSq() < 1e-6) tf.set(0, 0, -1); tf.normalize();
     nn.set(c1[0] - a[0], 0, c1[2] - a[2]).normalize(); cc.set(a[0], a[1], a[2]);
   };
-  const place = (T, d, lx, h, out) => { frame(T, d); return out.set(cc.x + nn.x * lx, T.base(d) + h, cc.z + nn.z * lx); };
-  const yawAt = (T, d) => { frame(T, d); return Math.atan2(tf.x, tf.z); };
+  const laneAbs = (T, d) => T.base(d) + T.laneY(d);
+  const relOf = (T, d, P, out) => {   // decalage d'un point par rapport au centre de la piste du niveau (lateral, hauteur)
+    const a = T.at(d, 0, 0), c1 = T.at(d, 1, 0); let nx = c1[0] - a[0], nz = c1[2] - a[2]; const l = Math.hypot(nx, nz) || 1; nx /= l; nz /= l;
+    out.x = (P.x - a[0]) * nx + (P.z - a[2]) * nz - T.laneX(d); out.y = P.y - laneAbs(T, d); return out;
+  };
+  const rel = { x: 0, y: 0 }, relP = { x: 0, y: 0 };
+  const LAT = 9, HUP = 8, hdnAt = (T, d) => U.clamp(T.laneY(d) - 2.2, 6, 22);   // on peut descendre jusqu'au sol (ou a la mer) pour atteindre les ennemis
 
-  // ---------------------------------------------------------------- textures et materiaux des obstacles (briques, roche, immeubles)
-  const mkTex = (draw) => { const cv = document.createElement('canvas'); cv.width = cv.height = 128; draw(cv.getContext('2d')); const tx = new T3.CanvasTexture(cv); tx.wrapS = tx.wrapT = T3.RepeatWrapping; return tx; };
-  const TEX = {};
-  const texOf = (style) => {
-    if (TEX[style]) return TEX[style];
-    return TEX[style] = mkTex((c) => {
-      if (style === 'brick') { c.fillStyle = '#d6c4a8'; c.fillRect(0, 0, 128, 128); for (let r = 0; r < 8; r++) for (let q = 0; q < 4; q++) { const x = q * 32 + (r % 2) * 16; c.fillStyle = ['#b04a2c', '#a24127', '#bb5632'][(r * 3 + q) % 3]; c.fillRect(x + 1.5, r * 16 + 1.5, 29, 13); } }
-      else if (style === 'stone') { c.fillStyle = '#86807a'; c.fillRect(0, 0, 128, 128); for (let i = 0; i < 26; i++) { c.fillStyle = ['#756f69', '#97918a', '#6c6761'][i % 3]; c.beginPath(); const x = (i * 53) % 128, y = (i * 37) % 128; c.moveTo(x, y); c.lineTo(x + 30, y + 6); c.lineTo(x + 22, y + 34); c.lineTo(x - 4, y + 22); c.closePath(); c.fill(); } }
-      else { c.fillStyle = '#c9ccd2'; c.fillRect(0, 0, 128, 128); for (let r = 0; r < 4; r++) for (let q = 0; q < 4; q++) { c.fillStyle = (r * 5 + q * 3) % 7 === 0 ? '#ffe7a0' : '#45658a'; c.fillRect(q * 32 + 6, r * 32 + 6, 20, 20); } }
-    });
-  };
-  const matOf = (style, w, h) => { const tx = texOf(style).clone(); tx.needsUpdate = true; tx.repeat.set(Math.max(1, w / 7), Math.max(1, h / 6)); return new T3.MeshLambertMaterial({ map: tx }); };
-
-  // ---------------------------------------------------------------- les 10 niveaux : des murs avec une ouverture (d, centre lateral, largeur, bas, haut)
-  const HH = 46;   // hauteur des murs
-  const LVL = [
-    null,
-    [],   // 1 : prairie, aucun obstacle (decouverte)
-    [['g', 150, -6, 15, 0, HH, 'brick'], ['g', 230, 6, 15, 0, HH, 'brick'], ['g', 310, -6, 15, 0, HH, 'brick'], ['g', 390, 6, 15, 0, HH, 'brick']],
-    [['g', 140, 0, 17, 8, 18, 'brick'], ['g', 215, 0, 17, 2, 9, 'brick'], ['g', 290, 0, 17, 9, 17, 'brick'], ['g', 365, 0, 17, 2, 8, 'brick']],
-    [['g', 140, -5, 14, 8, 18, 'stone'], ['g', 210, 5, 14, 2, 12, 'stone'], ['g', 280, -4, 14, 8, 18, 'stone'], ['g', 350, 5, 13, 2, 11, 'stone'], ['g', 415, 0, 14, 6, 16, 'stone']],
-    [['g', 130, -7, 11, 0, HH, 'stone'], ['g', 190, 6, 11, 0, HH, 'stone'], ['g', 250, -6, 11, 0, HH, 'stone'], ['g', 310, 7, 11, 0, HH, 'stone'], ['g', 370, -2, 11, 0, HH, 'stone']],
-    [['g', 130, 0, 22, 0, HH, 'stone'], ['g', 185, -4, 17, 0, HH, 'stone'], ['g', 240, 4, 14, 0, HH, 'stone'], ['g', 295, -5, 11, 0, HH, 'stone'], ['g', 350, 5, 9, 0, HH, 'stone'], ['g', 405, 0, 8, 0, HH, 'stone']],
-    [['g', 140, -6, 14, 0, HH, 'city'], ['g', 210, 6, 14, 0, HH, 'city'], ['g', 280, -6, 13, 0, HH, 'city'], ['g', 350, 6, 13, 0, HH, 'city'], ['g', 415, 0, 14, 0, HH, 'city']],
-    [['b', 150, 8, 11], ['g', 220, 0, 15, 10, 17, 'city'], ['b', 290, 12, 15], ['g', 350, -6, 13, 2, 9, 'city'], ['b', 410, 6, 9]],
-    [['g', 135, -6, 12, 0, HH, 'city'], ['g', 190, 6, 12, 3, 13, 'city'], ['g', 245, -5, 12, 7, 17, 'city'], ['g', 300, 5, 12, 3, 13, 'city'], ['g', 355, -6, 11, 0, HH, 'city'], ['g', 410, 0, 12, 6, 16, 'city']],
-    [['g', 130, -7, 11, 2, 12, 'city'], ['g', 180, 7, 11, 6, 16, 'city'], ['g', 230, -7, 11, 3, 13, 'city'], ['g', 280, 7, 11, 6, 16, 'city'], ['g', 330, 0, 11, 2, 11, 'city'], ['b', 375, 7, 10], ['g', 425, 0, 11, 7, 16, 'city']]
-  ];
-  const RG = [[100, 8], [146, 16], [192, 9], [238, 18], [284, 10], [330, 19], [376, 8], [422, 16]];   // b : anneaux
-  let seed = 7; const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
-  let W = null;
-  let bgPlane = null;
-  const ensureBg = (g) => {   // b : fond de ciel uni derriere la fusee
-    if (bgPlane) return bgPlane;
-    const cv = document.createElement('canvas'); cv.width = 4; cv.height = 256; const c2 = cv.getContext('2d'), gr = c2.createLinearGradient(0, 0, 0, 256);
-    gr.addColorStop(0, '#5fb6ff'); gr.addColorStop(0.5, '#a9dcff'); gr.addColorStop(0.78, '#e6f6ff'); gr.addColorStop(1, '#f4fbff'); c2.fillStyle = gr; c2.fillRect(0, 0, 4, 256);
-    bgPlane = new T3.Mesh(new T3.PlaneGeometry(1400, 520), new T3.MeshBasicMaterial({ map: new T3.CanvasTexture(cv), fog: false, side: T3.DoubleSide })); bgPlane.frustumCulled = false; g.scene.add(bgPlane); return bgPlane;
-  };
-  const disposeW = (g) => { if (W) { try { g.scene.remove(W.grp); } catch (e) { /* ignore */ } W = null; } };
-  const addBox = (T, d, lx, y0, y1, w, dep, style) => {
-    const h = y1 - y0; if (h < 0.2 || w < 0.2) return;
-    const m = new T3.Mesh(new T3.BoxGeometry(w, h, dep), matOf(style, w, h));
-    place(T, d, lx, y0 + h / 2, m.position); m.rotation.y = yawAt(T, d); W.grp.add(m); m.updateMatrixWorld(true); W.ob.push({ m, w, h, dep });
-  };
-  const gapWall = (T, d, gx, gw, y0, y1, style) => {   // un mur sur toute la largeur avec une ouverture rectangulaire
-    const L = 40, dep = style === 'city' ? 9 : 4, a = gx - gw / 2, b = gx + gw / 2; W.gaps.push({ d, lx: gx, h: U.clamp((y0 + Math.min(y1, 22)) / 2, 3, 15) });
-    addBox(T, d, (-L + a) / 2, 0, HH, a + L, dep, style); addBox(T, d, (b + L) / 2, 0, HH, L - b, dep, style);
-    addBox(T, d, gx, y1, HH, gw, dep, style); addBox(T, d, gx, 0, y0, gw, dep, style);
-  };
-  const bridge = (T, d, y0, y1) => {   // un pont : on passe dessous ou dessus
-    W.gaps.push({ d, lx: 0, h: y0 > 6 ? 3.5 : 16 }); addBox(T, d, 0, y0, y1, 80, 8, 'city');
-    for (const s of [-1, 1]) addBox(T, d, s * 19, 0, y0, 5, 5, 'city');
-  };
-  const buildW = (g, run) => {
-    disposeW(g); const T = run.T, grp = new T3.Group(); seed = 7 + LV;
-    W = { run, grp, T, ob: [], rg: [], fr: [], bots: [], gaps: [], rings: 0, t0: null };
-    g.scene.add(grp);
-    if (CTRL === 'a') {
-      for (const o of (LVL[LV] || [])) { if (o[0] === 'g') gapWall(T, o[1], o[2], o[3], o[4], o[5], o[6]); else bridge(T, o[1], o[2], o[3]); }
-    } else {
-      for (let i = 0; i < RG.length; i++) {   // anneaux a traverser
-        const [d, h] = RG[i], m = new T3.Mesh(new T3.TorusGeometry(6, 0.6, 10, 36), new T3.MeshBasicMaterial({ color: '#ffd23a' }));
-        place(T, d, 0, h, m.position); m.rotation.y = yawAt(T, d); grp.add(m); W.rg.push({ d, h, m, c: m.position.clone(), prev: null, done: false, ok: false });
-      }
-    }
-    if (RIV) {
-      const cols = ['#e8352b', '#2fae22'], sp = [baseSpeed() - 2, baseSpeed() + 1.5];
-      for (let i = 0; i < 2; i++) {
-        const b = new T3.Group(), body = new T3.Mesh(new T3.CylinderGeometry(0.5, 0.5, 2.6, 12), new T3.MeshLambertMaterial({ color: cols[i] })), nose = new T3.Mesh(new T3.ConeGeometry(0.5, 1.1, 12), new T3.MeshLambertMaterial({ color: '#f2f2f2' }));
-        body.rotation.x = Math.PI / 2; nose.rotation.x = Math.PI / 2; nose.position.z = 1.8; const f1 = new T3.Mesh(new T3.BoxGeometry(2.2, 0.12, 0.7), new T3.MeshLambertMaterial({ color: cols[i] })); f1.position.z = -1; b.add(body, nose, f1);
-        grp.add(b); W.bots.push({ m: b, sp: sp[i], lx: i ? 8 : -8, d: 0, col: cols[i], tFin: FIN / sp[i] + 0.35 });
-      }
-    }
-  };
-
-  // ---------------------------------------------------------------- camera : toujours le meme angle, un peu derriere et au-dessus de la fusee
+  // ---------------------------------------------------------------- camera : suit la piste du niveau, a distance fixe de la fusee
   const camP = new V(), camL = new V();
   E.mvpCam = (rig, rk, cam, dt) => {
     const g = rig.game, run = g.endlessRun; if (!run || !run.T) return;
-    const T = run.T, d = Math.max(0, run.dist); frame(T, d);
-    const k = Math.min(1, (dt || 0.016) * 8), gy = T.base(d), lx = tmp.copy(rk.pos).sub(cc).dot(nn), hr = rk.pos.y - gy;
-    if (CTRL === 'a') {   // derriere : la camera suit la fusee a moitie (en travers et en hauteur), toujours avec le meme tangage
-      const dc = Math.max(0, d - 9), p = place(T, dc, lx * 0.55, 4.6 + hr * 0.45, camP);
-      frame(T, d + 30); camL.set(p.x + tf.x * 45, p.y - 8.5, p.z + tf.z * 45);
-    } else {   // b : de cote : on voit la hauteur des obstacles
-      camP.copy(rk.pos).addScaledVector(nn, -22).addScaledVector(tf, 3); camP.y = rk.pos.y + 3; camL.copy(rk.pos).addScaledVector(tf, 12); camL.y = rk.pos.y;
-    }
+    const T = run.T, d = Math.max(0, run.dist), k = Math.min(1, (dt || 0.016) * 9);
+    relOf(T, d, rk.pos, rel);
+    const dc = Math.max(0, d - 7), d2 = dc + 40, fx = rel.x * 0.5, fy = rel.y * 0.4;
+    const pa = T.at(dc, T.laneX(dc) + fx, T.laneY(dc) + 2.2 + fy), pb = T.at(d2, T.laneX(d2) + fx, T.laneY(d2) + 0.2 + fy);
+    camP.set(pa[0], Math.max(pa[1], T.base(dc) + 1.2), pa[2]); camL.set(pb[0], pb[1], pb[2]);
     if (!rig._mv) { rig._mv = new V().copy(camP); rig._ml = new V().copy(camL); }
     rig._mv.lerp(camP, k); rig._ml.lerp(camL, k); cam.position.copy(rig._mv); cam.up.set(0, 1, 0); cam.lookAt(rig._ml);
   };
 
-  // ---------------------------------------------------------------- pilotage direct de la fusee
-  const LAT = 12, HLO = 2.2, HHI = 17;
+  // ---------------------------------------------------------------- pilotage : la fusee suit la piste, le joueur la decale
   const drive = (g, dt) => {
-    const run = g.endlessRun, rk = g.rocket; if (!run || !rk.active || g.state !== 'FLIGHT' || g.evoFinish || g.flightTime < 0.3) return;
+    const run = g.endlessRun, rk = g.rocket; if (!run || !rk.active || g.state !== 'FLIGHT' || g.evoFinish || g.flightTime < 0.05) return;
     const T = run.T, d = Math.max(0, run.dist); frame(T, d);
-    const gy = T.base(d), lx = tmp.copy(rk.pos).sub(cc).dot(nn), SP = baseSpeed();
-    let vlat = 0, vy = 0;
-    if (CTRL === 'a') {
-      const k = I.k;
-      if (I.mode === 'keys') {   // fleches : la fusee repond tout de suite (pas de lissage de viseur)
-        const tx = (k.ArrowRight || k.KeyD ? 1 : 0) - (k.ArrowLeft || k.KeyA ? 1 : 0), ty = (k.ArrowUp || k.KeyW ? 1 : 0) - (k.ArrowDown || k.KeyS ? 1 : 0), f = Math.min(1, dt * 16);
-        I.ax += (tx - I.ax) * f; I.ay += (ty - I.ay) * f;
-        const slope = (T.base(d + 6) - gy) / 6 * SP;   // sans touche, la fusee garde sa hauteur au-dessus du sol (la prairie descend)
-        vlat = I.ax * 26; vy = slope + I.ay * 24; const hr = rk.pos.y - gy;
-        if ((lx > LAT && vlat > 0) || (lx < -LAT && vlat < 0)) vlat = (0 - lx) * 3;
-        if (hr > HHI && vy > slope) vy = Math.min(vy, slope + (HHI - hr) * 4); if (hr < HLO && vy < slope) vy = Math.max(vy, slope + (HLO - hr) * 4);
-      } else {
-        const cam = g.camera; org.copy(cam.position); ray.set(I.cx, -(I.cy * 2 - 1), 0.5).unproject(cam).sub(org).normalize();
-        const den = ray.dot(tf); let tx = lx, ty = rk.pos.y;
-        if (Math.abs(den) > 0.05) { const t = (tmp.copy(rk.pos).sub(org).dot(tf) + 40) / den; if (t > 0) { const P = tmp.copy(org).addScaledVector(ray, t); tx = P.clone().sub(cc).dot(nn); ty = P.y; } }
-        tx = U.clamp(tx, -LAT, LAT); ty = U.clamp(ty, gy + HLO, gy + HHI);
-        vlat = U.clamp((tx - lx) * 5, -30, 30); vy = U.clamp((ty - rk.pos.y) * 5, -30, 30);
-        I.ax = vlat / 26; I.ay = vy / 24;
-      }
-    } else {
-      vlat = U.clamp((0 - lx) * 2, -8, 8);
-      const want = I.hold ? 17 : -14; vy = rk.vel.y + (want - rk.vel.y) * Math.min(1, dt * 6);
-      if (rk.pos.y < gy + 1.6 && vy < 0) { vy = 0; rk.pos.y = gy + 1.6; }
-      if (rk.pos.y > gy + 34 && vy > 0) vy = 0;
+    const sp = SP(), d2 = d + 8, ease = U.clamp(g.flightTime / 1.0, 0, 1);
+    relOf(T, d, rk.pos, rel); const hdn = hdnAt(T, d);
+    const ffx = (T.laneX(d2) - T.laneX(d)) / 8 * sp, ffy = (laneAbs(T, d2) - laneAbs(T, d)) / 8 * sp;   // la piste du niveau monte, descend, tourne : la fusee suit toute seule
+    let vlat, vy;
+    if (I.mode === 'keys') {   // fleches : la fusee repond tout de suite
+      const k = I.k, tx = (k.ArrowRight || k.KeyD ? 1 : 0) - (k.ArrowLeft || k.KeyA ? 1 : 0), ty = (k.ArrowUp || k.KeyW ? 1 : 0) - (k.ArrowDown || k.KeyS ? 1 : 0), f = Math.min(1, dt * 16);
+      I.ax += (tx - I.ax) * f; I.ay += (ty - I.ay) * f;
+      vlat = ffx + I.ax * 26 - rel.x * 1.6 * (1 - Math.abs(I.ax)); vy = ffy + I.ay * 24 - rel.y * 1.6 * (1 - Math.abs(I.ay));   // sans touche, la fusee revient doucement au centre de la piste
+      vlat += (rel.x > LAT ? LAT - rel.x : rel.x < -LAT ? -LAT - rel.x : 0) * 5;   // la fusee reste dans la bande de la piste du niveau
+      vy += (rel.y > HUP ? HUP - rel.y : rel.y < -hdn ? -hdn - rel.y : 0) * 5;
+    } else {   // curseur : on vise un point 40 m devant, la fusee y va
+      const cam = g.camera; org.copy(cam.position); ray.set(I.cx, -(I.cy * 2 - 1), 0.5).unproject(cam).sub(org).normalize();
+      const den = ray.dot(tf); let tx = rel.x, ty = rel.y;
+      if (Math.abs(den) > 0.05) { const t = (tmp.copy(rk.pos).sub(org).dot(tf) + 40) / den; if (t > 0) { const P = tmp.copy(org).addScaledVector(ray, t); relOf(T, d + 40, P, relP); tx = relP.x; ty = relP.y; } }
+      tx = U.clamp(tx, -LAT, LAT) * ease; ty = U.clamp(ty, -hdn, HUP) * ease;
+      vlat = ffx + U.clamp((tx - rel.x) * 5, -30, 30); vy = ffy + U.clamp((ty - rel.y) * 5, -30, 30);
+      I.ax = (vlat - ffx) / 26; I.ay = (vy - ffy) / 24;
     }
-    rk.vel.set(tf.x * SP + nn.x * vlat, vy, tf.z * SP + nn.z * vlat);
+    const floor = T.base(d) + 1.2; if (rk.pos.y < floor && vy < 0) { vy = 0; rk.pos.y = floor; }
+    rk.vel.set(tf.x * sp + nn.x * vlat, vy, tf.z * sp + nn.z * vlat);
     const dir = tmp.copy(rk.vel).normalize(), yaw = Math.atan2(-dir.x, -dir.z), pit = Math.asin(U.clamp(dir.y, -0.9, 0.9));
     g.input.setAim(yaw, pit);
   };
 
-  // ---------------------------------------------------------------- chaque image : collisions, rivaux, fondu de la ligne, fin
-  const finalStars = (d) => {
-    if (CTRL === 'b') return d.rings >= 8 ? 3 : d.rings >= 6 ? 2 : 1;
-    return d.fails === 0 ? 3 : d.fails === 1 ? 2 : 1;
-  };
-  let ended = null, wantEnd = 0;
+  // ---------------------------------------------------------------- fin, essais, relances
+  let ended = null, wantEnd = 0, curRun = null;
+  const bestD = () => parseFloat(lsGet('cc.mvp.bd.' + M + '.' + LV, '0')) || 0;
   const step = (g, dt) => {
     const run = g.endlessRun, rk = g.rocket; if (!run || !run.T) return;
-    if (!W || W.run !== run) { buildW(g, run); ended = null; g._mvEnd = 0; if (g.ui.overlay === 'evoWin') g.ui.overlay = null; }
-    const T = run.T, flying = g.state === 'FLIGHT' && rk.active;
+    if (curRun !== run) { curRun = run; ended = null; g._mvEnd = 0; if (g.ui.overlay === 'evoWin') g.ui.overlay = null; }
     try { document.body.style.cursor = (I.mode === 'keys' && g.state === 'FLIGHT') ? 'none' : ''; } catch (e) { /* ignore */ }
-    if (CTRL === 'b') { const bg = ensureBg(g); frame(T, Math.max(0, run.dist)); const gyy = T.base(Math.max(0, run.dist)); bg.position.set(rk.pos.x + nn.x * 40, gyy + 190, rk.pos.z + nn.z * 40); bg.rotation.set(0, Math.atan2(-nn.x, -nn.z), 0); bg.visible = true; }
-    { const gt = g._shortGate; if (gt && gt.grp && gt.grp.children[0]) { const gone = g.evoFinish ? U.clamp(1 - (performance.now() - g.evoFinish.t0) / 500, 0, 1) : 1; gt.grp.children[0].material.opacity = 0.46 * gone * U.clamp((640 - (FIN - Math.max(0, run.dist))) / 220, 0, 1); } }   // la ligne apparait en fondu de loin et s'efface une fois franchie
-    if (rk.mesh) rk.mesh.scale.setScalar(CTRL === 'b' ? 1.6 : 2.4);   // la fusee est plus grosse a l'ecran
+    const FN = E.shortFin || 470;
+    { const gt = g._shortGate; if (gt && gt.grp && gt.grp.children[0]) { const gone = g.evoFinish ? U.clamp(1 - (performance.now() - g.evoFinish.t0) / 500, 0, 1) : 1; const dd = FN - Math.max(0, run.dist); gt.grp.children[0].material.opacity = 0.46 * gone * U.clamp((640 - dd) / 220, 0, 1) * (0.2 + 0.8 * U.clamp(dd / 90, 0, 1)); } }   // la ligne apparait en fondu de loin et s'efface une fois franchie
+    if (rk.mesh && rk.active) rk.mesh.scale.setScalar(2.4);   // la fusee est plus grosse a l'ecran
     if (ended && wantEnd && performance.now() >= wantEnd) { wantEnd = 0; g.evoWin = { mv: true, t0: performance.now(), lv: LV, info: ended }; g.ui.overlay = 'evoWin'; try { g.audio.play('victory'); } catch (e) { /* son */ } }
-    if (!flying && !g.evoFinish) return;
-    const t = Math.max(0, g.flightTime), fin = !!g.evoFinish;
-    if (flying && !fin) {
-      for (const o of W.ob) { o.m.worldToLocal(tmp2.copy(rk.pos)); if (Math.abs(tmp2.x) < o.w / 2 + 0.8 && Math.abs(tmp2.y) < o.h / 2 + 0.8 && Math.abs(tmp2.z) < o.dep / 2 + 0.8) { g.onRocketCrash('wall', rk.pos.clone(), new V(0, 0, 1)); return; } }
-      for (const r of W.rg) {
-        frame(T, r.d); const s = tmp2.copy(rk.pos).sub(r.c).dot(tf);
-        if (r.prev !== null && !r.done && r.prev < 0 && s >= 0) { r.done = true; const dd = Math.hypot(tmp2.copy(rk.pos).sub(r.c).dot(nn), rk.pos.y - r.c.y); r.ok = dd < 6.6; r.m.material.color.set(r.ok ? '#3ddc5a' : '#e8352b'); if (r.ok) { W.rings++; try { g.audio.play('target'); } catch (e) { /* son */ } } }
-        r.prev = s;
-      }
-    }
-    if (RIV) {   // rivaux
-      const tb = Math.max(0, t - 0.35);
-      W.bots.forEach((b, i) => {
-        b.d = Math.min(FIN + 40, b.sp * tb); const h = 7 + 4 * Math.sin(tb * 1.7 + i * 2.1); place(T, b.d, b.lx + 3 * Math.sin(tb * 1.1 + i), h, b.m.position);
-        place(T, b.d + 8, b.lx, h, tmp2); b.m.lookAt(tmp2); b.m.visible = tb > 0;
-      });
-    }
-    if (fin && !g._mvEnd) {
-      g._mvEnd = 1; const time = t; const nb = RIV ? W.bots.filter((b) => b.tFin < time).length : 0;
-      ended = { time, rings: W.rings, place: 1 + nb, fails: fails[LV] || 0, t0: performance.now() }; ended.stars = finalStars(ended);
+    if (g.evoFinish && !g._mvEnd) {
+      g._mvEnd = 1; const time = Math.max(0, g.flightTime);
+      ended = { time, fails: fails[LV] || 0, kills: (g.evo && g.evo.kills) || 0, t0: performance.now() }; ended.stars = ended.fails === 0 ? 3 : ended.fails === 1 ? 2 : 1;
       const best = parseFloat(lsGet('cc.mvp.best.' + M + '.' + LV, '0')) || 0; ended.rec = !best || time < best; ended.best = best;
       if (ended.rec) lsSet('cc.mvp.best.' + M + '.' + LV, time.toFixed(2));
-      fails[LV] = 0; wantEnd = performance.now() + 750;
+      lsSet('cc.mvp.bd.' + M + '.' + LV, 1); fails[LV] = 0; wantEnd = performance.now() + 750;
     }
   };
-
-  // ---------------------------------------------------------------- relances
   const restart = (g) => {
     ended = null; wantEnd = 0; g._mvEnd = 0; g.evoWin = null;
     const rk = g.rocket; if (rk) { rk.active = false; rk.mesh.visible = false; rk.light.intensity = 0; rk.rope.visible = false; }
@@ -230,51 +166,49 @@
     _tk(g, dt);
     if (g.rocket && g.rocket.active && g.evo) { g.rocket.fuel = g.rocket.fuelMax = 999; }
     try { step(g, dt); } catch (e) { if (!E._mvErr) { E._mvErr = 1; console.warn('mvp', e); } }
-    try { drive(g, dt); } catch (e) { /* pilotage facultatif */ }
+    try { drive(g, dt); } catch (e) { if (!E._mvErr2) { E._mvErr2 = 1; console.warn('mvp drive', e); } }
   };
-  E.beginEnd = (g) => { fails[LV] = (fails[LV] || 0) + 1; restart(g); };   // echec : retour au hangar, START
+  E.beginEnd = (g) => {   // echec : on retient le record de distance, puis retour au hangar
+    fails[LV] = (fails[LV] || 0) + 1;
+    const run = g.endlessRun; if (run) { const p = U.clamp(run.dist / (E.shortFin || 470), 0, 1); if (p > bestD()) lsSet('cc.mvp.bd.' + M + '.' + LV, p.toFixed(3)); }
+    restart(g);
+  };
   E.onClear = () => { /* la carte de fin prend la suite */ };
-  E.mvpWorld = () => W;
+  E.mvpState = () => ({ ended, LV });
 
-  // ---------------------------------------------------------------- HUD de vol : l'ancienne barre de progression, couchee, + le chrono
+  // ---------------------------------------------------------------- HUD de vol : l'ancienne barre de progression, couchee et plus petite, + le chrono
   Home.evoUI.hud = function (ctx, g, W0, H) {
     const run = g.endlessRun, rk = g.rocket; if (!run || !rk || g.ui.overlay) return;
-    const u = H > W0 ? W0 : Math.min(W0, H * 0.62); UI.begin(u, g.hudPr || 1); const S = UI.S;
-    const pct = U.clamp(run.dist / FIN, 0, 1), len = Math.min(W0 * 0.5, H * 0.95), bw = len * 0.13, cx = W0 / 2, cy = H * 0.02 + bw / 2 + S(6);
+    const u = H > W0 ? W0 : Math.min(W0, H * 0.62); UI.begin(u, g.hudPr || 1); const S = UI.S, FN = E.shortFin || 470;
+    const pct = U.clamp(run.dist / FN, 0, 1), len = Math.min(W0 * 0.3, H * 0.6), bw = len * 0.13, cx = W0 / 2, cy = H * 0.016 + bw / 2 + S(4);
     ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.PI / 2);   // la barre verticale devient horizontale : depart a gauche, drapeau a droite
     const bh = len, bx = -bw / 2, by = -bh / 2, tx = bx + bw * 0.213, tw2 = bw * 0.567, ty = by + bh * 0.125, th = bh * 0.77, rr = tw2 / 2;
     ctx.save(); ctx.beginPath(); ctx.moveTo(tx + rr, ty); ctx.arc(tx + rr, ty + rr, rr, -Math.PI / 2, 0); ctx.lineTo(tx + tw2, ty + th - rr); ctx.arc(tx + rr, ty + th - rr, rr, 0, Math.PI); ctx.lineTo(tx, ty + rr); ctx.closePath(); ctx.clip();
     ctx.fillStyle = '#696A6D'; ctx.fillRect(tx, ty, tw2, th); ctx.fillStyle = '#387CEE'; ctx.fillRect(tx, ty + th * (1 - pct), tw2, th * pct + 1);
     const gl = ctx.createLinearGradient(tx, 0, tx + tw2, 0); gl.addColorStop(0, 'rgba(255,255,255,0)'); gl.addColorStop(0.3, 'rgba(255,255,255,0.28)'); gl.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = gl; ctx.fillRect(tx, ty + th * (1 - pct), tw2, th * pct + 1);
     const gh = ctx.createLinearGradient(tx, 0, tx + tw2, 0); gh.addColorStop(0, 'rgba(4,16,48,0.6)'); gh.addColorStop(0.26, 'rgba(4,16,48,0)'); gh.addColorStop(0.7, 'rgba(4,16,48,0)'); gh.addColorStop(1, 'rgba(4,16,48,0.45)'); ctx.fillStyle = gh; ctx.fillRect(tx, ty, tw2, th);
-    if (RIV && W) for (const b of W.bots) { const yy = ty + th * (1 - U.clamp(b.d / FIN, 0, 1)); ctx.fillStyle = b.col; ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(2, tw2 * 0.1); ctx.beginPath(); ctx.arc(tx + tw2 / 2, yy, tw2 * 0.3, 0, 6.283); ctx.fill(); ctx.stroke(); }
+    const rec = bestD(); if (rec > 0.02 && rec < 0.999) { const yy = ty + th * (1 - rec); ctx.fillStyle = '#FFE04D'; ctx.fillRect(tx - 1, yy - bw * 0.05, tw2 + 2, bw * 0.1); }   // le record : un trait jaune sur la barre
     ctx.restore();
     if (!UI.artImg(ctx, 'bar', bx + bw / 2, by + bh / 2, bh)) UI.checkFlag(ctx, bx, by, bw, S(60));
-    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowOffsetX = S(5); ctx.shadowOffsetY = S(6); UI.icon(ctx, 'missile_ogive', bx + bw / 2, ty + th * (1 - pct) - S(4), bw * 1.25, { rot: -Math.PI / 4 }); ctx.restore();
+    if (rec > 0.02 && rec < 0.999) { const yy = ty + th * (1 - rec), tip = bx + bw * 0.62, aw = bw * 0.36, ah = bw * 0.42; ctx.save(); ctx.fillStyle = '#FFE04D'; ctx.strokeStyle = '#0F3A8C'; ctx.lineWidth = Math.max(2, bw * 0.08); ctx.beginPath(); ctx.moveTo(tip, yy); ctx.lineTo(tip + aw, yy - ah / 2); ctx.lineTo(tip + aw, yy + ah / 2); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); }
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowOffsetX = S(4); ctx.shadowOffsetY = S(5); UI.icon(ctx, 'missile_ogive', bx + bw / 2, ty + th * (1 - pct) - S(3), bw * 1.25, { rot: -Math.PI / 4 }); ctx.restore();
     ctx.restore();
     const tm = (g.evoFinish && ended ? ended.time : Math.max(0, g.flightTime)).toFixed(1) + ' S';
-    UI.text(ctx, tm, cx, cy + bw / 2 + S(46), S(70), '#ffffff', { outline: true });
-    if (RIV && W) { let ahead = 0; for (const b of W.bots) if (b.d > Math.max(0, run.dist)) ahead++; UI.text(ctx, (1 + ahead) + '/3', cx + len / 2 + S(90), cy, S(80), '#FFD23A', { outline: true }); }
+    UI.text(ctx, tm, cx, cy + bw / 2 + S(34), S(52), '#ffffff', { outline: true });
   };
 
   // ---------------------------------------------------------------- accueil : le hangar, START au milieu, une fleche de chaque cote
-  const finger = (ctx, x, y, u) => {   // la main du jeu : un rond blanc qui appuie (comme sur l'ecran de lancement d'origine)
-    const t = performance.now() * 0.001, press = 0.5 + 0.5 * Math.sin(t * 5), fy = y - press * u * 0.025, fr = u * 0.04 * (1 - 0.12 * press);
-    ctx.fillStyle = 'rgba(255,255,255,0.94)'; ctx.beginPath(); ctx.arc(x, fy, fr, 0, 6.283); ctx.fill(); ctx.fillRect(x - fr * 0.55, fy, fr * 1.1, fr * 2.2);
-    ctx.strokeStyle = 'rgba(11,14,20,0.8)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, fy, fr, 0, 6.283); ctx.stroke();
-  };
   const startRun = (g) => { if (g.state === 'MENU' && !g.evoAim && !g.evoAnim) E.start(g); };
   Home.drawEvo = function (ui, ctx, g, W0, H) {
     const F = Home.evoK.frame(ui, ctx, W0, H), { Y, cw, cx } = F, S = UI.S;
     const bx0 = cx - cw / 2 + S(60), by0 = Y(0.07);   // niveau
     UI.levelBadge(ctx, bx0 + S(50), by0, S(48), LV);
     UI.text(ctx, 'NIVEAU ' + LV, bx0 + S(120), by0 - S(14), S(52), '#ffffff', { align: 'left', outline: true });
-    UI.text(ctx, NAMES[LV - 1], bx0 + S(120), by0 + S(34), S(34), '#FFD23A', { align: 'left' });
+    UI.text(ctx, cur().name, bx0 + S(120), by0 + S(34), S(34), '#FFD23A', { align: 'left' });
     const bw = cw * 0.46, bh = S(150), bx = cx - bw / 2, by = Y(0.84) - bh / 2, kw = S(118), gap = S(60), t = performance.now() / 1000, pr = (Math.floor(t * 1.6) % 2) === 0;   // START, avec les fleches gauche et droite du jeu
     const kd = CC.Joy && CC.Joy.desk && CC.Joy.desk.keycap;
     if (kd) { kd(ctx, bx - gap - kw / 2, by + bh / 2, kw, 1, pr, 1); kd(ctx, bx + bw + gap + kw / 2, by + bh / 2, kw, 2, !pr, 1); }
     const pulse = 1 + 0.03 * Math.sin(t * 5); ctx.save(); ctx.translate(cx, by + bh / 2); ctx.scale(pulse, pulse); ctx.translate(-cx, -(by + bh / 2)); UI.btnPrimary(ctx, bx, by, bw, bh, 'START'); ctx.restore();
-    finger(ctx, bx + bw * 0.74, by + bh + S(12), cw);
     UI.tap(ui, bx, by, bw, bh, () => startRun(g));
   };
   Home.drawEvoAim = function () { };   // plus de barre de lancement : START part tout de suite
@@ -288,7 +222,7 @@
     { const a = Math.min(1, t / 0.4), ttl = 'NIVEAU ' + w.lv + ' TERMINE !'; ctx.save(); ctx.globalAlpha = a; UI.text(ctx, ttl, cx, Y(0.12), UI.fit(ctx, ttl, cw * 0.92, S(100)), '#FFD23A', { outline: true }); ctx.restore(); }
     for (let k = 0; k < 3; k++) { const on = k < I2.stars, s = Math.min(1, Math.max(0, (t - 0.25 - k * 0.3) / 0.3)), e = s < 1 ? 1 + 0.5 * Math.sin(s * 3.1416) : 1; ctx.save(); if (!on) ctx.globalAlpha = 0.35; Home.evoUI.star(ctx, cx + (k - 1) * S(250), Y(0.27) - (k === 1 ? S(40) : 0), S(115) * (k === 1 ? 1.25 : 1) * s * e); ctx.restore(); }
     UI.text(ctx, I2.time.toFixed(1) + ' S', cx, Y(0.46), S(120), '#ffffff', { outline: true });
-    let sub = I2.rec ? 'NOUVEAU RECORD !' : 'MEILLEUR ' + I2.best.toFixed(1) + ' S'; if (CTRL === 'b') sub += '   ANNEAUX ' + I2.rings + '/8'; if (RIV) sub += '   PLACE ' + I2.place + '/3';
+    let sub = I2.rec ? 'NOUVEAU RECORD !' : 'MEILLEUR ' + I2.best.toFixed(1) + ' S'; if (I2.kills) sub += '   ENNEMIS ' + I2.kills;
     UI.text(ctx, sub, cx, Y(0.55), UI.fit(ctx, sub, cw * 0.9, S(56)), I2.rec ? '#FFD23A' : '#dfe6f0', {});
     if (t > 0.9) {
       const bw = cw * 0.62, bh = S(150), bx = cx - bw / 2, by = Y(0.68), pulse = 1 + 0.03 * Math.sin(t * 5);

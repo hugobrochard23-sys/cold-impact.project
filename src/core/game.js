@@ -1082,7 +1082,7 @@
           this.impactT += dt;
           if (this.evo && this.evoReport && this.ui.overlay !== 'evoReport' && this.ui.overlay !== 'evoChest' && this.ui.overlay !== 'ad') this.ui.overlay = 'evoReport';   // v157 : filet : jamais d'ecran vide apres une pub
           if (this.endlessRun) {   // v033 : une seule vie ; v034 : une chance de continuer (publicité récompensée) avant l'écran de fin
-            if (this.impactT > (this.evoTumble ? this.evoTumble.dur : 0.9)) {
+            if (this.impactT > (this.evoTumble ? this.evoTumble.dur : (CC.EVO && CC.EVO.mvp && CC.EVO.mvp() ? 0.55 : 0.9))) {
               // v093 : niveaux 1-3 : pas d'écran, la partie se relance aussitôt (essayer = instantané)
               const cl = this.endlessRun.T.levelLen && this.levelRun && this.levelRun.n;
               if (this.evo) { if (!this.pendingHome && !this.evoReport && this.state === 'CRASHED') CC.EVO.beginEnd(this); break; }

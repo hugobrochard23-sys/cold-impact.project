@@ -39,6 +39,10 @@
       if (murets) S.item(d0 + 40, (r) => sandbags(S, d0 + 40, sg * 26, 4, r));
     }
     S.item(d0 + 20, () => { for (const s of [-1, 1]) S.bx(d0 + 20, s * 9, 0.06, 0.9, 0.1, 40, 'col:#e8e8dc', undefined, false, { shadow: false }); });
+    // les ennemis restent (comme au debut du vrai jeu), bien en vue au milieu de la piste : un char, un helicoptere, un camion, une jeep
+    const heliPatrol = (SS, dd, lx, y) => [SS.at(dd, -9, y), SS.at(dd + 10, 0, y + 2), SS.at(dd, 9, y), SS.at(dd - 10, 0, y + 2)];
+    if (murets) { foe(S, 'tank', d0 + 60, -4, 0, { name: 'CHAR', val: 240, keep: true }); foe(S, 'heli', d0 + 100, 4, 8, { name: 'HELICO', keep: true, armed: false, patrol: heliPatrol, speed: 7 }); foe(S, 'truck', d0 + 150, 6, 0, { name: 'CAMION', keep: true, path: 40, speed: 10 }); }
+    else { foe(S, 'jeep', d0 + 60, -6, 0, { name: 'JEEP', keep: true }); foe(S, 'tank', d0 + 125, 5, 0, { name: 'CHAR', val: 240, keep: true }); foe(S, 'heli', d0 + 185, 0, 9, { name: 'HELICO', keep: true, armed: false, patrol: heliPatrol, speed: 7 }); }
     const hw = 15, len = 38;
     if (murets) S.item(d0 + 112, (r) => { for (const s of [-1, 1]) for (let k = 0; k < 4; k++) S.bx(d0 + 112, s * (hw + 8 + k * 10), 2.2 + k * 0.6, 8, 4.4 + k * 1.2, len + 8 - k * 4, 'brick', pk(r, BR), true); });
   }
