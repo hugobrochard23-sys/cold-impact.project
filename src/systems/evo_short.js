@@ -5,7 +5,7 @@
   const on = (/[?&](short=1|mvp=[abc])/.test(location.search) || !!window.CC_MVP), SL = 0.16, FIN = 470, LEN = 560;   // pente : 0,16 m de descente par metre (environ 9 degres)
   E.shortOn = () => on;
   if (!on) return;
-  E.shortSlope = SL;
+  E.shortSlope = SL; E.shortFin = FIN;
   const T3 = THREE, V = T3.Vector3;
   const _pr = E.preRel;
   E.preRel = (d) => { const b = _pr ? _pr(d) : 0; return d <= 0 ? b : b - SL * (d < 60 ? d * d / 120 : d - 30); };   // la prairie penche des le depart, en douceur
