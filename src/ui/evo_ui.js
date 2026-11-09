@@ -263,6 +263,7 @@
         ctx.globalAlpha = Math.min(1, q * 2); UI.text(ctx, word, cx, ty - S(110), wpx, '#46A6FF', { stroke: true }); ctx.globalAlpha = 1; }
       const bx0 = cx - cw * 0.22, bw0 = cw * 0.44; rr0(ctx, bx0, ty + S(6) + dd, bw0, kh, S(18)); ctx.fillStyle = '#6a7384'; ctx.fill(); rr0(ctx, bx0, ty + (S(12) - dd) * 0.5 + S(2), bw0, kh, S(18)); ctx.fillStyle = '#e8ecf4'; ctx.fill(); ctx.restore();
       UI.text(ctx, fr ? 'ESPACE' : 'SPACE', cx, ty + (S(12) - dd) * 0.5 + S(2) + kh * 0.5, S(44), '#2b3347', { flat: true });
+      if (CC.EVO.pcInfo) CC.EVO.pcInfo(game, ctx, UI, cx, cw, Y, S, fr);   // v358 : « devant toi » (zones a venir) + objectif
     }
     if (!a.hold && !a.lock) { const bw = S(230), bh = S(92), bx = F.ox + S(36), by = F.T0 + S(40); rr0(ctx, bx, by + S(6), bw, bh, S(20)); ctx.fillStyle = '#A81818'; ctx.fill(); rr0(ctx, bx, by, bw, bh, S(20)); ctx.fillStyle = '#FF3B3B'; ctx.fill(); UI.outlined(ctx, 'Retour', bx + bw / 2, by + bh / 2, UI.fit(ctx, 'Retour', bw * 0.7, S(52)), '#FFFFFF'); game.evoBackRect = { x: bx, y: by, w: bw, h: bh }; } else game.evoBackRect = null;
     hit(ui, 0, 0, W, H, () => {}, true);
@@ -270,7 +271,9 @@
 
   // v344 : mode PC / portail : apres SUIVANT du rapport, ecran COFFRE : il se remplit sous les yeux du joueur (noir -> couleur) pour qu'il comprenne qu'il faut plusieurs vols
   Home.afterReportStep = function (game) {
-    const E = CC.EVO, A = game.evoChestAnim;
+    const E = CC.EVO, A = game.evoChestAnim, kb = !!(CC.Joy && CC.Joy.kb && CC.Joy.kb()); game.evoReportNext = null;
+    const S1 = E.save(game), full = !!(A && A.to >= 0.999), can = ['rk', 'la', 'cm'].some((id) => { const c = E.nextCost(game, id); return c !== null && S1.coins >= c; });   // v358 : clavier : le coffre ne s'ouvre a l'ecran que s'il est plein (ou pendant les 2 premiers vols, pour comprendre)
+    if (kb && !(full || (S1.runs || 0) <= 2) && game.evoReport) { A && (game.evoChestAnim = null); if (!can) game.evoNext = () => { game.ui.overlay = null; game.evoSpaceBlock = performance.now() + 450; E.start(game); }; E.afterReport(game); return; }   // rien a acheter : retour direct au lancement
     if (E.fast && E.fast() && A && game.evoReport && game.ui.overlay === 'evoReport') { game.evoChestScr = { t0: performance.now(), from: A.from, to: A.to }; game.evoChestAnim = null; game.ui.overlay = 'evoChest'; }
     else E.afterReport(game);
   };
@@ -310,6 +313,9 @@
     const mult = E.mult(S0.cm); rows.push({ kind: 'mult', lab: 'MULTIPLICATEUR DE REVENU', mult: 'X' + f1(mult) });
     for (const ln of last.lines) if (/^PUB/.test(ln[0])) rows.push({ kind: 'ad', lab: 'BONUS PUBLICITÉ  ' + ln[0].replace('PUB ', ''), val: ln[1], t: ln[2] || 0 });
     const STEP = 0.36, tRow = (i) => 0.34 + i * STEP, nBase = rows.filter((r) => r.kind !== 'ad').length, tTot = tRow(nBase) + 0.04, tMul = tTot + 0.78, tNext = tMul + 0.36;
+    game.evoReportNext = () => { const lt = game.evoLast; if (!lt) return; const t = (performance.now() - lt.t0) / 1000; if (t < 0.5) return; if (t < tNext + 0.15) { lt.t0 -= (tNext + 0.2 - t) * 1000; return; } release(); Home.afterReportStep(game); };   // v358 : ESPACE : saute l'animation, puis passe au vol suivant
+    const kbHint = CC.Joy && CC.Joy.kb && CC.Joy.kb() && tt > tNext;   // v358 : indice « ESPACE » en relief sous le rapport
+    if (kbHint) { const kw = S(300), kh = S(74), ky = Y(0.955), pr = Math.floor(now / 450) % 2 === 1, dd = S(9) * (pr ? 0.3 : 1); ctx.save(); rr0(ctx, cx - kw / 2, ky + S(6) + dd, kw, kh, S(16)); ctx.fillStyle = '#6a7384'; ctx.fill(); rr0(ctx, cx - kw / 2, ky + (S(9) - dd) * 0.5, kw, kh, S(16)); ctx.fillStyle = '#e8ecf4'; ctx.fill(); ctx.restore(); UI.text(ctx, CC.I18n && CC.I18n.lang && CC.I18n.lang !== 'fr' ? 'SPACE : NEXT' : 'ESPACE : SUIVANT', cx, ky + (S(9) - dd) * 0.5 + kh * 0.5, S(34), '#2b3347', { flat: true }); }
     const tk = U.clamp(tt / 0.3, 0, 1);
     { const TS = CC.I18n ? CC.I18n.t('RAPPORT DE MISSION') : 'RAPPORT DE MISSION', tp = UI.fit(ctx, TS, cw * 0.92, S(104)), ty0 = Y(0.17), w0 = UI.tw(ctx, TS, tp), x0 = cx - w0 / 2;   // v263 : les lettres grossissent l'une apres l'autre, vite
       for (let k = 0; k < TS.length; k++) { const ch = TS[k]; if (ch === ' ') continue; const q = U.clamp((tt - 0.03 - k * 0.04) / 0.2, 0, 1); if (q <= 0) continue; const sc = 1 + 2.7 * Math.pow(q - 1, 3) + 1.7 * Math.pow(q - 1, 2), pre = UI.tw(ctx, TS.slice(0, k), tp), cwd = UI.tw(ctx, ch, tp);

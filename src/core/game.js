@@ -980,11 +980,15 @@
 
     onPointerLost() { if (!this.testMode && !this.ui.overlay && !this.padMode && ['AIM', 'FLIGHT', 'IMPACT', 'CRASHED', 'RESPAWN'].includes(this.state)) this.paused = true; }
 
-    onKey(k) {
+    onKey(k, rep) {
       if (typeof document !== 'undefined' && document.activeElement && document.activeElement.tagName === 'INPUT') return;   // saisie d'une graine
       this.audio.init(); this.audio.resume();
       const inGame = ['AIM', 'FLIGHT', 'IMPACT', 'CRASHED', 'RESPAWN'].includes(this.state);
-      if (k === 'Space' && this.state === 'LAUNCH' && this.evoAim && !this.ui.overlay && CC.EVO) { if (this.evoAim.auto) CC.EVO.lock(this); else CC.EVO.holdStart(this); return; }   // v352 : lancement au clavier : ESPACE maintenu = la jauge monte, on relache pour propulser
+      if ((k === 'Space' || k === 'Enter') && !rep && CC.Joy && CC.Joy.kb && CC.Joy.kb() && CC.EVO && CC.EVO.on) {   // v358 : au clavier, ESPACE enchaine les ecrans : rapport -> (coffre) -> lancement
+        if (this.ui.overlay === 'evoReport' && this.evoReportNext) { this.evoReportNext(); return; } if (this.ui.overlay === 'evoChest' && this.evoChestScr && performance.now() - this.evoChestScr.t0 > 2400) { this.evoChestScr = null; this.evoSpaceBlock = performance.now() + 450; CC.EVO.afterReport(this); return; }
+        if (this.ui.overlay === 'evo' && this.state === 'MENU' && !this.evoAnim && !this.evoAim && !this.evoIntro) { this.evoSpaceBlock = performance.now() + 450; CC.EVO.start(this); return; }
+      }
+      if (k === 'Space' && !rep && performance.now() > (this.evoSpaceBlock || 0) && this.state === 'LAUNCH' && this.evoAim && !this.ui.overlay && CC.EVO) { if (this.evoAim.auto) CC.EVO.lock(this); else CC.EVO.holdStart(this); return; }   // v352 : lancement au clavier : ESPACE maintenu = la jauge monte, on relache pour propulser
       if ((k === 'Space' || k === 'Enter') && this.state === 'MENU' && this.padMode && !this.ui.overlay) { this.beginLaunch(); return; }   // v034 : au clavier, Espace lance
       if (k === 'Escape') {
         if (this.state === 'REVIVE' || this.state === 'LAUNCH') return;
@@ -1262,7 +1266,7 @@
       if (this.chromaBurst) this.chromaBurst = this.chromaBurst < 0.001 ? 0 : this.chromaBurst * 0.95;   // v066 : ralenti à chaque destruction
       let tutHold = CC.Tutorial && this.state === 'FLIGHT' && !this.paused ? CC.Tutorial.update(this, dt) : false;
       if (!tutHold && CC.Joy && CC.Joy.desk && CC.Joy.desk.tutHold) tutHold = CC.Joy.desk.tutHold(this, dt);   // v344 : tutoriel PC (fleche) : jeu fige au tout premier vol   // v089 : tutoriel interactif = jeu figé tant que le geste n'est pas fait
-      if (this.warm) { const t0 = performance.now(); try { for (;;) { if (this.warm.gen.next().done) { this.warm = null; break; } if (performance.now() - t0 > 12) break; } } catch (err) { this.warm = null; } }
+      if (this.warm) { const t0 = performance.now(); try { for (;;) { if (this.warm.gen.next().done) { this.warm = null; break; } if (performance.now() - t0 > (document.hidden ? 250 : 22)) break; } } catch (err) { this.warm = null; } }   // v358 : chargement : plus de travail par image (onglet cache : bien plus, il ne tourne qu'a 1 image/s)
       if (!this.paused && this.state !== 'BOOT' && !this.warm && !tutHold) this.safe(() => this.update(this.endlessRun && this.state === 'CRASHED' && this.impactT < 0.6 ? sdt * 0.35 : sdt));   // v040 : ralenti sur la collision
       else { this.input.poll(0); this.rig.update(0); }
       try { this.render(performance.now() / 1000); this.renderErr = 0; }

@@ -82,7 +82,7 @@
     // décalage caméra→roquette (repère de visée) ; seul ce décalage est lissé : la caméra ne traîne pas derrière la roquette,
     // mais la roquette dérive à l'écran quand la visée tourne (OBSERVÉ : tuyère entre 44 et 57 % en x, 57 et 74 % en y)
     wantedOffset(out) { const fk = this.fallK || 0;
-      if (CC.EVO && CC.EVO.on) { const d = _evoD.copy(this.camDir), hy = Math.hypot(d.x, d.z) || 1e-4, py = U.clamp(d.y, -0.45, 0.22), k = Math.sqrt(1 - py * py) / hy; d.set(d.x * k, py, d.z * k); return out.copy(d).multiplyScalar(-(this.cfg.distance + this.pull + 2.5 * fk)).addScaledVector(_y, this.cfg.height + 1.6 * Math.max(0, this.camDir.y) + 5 * fk); }   // v125 : évolution : la caméra reste toujours AU-DESSUS de la fusée
+      if (CC.EVO && CC.EVO.on) { const d = _evoD.copy(this.camDir), hy = Math.hypot(d.x, d.z) || 1e-4, py = U.clamp(d.y, (CC.Joy && CC.Joy.kb && CC.Joy.kb()) ? -0.32 : -0.45, 0.22), k = Math.sqrt(1 - py * py) / hy; d.set(d.x * k, py, d.z * k); return out.copy(d).multiplyScalar(-(this.cfg.distance + this.pull + 2.5 * fk)).addScaledVector(_y, this.cfg.height + 1.6 * Math.max(0, this.camDir.y) + 5 * fk); }   // v125 : évolution : la caméra reste toujours AU-DESSUS de la fusée
       return out.copy(this.camDir).multiplyScalar(-(this.cfg.distance + this.pull + 2.5 * fk)).addScaledVector(this.camUp, this.cfg.height + 5 * fk); }
 
     chaseTarget(rocket, out) {
