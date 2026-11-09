@@ -31,10 +31,23 @@
     // v263 : garage epure : plus de petits elements (bandes, barrieres, etabli, etageres, pneus, antennes) ; seulement les gros volumes
     foe(S, 'jeep', dc + 2, -4, 0, { name: 'JEEP' });
   }
+  // v364 : niveau court (?short=1 / ?mvp=) : une prairie propre, sans hangar ni structure centrale ni ennemis ; on garde arbres, rochers, sacs de sable et les murets de briques des cotes
+  function meadow(S, d0, murets) {
+    for (const sg of [-1, 1]) {
+      S.rows(d0 + 14, S.d1, 8, 0.9, (dc) => S.item(dc, (r) => { tree(S, dc, S.lane(dc).lx + sg * r.between([22, 62]), r, r.between([13, 25])); }));
+      S.rows(d0 + 10, S.d1, 22, 0.8, (dc) => S.item(dc, (r) => boulder(S, dc, S.lane(dc).lx + sg * r.between([14, 30]), 0, r.between([2, 4.5]), r)));
+      if (murets) S.item(d0 + 40, (r) => sandbags(S, d0 + 40, sg * 26, 4, r));
+    }
+    S.item(d0 + 20, () => { for (const s of [-1, 1]) S.bx(d0 + 20, s * 9, 0.06, 0.9, 0.1, 40, 'col:#e8e8dc', undefined, false, { shadow: false }); });
+    const hw = 15, len = 38;
+    if (murets) S.item(d0 + 112, (r) => { for (const s of [-1, 1]) for (let k = 0; k < 4; k++) S.bx(d0 + 112, s * (hw + 8 + k * 10), 2.2 + k * 0.6, 8, 4.4 + k * 1.2, len + 8 - k * 4, 'brick', pk(r, BR), true); });
+  }
+  const shortOn = () => !!(CC.EVO && CC.EVO.shortOn && CC.EVO.shortOn());
   D.scenes.rampe = { len: [170, 170], noDoor: true, noChaos: true,
     pin: (T, sc) => ({ lx: 0, y: 8, from: 20, to: sc.d1 - sc.d0 - 20 }),
     build(S) {
       const d0 = S.d0;
+      if (shortOn()) { meadow(S, d0, true); return; }
       for (const sg of [-1, 1]) {
         S.rows(d0 + 14, S.d1, 8, 0.9, (dc) => S.item(dc, (r) => { if (Math.abs(dc - (d0 + 112)) < 30) return; tree(S, dc, S.lane(dc).lx + sg * r.between([22, 62]), r, r.between([13, 25])); }));
         S.rows(d0 + 10, S.d1, 22, 0.8, (dc) => S.item(dc, (r) => boulder(S, dc, S.lane(dc).lx + sg * r.between([14, 30]), 0, r.between([2, 4.5]), r)));
@@ -192,6 +205,7 @@
     pin: (T, sc) => ({ lx: 0, y: 15, from: 24, to: sc.d1 - sc.d0 - 24 }),
     build(S) {
       const d0 = S.d0, kit = [Z.kit.tent, Z.kit.truckBlock, Z.kit.container, Z.kit.crates, Z.kit.drums, Z.kit.mast, Z.kit.sandbags];
+      if (shortOn()) { meadow(S, d0, false); return; }
       for (let i = 0; i < 12; i++) { const dc = d0 + 14 + S.sr() * (S.len - 28), s = S.sr() < 0.5 ? -1 : 1, lx = s * S.sr.between([70, Math.max(72, S.vol(dc) - 24)]); S.item(dc, (r) => pk(r, kit)(S, dc, lx, r)); }
       S.item(d0 + 600, (r) => Z.kit.radome(S, d0 + 600, 64));
       hangar(S, d0 + at.hangar); checkpoint(S, d0 + at.checkpoint); fuelDepot(S, d0 + at.fuel); runway(S, d0 + at.runway); industrial(S, d0 + at.industrial);

@@ -22,8 +22,8 @@
     const run = g.endlessRun, T = run.T; if (g._shortGate && g._shortGate.run === run) return;
     if (g._shortGate) g.scene.remove(g._shortGate.grp);
     const cv = document.createElement('canvas'); cv.width = cv.height = 64; const c2 = cv.getContext('2d'); c2.fillStyle = '#ffffff'; c2.fillRect(0, 0, 64, 64); c2.fillStyle = '#111111'; c2.fillRect(0, 0, 32, 32); c2.fillRect(32, 32, 32, 32);
-    const W2 = 1400, H2 = 46, sq = 3.2, tx = new T3.CanvasTexture(cv); tx.wrapS = tx.wrapT = T3.RepeatWrapping; tx.repeat.set(W2 / (2 * sq), H2 / (2 * sq)); tx.magFilter = T3.NearestFilter;
-    const grp = new T3.Group(), pl = new T3.Mesh(new T3.PlaneGeometry(W2, H2), new T3.MeshBasicMaterial({ map: tx, transparent: true, opacity: 0.42, side: T3.DoubleSide, depthWrite: false, fog: false })); pl.position.y = H2 / 2 - 8; grp.add(pl);
+    const W2 = 1400, H2 = 150, sq = 3.2, tx = new T3.CanvasTexture(cv); tx.wrapS = tx.wrapT = T3.RepeatWrapping; tx.repeat.set(W2 / (2 * sq), H2 / (2 * sq)); tx.magFilter = T3.NearestFilter;
+    const grp = new T3.Group(), pl = new T3.Mesh(new T3.PlaneGeometry(W2, H2), new T3.MeshBasicMaterial({ map: tx, transparent: true, opacity: 0.42, side: T3.DoubleSide, depthWrite: false, fog: false })); pl.position.y = H2 / 2 - 14; grp.add(pl);
     const a = T.at(FIN - 6, T.laneX(FIN), 0), b = T.at(FIN + 6, T.laneX(FIN), 0), p = T.at(FIN, T.laneX(FIN), 0);
     grp.position.set(p[0], p[1], p[2]); grp.rotation.y = Math.atan2(b[0] - a[0], b[2] - a[2]); g.scene.add(grp); g._shortGate = { run, grp };
   };
