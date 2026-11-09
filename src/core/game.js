@@ -980,15 +980,11 @@
 
     onPointerLost() { if (!this.testMode && !this.ui.overlay && !this.padMode && ['AIM', 'FLIGHT', 'IMPACT', 'CRASHED', 'RESPAWN'].includes(this.state)) this.paused = true; }
 
-    onKey(k, rep) {
+    onKey(k) {
       if (typeof document !== 'undefined' && document.activeElement && document.activeElement.tagName === 'INPUT') return;   // saisie d'une graine
       this.audio.init(); this.audio.resume();
       const inGame = ['AIM', 'FLIGHT', 'IMPACT', 'CRASHED', 'RESPAWN'].includes(this.state);
-      if ((k === 'Space' || k === 'Enter') && !rep && CC.Joy && CC.Joy.kb && CC.Joy.kb() && CC.EVO && CC.EVO.on) {   // v358 : au clavier, ESPACE enchaine les ecrans : rapport -> (coffre) -> lancement
-        if (this.ui.overlay === 'evoReport' && this.evoReportNext) { this.evoReportNext(); return; } if (this.ui.overlay === 'evoChest' && this.evoChestScr && performance.now() - this.evoChestScr.t0 > 2400) { this.evoChestScr = null; this.evoSpaceBlock = performance.now() + 450; CC.EVO.afterReport(this); return; }
-        if (this.ui.overlay === 'evo' && this.state === 'MENU' && !this.evoAnim && !this.evoAim && !this.evoIntro) { this.evoSpaceBlock = performance.now() + 450; CC.EVO.start(this); return; }
-      }
-      if (k === 'Space' && !rep && performance.now() > (this.evoSpaceBlock || 0) && this.state === 'LAUNCH' && this.evoAim && !this.ui.overlay && CC.EVO) { if (this.evoAim.auto) CC.EVO.lock(this); else CC.EVO.holdStart(this); return; }   // v352 : lancement au clavier : ESPACE maintenu = la jauge monte, on relache pour propulser
+      if (k === 'Space' && this.state === 'LAUNCH' && this.evoAim && !this.ui.overlay && CC.EVO) { if (this.evoAim.auto) CC.EVO.lock(this); else CC.EVO.holdStart(this); return; }   // v352 : lancement au clavier : ESPACE maintenu = la jauge monte, on relache pour propulser
       if ((k === 'Space' || k === 'Enter') && this.state === 'MENU' && this.padMode && !this.ui.overlay) { this.beginLaunch(); return; }   // v034 : au clavier, Espace lance
       if (k === 'Escape') {
         if (this.state === 'REVIVE' || this.state === 'LAUNCH') return;

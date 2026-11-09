@@ -30,7 +30,7 @@
           if (down && !this.keys[c]) this.edges[c] = true;
           this.keys[c] = down;
         }
-        if (down) game.onKey(k, !!e.repeat);
+        if (down) game.onKey(k);
         else if (k === 'Space' && game.evoAim && game.evoAim.hold && CC.EVO) CC.EVO.holdEnd(game);   // v352 : au clavier, on relache ESPACE pour propulser
       };
       window.addEventListener('keydown', (e) => onKey(e, true));
