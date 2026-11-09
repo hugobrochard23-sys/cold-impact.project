@@ -92,7 +92,7 @@
   A.gamemonetize = {   // v356 : GameMonetize (SDK api.gamemonetize.com/sdk.js, SDK_OPTIONS ecrit par tools/portal_build.js) : une seule pub (sdk.showBanner) ; la pub « recompensee » du jeu utilise la meme pub
     cb: null, started: false,
     init() {
-      let n = 0; const poll = () => { if (window.sdk && typeof window.sdk.showBanner === 'function') { P.ready = true; note('gm ready'); } else if (++n < 160) setTimeout(poll, 500); else note('gm sdk absent'); };
+      let n = 0; const poll = () => { if (window.sdk && typeof window.sdk.showBanner === 'function') { P.ready = true; note('gm ready'); if (/[?&]m=account/.test(location.search)) setTimeout(() => { try { window.sdk.showBanner(); note('gm verify ad'); } catch (x) { /* ignore */ } }, 3000); }   /* v357 : page « Verify Game » de GameMonetize (?m=account) : une pub se lance toute seule, sans avoir a jouer */ else if (++n < 160) setTimeout(poll, 500); else note('gm sdk absent'); };
       window.CC_GM = (e) => { try { note('gm ' + e.name); if (e.name === 'SDK_GAME_PAUSE') { A.gamemonetize.started = true; try { G().ads.duck(true); } catch (x) { /* ignore */ } } else if (e.name === 'SDK_GAME_START') { try { G().ads.duck(false); } catch (x) { /* ignore */ } const cb = A.gamemonetize.cb; A.gamemonetize.cb = null; if (cb) cb(true); } else if (e.name === 'SDK_READY') P.ready = true; } catch (x) { /* ignore */ } };
       poll();
     },
