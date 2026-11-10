@@ -180,7 +180,7 @@ const CUP = SHAPES.map((s) => s.name);
   const isleKill = (g, crs, T, d, rk) => {   // sol (prairie), roche de l'ile, marteau
     if (g.flightTime < 1.2 || rk.shieldT > 0) return false;
     if (rk.pos.y < crs.isle.PY + 1.5 || E.isleSolid(crs, T, d, rel.x, rk.pos.y)) return true;
-    if (W.props && W.props.hammers) for (const h of W.props.hammers) { h.head.getWorldPosition(hv); if (hv.distanceTo(rk.pos) < 3.9) return true; }
+    if (W.props && W.props.hits) for (const f of W.props.hits) if (f(rk.pos)) return true;
     return false;
   };
 

@@ -130,6 +130,88 @@
     const t = new T3.CanvasTexture(cv); t.anisotropy = 4; return t;
   })());
   const pole = (h, col) => new T3.Mesh(new T3.CylinderGeometry(0.28, 0.4, h, 8), new T3.MeshLambertMaterial({ color: col }));
+  // ---- les obstacles mobiles : chacun est accroche a une structure (pierre, bois) posee sur l'ile ; collision en repere de la structure (x = gauche, y = hauteur, z = devant) ----
+  const mat = (c) => new T3.MeshLambertMaterial({ color: c, flatShading: true });
+  const bx = (w, h, d, c) => new T3.Mesh(new T3.BoxGeometry(w, h, d), mat(c));
+  const cy = (rt, rb, h, c, n) => new T3.Mesh(new T3.CylinderGeometry(rt, rb, h, n || 10), mat(c));
+  const STONE = ['#a39a8a', '#948b7c', '#b2a999'], WOOD = '#7a5634', WOODD = '#5b3f25';
+  const _v = new T3.Vector3();
+  const segDist = (px, py, ax, ay, bx2, by2) => { const dx = bx2 - ax, dy = by2 - ay, l2 = dx * dx + dy * dy || 1, t = U.clamp(((px - ax) * dx + (py - ay) * dy) / l2, 0, 1); return Math.hypot(px - (ax + dx * t), py - (ay + dy * t)); };
+  const RR = 1.6;   // rayon de la fusee
+  const obstacles = (T, C, grp) => {
+    const I = C.isle, ups = [], hits = [];
+    const mk = (d, lx) => { const y = T.base(d), p = T.at(d, lx, 0), q = T.at(d + 3, lx, 0), g = new T3.Group(); g.position.set(p[0], y, p[2]); g.lookAt(q[0], y, q[2]); grp.add(g); g.updateMatrixWorld(true); return g; };
+    const loc = (g, pos) => g.worldToLocal(_v.copy(pos));
+    const stoneBlock = (w, h, d, i) => bx(w, h, d, STONE[i % 3]);
+    // portique en pierre : deux piliers a bandes, une poutre ; renvoie le groupe et la hauteur du pivot
+    const gantry = (g, span, top, wood) => {
+      for (const s of [-1, 1]) { const col = wood ? bx(2.2, top + 1, 2.2, WOOD) : stoneBlock(4, top + 1, 4, 0); col.position.set(s * span, (top + 1) / 2, 0); g.add(col); if (!wood) for (let k = 0; k < 4; k++) { const band = stoneBlock(4.4, 0.7, 4.4, k + 1); band.position.set(s * span, 3 + k * 5.5, 0); g.add(band); } const foot = bx(5.4, 1.2, 5.4, wood ? WOODD : '#7c7468'); foot.position.set(s * span, 0.6, 0); g.add(foot); }
+      const beam = bx(2 * span + 5, 2, 2.6, wood ? WOOD : '#8a8174'); beam.position.y = top + 0.5; g.add(beam);
+      for (let k = -4; k <= 4; k++) { const sp = bx(2.6, 2.04, 2.64, k % 2 ? '#ffd23a' : '#23262b'); sp.position.set(k * 5.6, top + 0.5, 0); if (Math.abs(k * 5.6) < span + 1) g.add(sp); }
+    };
+    // 1. le MARTEAU pendulaire sur un portique en pierre
+    { const d = 245, g = mk(d, 0), top = 25, L = 19, span = 27; gantry(g, span, top, false);
+      const piv = new T3.Group(); piv.position.y = top - 0.6; g.add(piv);
+      for (const z of [-0.9, 0.9]) { const r = bx(0.3, L - 1.8, 0.3, '#1a1a1a'); r.position.set(0, -(L - 1.8) / 2, z); piv.add(r); }
+      const head = new T3.Group(); head.position.y = -L; piv.add(head); head.add(bx(5.2, 4, 5.2, '#d9382c')); const band = bx(5.4, 0.9, 5.4, '#ffd23a'); band.position.y = 0.4; head.add(band); const cap = bx(5.6, 0.8, 5.6, '#23262b'); cap.position.y = -2.2; head.add(cap);
+      ups.push((t) => { piv.rotation.z = 0.86 * Math.sin(t * Math.PI * 2 / 3.4); g.updateMatrixWorld(true); });
+      hits.push((pos) => { const l = loc(g, pos); if (Math.abs(l.z) > 4) return false; const a = piv.rotation.z, hx = L * Math.sin(a), hy = top - 0.6 - L * Math.cos(a); return Math.hypot(l.x - hx, l.y - hy) < 3.3 + RR || segDist(l.x, l.y, 0, top - 0.6, hx, hy) < 0.6 + RR; });
+    }
+    // 2. le MOULIN A VENT en pierre : tour a bandes, toit en bois, ailes tournantes ; la tour est sur le cote, les ailes balaient le chemin
+    { const d = 385, g = mk(d, 11), H = 17;
+      const tw = cy(3.6, 5.6, H, STONE[0], 14); tw.position.y = H / 2; g.add(tw);
+      for (let k = 0; k < 5; k++) { const ring = cy(4.4 - k * 0.42, 4.6 - k * 0.42, 0.7, STONE[(k + 1) % 3], 14); ring.position.y = 2.2 + k * 3.2; g.add(ring); }
+      const door = bx(2.6, 4, 0.8, WOODD); door.position.set(0, 2, 5); g.add(door);
+      for (const s of [-1, 1]) { const win = bx(1.2, 1.8, 0.6, '#2a2f36'); win.position.set(s * 2.2, 9, 3.4); win.rotation.y = s * 0.6; g.add(win); }
+      const roof = new T3.Mesh(new T3.ConeGeometry(4.4, 4.2, 14), mat('#8a3b2a')); roof.position.y = H + 2.1; g.add(roof);
+      const hub = new T3.Group(); hub.position.set(0, H - 1, -4.4); g.add(hub); hub.add(cy(1.4, 1.4, 2.4, WOODD, 10)); hub.children[0].rotation.x = Math.PI / 2;
+      const blades = new T3.Group(); blades.position.z = -1.4; hub.add(blades);
+      for (let k = 0; k < 4; k++) { const arm = new T3.Group(); arm.rotation.z = k * Math.PI / 2; const sp = bx(0.9, 13.5, 0.7, WOOD); sp.position.y = 7.4; arm.add(sp); for (let j = 0; j < 5; j++) { const sl = bx(3.4, 0.5, 0.5, '#d8c79a'); sl.position.set(1.9, 3.4 + j * 2.4, 0.2); arm.add(sl); } const sail = bx(3.2, 10, 0.2, '#e8dcc0'); sail.position.set(2.2, 8, 0.1); arm.add(sail); blades.add(arm); }
+      ups.push((t) => { blades.rotation.z = -t * 0.95; g.updateMatrixWorld(true); });
+      hits.push((pos) => { const l = loc(g, pos), hy = H - 1, hz = -(4.4 + 1.4);
+        if (l.y < H + 1 && Math.hypot(l.x, l.z) < 5.6 + RR && l.y > -2) return true;   // la tour
+        if (Math.abs(l.z - hz) > 1.5 + RR) return false; const dx = l.x, dy = l.y - hy, r = Math.hypot(dx, dy); if (r < 2.4 + RR) return true; if (r > 14.2 + RR) return false;
+        const a = Math.atan2(dy, dx) - (blades.rotation.z + Math.PI / 2); for (let k = 0; k < 4; k++) { const da = a - k * Math.PI / 2, ang = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.cos(ang) > 0 && r * Math.abs(Math.sin(ang)) < 1.5 + RR) return true; } return false; });
+    }
+    // 3. le TRONC pendulaire : un chevalet en bois, un tronc qui se balance en avant et en arriere... de cote a cote
+    { const d = 520, g = mk(d, 0), top = 25, L = 19, span = 27; gantry(g, span, top, true);
+      const piv = new T3.Group(); piv.position.y = top - 0.6; g.add(piv);
+      for (const z of [-2.6, 2.6]) { const r = bx(0.35, L - 1.4, 0.35, '#2a2118'); r.position.set(0, -(L - 1.4) / 2, z); piv.add(r); }
+      const head = new T3.Group(); head.position.y = -L; piv.add(head); const log = cy(1.7, 1.7, 8, '#6b4a2a', 10); log.rotation.x = Math.PI / 2; head.add(log); for (const z of [-3.2, 0, 3.2]) { const band = cy(1.85, 1.85, 0.5, '#3a3a3a', 10); band.rotation.x = Math.PI / 2; band.position.z = z; head.add(band); }
+      ups.push((t) => { piv.rotation.z = 0.8 * Math.sin(t * Math.PI * 2 / 4.1 + 1.2); g.updateMatrixWorld(true); });
+      hits.push((pos) => { const l = loc(g, pos), a = piv.rotation.z, hx = L * Math.sin(a), hy = top - 0.6 - L * Math.cos(a); if (Math.abs(l.z) > 4.2 + RR) return false; return Math.hypot(l.x - hx, l.y - hy) < 2.0 + RR || segDist(l.x, l.y, 0, top - 0.6, hx, hy) < 0.5 + RR; });
+    }
+    // 4. la PORTE DE GRANGE coulissante : murs de bois sur les cotes, deux grands battants qui glissent derriere les murs (ouverts environ 70 % du temps)
+    { const d = 700, g = mk(d, 0), HW = 22;
+      for (const s of [-1, 1]) { const wall = bx(15, HW, 3.4, WOOD); wall.position.set(s * 20.5, HW / 2, 0); g.add(wall); for (let k = 0; k < 7; k++) { const pl = bx(0.3, HW, 3.5, WOODD); pl.position.set(s * (13.6 + k * 2.2), HW / 2, 0); g.add(pl); } const post = bx(2.4, HW + 2, 4, WOODD); post.position.set(s * 28.6, (HW + 2) / 2, 0); g.add(post); }
+      const lintel = bx(60, 3, 4, WOODD); lintel.position.y = HW + 1.5; g.add(lintel); const roofB = bx(62, 1, 8, '#8a3b2a'); roofB.position.y = HW + 3.5; g.add(roofB);
+      const doors = [-1, 1].map((s) => { const dr = new T3.Group(); const panel = bx(13, HW, 1.6, '#a8402e'); panel.position.y = HW / 2; dr.add(panel); const cross = bx(14.4, 1.4, 1.8, '#f0e6d0'); cross.position.y = HW / 2; dr.add(cross); const dia = bx(0.9, 24, 1.8, '#f0e6d0'); dia.position.y = HW / 2; dia.rotation.z = 0.85 * s; dr.add(dia); dr.position.z = 1.9; g.add(dr); return dr; });
+      const open = (t) => { const k = (t % 6.2) / 6.2; return k < 0.12 ? 0 : k < 0.24 ? (k - 0.12) / 0.12 : k < 0.82 ? 1 : 1 - (k - 0.82) / 0.18; };
+      let o = 1; ups.push((t) => { o = open(t); const e = o * o * (3 - 2 * o); doors[0].position.x = -(6.5 + 13 * e); doors[1].position.x = 6.5 + 13 * e; g.updateMatrixWorld(true); });
+      hits.push((pos) => { const l = loc(g, pos); if (Math.abs(l.z) > 2.8 + RR || l.y > HW + 2 || l.y < -2) return false; const ax = Math.abs(l.x); if (ax > 13 - RR) return ax < 30 + RR ? true : false; const e = o * o * (3 - 2 * o), c = 6.5 + 13 * e; return Math.abs(ax - c) < 6.5 + RR && ax < 13 + RR && ax > c - 6.5 - RR && c < 13.5; });
+    }
+    // 5. la BARRIERE A BASCULE : un pilier en pierre, un contrepoids, une longue barre qui se leve et s'abaisse en travers du chemin
+    { const d = 860, g = mk(d, -23), pivY = 6, Lb = 44;
+      const pil = stoneBlock(5, pivY + 1.6, 5, 1); pil.position.y = (pivY + 1.6) / 2; g.add(pil); for (let k = 0; k < 2; k++) { const b2 = stoneBlock(5.4, 0.7, 5.4, k + 2); b2.position.y = 1.6 + k * 3; g.add(b2); }
+      const piv = new T3.Group(); piv.position.y = pivY; g.add(piv);
+      const arm = bx(Lb, 1.5, 1.5, '#f0e6d0'); arm.position.x = -Lb / 2; piv.add(arm); for (let k = 0; k < 8; k++) { const st = bx(2.7, 1.54, 1.54, '#d9382c'); st.position.x = -3 - k * 5.4; piv.add(st); }
+      const cw = bx(7, 3, 3, '#3a3f46'); cw.position.x = 5; piv.add(cw);
+      let th = 0; ups.push((t) => { const k = 0.5 + 0.5 * Math.sin(t * Math.PI * 2 / 5.6 - 0.6); th = 1.5 * U.smooth(0.12, 0.88, k); piv.rotation.z = -th; g.updateMatrixWorld(true); });
+      hits.push((pos) => { const l = loc(g, pos); if (Math.abs(l.z) > 0.8 + RR) return false; return segDist(l.x, l.y, 0, pivY, -Lb * Math.cos(th), pivY + Lb * Math.sin(th)) < 0.8 + RR || (l.x < 0 && Math.hypot(l.x, l.y - pivY) < 3 + RR && false); });
+    }
+    // 6. les ROCHERS ET TONNEAUX qui roulent dans un couloir de pierre, sur la pente : on survole le couloir
+    { const dA = 965, dB = 1085, L = dB - dA, N = 8, items = [];
+      for (let k = 0; k < N; k++) {
+        const big = k % 2 === 0, r = big ? 3.2 : 1.9, m = big ? new T3.Mesh(new T3.IcosahedronGeometry(r, 1), mat(STONE[k % 3])) : (() => { const g2 = new T3.Group(), c = cy(1.9, 1.9, 3.4, '#8a5a30', 12); g2.add(c); for (const yy of [-1.1, 1.1]) { const h = cy(2.0, 2.0, 0.35, '#2a2a2a', 12); h.position.y = yy; g2.add(h); } g2.rotation.z = Math.PI / 2; const wrap = new T3.Group(); wrap.add(g2); return wrap; })();
+        grp.add(m); items.push({ m, r, lx: [-8, 0, 8, -4, 5][k % 5], ph: k / N, spin: big ? 1 : 0, pos: new T3.Vector3() });
+      }
+      const g0 = mk(dA - 6, 0); for (const s of [-1, 1]) { const w2 = stoneBlock(2.4, 1.6, 8, 1); w2.position.set(s * 13, 0.8, 0); g0.add(w2); } const gate = bx(26, 1.2, 1.4, WOODD); gate.position.set(0, 4.2, 0); g0.add(gate); for (const s of [-1, 1]) { const po = bx(1.8, 5, 1.8, WOOD); po.position.set(s * 13, 2.5, 0); g0.add(po); }   // la rampe de lancement des rochers
+      for (let d = dA; d < dB; d += 8) for (const s of [-1, 1]) { const q = T.at(d, s * 13, 0), w3 = stoneBlock(2.4, 1.4 + (d % 16 === 0 ? 0.6 : 0), 9, d % 3); w3.position.set(q[0], q[1] + 0.7, q[2]); const q2 = T.at(d + 3, s * 13, 0); w3.lookAt(q2[0], q[1] + 0.7, q2[2]); grp.add(w3); }
+      ups.push((t) => { for (const it of items) { const u = (t * 0.14 + it.ph) % 1, d = dA + u * L, p = T.at(d, it.lx, 0); it.m.position.set(p[0], p[1] + it.r, p[2]); it.m.rotation.x = -d / it.r * 0.9; it.pos.copy(it.m.position); } });
+      hits.push((pos) => { for (const it of items) if (pos.distanceTo(it.pos) < it.r + RR) return true; return false; });
+    }
+    return { update: (t) => { for (const f of ups) f(t); }, hits };
+  };
   E.buildIsle = (T, C, grp) => {
     const I = C.isle, out = { isle: true, blocks: [], obst: [] };
     grp.add(bodyMesh(T, C)); grp.add(prairie(T, C));
@@ -140,7 +222,7 @@
       place(d, lx, [po, fl]);
     }
     { const pl = [pole(24, '#ffd23a'), pole(24, '#ffd23a')], ban = new T3.Mesh(new T3.PlaneGeometry(38, 11.8), bm); pl[0].position.set(19.5, 12, 0); pl[1].position.set(-19.5, 12, 0); ban.position.set(0, 20, 0); ban.rotation.y = Math.PI; place(-6, 0, [pl[0], pl[1], ban]); }   // l'arche de depart
-    out.update = () => { };
+    const ob = obstacles(T, C, grp); out.update = ob.update; out.hits = ob.hits;
     return out;
   };
 })();

@@ -52,3 +52,7 @@ Sonnet 5.5 effort MOYEN (faible pour les retouches mecaniques, eleve seulement p
 - Controles : le plancher de la zone de vol etait trop haut (impossible de descendre) ; camera `kf` remise a 0,5 ; `evo.js` ne force plus le sol a `base+0.32` sur l'ile (sinon on glisse au lieu de tomber). Test chiffre : `cctest/ctl2.js`.
 - La Coupe se court sur ARCHIPEL (3 manches). Les anciens couloirs restent via `?racec=COULEE`.
 - A faire ensuite : obstacles (moulin a vent en pierre, tronc pendule, marteau, porte de grange coulissante, rocher/tonneau qui roule, barriere a bascule), autres iles, saut entre iles.
+
+## Mise a jour v372 (obstacles de l'ile 1)
+- `evo_isle.js` : `obstacles()` = 6 obstacles mobiles, chacun accroche a une structure : marteau (portique pierre, d=245), moulin a vent en pierre (385), tronc pendule (chevalet bois, 520), porte de grange coulissante ouverte ~70 % du temps (700), barriere a bascule (860), rochers et tonneaux qui roulent dans un couloir de pierre (965-1085). Collisions en repere de la structure (`hits`), animations dans `update(t)` appelees par `isleStep`.
+- A faire : regler la difficulte apres les retours, puis les iles suivantes (jungle...), le saut entre iles et la reprise de controle en chute.
