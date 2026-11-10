@@ -1,0 +1,48 @@
+# HANDOFF — MVP COURSE « ARCHIPEL » (a lire en premier dans la nouvelle session)
+
+Projet COLD IMPACT (Three.js r149, fusees). Repondre en francais. Terminer chaque reponse par le lien de test. L'utilisateur teste a la main sur telephone : pas de planches de captures sauf pour valider une map.
+Etat : v369 poussee sur `main` (course `?evo=1&pc=1&mvp=r`). Controles, Coupe 32>16>8, menu, ecrans de fin, blocs chance, costumes : VALIDES, on n'y touche pas.
+
+## But
+Finir le MVP de la course avant la fin du quota hebdomadaire, pret a tester ET a poster sur Playgama (l'utilisateur depose lui-meme les zips). Le plus important : UNE MAP propre.
+
+## Concept valide : « course aerienne a portes » dans un ARCHIPEL DE CIEL
+- Fini le couloir a murs (on ne voyait rien autour). Pas de murs, pas de sol de piste en degrade, pas de nuages (l'utilisateur ne veut pas de nuages en bas).
+- Une seule map « Archipel » : 5 iles tres differentes, chacune = un lieu valide du niveau 1 (camp et hangars, entree de la mine, gare et train, ville, tour). Fin : grande prairie sous l'arrivee. 3 variantes de parcours (ordre, portes, raccourci) pour que les 3 manches de la Coupe different. Pas d'autres maps avant les retours.
+- Les iles sont COHERENTES : de la roche visible dessous (vraie impression de terre qui flotte, pas un disque), rochers, falaises. Iles tres en contrebas les unes des autres.
+- Entre les iles : espace LIBRE pour doubler les rivaux (portes/anneaux, chevrons, ballons comme repere, pas de murs).
+- Quitter le chemin principal = on TOMBE : la fusee pique, prend de la vitesse, devient dure a diriger ; si on vise bien et qu'on revient dans la zone, le controle revient progressivement (pas instantane) ; si on rate une ile, on touche le SOL = mort (revive existant). Sol du bas : PRAIRIE (pas de nuages).
+- Obstacles = mobiles et ACCROCHES a une structure coherente (marteau pendulaire sur un portique, helice sur un pylone, portes coulissantes dans un batiment, plateforme tournante sur un mat). Jamais dans le vide, jamais un gros rectangle fixe ni une porte qui retrecit. 4 types max : marteau pendulaire, barre/helice tournante, portes coulissantes en rythme, anneau/plateforme tournante. Plus un SAUT d'ile en ile (vide a franchir avec tremplin/turbo et atterrissage vise).
+- Ennemis : on les garde, ils sont a TOI (les rivaux sont simules, ils ne les cassent pas). Detruire = turbo. Les bots recoivent des turbos aleatoires avec petite explosion visible. (Plus tard en vrai multi : une copie par joueur.)
+- DA : on garde tous les modeles 3D/assets valides, AUCUNE nouvelle texture. Habillage UI : palette violet / bleu / jaune, coins arrondis ; les cartes de resultat sont encore dans l'ancien style (a unifier en dernier, moins important).
+
+## Plan (dans l'ordre, s'arreter apres chaque etape pour que l'utilisateur teste)
+0. Prototype UNE SEULE ILE (camp/hangars) complete : relief rocheux dessous, un obstacle mobile accroche, la chute + reprise de controle, le sol prairie. Valider avec l'utilisateur (captures).
+1. Dupliquer en map Archipel a 5 iles + liaisons libres + saut.
+2. Ennemis personnels + turbo ; 3 variantes de parcours.
+3. Nettoyage perf mobile, paquet Playgama (`MVP=r node tools/portal_build.js playgama`), textes de la page du jeu.
+
+## Etat technique (fichiers)
+- `src/systems/evo_mvp.js` : course (R = coupe, W = monde de la manche, bots, drive lateral par rapport a la piste, mvpCam camera + camera de decollage, freeFly = raccourci guide, blocs chance + roue, ecran des qualifies 3D, paquet, HUD).
+- `src/systems/evo_course.js` : `E.mkCourse(segs)` (trajectoire : cap, pente, hauteur, largeur), `E.courseExtras` (obstacles, blocs, raccourcis auto), `E.buildCorridor` (a REMPLACER : murs/sol), `E.buildCourseProps`, scenes `crs0..9`, et surtout les patchs qui coupent les gris.
+- `src/systems/evo_menu.js` : vrai menu (5 onglets). Ne pas toucher.
+- `src/systems/camera.js` : hook `E.mvpCam`. `src/world/endless.js` : `Track` (at(d,lx,y), base, theta, rel, vol, project).
+- Reutiliser pour les obstacles : `CC.Life.sweeper` (src/world/life.js, modes swing/orbit/vertical, collision incluse), `CC.Trees` (conifer/broadleaf/rock), `CC.Models.guideArrow`, `Z.evoFoe` (ennemis), ballons `skyBalloons` (zones_evo.js).
+
+## Pieges deja rencontres (ne pas les refaire)
+- Gris partout venait de : `skyCliffs` dans `campagne.dress` (falaises de 1000 m), `Pieces.far`, `Scenery.side`, `Zones.backdrop`, anneau d'horizon (`E.noHorizon`), sol large qui se replie dans les virages (utiliser `gw` etroit). Tous coupes quand `E.course` est actif. Il reste une zone olive en haut a droite sur une capture telephone : cause NON identifiee (sol/brouillard ?). Diagnostic efficace : masquer les meshes de la scene un par un, ou raycaster (`diag*.js`).
+- Le moteur borne la fusee d'apres `run.dist` (sol = base(run.dist)) : en vol libre il faut mettre `run.dist` a jour (voir freeFly).
+- `world.sweep` est neutralise en mode parcours (les decors du sol ne bloquent pas) : a revoir si les iles doivent avoir des collisions.
+- Les scenes de zone supposent un sol continu ; elles ont des ennemis/hangars en dur. Preferer des scenes a nous (comme `crs*`) et poser les modeles du jeu a la main.
+- Windows/PowerShell : les heredocs python longs echouent ; ecrire le patch dans un fichier (outil Write) puis `python3 fichier.py`.
+
+## Banc de test (dans `C:\Users\PASSECOUTRIN\cctest`)
+- Serveur : `node srv.js` (port 8135, racine du depot). Chrome headless puppeteer-core, viewport 640x360, `CC.harness.step(2)`, clic START via `CC.game.ui.buttons[0]`, bouclier `rk.shieldT = 99` pour qu'un robot vole sans mourir.
+- Scripts : `crs1.js` / `crs2.js` (vol d'un parcours + captures), `crs_sim.js` + `shapes.js` (simulation des formes sans navigateur), `diag*.js` (masquage/raycast), `lu1.js` (ecran des qualifies/paquet), `menu1.js`, `cup1.js` (logique de Coupe), `sheet.py` (planche PIL).
+- Sortie courte : ne lancer qu'un test cible a la fois (les images coutent cher en forfait).
+
+## Livraison
+`node tools/stamp.js` ; `git add -A src tools assets version.json index.html NOTES_NUIT.md` ; commit avec `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` ; push ; zips `MVP=r node tools/portal_build.js playgama` -> `dist/COLD_IMPACT_playgama_mvpr.zip`. Un seul commit et un seul jeu de zips par etape validee. Jamais d'envoi aux portails sans l'utilisateur. Chiffres Playgama non valides = pas de conclusion.
+
+## Regles de budget (forfait hebdo deja a ~46 %)
+Sonnet 5.5 effort MOYEN (faible pour les retouches mecaniques, eleve seulement pour une decision de conception). Pas de sous-agents. Pas de relecture de gros fichiers entiers : Grep puis Read d'une plage. Pas de planches de captures a chaque reglage. Decisions groupees.
