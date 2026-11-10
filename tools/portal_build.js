@@ -4,7 +4,7 @@
 const fs = require('fs'), path = require('path'), { execFileSync } = require('child_process');
 const id = (process.argv[2] || '').toLowerCase();
 if (!/^(playgama|poki|crazygames|gamedistribution|gamemonetize|test)$/.test(id)) { console.error('Usage : node tools/portal_build.js <playgama|poki|crazygames|gamedistribution|gamemonetize|test> [gameId]'); process.exit(1); }
-const MVP = /^[abc]$/.test(process.env.MVP || '') ? process.env.MVP : '', sfx = MVP ? '_mvp' + MVP : '';   // v362 : MVP=a|b|c node tools/portal_build.js playgama -> paquet d'un MVP de niveau court
+const MVP = /^[abcr]$/.test(process.env.MVP || '') ? process.env.MVP : '', sfx = MVP ? '_mvp' + MVP : '';   // v362 : MVP=a|b|c node tools/portal_build.js playgama -> paquet d'un MVP de niveau court
 const root = path.resolve(__dirname, '..'), out = path.join(root, 'dist', 'portal-' + id + sfx);
 fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(out, { recursive: true });
 for (const f of ['index.html', 'style.css', 'game.js']) if (fs.existsSync(path.join(root, f))) fs.copyFileSync(path.join(root, f), path.join(out, f));

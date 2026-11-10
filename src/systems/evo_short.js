@@ -2,7 +2,7 @@
  * visible au loin, le niveau se finit en une dizaine de secondes en la franchissant. Rien ne change sans ?short=1. */
 (function () {
   const E = CC.EVO; if (!E || !E.on) return;
-  const on = (/[?&](short=1|mvp=[abc])/.test(location.search) || !!window.CC_MVP), SL = 0.16, FIN = 470, LEN = 560;   // pente : 0,16 m de descente par metre (environ 9 degres)
+  const on = (/[?&](short=1|mvp=[abcr])/.test(location.search) || !!window.CC_MVP), SL = 0.16, FIN = 470, LEN = 560;   // pente : 0,16 m de descente par metre (environ 9 degres)
   E.shortOn = () => on;
   if (!on) return;
   E.shortSlope = SL; E.shortFin = FIN;
