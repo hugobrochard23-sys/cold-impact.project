@@ -16,3 +16,12 @@ Refusees : entrepots (crash), descente (prairie vide), grotte seule (prairie vid
 
 ## Non verifie
 Aucune partie jouee a la main. Calibrage des pilotes a affiner avec de vrais essais.
+
+## v367 (suite)
+- Course : fusee et rivaux plus gros, 29 skins du jeu pour les pilotes + traînée de leur couleur + pseudos a l'ecran ; marqueur du premier (fleche + ecart) ; badge "x / 16 QUALIFIES" ; compteur de morts (on fonce dans un pilote : il explose) ; pieces gagnees.
+- Mort : ecran RELANCER (cercle qui se vide, pub la 1re fois, 3 gemmes ensuite) / NON MERCI ; ecran des ELIMINES apres le classement.
+- Arrivee : pylones rouge/bleu, banderole a damier, anneau dore, faisceaux (remplace l'ancien mur transparent).
+- Pilotes un peu plus lents que le joueur (+0,5 s en manche 1, +0,25 en 2, 0 en finale), avec erreurs, raccourcis et pouvoirs tires au hasard.
+- Camera : la fusee reste toujours dans le champ (y compris au depart).
+- Cours "ouvertes" (prairie, canyon, riviere, ville neon, base) : on peut sortir de la piste pour gruger, le sol tue ; CITY RUSH : 45 s (virage, chicane, montagnes russes, chute libre, vitre, plongee).
+- PAS FAIT : ecrans menu (carte Coupe, roulette des maps, costumes, boutique, pouvoirs, ouverture de paquet), blocs chance + roue des pouvoirs, vrai pilotage libre (cap libre), classement reel.
