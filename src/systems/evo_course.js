@@ -85,7 +85,7 @@
   if (CC.Scenery && CC.Scenery.side) { const _sd = CC.Scenery.side; CC.Scenery.side = function () { if (!E.course) return _sd.apply(this, arguments); }; }   // pas de grands blocs gris sur les cotes
   if (CC.Zones && CC.Zones.backdrop) { const _bd = CC.Zones.backdrop; CC.Zones.backdrop = function () { if (!E.course) return _bd.apply(this, arguments); }; }
   { const Z = CC.Zones, D = Z && Z.defs && Z.defs.campagne;   // les « grandes falaises » de 1000 m de haut de chaque cote de la prairie (skyCliffs) : coupees, on voit le ciel et la prairie
-    if (D && D.dress) { const _dr = D.dress; D.dress = function (S) { if (!E.course) return _dr.apply(this, arguments); S.bxr = function () { return null; }; return _dr.apply(this, arguments); }; } }   // v370 : on ne rend pas bxr : les falaises sont creees plus tard (S.item differe) et seraient revenues
+    if (D && D.dress) { const _dr = D.dress; D.dress = function (S) { if (!E.course) return _dr.apply(this, arguments); if (E.course.isle) return; S.bxr = function () { return null; }; return _dr.apply(this, arguments); }; } }   // v370 : on ne rend pas bxr : les falaises sont creees plus tard (S.item differe) et seraient revenues
   // le decor : des scenes a nous (campagne) : arbres et rochers du jeu sur la bande verte, jamais dans le couloir ; aucun ennemi
   { const Z = CC.Zones, D = Z && Z.defs && Z.defs.campagne, TR = CC.Trees;
     if (D && TR) {

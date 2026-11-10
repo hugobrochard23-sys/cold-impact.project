@@ -8,21 +8,21 @@
   const T3 = THREE, U = CC.U, Z = CC.Zones, TR = CC.Trees, D = Z && Z.defs && Z.defs.campagne; if (!D || !TR) return;
   const FLY = 11, TOP = 9;   // hauteur de la piste au-dessus du sol de l'ile, hauteur de la zone de vol
   // route : [longueur, virage (+ droite), pente (descente), hauteur de vol, demi-largeur du chemin, hauteur de la zone]
-  E.isleShape = [[130, 0, 0, FLY, 17, TOP], [30, 0, 0.25, FLY, 17, TOP], [90, 0, 0, FLY, 17, TOP], [160, 70, 0, FLY, 17, TOP], [28, 0, 0.26, FLY, 17, TOP], [180, -95, 0, FLY, 17, TOP], [26, 0, 0.25, FLY, 17, TOP], [170, 70, 0, FLY, 17, TOP], [30, 0, 0.25, FLY, 17, TOP], [120, -30, 0, FLY, 17, TOP], [130, 0, 0, FLY, 24, TOP]];
+  E.isleShape = [[130, 0, 0, FLY, 17, TOP], [150, 80, 0.09, FLY, 17, TOP], [22, 0, 0.32, FLY, 17, TOP], [160, -105, 0.09, FLY, 17, TOP], [150, 95, 0.09, FLY, 17, TOP], [22, 0, 0.32, FLY, 17, TOP], [160, -95, 0.09, FLY, 17, TOP], [140, 85, 0.09, FLY, 17, TOP], [22, 0, 0.32, FLY, 17, TOP], [120, -60, 0.09, FLY, 17, TOP], [120, 0, 0.08, FLY, 24, TOP]];   // l'ile descend en permanence (~110 m) et tourne beaucoup
   const S0 = -125, STREAMS = [330, 800];
   const hash = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
   // demi-largeur de l'ile le long de la route : bout arrondi au depart, large au depart, ondule ensuite, bout arrondi a l'arrivee
   const mkW = (dEnd) => (d) => {
     if (d <= S0 || d >= dEnd) return 0;
-    let w = d < 120 ? 58 : 44 + 6 * Math.sin(d / 85) + 4 * Math.sin(d / 37 + 1) + (d < 260 ? 14 * (1 - (d - 120) / 140) : 0);
+    let w = d < 120 ? 46 : 33 + 5 * Math.sin(d / 85) + 3 * Math.sin(d / 37 + 1) + (d < 260 ? 13 * (1 - (d - 120) / 140) : 0);
     if (d < -35) w *= Math.sqrt(Math.max(0, 1 - Math.pow((d + 35) / (S0 + 35), 2)));
     if (d > dEnd - 70) w *= Math.sqrt(Math.max(0, 1 - Math.pow((d - (dEnd - 70)) / 70, 2)));
     return w;
   };
   E.mkIsle = (shape) => {
     const C = E.mkCourse(shape, { fl: FLY, sw: 4 }), dEnd = C.len + 90, W = mkW(dEnd), risers = [];
-    let a = 0; for (const s of shape) { if (s[2] >= 0.06) risers.push(a + s[0] * 0.5); a += s[0]; }
-    C.isle = { W, dEnd, streams: STREAMS, risers, PY: C.rel(C.len) - 105 };   // PY : la prairie, tres loin dessous
+    let a = 0; for (const s of shape) { if (s[2] >= 0.2) risers.push(a + s[0] * 0.5); a += s[0]; }
+    C.isle = { W, dEnd, streams: STREAMS, risers, PY: C.rel(C.len) - 90 };   // PY : la prairie, tres loin dessous
     return C;
   };
   // la fusee est-elle dans la roche de l'ile ? (d : avance, x : lateral, y : hauteur absolue)
@@ -55,21 +55,21 @@
     gwF: (d) => { const C = E.course; return C && C.isle ? C.isle.W(d) : 46; },   // le sol suit le contour de l'ile (zones_evo.js)
     ground: (d, lx, c) => {
       const C = E.course, I = C && C.isle; if (!I) return; const w = I.W(d), rd = 6 + 1.5 * Math.sin(d / 26), a = Math.abs(lx);
-      if (a < rd) c.lerp(DIRT, 0.88); else if (a < rd + 2.4) c.lerp(DIRT, 0.3);   // le chemin de terre contraste avec l'herbe
+      if (a < rd + 1.2) c.copy(DIRT); else if (a < rd + 3.6) c.lerp(DIRT, 0.7 * (1 - (a - rd - 1.2) / 2.4));   // le chemin de terre : aucune herbe dessus, elle revient petit a petit
       for (const sd of I.streams) { const q = Math.abs(d - sd); if (q < 7) c.lerp(WATER, 0.9); else if (q < 11) c.lerp(SAND, 0.65 * (1 - (q - 7) / 4)); }
-      if (a > w - 4) c.lerp(RIM, Math.min(0.8, (a - (w - 4)) / 3));   // le bord de l'ile : terre
+      if (a > w - 1.6) c.copy(RIM); else if (a > w - 4.5) c.lerp(RIM, (a - (w - 4.5)) / 2.9 * 0.7);   // le bord de l'ile : terre, plus d'herbe au-dela
     },
     build(S) {
       const C = E.course; if (!C || !C.isle) return; const I = C.isle;
-      if (S.d0 <= 40 && S.d1 > 40) hangar(S, 40, -36);
+      if (S.d0 <= 40 && S.d1 > 40) hangar(S, 40, -29);
       for (const sg of [-1, 1]) {
         S.rows(S.d0 + 4, Math.min(S.d1, I.dEnd - 20), 13, 0.9, (dc) => S.item(dc, (r) => {   // arbres du jeu : jamais sur le chemin, jamais au bord du vide
-          const w = I.W(dc); if (w < 30) return; const lx = sg * r.between([24, Math.max(26, w - 7)]); if (dc > -10 && dc < 78 && sg < 0 && lx < -16) return; for (const sd of I.streams) if (Math.abs(dc - sd) < 14) return;
+          const w = I.W(dc); if (w < 26) return; const lx = sg * r.between([Math.min(22, w - 11), Math.max(24, w - 6)]); if (dc > -10 && dc < 78 && sg < 0 && lx < -16) return; for (const sd of I.streams) if (Math.abs(dc - sd) < 14) return;
           tree(S, dc, lx, r, r.between([9, 16]));
         }));
         S.rows(S.d0 + 6, Math.min(S.d1, I.dEnd - 20), 23, 0.8, (dc) => S.item(dc, (r) => { const w = I.W(dc); if (w < 24) return; rock(S, dc, sg * r.between([w - 10, w - 3]), r.between([2, 4.5]), r); }));   // rochers de bord
       }
-      for (const dr of I.risers) if (dr >= S.d0 && dr < S.d1) { const w = I.W(dr), n = Math.floor(w / 6); for (let k = -n; k <= n; k++) S.item(dr + k * 0.01, (r) => rock(S, dr + 6, k * 6.2 + r.between([-1.5, 1.5]), r.between([1.8, 3]), r)); }   // les marches : une rangee de pierres en bas de chaque palier
+      for (const dr of I.risers) if (dr >= S.d0 && dr < S.d1) { const w = I.W(dr), n = Math.floor(w / 6); for (let k = -n; k <= n; k++) if (Math.abs(k * 6.2) > 15) S.item(dr + k * 0.01, (r) => rock(S, dr + 6, k * 6.2 + r.between([-1.5, 1.5]), r.between([1.8, 3]), r)); }   // les marches : une rangee de pierres en bas de chaque palier
       for (const sd of I.streams) if (sd >= S.d0 && sd < S.d1) Z.evoWaves(S, sd - 7, sd + 7, I.W(sd) - 1.5, C.rel(sd) + 0.2, 'waterSurf', '#7cc0e8', 0.4);
     },
   };
@@ -101,13 +101,26 @@
     const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(col, 3)); geo.computeVertexNormals();
     const m = new T3.Mesh(geo, new T3.MeshLambertMaterial({ vertexColors: true, side: T3.DoubleSide })); m.frustumCulled = false; return m;
   };
-  const prairie = (T, C) => {   // la prairie tres loin dessous : couleurs du sol du jeu
-    const I = C.isle, N = 40, SZ = 2400, geo = new T3.PlaneGeometry(SZ, SZ, N, N); geo.rotateX(-Math.PI / 2);
-    let sx = 0, sz = 0, n = 0; for (let d = 0; d < I.dEnd; d += 60) { const p = T.at(d, 0, 0); sx += p[0]; sz += p[2]; n++; } sx /= n; sz /= n;
-    const p = geo.attributes.position, c = new Float32Array(p.count * 3), q = new T3.Color();
-    for (let i = 0; i < p.count; i++) { const x = p.getX(i) + sx, z = p.getZ(i) + sz; Z.evoGcol(x, z, q); c[i * 3] = q.r; c[i * 3 + 1] = q.g; c[i * 3 + 2] = q.b; p.setXYZ(i, x, I.PY, z); }
-    geo.setAttribute('color', new T3.BufferAttribute(c, 3)); geo.computeVertexNormals();
-    const m = new T3.Mesh(geo, new T3.MeshLambertMaterial({ vertexColors: true })); m.frustumCulled = false; return m;
+  // l'ocean a perte de vue, tres loin dessous : vagues, reflets du ciel, soleil, ecume ; se fond dans la brume a l'horizon (shader sans texture)
+  const OCEAN_VS = 'varying vec3 vW;\n#include <fog_pars_vertex>\nvoid main() { vec4 wp = modelMatrix * vec4(position, 1.0); vW = wp.xyz; vec4 mvPosition = viewMatrix * wp; gl_Position = projectionMatrix * mvPosition;\n#include <fog_vertex>\n}';
+  const OCEAN_FS = [
+    'uniform float uTime; uniform vec3 uSun; varying vec3 vW;', '#include <fog_pars_fragment>',
+    'float hgt(vec2 p) { return sin(p.x * 0.045 + uTime * 0.9) * 0.5 + sin(p.y * 0.06 - uTime * 0.7) * 0.4 + sin((p.x + p.y) * 0.11 + uTime * 1.4) * 0.25 + sin((p.x * 0.7 - p.y) * 0.21 - uTime * 2.0) * 0.14 + sin((p.x - p.y * 0.6) * 0.47 + uTime * 2.6) * 0.07; }',
+    'void main() {',
+    '  vec2 p = vW.xz; float e = 0.7, h0 = hgt(p);',
+    '  vec3 n = normalize(vec3(-(hgt(p + vec2(e, 0.0)) - h0) * 1.5, 1.0, -(hgt(p + vec2(0.0, e)) - h0) * 1.5));',
+    '  vec3 V = normalize(cameraPosition - vW); float fres = pow(1.0 - max(dot(n, V), 0.0), 3.0);',
+    '  vec3 deep = vec3(0.05, 0.36, 0.66), shallow = vec3(0.20, 0.68, 0.86), sky = vec3(0.70, 0.88, 0.98);',
+    '  vec3 col = mix(deep, shallow, clamp(0.5 + h0 * 0.35, 0.0, 1.0)); col = mix(col, sky, fres * 0.7);',
+    '  vec3 R = reflect(-uSun, n); col += vec3(1.0, 0.96, 0.82) * pow(max(dot(R, V), 0.0), 80.0) * 1.3;',
+    '  float crest = smoothstep(0.62, 1.0, h0 * 0.5 + 0.5 + sin(p.x * 0.31 + p.y * 0.23 + uTime * 1.3) * 0.06); col = mix(col, vec3(1.0), crest * 0.4);',
+    '  gl_FragColor = vec4(col, 1.0);', '#include <fog_fragment>', '}'].join('\n');
+  const prairie = (T, C) => {
+    const I = C.isle, geo = new T3.PlaneGeometry(6000, 6000, 1, 1); geo.rotateX(-Math.PI / 2);
+    let sx = 0, sz = 0, n = 0; for (let d = 0; d < I.dEnd; d += 60) { const q = T.at(d, 0, 0); sx += q[0]; sz += q[2]; n++; } sx /= n; sz /= n;
+    const uni = T3.UniformsUtils.merge([T3.UniformsLib.fog, { uTime: { value: 0 }, uSun: { value: new T3.Vector3(0.35, 0.8, 0.5).normalize() } }]);
+    const m = new T3.Mesh(geo, new T3.ShaderMaterial({ uniforms: uni, vertexShader: OCEAN_VS, fragmentShader: OCEAN_FS, fog: true }));
+    m.position.set(sx, I.PY, sz); m.frustumCulled = false; m.onBeforeRender = () => { uni.uTime.value = performance.now() / 1000; }; return m;
   };
   let _tex = null;
   const bannerTex = () => _tex || (_tex = (() => {
