@@ -46,11 +46,11 @@
   // v368 : les VRAIS parcours de course : une trajectoire 3D qui tourne et descend tout le temps (evo_course.js)
   // segment = [longueur, virage en degres (+ droite), pente (m de descente par m), hauteur au-dessus du sol, demi-largeur du couloir, hauteur des murs]
   const SHAPES = [
-    { name: 'COULEE', zone: 'campagne', speed: 46, shape: [[130, 0, 0.08, 11, 15], [190, 110, 0.2, 12, 9], [170, -140, 0.26, 9, 7], [110, 0, 0.5, 40, 8, 4], [380, 330, 0.17, 28, 8], [90, 0, 0.1, 7, 5], [270, -200, 0.22, 18, 8], [210, 40, 0.4, 24, 11], [170, 0, 0.04, 8, 17]] },
-    { name: 'SERPENT', zone: 'campagne', speed: 46, shape: [[130, 0, 0.1, 11, 15], [220, -90, 0.2, 12, 9], [200, 180, 0.24, 14, 8], [160, -160, 0.3, 30, 7], [120, 0, 0.55, 46, 9, 4], [300, 270, 0.2, 20, 7], [150, 0, 0.12, 7, 5], [250, -120, 0.26, 16, 9], [170, 0, 0.04, 8, 17]] },
-    { name: 'SPIRALE', zone: 'campagne', speed: 46, shape: [[130, 0, 0.08, 11, 15], [420, 360, 0.2, 22, 9], [100, 0, 0.12, 8, 5], [200, -130, 0.28, 26, 8], [120, 0, 0.55, 44, 9, 4], [230, 150, 0.22, 14, 7], [260, -250, 0.24, 20, 8], [170, 0, 0.04, 8, 17]] }
+    { name: 'COULEE', seed: 11, shape: [[140, 0, 0.07, 22, 15], [200, 100, 0.2, 20, 9], [170, -150, 0.2, 16, 7], [100, 0, 0.5, 40, 9, 4], [300, 270, 0.08, 28, 8], [260, 0, 0.06, 26, 7], [220, -120, 0.2, 18, 8], [190, 0, 0.3, 24, 11], [170, 0, 0.04, 14, 17]] },
+    { name: 'SPIRALE', seed: 23, shape: [[140, 0, 0.07, 22, 15], [420, 360, 0.11, 30, 9], [100, 0, 0.1, 14, 5.5], [200, -130, 0.26, 26, 8], [120, 0, 0.55, 44, 9, 4], [230, 150, 0.22, 20, 7], [260, -250, 0.22, 22, 8], [170, 0, 0.04, 14, 17]] },
+    { name: 'SERPENT', seed: 37, shape: [[140, 0, 0.08, 22, 15], [220, -90, 0.2, 20, 9], [200, 180, 0.2, 22, 8], [160, -160, 0.16, 30, 7], [120, 0, 0.55, 46, 9, 4], [300, 270, 0.07, 24, 7], [150, 0, 0.06, 14, 5.5], [250, -120, 0.2, 22, 9], [170, 0, 0.04, 14, 17]] }
   ];
-  for (const s of SHAPES) { s.cap = 0; s.scenes = ['rampe', 'camp']; s.shape = s.shape.map((q) => { const r = q.slice(); r[3] += 15; return r; });   /* la piste reste au-dessus des arbres et des batiments du sol */ COURSES.unshift(s); }
+  for (const s0 of SHAPES) { s0.zone = 'campagne'; s0.speed = 46; s0.cap = 0; s0.scenes = E.courseScenes || ['rampe', 'camp']; COURSES.unshift(s0); }
   const CUP = SHAPES.map((s) => s.name);
   const R = { round: 1, courses: [], field: [32, 16, 8], keep: [16, 8, 1], last: null, live: 1, ease: parseFloat(lsGet('cc.race.ease', '0')) || 0, penT: 0, session: 0 };
   let W = null;   // le monde de la manche (pilotes, fleches de vitesse)
@@ -80,7 +80,7 @@
   E.levelDef = (g) => {
     if (E.isS2()) return _ld(g);
     const L = cur(); E.chapters = []; E.course = null;
-    if (L.shape) { E.course = E.mkCourse(L.shape); E.shortTiltOff = true; E.shortPad = 0; E.shortFin = Math.round(E.course.len); return E.baseDef({ zone: L.zone, len: E.shortFin + 160, scenes: L.scenes, order: new Array(90).fill(L.zone), theme: CC.LM.THEMES[0], hp: 1, bossEnt: null, seed: RACE ? 4000 + R.session * 13 + R.round * 7 : 5151 }); }
+    if (L.shape) { E.course = E.courseExtras(E.mkCourse(L.shape), L.seed || 7); E.shortTiltOff = true; E.shortPad = 0; E.shortFin = Math.round(E.course.len); return E.baseDef({ zone: L.zone, len: E.shortFin + 160, scenes: L.scenes, order: new Array(90).fill(L.zone), theme: CC.LM.THEMES[0], hp: 1, bossEnt: null, seed: RACE ? 4000 + R.session * 13 + R.round * 7 : 5151 }); }
     if (L.tilt) { E.shortTiltOff = false; E.shortFin = L.fin; return E.baseDef({ zone: 'campagne', len: L.fin + 90, scenes: L.scenes, order: new Array(90).fill('campagne'), theme: CC.LM.THEMES[0], hp: 1, bossEnt: null, seed: RACE ? 4000 + R.session * 13 + R.round * 7 : 5151 }); }   // la prairie penchee (evo_short.js)
     E.shortTiltOff = true; E.shortPad = L.pad || 0;
     const Z = CC.Zones.defs[L.zone], sc = L.scenes.map((e) => (typeof e === 'string' ? e : withFoes(L.zone, e.n, e.foes, 'mv' + (RACE ? 'r' + L.name.replace(/\W/g, '') : LV)))).filter((n) => n && Z.scenes[n]); let tot = 0; for (const n of sc) tot += Z.scenes[n].len[0]; tot = Math.min(tot, L.cap || 1e9);   // un parcours peut ne prendre que le debut d'une longue scene
@@ -130,6 +130,11 @@
     const pa = T.at(dc, T.laneX(Math.max(0, dc)) + fx, T.laneY(Math.max(0, dc)) + 2.2 + fy), pb = T.at(d2, T.laneX(Math.max(0, d2)) + fx, T.laneY(Math.max(0, d2)) + 0.2 + fy);
     camP.set(pa[0], Math.max(pa[1], T.base(Math.max(0, dc)) + 1.2), pa[2]); camL.set(pb[0], pb[1], pb[2]);
     { const y0 = camP.y; camP.y = U.clamp(camP.y, rk.pos.y + 1.2, rk.pos.y + 3.8); camL.y += camP.y - y0; }   // la fusee ne sort jamais du champ (au depart, en plongee)
+    if (W && W.free) {   // raccourci : la camera suit la fusee derriere elle
+      const dv = tmp.copy(rk.vel).normalize(); camP.copy(rk.pos).addScaledVector(dv, -10).y += 3.4; camL.copy(rk.pos).addScaledVector(dv, 24);
+      if (!rig._mv) { rig._mv = new V().copy(camP); rig._ml = new V().copy(camL); }
+      rig._mv.lerp(camP, Math.min(1, (dt || 0.016) * 6)); rig._ml.lerp(camL, Math.min(1, (dt || 0.016) * 8)); cam.position.copy(rig._mv); cam.up.set(0, 1, 0); cam.lookAt(rig._ml); return;
+    }
     if (w > 0.001) {   // decollage : on voit la fusee partir du lanceur, la camera la suit de loin et d'en haut, puis redescend vers la vue de course en la gardant au centre
       frame(T, Math.max(0, d)); const fz = tmp.set(tf.x, 0, tf.z), side = tmp2.set(nn.x, 0, nn.z);
       LPOS.copy(rk.pos).addScaledVector(fz, -(8.5 + 8 * w)).addScaledVector(side, 4 * w); LPOS.y += 2.4 + 5 * w;
@@ -139,25 +144,50 @@
     rig._mv.lerp(camP, k); rig._ml.lerp(camL, k); cam.position.copy(rig._mv); cam.up.set(0, 1, 0); cam.lookAt(rig._ml);
   };
 
+  // ---------------------------------------------------------------- RACCOURCI : on sort par l'ouverture du mur et on vole librement jusqu'a l'anneau vert (on vise ou on entre dans la fenetre)
+  const freeFly = (g, dt, T, crs, rk, run) => {
+    const f = W.free, c = f.cut, sp = SP() + 4; f.t += dt;
+    const dT = c.dB + c.len / 2 + 5, hwT = crs.hw(dT) - 1.6; let ax, ay;
+    if (I.mode === 'keys') { const k = I.k, tx = (k.ArrowRight || k.KeyD ? 1 : 0) - (k.ArrowLeft || k.KeyA ? 1 : 0), ty = (k.ArrowUp || k.KeyW ? 1 : 0) - (k.ArrowDown || k.KeyS ? 1 : 0), ff = Math.min(1, dt * 10); I.ax += (tx - I.ax) * ff; I.ay += (ty - I.ay) * ff; ax = I.ax * hwT; ay = I.ay * 3; }
+    else { ax = I.cx * hwT * 1.2; ay = (0.5 - I.cy) * 9; }
+    const tp = T.at(dT, U.clamp(ax, -hwT, hwT), T.laneY(dT) + U.clamp(ay, -crs.fl + 1.8, crs.wh(dT) - 2.2));
+    tmp.set(tp[0] - rk.pos.x, tp[1] - rk.pos.y, tp[2] - rk.pos.z); const dist = tmp.length(); tmp.normalize();
+    if (!f.d0) f.d0 = Math.max(60, dist); run.dist = Math.max(run.dist, c.dA + (dT - c.dA) * U.clamp(1 - dist / f.d0, 0, 1));   // la progression suit le trajet libre (le sol et les limites du jeu suivent)
+    if (rk.vel.lengthSq() < 1) rk.vel.copy(tmp).multiplyScalar(sp);
+    rk.vel.normalize().lerp(tmp, 1 - Math.exp(-dt * 3.4)).normalize().multiplyScalar(sp);
+    const dir = tmp2.copy(rk.vel).normalize(); g.input.setAim(Math.atan2(-dir.x, -dir.z), Math.asin(U.clamp(dir.y, -0.9, 0.9)));
+    const dd = T.project(rk.pos, c.dB); relOf(T, dd, rk.pos, relP);
+    f.dbg = [Math.round(dd), Math.round(dist), Math.round(rk.pos.y), Math.round(tp[1]), +tmp.y.toFixed(2), +rk.vel.y.toFixed(1), +rk.vel.length().toFixed(1)];
+    const inside = Math.abs(relP.x) < crs.hw(dd) - 0.3 && relP.y > -crs.fl + 0.3 && relP.y < crs.wh(dd) - 0.3;
+    if (inside && f.t > 0.5) {
+      if (dd >= c.dB - 3 && dd <= c.dB + c.len + 12) { W.free = null; run.dist = Math.max(run.dist, dd); W.boostT = Math.max(W.boostT, 1.2); W.cutMsg = performance.now(); try { g.rig.boostKick(); g.audio.play('target'); } catch (e) { /* effets */ } }
+      else if (rk.shieldT <= 0) { W.free = null; g.onRocketCrash('wall', rk.pos.clone(), new V(0, 1, 0)); }
+    } else if (rk.shieldT <= 0 && (dd > c.dB + c.len + 30 || f.t > 7 || rk.pos.y < T.base(dd) + 3)) { W.free = null; g.onRocketCrash('wall', rk.pos.clone(), new V(0, 1, 0)); }
+  };
+
   // ---------------------------------------------------------------- pilotage : la fusee suit la piste, le joueur la decale
   const drive = (g, dt) => {
     const run = g.endlessRun, rk = g.rocket; if (!run || !rk.active || g.state !== 'FLIGHT' || g.evoFinish || g.flightTime < 0.05) return;
     const T = run.T, d = Math.max(0, run.dist); frame(T, d);
     const sp = SP(), d2 = d + 8, ease = U.clamp(g.flightTime / 1.0, 0, 1);
     relOf(T, d, rk.pos, rel); const hdn = hdnAt(T, d), crs = E.course, open = !!cur().open && !crs, LATx = crs ? Math.max(3, crs.hw(d) - 1.9) : open ? 26 : LAT, HUPx = crs ? crs.wh(d) - 1.3 : open ? 22 : HUP;
+    if (crs && W && W.free) { freeFly(g, dt, T, crs, rk, run); return; }
+    const cutHere = crs && W && crs.cuts.length && g.flightTime > 1.2 ? E.cutAt(crs, d) : null, LATL = cutHere && cutHere.side < 0 ? 70 : LATx, LATR = cutHere && cutHere.side > 0 ? 70 : LATx;
+    if (cutHere && rel.x * cutHere.side > crs.hw(d) + 0.4) { W.free = { cut: cutHere, t: 0 }; try { g.audio.play('target'); } catch (e) { /* son */ } freeFly(g, dt, T, crs, rk, run); return; }
+    if (crs && W && W.props && g.flightTime > 1) for (const o of crs.obst) if (Math.abs(d - o.d) < o.dd / 2 + 1.7 && rk.shieldT <= 0 && E.obstHit(crs, o, rel.x, rel.y, 1.5)) { g.onRocketCrash('wall', rk.pos.clone(), new V(0, 1, 0)); return; }   // un obstacle dans le couloir
     const ffx = (T.laneX(d2) - T.laneX(d)) / 8 * sp, ffy = (laneAbs(T, d2) - laneAbs(T, d)) / 8 * sp;   // la piste du niveau monte, descend, tourne : la fusee suit toute seule
     let vlat, vy;
     if (I.mode === 'keys') {   // fleches : la fusee repond tout de suite
       const k = I.k, tx = (k.ArrowRight || k.KeyD ? 1 : 0) - (k.ArrowLeft || k.KeyA ? 1 : 0), ty = (k.ArrowUp || k.KeyW ? 1 : 0) - (k.ArrowDown || k.KeyS ? 1 : 0), f = Math.min(1, dt * 16);
       I.ax += (tx - I.ax) * f; I.ay += (ty - I.ay) * f;
       vlat = ffx + I.ax * 26 - rel.x * 1.6 * (1 - Math.abs(I.ax)); vy = ffy + I.ay * 24 - rel.y * 1.6 * (1 - Math.abs(I.ay));   // sans touche, la fusee revient doucement au centre de la piste
-      vlat += (rel.x > LATx ? LATx - rel.x : rel.x < -LATx ? -LATx - rel.x : 0) * 5;   // la fusee reste dans la bande de la piste du niveau
+      vlat += (rel.x > LATR ? LATR - rel.x : rel.x < -LATL ? -LATL - rel.x : 0) * 5;   // la fusee reste dans la bande de la piste du niveau
       vy += (rel.y > HUPx ? HUPx - rel.y : rel.y < -hdn ? -hdn - rel.y : 0) * 5;
     } else {   // curseur : on vise un point 40 m devant, la fusee y va
       const cam = g.camera; org.copy(cam.position); ray.set(I.cx, -(I.cy * 2 - 1), 0.5).unproject(cam).sub(org).normalize();
       const den = ray.dot(tf); let tx = rel.x, ty = rel.y;
       if (Math.abs(den) > 0.05) { const t = (tmp.copy(rk.pos).sub(org).dot(tf) + 40) / den; if (t > 0) { const P = tmp.copy(org).addScaledVector(ray, t); relOf(T, d + 40, P, relP); tx = relP.x; ty = relP.y; } }
-      tx = U.clamp(tx, -LATx, LATx) * ease; ty = U.clamp(ty, -hdn, HUPx) * ease;
+      tx = U.clamp(tx, -LATL, LATR) * ease; ty = U.clamp(ty, -hdn, HUPx) * ease;
       vlat = ffx + U.clamp((tx - rel.x) * 5, -30, 30); vy = ffy + U.clamp((ty - rel.y) * 5, -30, 30);
       I.ax = (vlat - ffx) / 26; I.ay = (vy - ffy) / 24;
     }
@@ -204,7 +234,7 @@
     if (W) { try { g.scene.remove(W.grp); } catch (e) { /* ignore */ } }
     const T = run.T, grp = new T3.Group(), FN = E.shortFin || 470, sp = cur().speed || 44, rd = R.round - 1;
     W = { run, grp, boosts: [], bots: [], boostT: 0, kills: 0, fin: FN, coins: 0, roundKills: 0 }; R.deaths = 0; R.roundKills = 0;
-    g.scene.add(grp); if (E.course) E.buildCorridor(T, E.course, -4, FN + 150, grp);
+    g.scene.add(grp); if (E.course) { E.buildCorridor(T, E.course, -4, FN + 150, grp); W.props = E.buildCourseProps(T, E.course, grp); W.free = null; W.wheel = null; }
     const offs = [-5, 4, -3, 5, -4, 3], dys = [0, 2, -1, 2, 0, 1];   // des fleches de vitesse : il faut un peu bouger pour les prendre
     for (let k = 0, d = 110; d < FN - 70; k++, d += 115) {
       const off = offs[k % offs.length] * (E.course ? U.clamp((E.course.hw(d) - 3) / 6, 0.2, 1) : 1), dy = dys[k % dys.length], o = new T3.Group(), tmpA = new V(), tmpB = new V();
@@ -229,7 +259,19 @@
   const rivalMesh = (g, b) => {   // le skin et la traînée d'un pilote (crees au premier passage a l'ecran)
     const sk = CC.Skins.byId[b.skin] || CC.Skins.byId.stock;
     b.m = CC.Models.rocket(sk); b.m.scale.setScalar(3.8); b.m.visible = false; W.grp.add(b.m);
+    b.mats = []; b.m.traverse((o) => { if (o.isMesh && o.material) { const arr = Array.isArray(o.material) ? o.material : [o.material], cl = arr.map((q) => { const c2 = q.clone(); c2.transparent = true; b.mats.push(c2); return c2; }); o.material = Array.isArray(o.material) ? cl : cl[0]; } });
     b.tr = mkRibbon(sk.flame || (sk.c && (sk.c.band || sk.c.body)) || '#ffffff'); W.grp.add(b.tr);
+  };
+  // ---------------------------------------------------------------- blocs chance : une roue de pouvoirs (turbo, bouclier, missile)
+  const POWERS = ['TURBO', 'BOUCLIER', 'MISSILE'];
+  const givePower = (g, kind) => {
+    const rk = g.rocket, run = g.endlessRun, t = Math.max(0, g.flightTime), lv = E.race.pw()[kind] - 1;
+    if (kind === 'TURBO') { W.boostT = Math.max(W.boostT, 2.8 + 0.5 * lv); try { g.rig.boostKick(); } catch (e) { /* effets */ } }
+    else if (kind === 'BOUCLIER') { rk.shieldT = Math.max(rk.shieldT || 0, 5 + lv); try { g.audio.play('shield'); } catch (e) { /* son */ } }
+    else {   // missile : le pilote devant le plus proche explose
+      let best = null; for (const b of W.bots) if (!b.hit && !b.crash && b.d > run.dist + 4 && b.d < run.dist + 260 + 60 * lv && (!best || b.d < best.d)) best = b;
+      if (best) { best.hit = true; best.crash = true; best.pc = t / best.tRun; best.boom = true; best.T += 4; R.roundKills++; R.kills++; const P = best.m ? best.m.position.clone() : rk.pos.clone().addScaledVector(tf, 40); try { g.effects.explosion(P, new V(0, 1, 0), false, 'orange'); g.audio.play('boomSmall', P); } catch (e) { /* effets */ } if (best.m) { best.m.visible = false; best.tr.visible = false; } W.missile = { name: best.name, t0: performance.now() }; }
+    }
   };
   const raceStep = (g, dt) => {
     const run = g.endlessRun, rk = g.rocket, T = run.T, FN = E.shortFin || 470, t = Math.max(0, g.flightTime), flying = g.state === 'FLIGHT' && rk.active, fin = !!g.evoFinish;
@@ -238,7 +280,12 @@
       relOf(T, run.dist, rk.pos, rel);
       for (const b of W.boosts) if (!b.taken && Math.abs(run.dist - b.d) < 5 && Math.abs(rel.x - b.off) < 4.5 && Math.abs(rel.y - b.dy) < 4.5) { b.taken = true; b.grp.visible = false; W.boostT = 1.3; try { g.rig.boostKick(); g.audio.play('target'); } catch (e) { /* effets */ } }
       const kl = (g.evo && g.evo.kills) || 0; if (kl > W.kills) { W.kills = kl; W.boostT = Math.max(W.boostT, 0.8); }
+      if (W.props) for (const bl of W.props.blocks) if (!bl.taken && Math.abs(run.dist - bl.d) < 3.4 && Math.abs(rel.x - bl.x) < 3.2 && Math.abs(rel.y - bl.y) < 3.2) {
+        bl.taken = true; bl.g.visible = false; const kind = POWERS[Math.floor(Math.random() * POWERS.length)]; W.wheel = { t0: performance.now(), kind, done: false };
+        try { g.audio.play('target'); } catch (e) { /* son */ } }
+      if (W.wheel && !W.wheel.done && performance.now() - W.wheel.t0 > 900) { W.wheel.done = true; givePower(g, W.wheel.kind); }
     }
+    if (W.props) for (const bl of W.props.blocks) if (!bl.taken) { bl.g.rotation.y += dt * 2.2; bl.m.rotation.x += dt * 1.5; bl.m.position.y = Math.sin(t * 3 + bl.d) * 0.35; }
     if (fin) { for (const b of W.bots) { if (b.m) b.m.visible = false; if (b.tr) b.tr.visible = false; } return; }   // apres l'arrivee, plus de pilotes a l'ecran
     let ahead = 0, lead = null; const vis = [];
     for (const b of W.bots) {
@@ -254,6 +301,7 @@
       const wf = bOff(b, b.d) !== b.off ? bOff(b, b.d) / (b.off || 1) : 1, wob = 1.5 * Math.sin(t * 1.3 + b.ph) * (E.course ? 0.55 : 1), wob2 = 1.5 * Math.sin((t + 0.12) * 1.3 + b.ph) * (E.course ? 0.55 : 1);
       lanePos(T, b.d, bOff(b, b.d) + wob, b.dy, b.m.position); lanePos(T, b.d + 6, bOff(b, b.d + 6) + wob2, b.dy, tmp2); b.m.lookAt(tmp2); b.m.visible = true;
       if (E.course) b.m.rotateZ(U.clamp(-E.course.rate(b.d) * (cur().speed || 46) * 0.2, -0.75, 0.75) + 0.12 * Math.cos(t * 1.3 + b.ph));   // la fusee se penche dans les virages (et un peu quand elle bouge sur le cote)
+      { const dn = rk.active ? rk.pos.distanceTo(b.m.position) : 99, op = U.clamp((dn - 4) / 11, 0.22, 1); for (const q of b.mats) q.opacity = op; b.tr.material.opacity = 0.55 * op; }   // une fusee rivale trop proche devient transparente
       b.hist.unshift(b.m.position.clone()); if (b.hist.length > TRN) b.hist.pop(); b.tr.visible = true; updRibbon(b);
       if (flying && !fin && !b.hit && rk.shieldT <= 0 && rk.pos.distanceTo(b.m.position) < 3.8) {
         b.hit = true;   // on fonce dans un pilote : il explose (un mort pour toi), il perd du temps
@@ -295,9 +343,9 @@
     const you = all.findIndex((x) => x.you); if (died) { all.splice(you, 1); all.splice(Math.max(0, rank - 1), 0, { name: 'TOI', time: time, you: true, dnf: true }); }
     if (qual && !(rd === 2)) R.surv = all.slice(0, keep).filter((x) => !x.you).map((x) => (W.bots.find((b) => b.name === x.name) || {}).c).filter(Boolean).slice(0, keep - 1);
     const coins = coinsFor(rank, R.roundKills, died), S0 = E.save(g); S0.coins = (S0.coins || 0) + coins; R.coins += coins;
-    let gems = 0; if (rd === 2 && rank === 1 && !died) { gems = 3; S0.gems = (S0.gems || 0) + 3; } try { g.writeSave(); } catch (e) { /* ignore */ }
+    let gems = 0, pack = null; if (rd === 2 && rank === 1 && !died) { gems = 3; S0.gems = (S0.gems || 0) + 3; PRO.setTickets(PRO.tickets() + 1); const free = PRO.SKIN_IDS.filter((id) => !PRO.isOwned(id)); if (free.length) { const id = free[Math.floor(Math.random() * free.length)]; PRO.own(id); pack = { skin: id, fresh: true, rar: PRO.rarity(id) }; } else { S0.coins = (S0.coins || 0) + 300; pack = { skin: PRO.SKIN_IDS[0], fresh: false, rar: 0 }; } } try { g.writeSave(); } catch (e) { /* ignore */ }
     if (rd === 0) { R.ease = U.clamp(R.ease + (qual ? -0.1 : 0.3), -0.3, 1.2); lsSet('cc.race.ease', R.ease.toFixed(2)); }
-    return (R.last = { time, rank, field: R.field[rd], keep, qual, final: rd === 2, round: R.round, rows: all.slice(0, 5), all, you: all.findIndex((x) => x.you), elim: all.slice(keep).map((x) => x.name), kills: R.roundKills, coins, gems, died, t0: performance.now() });
+    return (R.last = { time, rank, field: R.field[rd], keep, qual, final: rd === 2, round: R.round, rows: all.slice(0, 5), all, you: all.findIndex((x) => x.you), elim: all.slice(keep).map((x) => x.name), kills: R.roundKills, coins, gems, pack, died, t0: performance.now() });
   };
   let ended = null, wantEnd = 0, curRun = null;
   const bestD = () => parseFloat(lsGet('cc.mvp.bd.' + M + '.' + LV, '0')) || 0;
@@ -310,6 +358,11 @@
     { const gt = g._shortGate; if (gt && gt.grp) gt.grp.visible = false; }   // l'ancien mur a damier est remplace par la nouvelle arrivee
     if (rk.mesh && rk.active) rk.mesh.scale.setScalar(3.6);   // la fusee est plus grosse a l'ecran
     if (RACE && W && W.run === run) raceStep(g, dt);
+    if (RACE && W && W.run === run && rk.active && g.state === 'FLIGHT' && !g.evoFinish) {   // le costume choisi dans le menu et la traînee de la fusee du joueur
+      if (!W._sk && g.flightTime > 0.15) { W._sk = 1; const ps = playerSkin(); if (ps) { try { rk.setSkin(ps); } catch (e) { /* skin */ } } const col = PRO.trail() || (ps && ps.flame) || '#cfe8ff'; W.pb = { hist: [], tr: mkRibbon(col) }; W.pb.tr.visible = true; W.grp.add(W.pb.tr); }
+      if (W.pb) { W.pb.hist.unshift(rk.pos.clone()); if (W.pb.hist.length > TRN) W.pb.hist.pop(); updRibbon(W.pb); }
+    }
+    if (W && W.pb && (g.evoFinish || !rk.active)) W.pb.tr.visible = false;
     if (ended && wantEnd && performance.now() >= wantEnd) { wantEnd = 0; g.evoWin = { mv: true, race: RACE, t0: performance.now(), lv: LV, info: ended }; g.ui.overlay = 'evoWin'; try { g.audio.play('victory'); } catch (e) { /* son */ } }
     if (RACE && g.evoFinish && !g._mvEnd && W) {   // fin de manche : le rang parmi les pilotes
       g._mvEnd = 1; const time = Math.max(0, g.flightTime), rank = 1 + W.bots.filter((b) => b.T < time).length;
@@ -335,7 +388,104 @@
     const ok = () => { if (useGems) { S0.gems = gems - 3; try { g.writeSave(); } catch (e) { /* ignore */ } } g.evoWin = null; g.ui.overlay = null; respawn(g); };
     if (useGems) ok(); else if (g.ads && g.ads.rewarded) g.ads.rewarded(ok, null, 'revive', 'RELANCER'); else ok();
   };
+
+  // ---------------------------------------------------------------- profil de la course : costumes, traînée, pouvoirs (sauvegarde locale)
+  const jget = (k, d) => { try { return JSON.parse(lsGet(k, '')) || d; } catch (e) { return d; } };
+  const PRO = E.race = {
+    SKIN_IDS: SKIN_IDS.filter((id) => CC.Skins.byId[id]), TRAILS: ['', '#ff3b30', '#ff9a1f', '#ffd23a', '#43e05a', '#2fd2ff', '#2f6fd8', '#a64cf0', '#ff4fd8', '#ffffff'],
+    rarity(id) { const i = this.SKIN_IDS.indexOf(id); return i < 12 ? 0 : i < 21 ? 1 : 2; }, rarName: ['COMMUN', 'RARE', 'EPIQUE'], price(id) { return [0, 600, 1800][this.rarity(id)]; },
+    owned() { const o = jget('cc.race.owned', null); return o || this.SKIN_IDS.slice(0, 6); }, isOwned(id) { return this.owned().indexOf(id) >= 0; },
+    own(id) { const o = this.owned(); if (o.indexOf(id) < 0) { o.push(id); lsSet('cc.race.owned', JSON.stringify(o)); } },
+    skin() { return lsGet('cc.race.skin', ''); }, setSkin(id) { lsSet('cc.race.skin', id); }, trail() { return lsGet('cc.race.trail', ''); }, setTrail(c) { lsSet('cc.race.trail', c); },
+    pw() { const o = jget('cc.race.pw', {}); return { TURBO: o.TURBO || 1, BOUCLIER: o.BOUCLIER || 1, MISSILE: o.MISSILE || 1 }; }, setPw(o) { lsSet('cc.race.pw', JSON.stringify(o)); },
+    tickets() { return parseInt(lsGet('cc.race.tickets', '0'), 10) || 0; }, setTickets(n) { lsSet('cc.race.tickets', n); },
+  };
+  const playerSkin = () => { const id = PRO.skin(), b = CC.Skins.byId[id]; if (b) { const t = PRO.trail(); return t ? Object.assign({}, b, { flame: t }) : b; } return null; };
+  // petite fusee dessinee (costumes, paquet) : corps, nez, bande, ailerons aux couleurs du costume
+  const drawRocketIcon = (ctx, x, y, size, sk, rot) => {
+    const c = (sk && sk.c) || {}, L = size, r = size * 0.17; ctx.save(); ctx.translate(x, y); ctx.rotate(rot === undefined ? -Math.PI / 4 : rot);
+    ctx.fillStyle = c.fin || '#555'; ctx.beginPath(); ctx.moveTo(-L * 0.28, 0); ctx.lineTo(-L * 0.5, -r * 2.1); ctx.lineTo(-L * 0.12, -r * 0.6); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(-L * 0.28, 0); ctx.lineTo(-L * 0.5, r * 2.1); ctx.lineTo(-L * 0.12, r * 0.6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c.body || '#ccc'; UI.rrect(ctx, -L * 0.42, -r, L * 0.62, r * 2, r * 0.7); ctx.fill();
+    ctx.fillStyle = c.band || '#f3cf00'; ctx.fillRect(-L * 0.05, -r, L * 0.09, r * 2);
+    ctx.fillStyle = c.nose || '#ccc'; ctx.beginPath(); ctx.moveTo(L * 0.2, -r); ctx.quadraticCurveTo(L * 0.42, 0, L * 0.2, r); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c.tip || '#e02a1c'; ctx.beginPath(); ctx.moveTo(L * 0.33, -r * 0.38); ctx.quadraticCurveTo(L * 0.44, 0, L * 0.33, r * 0.38); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  };
+  PRO.icon = drawRocketIcon;
+  // ---------------------------------------------------------------- l'ecran des qualifies : toutes les fusees de la manche alignees (premier devant), les non-qualifiees explosent
+  let LU = null;
+  const lineupSkin = (g, x) => { if (x.you) return playerSkin() || CC.Skins.byId['evoT2' + ((E.livery && E.livery(g) || {}).id || '')] || CC.Skins.byId.evoT2 || CC.Skins.byId.stock; const b = W && W.bots.find((q) => q.name === x.name); return CC.Skins.byId[b ? b.skin : ''] || CC.Skins.byId.stock; };
+  const startLineup = (g, info) => {
+    stopLineup(g); const rk = g.rocket, base = new V(rk.pos.x, rk.pos.y + 900, rk.pos.z), grp = new T3.Group(), N = info.all.length, items = [];
+    grp.position.copy(base); g.scene.add(grp);
+    info.all.forEach((x, i) => {
+      const row = Math.floor(i / 4), lane = i % 4, sk = lineupSkin(g, x), m = CC.Models.rocket(sk); m.scale.setScalar(5.6); m.rotation.y = Math.PI / 2; grp.add(m);
+      const bx = -row * 17 + (lane % 2) * 8, bz = (lane - 1.5) * 14; items.push({ x, rank: i + 1, m, bx, bz, row, dead: false, you: !!x.you });
+      if (x.you) { const ring = new T3.Mesh(new T3.TorusGeometry(6.2, 0.35, 8, 36), new T3.MeshBasicMaterial({ color: '#ffd23a' })); ring.rotation.x = Math.PI / 2; m.add(ring); ring.scale.setScalar(1 / 5.6); m.userData.ring = ring; }
+    });
+    const rows = Math.ceil(N / 4);
+    LU = { grp, base, items, t0: performance.now(), keep: info.keep, final: info.final, rows, boomed: 0, info };
+    if (g.rig) g.rig.mode = 'chase';
+  };
+  const stopLineup = (g) => { if (LU) { try { g.scene.remove(LU.grp); } catch (e) { /* ignore */ } LU = null; } };
+  const lineupFrame = (g) => {   // chaque image : placement, entree des fusees, explosions, camera
+    if (!LU) return; const t = (performance.now() - LU.t0) / 1000, rk = g.rocket; if (rk) { rk.active = false; rk.mesh.visible = false; }
+    for (const it of LU.items) {
+      const k = U.clamp((t - it.row * 0.16) / 0.7, 0, 1), e = 1 - Math.pow(1 - k, 3);
+      it.m.position.set(it.bx - 220 * (1 - e), Math.sin(t * 2.2 + it.rank) * 0.5, it.bz); it.m.visible = !it.dead && k > 0;
+      if (it.m.userData.ring) it.m.userData.ring.rotation.z += 0.04;
+    }
+    const tE = LU.rows * 0.16 + 1.5;   // puis les non-qualifies explosent un par un (du dernier au premier)
+    const elim = LU.final ? [] : LU.items.filter((q) => q.rank > LU.keep).reverse();
+    if (t > tE) {
+      const n = Math.floor((t - tE) / 0.13);
+      while (LU.boomed < Math.min(n + 1, elim.length)) { const it = elim[LU.boomed++]; it.dead = true; it.m.visible = false; const P = it.m.getWorldPosition(new V()); try { g.effects.explosion(P, new V(0, 1, 0), false, 'orange'); g.audio.play('boomSmall', P); } catch (e) { /* effets */ } }
+    }
+    LU.done = t > tE && LU.boomed >= elim.length;
+    const ph = Math.min(1, t / 3) * 0.35;   // la camera tourne un peu autour du groupe
+    const FH = g.evoFinish || (g.evoFinish = { t0: performance.now(), hold: true });
+    FH.hold = true; FH.camPos = FH.camPos || new V(); FH.look = FH.look || new V();
+    FH.camPos.set(LU.base.x - 20 + Math.sin(ph) * 40, LU.base.y + 30 - ph * 8, LU.base.z + 92 * Math.cos(ph)); FH.look.set(LU.base.x - 52, LU.base.y - 2, LU.base.z);
+    if (g.rig) g.rig.mode = 'chase';
+  };
+  const drawLineup = (ui, ctx, g, W0, H, w) => {
+    const F = Home.evoK.frame(ui, ctx, W0, H), { Y, cw, cx } = F, S = UI.S, L = w.info; if (!LU) startLineup(g, L);
+    lineupFrame(g); const cam = g.camera, v = new V();
+    for (const it of LU.items) {   // les pseudos au-dessus des fusees
+      if (!it.m.visible) continue; it.m.getWorldPosition(v); v.y += 3.6; v.project(cam); if (v.z > 1 || Math.abs(v.x) > 1.1 || Math.abs(v.y) > 1.1) continue;
+      const sx = (v.x * 0.5 + 0.5) * W0, sy = (-v.y * 0.5 + 0.5) * H, top = it.rank <= LU.keep;
+      UI.text(ctx, it.you ? 'TOI' : it.x.name, sx, sy, S(it.you ? 40 : 26), it.you ? '#FFD23A' : top ? '#ffffff' : '#ffb0a0', { stroke: true });
+    }
+    UI.text(ctx, LU.final ? 'FINALE' : 'MANCHE ' + L.round + ' : TOP ' + LU.keep, cx, Y(0.07), S(76), '#ffffff', { outline: true });
+    UI.text(ctx, (LU.items.length - LU.boomed) + ' / ' + LU.items.length + ' PILOTES', cx, Y(0.14), S(40), '#FFD23A', { outline: true });
+    if (LU.done) {
+      UI.text(ctx, L.qual ? (LU.final ? 'VICTOIRE !' : 'TU ES QUALIFIE !') : 'TU ES ELIMINE', cx, Y(0.76), S(72), L.qual ? '#7CFF6A' : '#FF5A4A', { outline: true });
+      const bw = cw * 0.62, bh = S(130), bx = cx - bw / 2, by = Y(0.89) - bh / 2, label = (L.qual && !L.final) ? 'MANCHE SUIVANTE' : 'NOUVELLE COUPE';
+      UI.btnPrimary(ctx, bx, by, bw, bh, label); UI.tap(ui, bx, by, bw, bh, () => { stopLineup(g); goNext(g); });
+    }
+  };
+  // ---------------------------------------------------------------- le paquet de la Coupe gagnee : un costume
+  const drawPack = (ui, ctx, g, W0, H, w) => {
+    const F = Home.evoK.frame(ui, ctx, W0, H), { Y, T0, cw, cx, HH } = F, S = UI.S, t = (performance.now() - w.t0) / 1000, pk = w.info.pack;
+    ctx.fillStyle = 'rgba(10,14,40,0.9)'; ctx.fillRect(0, T0, W0, HH); const cy = Y(0.42);
+    UI.text(ctx, 'PAQUET DE COUPE', cx, Y(0.1), S(80), '#FFD23A', { outline: true });
+    if (!w.opened) {
+      const sh = Math.sin(t * 22) * S(6) * Math.min(1, t / 1.2), sc = 1 + 0.04 * Math.sin(t * 5);
+      ctx.save(); ctx.translate(cx + sh, cy); ctx.scale(sc, sc); ctx.fillStyle = '#7a3cf0'; UI.rrect(ctx, -S(150), -S(200), S(300), S(400), S(40)); ctx.fill(); ctx.lineWidth = S(10); ctx.strokeStyle = '#ffffff'; ctx.stroke();
+      ctx.fillStyle = '#ffd23a'; ctx.fillRect(-S(150), -S(30), S(300), S(60)); UI.text(ctx, '?', 0, -S(100), S(150), '#ffffff', { outline: true }); ctx.restore();
+      UI.text(ctx, 'TOUCHE POUR OUVRIR', cx, Y(0.8), S(46), '#ffffff', { outline: true });
+      UI.tap(ui, cx - S(160), cy - S(210), S(320), S(420), () => { w.opened = true; w.t1 = performance.now(); try { g.audio.play('victory'); g.flash = 0.8; g.flashColor = '#ffffff'; } catch (e) { /* effets */ } });
+    } else {
+      const k = U.clamp((performance.now() - w.t1) / 500, 0, 1), sk = pk.skin ? CC.Skins.byId[pk.skin] : null, col = ['#8a96a6', '#3a8cff', '#c04cf0'][pk.rar || 0];
+      ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.beginPath(); ctx.arc(0, 0, S(330) * (0.8 + 0.2 * Math.sin(t * 3)), 0, 6.283); ctx.fill();
+      ctx.fillStyle = '#1b2236'; UI.rrect(ctx, -S(190), -S(240), S(380), S(480), S(36)); ctx.fill(); ctx.lineWidth = S(10); ctx.strokeStyle = col; ctx.stroke();
+      if (sk) drawRocketIcon(ctx, 0, -S(30), S(260), sk); ctx.restore();
+      if (sk) { UI.text(ctx, pk.fresh ? 'NOUVEAU COSTUME !' : 'DEJA POSSEDE : +300 PIECES', cx, Y(0.69), S(52), '#FFD23A', { outline: true }); UI.text(ctx, (sk.short || sk.name || pk.skin).toUpperCase() + '  -  ' + PRO.rarName[pk.rar || 0], cx, Y(0.75), S(38), '#ffffff', { outline: true }); }
+      const bw = cw * 0.6, bh = S(130), bx = cx - bw / 2, by = Y(0.89) - bh / 2; UI.btnPrimary(ctx, bx, by, bw, bh, 'SUPER !'); UI.tap(ui, bx, by, bw, bh, () => { w.stage = 'lineup'; w.t0 = performance.now(); });
+    }
+  };
   const restart = (g) => {
+    stopLineup(g);
     ended = null; wantEnd = 0; g._mvEnd = 0; g.evoWin = null;
     const rk = g.rocket; if (rk) { rk.active = false; rk.mesh.visible = false; rk.light.intensity = 0; rk.rope.visible = false; }
     E.endTumble(g); g.evoReport = false; g.evoLast = null; if (g.rig) g.rig._mv = null; g.goHome({});
@@ -404,6 +554,14 @@
         ctx.save(); ctx.translate(sx, sy); ctx.rotate(Math.atan2(-ey, ex) + Math.PI / 2); ctx.fillStyle = '#FFD23A'; ctx.strokeStyle = '#0b0d12'; ctx.lineWidth = S(5); ctx.beginPath(); ctx.moveTo(0, -S(26)); ctx.lineTo(S(22), S(18)); ctx.lineTo(-S(22), S(18)); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
         UI.text(ctx, '1ER  ' + Math.max(1, Math.round(L0.d - run.dist)) + ' M', sx, sy + (py > 0 ? -S(52) : S(52)), S(34), '#FFD23A', { stroke: true });
       }
+      if (W.wheel) {   // la roue des pouvoirs
+        const tw = (performance.now() - W.wheel.t0) / 1000;
+        if (tw < 0.9) { const k = Math.floor(tw * 14) % POWERS.length; UI.text(ctx, POWERS[k], cx, H * 0.4, S(86), '#FFD23A', { outline: true }); UI.text(ctx, 'BLOC CHANCE', cx, H * 0.34, S(40), '#ffffff', { outline: true }); }
+        else if (tw < 2.4) { const col = { TURBO: '#7CFF6A', BOUCLIER: '#5ad2ff', MISSILE: '#FF8A3A' }[W.wheel.kind]; UI.text(ctx, W.wheel.kind + ' !', cx, H * 0.4, S(100), col, { outline: true }); }
+        else W.wheel = null;
+      }
+      if (W.missile && performance.now() - W.missile.t0 < 1800) UI.text(ctx, W.missile.name + ' TOUCHE', cx, H * 0.5, S(54), '#FF8A3A', { outline: true });
+      if (W.cutMsg && performance.now() - W.cutMsg < 1600) UI.text(ctx, 'RACCOURCI !', cx, H * 0.3, S(96), '#43e05a', { outline: true });
       if (performance.now() - R.penT < 1500) UI.text(ctx, '+2.5 S', cx, H * 0.3, S(96), '#FF5A4A', { outline: true });
       else if (W && W.boostT > 0) UI.text(ctx, 'TURBO !', cx, H * 0.3, S(78), '#7CFF6A', { outline: true });
     }
@@ -429,6 +587,7 @@
     const pulse = 1 + 0.03 * Math.sin(t * 5); ctx.save(); ctx.translate(cx, by + bh / 2); ctx.scale(pulse, pulse); ctx.translate(-cx, -(by + bh / 2)); UI.btnPrimary(ctx, bx, by, bw, bh, 'START'); ctx.restore();
     UI.tap(ui, bx, by, bw, bh, () => startRun(g));
   };
+  if (E.raceApi) Object.assign(E.raceApi, { R, start: startRun, cur });
   Home.drawEvoAim = function () { };   // plus de barre de lancement : START part tout de suite
 
   // ---------------------------------------------------------------- carte de fin (style MISSION ACCOMPLIE)
@@ -464,6 +623,8 @@
   };
   const drawRaceCard = (ui, ctx, g, W0, H, w) => {
     if (w.revive) return drawRevive(ui, ctx, g, W0, H, w);
+    if (w.stage === 'lineup') return drawLineup(ui, ctx, g, W0, H, w);
+    if (w.stage === 'pack') return drawPack(ui, ctx, g, W0, H, w);
     if (w.stage === 'arena') return drawArena(ui, ctx, g, W0, H, w);
     const F = Home.evoK.frame(ui, ctx, W0, H), { HH: HH2, Y, T0, cw, cx } = F, S = UI.S, t = (performance.now() - w.t0) / 1000, L = w.info;
     ctx.fillStyle = 'rgba(8,10,14,0.62)'; ctx.fillRect(0, T0, W0, HH2);
@@ -485,7 +646,7 @@
     UI.text(ctx, '+' + L.coins + ' PIECES' + (L.gems ? '    +' + L.gems + ' GEMMES' : ''), cx, Y(0.8), S(52), '#FFD23A', { outline: true });
     if (t > 0.8) {
       const bw = cw * 0.66, bh = S(140), bx = cx - bw / 2, by = Y(0.9) - bh / 2, pulse = 1 + 0.03 * Math.sin(t * 5);
-      ctx.save(); ctx.translate(cx, by + bh / 2); ctx.scale(pulse, pulse); ctx.translate(-cx, -(by + bh / 2)); UI.btnPrimary(ctx, bx, by, bw, bh, 'CONTINUER'); ctx.restore(); UI.tap(ui, bx, by, bw, bh, () => { w.stage = 'arena'; w.t0 = performance.now(); });
+      ctx.save(); ctx.translate(cx, by + bh / 2); ctx.scale(pulse, pulse); ctx.translate(-cx, -(by + bh / 2)); UI.btnPrimary(ctx, bx, by, bw, bh, 'CONTINUER'); ctx.restore(); UI.tap(ui, bx, by, bw, bh, () => { w.stage = L.pack ? 'pack' : 'lineup'; w.t0 = performance.now(); });
     }
   };
   const _win = Home.drawEvoWin;

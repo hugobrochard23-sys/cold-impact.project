@@ -31,3 +31,11 @@ Aucune partie jouee a la main. Calibrage des pilotes a affiner avec de vrais ess
 - Coupe : bug corrige (`R.last` n'etait jamais renseigne => chaque partie repartait de la manche 1). 32 -> 16 -> 8 : seuls les qualifies reviennent (`R.surv`). Chaque pilote a son niveau (-2 % a +18 %), plus de peloton. Les bots se penchent dans les virages et piquent (suivent la pente).
 - Camera de decollage : on voit la fusee partir du lanceur, la camera la suit de haut et de loin puis descend vers la vue de course en la gardant au centre (~3 s).
 - Non fait : ecran des qualifies (32 fusees), vrai menu, blocs chance, vrais raccourcis a cap libre, passages sous le parcours (spirales sans croisement), transparence des fusees proches.
+
+## v369 (course : decor, obstacles, raccourcis, menu, ecran des qualifies)
+- Fonds gris supprimes : les « grandes falaises » de 1000 m de la prairie (`skyCliffs` dans `campagne.dress`), les silhouettes (`Pieces.far`, `Scenery.side`, `backdrop`) et l'anneau d'horizon sont coupes en mode parcours ; ciel bleu, nuages. Plus aucun ennemi de decor : scenes `crs0..9` (evo_course.js) = arbres, rochers du jeu et ballons sur une bande verte etroite.
+- Parcours COULEE / SPIRALE / SERPENT : obstacles (pilier, portique avec fenetre, barre), blocs chance (turbo / bouclier / missile, niveaux ameliorables), 1 a 2 RACCOURCIS par parcours (ouverture orange dans le mur, vol guide jusqu'a l'anneau vert ; la progression suit le trajet libre), la piste repasse sous elle-meme (surtout SPIRALE, 40-56 m).
+- Fusees rivales transparentes quand elles sont tout pres du joueur.
+- `evo_menu.js` : vrai menu (compteurs pieces/gemmes/billets, 5 onglets), carte de la Coupe, roulette des maps, costumes par rarete + couleur de trainee, boutique (gemmes <-> pieces, pub), pouvoirs a ameliorer, classement verrouille (pas de faux classement).
+- Ecran des qualifies en 3D (fusees alignees, les non-qualifiees explosent), paquet de Coupe (un costume) a la victoire finale.
+- Limites : le « vol libre » des raccourcis est guide (on choisit ou on entre dans la fenetre), pas un cap totalement libre ; seul COULEE a ete vole en entier par le robot ; tout le reste teste par captures.
