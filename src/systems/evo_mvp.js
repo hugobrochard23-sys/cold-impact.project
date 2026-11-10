@@ -51,7 +51,8 @@
     { name: 'SERPENT', seed: 37, shape: [[140, 0, 0.08, 22, 15], [220, -90, 0.2, 20, 9], [200, 180, 0.2, 22, 8], [160, -160, 0.16, 30, 7], [120, 0, 0.55, 46, 9, 4], [300, 270, 0.07, 24, 7], [150, 0, 0.06, 14, 5.5], [250, -120, 0.2, 22, 9], [170, 0, 0.04, 14, 17]] }
   ];
   for (const s0 of SHAPES) { s0.zone = 'campagne'; s0.speed = 46; s0.cap = 0; s0.scenes = E.courseScenes || ['rampe', 'camp']; COURSES.unshift(s0); }
-  const CUP = SHAPES.map((s) => s.name);
+  COURSES.unshift({ name: 'ARCHIPEL', seed: 5, isle: true, shape: E.isleShape, zone: 'campagne', speed: 46, cap: 0, scenes: E.isleScenes || ['crsI0'] });   // v370 : l'ile (la Coupe se court dessus)
+const CUP = SHAPES.map((s) => s.name);
   const R = { round: 1, courses: [], field: [32, 16, 8], keep: [16, 8, 1], last: null, live: 1, ease: parseFloat(lsGet('cc.race.ease', '0')) || 0, penT: 0, session: 0 };
   let W = null;   // le monde de la manche (pilotes, fleches de vitesse)
   const cur = () => (RACE ? R.courses[R.round - 1] : LEVELS[LV]);
@@ -80,7 +81,7 @@
   E.levelDef = (g) => {
     if (E.isS2()) return _ld(g);
     const L = cur(); E.chapters = []; E.course = null;
-    if (L.shape) { E.course = E.courseExtras(E.mkCourse(L.shape), L.seed || 7); E.shortTiltOff = true; E.shortPad = 0; E.shortFin = Math.round(E.course.len); return E.baseDef({ zone: L.zone, len: E.shortFin + 160, scenes: L.scenes, order: new Array(90).fill(L.zone), theme: CC.LM.THEMES[0], hp: 1, bossEnt: null, seed: RACE ? 4000 + R.session * 13 + R.round * 7 : 5151 }); }
+    if (L.shape) { E.course = L.isle ? E.mkIsle(L.shape) : E.courseExtras(E.mkCourse(L.shape), L.seed || 7); E.shortTiltOff = true; E.shortPad = 0; E.shortFin = Math.round(E.course.len); return E.baseDef({ zone: L.zone, len: E.shortFin + 160, scenes: L.scenes, order: new Array(90).fill(L.zone), theme: CC.LM.THEMES[0], hp: 1, bossEnt: null, seed: RACE ? 4000 + R.session * 13 + R.round * 7 : 5151 }); }
     if (L.tilt) { E.shortTiltOff = false; E.shortFin = L.fin; return E.baseDef({ zone: 'campagne', len: L.fin + 90, scenes: L.scenes, order: new Array(90).fill('campagne'), theme: CC.LM.THEMES[0], hp: 1, bossEnt: null, seed: RACE ? 4000 + R.session * 13 + R.round * 7 : 5151 }); }   // la prairie penchee (evo_short.js)
     E.shortTiltOff = true; E.shortPad = L.pad || 0;
     const Z = CC.Zones.defs[L.zone], sc = L.scenes.map((e) => (typeof e === 'string' ? e : withFoes(L.zone, e.n, e.foes, 'mv' + (RACE ? 'r' + L.name.replace(/\W/g, '') : LV)))).filter((n) => n && Z.scenes[n]); let tot = 0; for (const n of sc) tot += Z.scenes[n].len[0]; tot = Math.min(tot, L.cap || 1e9);   // un parcours peut ne prendre que le debut d'une longue scene
@@ -116,7 +117,7 @@
     out.x = (P.x - a[0]) * nx + (P.z - a[2]) * nz - T.laneX(d); out.y = P.y - laneAbs(T, d); return out;
   };
   const rel = { x: 0, y: 0 }, relP = { x: 0, y: 0 };
-  const LAT = 9, HUP = 8, hdnAt = (T, d) => (E.course ? E.course.fl - 1.5 : cur().open ? 40 : U.clamp(T.laneY(d) - 2.2, 6, 22));   // on peut descendre jusqu'au sol (ou a la mer) pour atteindre les ennemis
+  const LAT = 9, HUP = 8, hdnAt = (T, d) => (E.course && E.course.isle ? ((W && W.fall && (W.fall.on || W.fall.ctrl < 1)) || Math.abs(rel.x) > E.course.isle.W(d) - 0.5 ? 200 : E.course.fl - 2.2) : E.course ? E.course.fl - 1.5 : cur().open ? 40 : U.clamp(T.laneY(d) - 2.2, 6, 22));   // on peut descendre jusqu'au sol (ou a la mer) pour atteindre les ennemis
 
   // ---------------------------------------------------------------- camera : suit la piste du niveau, a distance fixe de la fusee
   const camP = new V(), camL = new V();
@@ -165,12 +166,31 @@
     } else if (rk.shieldT <= 0 && (dd > c.dB + c.len + 30 || f.t > 7 || rk.pos.y < T.base(dd) + 3)) { W.free = null; g.onRocketCrash('wall', rk.pos.clone(), new V(0, 1, 0)); }
   };
 
+  // ---------------------------------------------------------------- ILE : sortir du chemin = chute ; revenir dans la zone = le controle revient peu a peu
+  const hv = new V();
+  const isleStep = (g, dt, crs, d, F, rk) => {
+    if (W && W.props && W.props.update) W.props.update(g.flightTime);
+    const inX = Math.abs(rel.x) < crs.isle.W(d) + 1.5;
+    if (!F.on && g.flightTime > 1.0 && !inX) { F.on = true; F.t = 0; F.ctrl = Math.min(F.ctrl, 0.7); F.vy = Math.min(0, rk.vel.y) - 4; W.fallMsg = performance.now(); }
+    if (F.on) {
+      F.t += dt; F.ctrl = Math.max(0.12, F.ctrl - 2.6 * dt); F.vy = Math.max(-75, F.vy - 36 * dt);
+      if (inX) F.on = false;   // de retour dans la zone : la chute s'arrete, le controle remonte
+    } else if (F.ctrl < 1) { F.ctrl = Math.min(1, F.ctrl + 0.5 * dt); F.vy *= Math.exp(-2.2 * dt); }
+  };
+  const isleKill = (g, crs, T, d, rk) => {   // sol (prairie), roche de l'ile, marteau
+    if (g.flightTime < 1.2 || rk.shieldT > 0) return false;
+    if (rk.pos.y < crs.isle.PY + 1.5 || E.isleSolid(crs, T, d, rel.x, rk.pos.y)) return true;
+    if (W.props && W.props.hammers) for (const h of W.props.hammers) { h.head.getWorldPosition(hv); if (hv.distanceTo(rk.pos) < 3.9) return true; }
+    return false;
+  };
+
   // ---------------------------------------------------------------- pilotage : la fusee suit la piste, le joueur la decale
   const drive = (g, dt) => {
     const run = g.endlessRun, rk = g.rocket; if (!run || !rk.active || g.state !== 'FLIGHT' || g.evoFinish || g.flightTime < 0.05) return;
     const T = run.T, d = Math.max(0, run.dist); frame(T, d);
     const sp = SP(), d2 = d + 8, ease = U.clamp(g.flightTime / 1.0, 0, 1);
-    relOf(T, d, rk.pos, rel); const hdn = hdnAt(T, d), crs = E.course, open = !!cur().open && !crs, LATx = crs ? Math.max(3, crs.hw(d) - 1.9) : open ? 26 : LAT, HUPx = crs ? crs.wh(d) - 1.3 : open ? 22 : HUP;
+    relOf(T, d, rk.pos, rel); const isl = !!(E.course && E.course.isle && W && W.props), F = isl ? (W.fall || (W.fall = { on: false, ctrl: 1, vy: 0, t: 0 })) : null; if (isl) isleStep(g, dt, E.course, d, F, rk);
+    const hdn = hdnAt(T, d), crs = E.course, open = !!cur().open && !crs, LATx = crs ? (crs.isle ? crs.isle.W(d) + 40 : Math.max(3, crs.hw(d) - 1.9)) : open ? 26 : LAT, HUPx = crs ? crs.wh(d) - 1.3 : open ? 22 : HUP;
     if (crs && W && W.free) { freeFly(g, dt, T, crs, rk, run); return; }
     const cutHere = crs && W && crs.cuts.length && g.flightTime > 1.2 ? E.cutAt(crs, d) : null, LATL = cutHere && cutHere.side < 0 ? 70 : LATx, LATR = cutHere && cutHere.side > 0 ? 70 : LATx;
     if (cutHere && rel.x * cutHere.side > crs.hw(d) + 0.4) { W.free = { cut: cutHere, t: 0 }; try { g.audio.play('target'); } catch (e) { /* son */ } freeFly(g, dt, T, crs, rk, run); return; }
@@ -191,10 +211,12 @@
       vlat = ffx + U.clamp((tx - rel.x) * 5, -30, 30); vy = ffy + U.clamp((ty - rel.y) * 5, -30, 30);
       I.ax = (vlat - ffx) / 26; I.ay = (vy - ffy) / 24;
     }
+    let spx = sp; if (isl && (F.on || F.ctrl < 1)) { const c = F.ctrl; vlat = ffx + (vlat - ffx) * c; vy = vy * c + F.vy * (1 - c); spx = sp * (1 + 0.22 * (1 - c)); }
     const floor = crs ? T.base(d) + T.laneY(d) - hdn : T.base(d) + 1.2; if (open && rk.shieldT <= 0 && rk.pos.y < T.base(d) + 0.7 && g.flightTime > 1.2) { g.onRocketCrash('wall', rk.pos.clone(), new V(0, 1, 0)); return; }   // en zone ouverte, le sol tue
     if (!open && rk.pos.y < floor && vy < 0 && (!crs || run.dist > 8)) { vy = 0; rk.pos.y = floor; }
-    if (crs) vy = U.clamp(vy, -60, 38);
-    rk.vel.set(tf.x * sp + nn.x * vlat, vy, tf.z * sp + nn.z * vlat);
+    if (crs) vy = U.clamp(vy, isl ? -80 : -60, 38);
+    if (isl && isleKill(g, crs, T, d, rk)) { g.onRocketCrash('wall', rk.pos.clone(), new V(0, 1, 0)); return; }
+    rk.vel.set(tf.x * spx + nn.x * vlat, vy, tf.z * spx + nn.z * vlat);
     const dir = tmp.copy(rk.vel).normalize(), yaw = Math.atan2(-dir.x, -dir.z), pit = Math.asin(U.clamp(dir.y, -0.9, 0.9));
     g.input.setAim(yaw, pit);
   };
@@ -206,7 +228,7 @@
   const gz = () => (sr() + sr() + sr() + sr() - 2) * 1.7;
   const ord = (n) => (n === 1 ? '1ER' : n + 'E');
   const newSession = () => {
-    sSeed = ((Date.now() & 0xffffff) + 17 * (++R.session)) >>> 0; R.surv = null; const pool = COURSES.filter((c) => c.shape);
+    sSeed = ((Date.now() & 0xffffff) + 17 * (++R.session)) >>> 0; R.surv = null; const isl = COURSES.filter((c) => c.isle), pool = isl.length ? isl : COURSES.filter((c) => c.shape);
     for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(sr() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
     R.courses = [pool[0], pool[1 % pool.length], pool[2 % pool.length]]; R.round = 1; R.last = null; R.kills = 0; R.coins = 0; R.deaths = 0; R.roundKills = 0;
     { const f = /[?&]racec=(\w+)/.exec(location.search); const one = f && COURSES.find((c) => c.name.replace(/\W/g, '') === f[1]); if (one) R.courses = [one, one, one]; }   // essai d'une course a la main
@@ -234,7 +256,8 @@
     if (W) { try { g.scene.remove(W.grp); } catch (e) { /* ignore */ } }
     const T = run.T, grp = new T3.Group(), FN = E.shortFin || 470, sp = cur().speed || 44, rd = R.round - 1;
     W = { run, grp, boosts: [], bots: [], boostT: 0, kills: 0, fin: FN, coins: 0, roundKills: 0 }; R.deaths = 0; R.roundKills = 0;
-    g.scene.add(grp); if (E.course) { E.buildCorridor(T, E.course, -4, FN + 150, grp); W.props = E.buildCourseProps(T, E.course, grp); W.free = null; W.wheel = null; }
+    g.scene.add(grp); if (E.course && E.course.isle) { W.props = E.buildIsle(T, E.course, grp); W.free = null; W.wheel = null; W.fall = null; }
+    else if (E.course) { E.buildCorridor(T, E.course, -4, FN + 150, grp); W.props = E.buildCourseProps(T, E.course, grp); W.free = null; W.wheel = null; }
     const offs = [-5, 4, -3, 5, -4, 3], dys = [0, 2, -1, 2, 0, 1];   // des fleches de vitesse : il faut un peu bouger pour les prendre
     for (let k = 0, d = 110; d < FN - 70; k++, d += 115) {
       const off = offs[k % offs.length] * (E.course ? U.clamp((E.course.hw(d) - 3) / 6, 0.2, 1) : 1), dy = dys[k % dys.length], o = new T3.Group(), tmpA = new V(), tmpB = new V();
@@ -331,7 +354,7 @@
     const pos = new V(p[0], p[1], p[2]), dir = new V(q[0] - p[0], q[1] - p[1], q[2] - p[2]).normalize(), yaw = Math.atan2(-dir.x, -dir.z), pit = Math.asin(dir.y);
     g.input.setAim(yaw, pit); g.rig.setAim(yaw, pit); g.acc = 0;
     rk.launch(pos, dir, { speed: cur().speed || 44, ignited: true, freeBoost: 0.5 }); rk.shieldT = 1.4;
-    run.dist = d; if (g.rig) g.rig._mv = null; g.rig.startFlight(); g.state = 'FLIGHT'; g.stallT = 0; g.impactT = 0; g.flightTime += 2.5; R.penT = performance.now();
+    run.dist = d; if (W) W.fall = null; if (g.rig) g.rig._mv = null; g.rig.startFlight(); g.state = 'FLIGHT'; g.stallT = 0; g.impactT = 0; g.flightTime += 2.5; R.penT = performance.now();
     try { g.audio.play('shield'); } catch (e) { /* son */ }
   };
   const tmpHud = new V();

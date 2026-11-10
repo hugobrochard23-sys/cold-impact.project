@@ -15,7 +15,7 @@
     let i = 0; for (const s of segs) { const n = Math.round(s[0]); starts.push(i); for (let k = 0; k < n && i < N; k++, i++) { rate[i] = s[1] * DEG / s[0]; slope[i] = s[2]; lift[i] = s[3]; hw[i] = s[4]; wh[i] = s[5] === undefined ? 6.5 : s[5]; } }
     const last = segs[segs.length - 1]; for (; i < N; i++) { rate[i] = 0; slope[i] = last[2] * 0.2; lift[i] = last[3]; hw[i] = last[4]; wh[i] = last[5] === undefined ? 6.5 : last[5]; }
     const smooth = (a, w) => { const b = new Float32Array(a.length); let acc = 0, cnt = 0; const get = (k) => a[Math.max(0, Math.min(a.length - 1, k))]; for (let k = -w; k <= w; k++) { acc += get(k); cnt++; } for (let k = 0; k < a.length; k++) { b[k] = acc / cnt; acc += get(k + w + 1) - get(k - w); } return b; };
-    const rS = smooth(smooth(rate, 22), 22), sS = smooth(smooth(slope, 18), 18), lS = smooth(smooth(lift, 26), 26), hS = smooth(hw, 22), wS = smooth(wh, 14);
+    const rS = smooth(smooth(rate, 22), 22), sS = smooth(smooth(slope, opt.sw || 18), opt.sw || 18), lS = smooth(smooth(lift, 26), 26), hS = smooth(hw, 22), wS = smooth(wh, 14);
     const th = new Float32Array(N + 1), rel = new Float32Array(N + 1), px = new Float32Array(N + 1), pz = new Float32Array(N + 1);
     for (let k = 0; k < N; k++) { th[k + 1] = th[k] + rS[k]; rel[k + 1] = rel[k] - sS[k]; px[k + 1] = px[k] + Math.sin(th[k] + rS[k] / 2); pz[k + 1] = pz[k] - Math.cos(th[k] + rS[k] / 2); }
     const at = (A, d) => { if (d <= 0) return A[0]; const k = Math.min(N - 1, Math.floor(d)), f = Math.min(1, d - k); return A[k] + (A[k + 1 < A.length ? k + 1 : k] - A[k]) * f; };
@@ -85,7 +85,7 @@
   if (CC.Scenery && CC.Scenery.side) { const _sd = CC.Scenery.side; CC.Scenery.side = function () { if (!E.course) return _sd.apply(this, arguments); }; }   // pas de grands blocs gris sur les cotes
   if (CC.Zones && CC.Zones.backdrop) { const _bd = CC.Zones.backdrop; CC.Zones.backdrop = function () { if (!E.course) return _bd.apply(this, arguments); }; }
   { const Z = CC.Zones, D = Z && Z.defs && Z.defs.campagne;   // les « grandes falaises » de 1000 m de haut de chaque cote de la prairie (skyCliffs) : coupees, on voit le ciel et la prairie
-    if (D && D.dress) { const _dr = D.dress; D.dress = function (S) { if (!E.course) return _dr.apply(this, arguments); const had = Object.prototype.hasOwnProperty.call(S, 'bxr'); S.bxr = function () { return null; }; try { return _dr.apply(this, arguments); } finally { if (!had) delete S.bxr; } }; } }
+    if (D && D.dress) { const _dr = D.dress; D.dress = function (S) { if (!E.course) return _dr.apply(this, arguments); S.bxr = function () { return null; }; return _dr.apply(this, arguments); }; } }   // v370 : on ne rend pas bxr : les falaises sont creees plus tard (S.item differe) et seraient revenues
   // le decor : des scenes a nous (campagne) : arbres et rochers du jeu sur la bande verte, jamais dans le couloir ; aucun ennemi
   { const Z = CC.Zones, D = Z && Z.defs && Z.defs.campagne, TR = CC.Trees;
     if (D && TR) {
@@ -106,6 +106,7 @@
         }
       } };
       for (let i = 0; i < 10; i++) D.scenes['crs' + i] = Object.assign({}, def);
+      D.scenes.crsI = Object.assign({}, def, { gw: 170 });   // l'ile : la prairie large loin sous la piste
       E.courseScenes = Array.from({ length: 10 }, (_, i) => 'crs' + i);
     } }
 

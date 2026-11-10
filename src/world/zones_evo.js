@@ -126,7 +126,8 @@
     const T = ctx.T, b = ctx.b, m = (d + e) / 2, sloped = T.rel(d) !== 0 || T.rel(e) !== 0 || T.rel(m) !== 0, rows = sloped ? Math.max(1, Math.round((e - d) / 5)) : Math.max(1, Math.round((e - d) / 20));
     // colonnes : la zone de jeu suit le virage (T.at) ; au-delà, le sol part en LIGNE DROITE le long de la normale (jamais de pli dans un virage serré)
     const pl0 = Z.plan(T, T.zoneIndex(m)), sc0 = pl0.scenes.find((q) => m >= q.d0 && m < q.d1), sd0 = sc0 && (campagne.scenes[sc0.name] || (Z.defs.ocean && Z.defs.ocean.scenes[sc0.name])), gw0 = sd0 && sd0.gw;
-    const V0 = gw0 ? gw0 + 10 : T.vol(m) + 60, cols = gw0 ? [] : [{ x: -330, o: -1 }, { x: -130, o: -1 }]; for (let x = -V0; x <= V0 + 0.1; x += 15) cols.push({ x, o: 0 }); if (!gw0) cols.push({ x: 130, o: 1 }, { x: 330, o: 1 });
+    const GF = sd0 && sd0.gwF; if (GF && GF(d) <= 0 && GF(m) <= 0 && GF(e) <= 0) return;
+    const V0 = gw0 ? gw0 + 10 : T.vol(m) + 60, cols = gw0 ? [] : [{ x: -330, o: -1 }, { x: -130, o: -1 }]; if (GF) { for (let i = 0; i <= 18; i++) cols.push({ x: 0, u: i / 9 - 1, o: 0 }); } else for (let x = -V0; x <= V0 + 0.1; x += 15) cols.push({ x, o: 0 }); if (!gw0) cols.push({ x: 130, o: 1 }, { x: 330, o: 1 });
     const pl = Z.plan(T, T.zoneIndex(m)), sc = pl.scenes.find((q) => m >= q.d0 && m < q.d1), sd = sc && (campagne.scenes[sc.name] || (Z.defs.ocean && Z.defs.ocean.scenes[sc.name])), gf = sd && sd.ground, wet = sd && sd.wet;
     const nC = cols.length, pos = [], nor = [], col = [], uv = [], idx = [], c = GC.c, grey = GC.g;
     for (let r = 0; r <= rows; r++) {
@@ -134,7 +135,7 @@
       _v[0].set(pb[0] - pa[0], pb[1] - pa[1], pb[2] - pa[2]); _v[1].set(qb[0] - qa[0], qb[1] - qa[1], qb[2] - qa[2]); _v[2].crossVectors(_v[1], _v[0]).normalize(); if (_v[2].y < 0) _v[2].negate();
       const lx_ = qb[0] - qa[0], lz_ = qb[2] - qa[2], ll = Math.hypot(lx_, lz_) || 1, ux = lx_ / ll, uz = lz_ / ll;
       for (let k = 0; k < nC; k++) {
-        const cc = cols[k]; let p;
+        const cc = cols[k]; if (GF && cc.u !== undefined) cc.x = cc.u * GF(dd); let p;
         if (cc.o === 0) p = T.at(dd, cc.x, 0); else { const ed = cc.o < 0 ? eL : eR, off = Math.abs(cc.x) * cc.o; p = [ed[0] + ux * off, ed[1], ed[2] + uz * off]; }
         pos.push(p[0], p[1], p[2]); relN(p[0], p[2], _rn, _v[2].x, _v[2].y, _v[2].z); nor.push(_rn[0], _rn[1], _rn[2]); uv.push(p[0], p[2]);
         gcol(p[0], p[2], c); if (gf) gf(dd, cc.x, c, sc); if (wet && cc.o === 0 && wet(dd, cc.x, sc, T)) c.lerp(grey, 0.9);

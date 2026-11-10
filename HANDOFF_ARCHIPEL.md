@@ -46,3 +46,9 @@ Finir le MVP de la course avant la fin du quota hebdomadaire, pret a tester ET a
 
 ## Regles de budget (forfait hebdo deja a ~46 %)
 Sonnet 5.5 effort MOYEN (faible pour les retouches mecaniques, eleve seulement pour une decision de conception). Pas de sous-agents. Pas de relecture de gros fichiers entiers : Grep puis Read d'une plage. Pas de planches de captures a chaque reglage. Decisions groupees.
+
+## Mise a jour v370 (ile 1 refaite, controles)
+- `src/systems/evo_isle.js` : l'ile = le sol du jeu (herbe, arbres, rochers du jeu) avec `T.base` = hauteur du sol de l'ile (marches via la pente), piste a 11 m au-dessus ; contour via `sceneDef.gwF` (zones_evo.js, `evoGroundMesh`) ; dessous en roche (`bodyMesh`), prairie loin dessous (`prairie`), poteaux et arche « COLD IMPACT CUP » ; ruisseaux, chemin de terre. Depart SUR l'ile (hangar a cote). Zero obstacle pour l'instant.
+- Controles : le plancher de la zone de vol etait trop haut (impossible de descendre) ; camera `kf` remise a 0,5 ; `evo.js` ne force plus le sol a `base+0.32` sur l'ile (sinon on glisse au lieu de tomber). Test chiffre : `cctest/ctl2.js`.
+- La Coupe se court sur ARCHIPEL (3 manches). Les anciens couloirs restent via `?racec=COULEE`.
+- A faire ensuite : obstacles (moulin a vent en pierre, tronc pendule, marteau, porte de grange coulissante, rocher/tonneau qui roule, barriere a bascule), autres iles, saut entre iles.

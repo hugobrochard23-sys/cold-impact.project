@@ -387,7 +387,7 @@
     // v264 : en chute libre (nez vers le bas) la fusee accelere jusqu'a sa vitesse maximale (plus de plafond a 100 km/h)
     if (!ev.preview && rk.vel.y < -1 && rk.fwd.y < -0.25) { const vm = (r.tier >= 2 ? r.vmax : EVO.launcher(S.la).speed) || 60; if (sp < vm) rk.vel.addScaledVector(rk.fwd, 18 * U.clamp(-rk.fwd.y * 1.3, 0, 1) * (1 - sp / vm) * dt); }
     // filet de sécurité : la fusée ne s'enfonce jamais dans le sol (elle roule dessus, le glissement la fait s'écraser)
-    { const gyy = run.T.base(Math.max(0, run.dist)) + 0.32; if (rk.pos.y < gyy) { rk.pos.y = gyy; if (rk.vel.y < 0) rk.vel.y = 0; rk.sliding = Math.max(rk.sliding || 0, 0.03); } }
+    if (!(CC.EVO.course && CC.EVO.course.isle)) { const gyy = run.T.base(Math.max(0, run.dist)) + 0.32; if (rk.pos.y < gyy) { rk.pos.y = gyy; if (rk.vel.y < 0) rk.vel.y = 0; rk.sliding = Math.max(rk.sliding || 0, 0.03); } }
     // sans réacteur ou sans carburant : la fusée tombe ; au sol, le vol est fini
     const out = (r.tier < 2 || rk.fuel <= 0.01) && !ev.preview;
     if (out && EVO.isS2() && g.flightTime > 1 && !((g._wsub || 0) > 0.5)) { ev.outT = (ev.outT || 0) + dt; rk.vel.y -= 38 * Math.min(1, ev.outT / 0.8) * dt; if (rk.fwd.y > -0.6) g.input.addAim(0, -2.2 * dt); } else ev.outT = 0;   // v249 : niveau 2 : sans carburant on pique et on accelere vers le bas (plus de longue glissade)
