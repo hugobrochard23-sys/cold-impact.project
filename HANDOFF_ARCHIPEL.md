@@ -56,3 +56,4 @@ Sonnet 5.5 effort MOYEN (faible pour les retouches mecaniques, eleve seulement p
 ## Mise a jour v372 (obstacles de l'ile 1)
 - `evo_isle.js` : `obstacles()` = 6 obstacles mobiles, chacun accroche a une structure : marteau (portique pierre, d=245), moulin a vent en pierre (385), tronc pendule (chevalet bois, 520), porte de grange coulissante ouverte ~70 % du temps (700), barriere a bascule (860), rochers et tonneaux qui roulent dans un couloir de pierre (965-1085). Collisions en repere de la structure (`hits`), animations dans `update(t)` appelees par `isleStep`.
 - A faire : regler la difficulte apres les retours, puis les iles suivantes (jungle...), le saut entre iles et la reprise de controle en chute.
+- v373 : 3 variantes de l'ile pour la Coupe (ARCHIPEL 1/2/3 : sens des virages miroir et ordre des obstacles different, `I.variant` dans `obstacles()`). Tests : `racec=ARCHIPEL1|ARCHIPEL2|ARCHIPEL3`.

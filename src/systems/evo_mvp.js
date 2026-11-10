@@ -51,7 +51,7 @@
     { name: 'SERPENT', seed: 37, shape: [[140, 0, 0.08, 22, 15], [220, -90, 0.2, 20, 9], [200, 180, 0.2, 22, 8], [160, -160, 0.16, 30, 7], [120, 0, 0.55, 46, 9, 4], [300, 270, 0.07, 24, 7], [150, 0, 0.06, 14, 5.5], [250, -120, 0.2, 22, 9], [170, 0, 0.04, 14, 17]] }
   ];
   for (const s0 of SHAPES) { s0.zone = 'campagne'; s0.speed = 46; s0.cap = 0; s0.scenes = E.courseScenes || ['rampe', 'camp']; COURSES.unshift(s0); }
-  COURSES.unshift({ name: 'ARCHIPEL', seed: 5, isle: true, shape: E.isleShape, zone: 'campagne', speed: 46, cap: 0, scenes: E.isleScenes || ['crsI0'] });   // v370 : l'ile (la Coupe se court dessus)
+  if (E.isleShape) { const mir = E.isleShape.map((q) => [q[0], -q[1]].concat(q.slice(2))); [[2, mir], [1, mir], [0, E.isleShape]].forEach(([v, sh]) => COURSES.unshift({ name: 'ARCHIPEL ' + (v + 1), variant: v, seed: 5, isle: true, shape: v === 2 ? E.isleShape : sh, zone: 'campagne', speed: 46, cap: 0, scenes: E.isleScenes || ['crsI0'] })); }   // v370 : l'ile (la Coupe se court dessus)
 const CUP = SHAPES.map((s) => s.name);
   const R = { round: 1, courses: [], field: [32, 16, 8], keep: [16, 8, 1], last: null, live: 1, ease: parseFloat(lsGet('cc.race.ease', '0')) || 0, penT: 0, session: 0 };
   let W = null;   // le monde de la manche (pilotes, fleches de vitesse)
@@ -81,7 +81,7 @@ const CUP = SHAPES.map((s) => s.name);
   E.levelDef = (g) => {
     if (E.isS2()) return _ld(g);
     const L = cur(); E.chapters = []; E.course = null;
-    if (L.shape) { E.course = L.isle ? E.mkIsle(L.shape) : E.courseExtras(E.mkCourse(L.shape), L.seed || 7); E.shortTiltOff = true; E.shortPad = 0; E.shortFin = Math.round(E.course.len); return E.baseDef({ zone: L.zone, len: E.shortFin + 160, scenes: L.scenes, order: new Array(90).fill(L.zone), theme: CC.LM.THEMES[0], hp: 1, bossEnt: null, seed: RACE ? 4000 + R.session * 13 + R.round * 7 : 5151 }); }
+    if (L.shape) { E.course = L.isle ? E.mkIsle(L.shape, L.variant) : E.courseExtras(E.mkCourse(L.shape), L.seed || 7); E.shortTiltOff = true; E.shortPad = 0; E.shortFin = Math.round(E.course.len); return E.baseDef({ zone: L.zone, len: E.shortFin + 160, scenes: L.scenes, order: new Array(90).fill(L.zone), theme: CC.LM.THEMES[0], hp: 1, bossEnt: null, seed: RACE ? 4000 + R.session * 13 + R.round * 7 : 5151 }); }
     if (L.tilt) { E.shortTiltOff = false; E.shortFin = L.fin; return E.baseDef({ zone: 'campagne', len: L.fin + 90, scenes: L.scenes, order: new Array(90).fill('campagne'), theme: CC.LM.THEMES[0], hp: 1, bossEnt: null, seed: RACE ? 4000 + R.session * 13 + R.round * 7 : 5151 }); }   // la prairie penchee (evo_short.js)
     E.shortTiltOff = true; E.shortPad = L.pad || 0;
     const Z = CC.Zones.defs[L.zone], sc = L.scenes.map((e) => (typeof e === 'string' ? e : withFoes(L.zone, e.n, e.foes, 'mv' + (RACE ? 'r' + L.name.replace(/\W/g, '') : LV)))).filter((n) => n && Z.scenes[n]); let tot = 0; for (const n of sc) tot += Z.scenes[n].len[0]; tot = Math.min(tot, L.cap || 1e9);   // un parcours peut ne prendre que le debut d'une longue scene
