@@ -51,6 +51,7 @@
     { name: 'SERPENT', seed: 37, shape: [[140, 0, 0.08, 22, 15], [220, -90, 0.2, 20, 9], [200, 180, 0.2, 22, 8], [160, -160, 0.16, 30, 7], [120, 0, 0.55, 46, 9, 4], [300, 270, 0.07, 24, 7], [150, 0, 0.06, 14, 5.5], [250, -120, 0.2, 22, 9], [170, 0, 0.04, 14, 17]] }
   ];
   for (const s0 of SHAPES) { s0.zone = 'campagne'; s0.speed = 46; s0.cap = 0; s0.scenes = E.courseScenes || ['rampe', 'camp']; COURSES.unshift(s0); }
+  if (E.rangeShape) COURSES.unshift({ name: 'TERRAIN D ESSAI', map: 'range', variant: 0, seed: 9, isle: true, shape: E.rangeShape, zone: 'campagne', speed: 36, cap: 0, scenes: E.isleScenes || ['crsI0'] });
   if (E.isleShape) { const mir = E.isleShape.map((q) => [q[0], -q[1]].concat(q.slice(2))); [[2, mir], [1, mir], [0, E.isleShape]].forEach(([v, sh]) => COURSES.unshift({ name: 'ARCHIPEL ' + (v + 1), variant: v, seed: 5, isle: true, shape: v === 2 ? E.isleShape : sh, zone: 'campagne', speed: 36, cap: 0, scenes: E.isleScenes || ['crsI0'] })); }   // v370 : l'ile (la Coupe se court dessus)
 const CUP = SHAPES.map((s) => s.name);
   const R = { round: 1, courses: [], field: [32, 16, 8], keep: [16, 8, 1], last: null, live: 1, ease: parseFloat(lsGet('cc.race.ease', '0')) || 0, penT: 0, session: 0 };
@@ -81,7 +82,7 @@ const CUP = SHAPES.map((s) => s.name);
   E.levelDef = (g) => {
     if (E.isS2()) return _ld(g);
     const L = cur(); E.chapters = []; E.course = null;
-    if (L.shape) { E.course = L.isle ? E.mkIsle(L.shape, L.variant) : E.courseExtras(E.mkCourse(L.shape), L.seed || 7); E.shortTiltOff = true; E.shortPad = 0; E.shortFin = Math.round(E.course.len); return E.baseDef({ zone: L.zone, len: E.shortFin + 160, scenes: L.scenes, order: new Array(90).fill(L.zone), theme: CC.LM.THEMES[0], hp: 1, bossEnt: null, seed: RACE ? 4000 + R.session * 13 + R.round * 7 : 5151 }); }
+    if (L.shape) { E.course = L.isle ? E.mkIsle(L.shape, L.variant, L.map) : E.courseExtras(E.mkCourse(L.shape), L.seed || 7); E.shortTiltOff = true; E.shortPad = 0; E.shortFin = Math.round(E.course.len); return E.baseDef({ zone: L.zone, len: E.shortFin + 160, scenes: L.scenes, order: new Array(90).fill(L.zone), theme: CC.LM.THEMES[0], hp: 1, bossEnt: null, seed: RACE ? 4000 + R.session * 13 + R.round * 7 : 5151 }); }
     if (L.tilt) { E.shortTiltOff = false; E.shortFin = L.fin; return E.baseDef({ zone: 'campagne', len: L.fin + 90, scenes: L.scenes, order: new Array(90).fill('campagne'), theme: CC.LM.THEMES[0], hp: 1, bossEnt: null, seed: RACE ? 4000 + R.session * 13 + R.round * 7 : 5151 }); }   // la prairie penchee (evo_short.js)
     E.shortTiltOff = true; E.shortPad = L.pad || 0;
     const Z = CC.Zones.defs[L.zone], sc = L.scenes.map((e) => (typeof e === 'string' ? e : withFoes(L.zone, e.n, e.foes, 'mv' + (RACE ? 'r' + L.name.replace(/\W/g, '') : LV)))).filter((n) => n && Z.scenes[n]); let tot = 0; for (const n of sc) tot += Z.scenes[n].len[0]; tot = Math.min(tot, L.cap || 1e9);   // un parcours peut ne prendre que le debut d'une longue scene
@@ -175,13 +176,8 @@ const CUP = SHAPES.map((s) => s.name);
   // ---------------------------------------------------------------- ILE : sortir du chemin = chute ; revenir dans la zone = le controle revient peu a peu
   const hv = new V();
   const isleStep = (g, dt, crs, d, F, rk) => {
-    if (W && W.props && W.props.update) W.props.update(g.flightTime, rk.pos);
-    const inX = Math.abs(rel.x) < crs.isle.W(d) + 1.5;
-    if (!F.on && g.flightTime > 1.0 && !inX) { F.on = true; F.t = 0; F.ctrl = Math.min(F.ctrl, 0.7); F.vy = Math.min(0, rk.vel.y) - 4; W.fallMsg = performance.now(); }
-    if (F.on) {
-      F.t += dt; F.ctrl = Math.max(0.12, F.ctrl - 2.6 * dt); F.vy = Math.max(-75, F.vy - 36 * dt);
-      if (inX) F.on = false;   // de retour dans la zone : la chute s'arrete, le controle remonte
-    } else if (F.ctrl < 1) { F.ctrl = Math.min(1, F.ctrl + 0.5 * dt); F.vy *= Math.exp(-2.2 * dt); }
+    W.clock = (W.clock || 0) + dt; if (W && W.props && W.props.update) W.props.update(W.clock, rk.pos);   // horloge des obstacles : les penalites de temps ne la font pas sauter
+    F.on = false; F.ctrl = 1;   // hors de l'ile on garde les memes commandes (on peut sortir un peu pour eviter un obstacle)
   };
   const isleKill = (g, crs, T, d, rk) => {   // sol (prairie), roche de l'ile, marteau
     if (g.flightTime < 1.2 || rk.shieldT > 0) return false;
@@ -206,7 +202,7 @@ const CUP = SHAPES.map((s) => s.name);
     if (F.on || F.ctrl < 1) { dir.y -= (1 - F.ctrl) * dt * 1.9; dir.normalize(); sp *= 1 + 0.22 * (1 - F.ctrl); }
     const dk = T.base(d) + I2.bank(d) * rel.x, over = Math.abs(rel.x) < I2.W(d) - 0.3 && !F.on && F.ctrl >= 1;
     if (over) { if (rk.pos.y < dk + 2.2) { rk.pos.y = dk + 2.2; if (dir.y < 0) { dir.set(dir.x, 0, dir.z).normalize(); } } if (rk.pos.y > dk + 27 && dir.y > 0) dir.set(dir.x, 0, dir.z).normalize(); }
-    if (g.flightTime > 1.2) { if (isleKill(g, crs, T, d, rk)) { g.onRocketCrash('wall', rk.pos.clone(), new V(0, 1, 0)); return; } if (isleHit(g, rk)) hitPenalty(g, rk, dir); }
+    if (g.flightTime > 1.2) { if (isleKill(g, crs, T, d, rk)) { R.penT = performance.now(); R.penAmt = 2.5; respawn(g); return; } if (isleHit(g, rk)) hitPenalty(g, rk, dir); if (rk.shieldT <= 0 && I2.boxes) { const yy = rk.pos.y - dk; for (const b of I2.boxes) if (d > b[0] - 1 && d < b[1] + 1 && rel.x > b[2] - 0.95 && rel.x < b[3] + 0.95 && yy > b[4] - 0.95 && yy < b[5] + 0.95) { hitPenalty(g, rk, dir); break; } } }
     rk.vel.copy(dir).multiplyScalar(sp); if (W.kick) rk.vel.addScaledVector(nn, W.kick);
     g.input.setAim(Math.atan2(-dir.x, -dir.z), Math.asin(U.clamp(dir.y, -0.9, 0.9)));
   };
@@ -258,7 +254,7 @@ const CUP = SHAPES.map((s) => s.name);
   const gz = () => (sr() + sr() + sr() + sr() - 2) * 1.7;
   const ord = (n) => (n === 1 ? '1ER' : n + 'E');
   const newSession = () => {
-    sSeed = ((Date.now() & 0xffffff) + 17 * (++R.session)) >>> 0; R.surv = null; const isl = COURSES.filter((c) => c.isle), pool = isl.length ? isl : COURSES.filter((c) => c.shape);
+    sSeed = ((Date.now() & 0xffffff) + 17 * (++R.session)) >>> 0; R.surv = null; const wantRange = R.session % 2 === 0, isl = COURSES.filter((c) => c.isle && (c.map === 'range') === wantRange), pool = isl.length ? isl : COURSES.filter((c) => c.shape);   // les parties alternent : l'archipel, puis le terrain d'essai
     for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(sr() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
     R.courses = [pool[0], pool[1 % pool.length], pool[2 % pool.length]]; R.round = 1; R.last = null; R.kills = 0; R.coins = 0; R.deaths = 0; R.roundKills = 0;
     { const f = /[?&]racec=(\w+)/.exec(location.search); const one = f && COURSES.find((c) => c.name.replace(/\W/g, '') === f[1]); if (one) R.courses = [one, one, one]; }   // essai d'une course a la main
@@ -266,7 +262,7 @@ const CUP = SHAPES.map((s) => s.name);
   if (RACE) newSession();
   const botAdv = (b, t, dt, FN) => {   // la progression d'un pilote ; l'IA s'adapte : les plus proches du joueur restent pres de lui
     if (b.p === undefined) { b.p = 0; b.f = 1; b.fT = 1; }
-    let rate = 1 / b.tRun;
+    let rate = 1 / b.tRun; if (b.slow > 0) { b.slow -= dt; rate *= 0.35; }
     if (b.crash && !b.cDone && b.p >= b.pc) { if (!b.cT) b.cT = t; if (t - b.cT < 2.5) rate = 0; else b.cDone = true; }
     b.f += (b.fT - b.f) * Math.min(1, dt * 2); if (b.fin !== undefined) b.f = 1;
     b.p = Math.min(1, b.p + rate * b.f * dt); if (b.p >= 1 && b.fin === undefined) b.fin = t;
@@ -345,7 +341,7 @@ const CUP = SHAPES.map((s) => s.name);
     else if (kind === 'BOUCLIER') { rk.shieldT = Math.max(rk.shieldT || 0, 5 + lv); try { g.audio.play('shield'); } catch (e) { /* son */ } }
     else {   // missile : le pilote devant le plus proche explose
       let best = null; for (const b of W.bots) if (!b.hit && !b.crash && b.d > run.dist + 4 && b.d < run.dist + 260 + 60 * lv && (!best || b.d < best.d)) best = b;
-      if (best) { best.hit = true; best.crash = true; best.pc = best.p || 0; best.boom = true; best.p = Math.max(0, (best.p || 0) - 1.5 / best.tRun); R.roundKills++; R.kills++; const P = best.m ? best.m.position.clone() : rk.pos.clone().addScaledVector(tf, 40); try { g.effects.explosion(P, new V(0, 1, 0), false, 'orange'); g.audio.play('boomSmall', P); } catch (e) { /* effets */ } if (best.m) { best.m.visible = false; best.tr.visible = false; } W.missile = { name: best.name, t0: performance.now() }; }
+      if (best) { best.hit = true; best.crash = true; best.pc = best.p || 0; best.boom = true;  R.roundKills++; R.kills++; const P = best.m ? best.m.position.clone() : rk.pos.clone().addScaledVector(tf, 40); try { g.effects.explosion(P, new V(0, 1, 0), false, 'orange'); g.audio.play('boomSmall', P); } catch (e) { /* effets */ } if (best.m) { best.m.visible = false; best.tr.visible = false; } W.missile = { name: best.name, t0: performance.now() }; }
     }
   };
   const raceStep = (g, dt) => {
@@ -385,7 +381,7 @@ const CUP = SHAPES.map((s) => s.name);
       b.tr.visible = false; { const fx = g.effects, fw = tmp.copy(tmp2).sub(b.m.position).normalize(), nz = b.m.position.clone().addScaledVector(fw, -2.1), vv = fw.clone().multiplyScalar(36); try { fx.exhaustCore(nz, fw, vv, 1, dt); fx.exhaustSmoke(nz.clone().addScaledVector(fw, -0.7), vv, 1); fx.exhaustSmoke(nz.clone().addScaledVector(fw, -1.5), vv, 1); } catch (e) { /* effets */ } }   // la meme flamme et la meme fumee que la fusee du joueur
       if (flying && !fin && t > 1.5) {   // on touche un pilote : les deux rebondissent (etincelles, un peu de vitesse en moins), personne ne meurt
         const dn2 = rk.pos.distanceTo(b.m.position), df = tmp.copy(b.m.position).sub(rk.pos), fd = W.fc ? W.fc.dir : tf, al = df.dot(fd), pp = Math.sqrt(Math.max(0, df.lengthSq() - al * al));
-        if (!b.bump && b.vk > 0.8 && Math.abs(al) < 3.2 && pp < 1.5) { b.bump = true; b.p = Math.max(0, b.p - 0.6 / b.tRun); W.bumpT = 0.35; { const sg = Math.sign(df.dot(nn)) || 1; b.pushT = sg * 6; W.kickT = -sg * 8; } try { g.effects.flash(rk.pos.clone().lerp(b.m.position, 0.5), '#ffe2a8', 3, 50, 0.25, '#ffb030'); g.audio.play('target'); } catch (e) { /* effets */ } }
+        if (!b.bump && b.vk > 0.8 && Math.abs(al) < 3.2 && pp < 1.5) { b.bump = true; b.slow = 0.9; W.bumpT = 0.35; { const sg = Math.sign(df.dot(nn)) || 1; b.pushT = sg * 6; W.kickT = -sg * 8; } try { g.effects.flash(rk.pos.clone().lerp(b.m.position, 0.5), '#ffe2a8', 3, 50, 0.25, '#ffb030'); g.audio.play('target'); } catch (e) { /* effets */ } }
         else if (b.bump && dn2 > 9) b.bump = false;
       }
     }

@@ -6,9 +6,9 @@
   const E = CC.EVO; if (!E || !E.on || !E.mkCourse) return;
   const T3 = THREE, U = CC.U, Z = CC.Zones, D = Z && Z.defs && Z.defs.campagne; if (!D) return;
   const FLY = 11, TOP = 9, S0 = -125;
-  const PAL = { blue: '#3aa6f0', pink: '#ff6fae', teal: '#42d6a4', yellow: '#ffc24a', purple: '#a77bff' };
+  const PAL = { blue: '#3aa6f0', pink: '#ff6fae', teal: '#42d6a4', yellow: '#ffc24a', purple: '#a77bff', asph: '#4b5059', asph2: '#585d67', sand: '#a99c7c', conc: '#8d9096' };
   // les sections : nom, longueur, virage (+ droite), pente (descente ; negatif = on remonte), demi-largeur de l'ile, couleur du sol, inclinaison laterale
-  const SEC = [
+  const SEC_ARCH = [
     { n: 'depart', len: 150, turn: 0, slope: 0, W: 56, col: 'blue' },
     { n: 'marteaux', len: 150, turn: 60, slope: 0.15, W: 56, col: 'pink' },
     { n: 'pont', len: 140, turn: -50, slope: 0.18, W: 24, col: 'teal' },
@@ -19,8 +19,16 @@
     { n: 'gate', len: 150, turn: 40, slope: 0.2, W: 50, col: 'pink' },
     { n: 'arrivee', len: 120, turn: 0, slope: 0.06, W: 58, col: 'blue' },
   ];
+  const SEC_RANGE = [   // la 2e carte : le terrain d'essai de fusees (base d'essai : beton, asphalte, hangar, citadelle)
+    { n: 'lancement', len: 170, turn: 0, slope: 0, W: 54, col: 'asph' },
+    { n: 'tir', len: 260, turn: -35, slope: 0.08, W: 50, col: 'sand' },
+    { n: 'falaise', len: 250, turn: 55, slope: 0.14, W: 42, col: 'asph2' },
+    { n: 'citadelle', len: 190, turn: 0, slope: -0.07, W: 46, col: 'conc' },
+  ];
+  let SEC = SEC_ARCH;
+  E.rangeShape = SEC_RANGE.map((s, i) => [s.len, s.turn, s.slope, FLY, i === SEC_RANGE.length - 1 ? 24 : 17, TOP]);
   E.isleShape = SEC.map((s, i) => [s.len, s.turn, s.slope, FLY, i === SEC.length - 1 ? 24 : 17, TOP]);
-  const STARTS = []; { let a = 0; for (const s of SEC) { STARTS.push(a); a += s.len; } }
+  const STARTS = []; const calcStarts = () => { STARTS.length = 0; let a = 0; for (const s of SEC) { STARTS.push(a); a += s.len; } }; calcStarts();
   const secAt = (d) => { let i = 0; for (let k = 0; k < SEC.length; k++) if (d >= STARTS[k]) i = k; return i; };
   const lerp = (a, b, t) => a + (b - a) * t;
   const blend = (d, key, def) => {   // valeur d'une section, fondue sur 22 m de part et d'autre de chaque frontiere
@@ -36,10 +44,19 @@
     if (d > dEnd - 70) w *= Math.sqrt(Math.max(0, 1 - Math.pow((d - (dEnd - 70)) / 70, 2)));
     return w;
   };
-  E.mkIsle = (shape, variant) => {
+  E.mkIsle = (shape, variant, map) => {
+    SEC = map === 'range' ? SEC_RANGE : SEC_ARCH; calcStarts(); RIM.set(map === 'range' ? '#2f3238' : '#7a3cf0');
     const C = E.mkCourse(shape, { fl: FLY, sw: 6 }), dEnd = C.len + 90, mir = variant === 1, W = mkW(dEnd);
-    C.isle = { variant: variant || 0, mir, W, dEnd, starts: STARTS, bank: (d) => (mir ? -1 : 1) * blend(d, 'bank', 0), PY: C.rel(C.len) - 90, sx: variant === 2 ? -1 : 1 };
+    C.isle = { map: map || 'arch', boxes: [], variant: variant || 0, mir, W, dEnd, starts: STARTS, bank: (d) => (mir ? -1 : 1) * blend(d, 'bank', 0), PY: C.rel(C.len) - 90, sx: variant === 2 ? -1 : 1 };
     try { CC.CONFIG.render.viewDist = 480; } catch (e) { /* ignore */ }   // on voit les obstacles de plus loin
+    if (map === 'range') {   // zones pleines (repere piste : [d0, d1, x0, x1, hauteur0, hauteur1]) : hangar, tours de la citadelle
+      const hg = { d: STARTS[2] + 55, len: 44, hw: 20, hh: 24 }, ct = { d: STARTS[3] + 110 }; C.isle.hangar = hg; C.isle.citadel = ct;
+      const B = C.isle.boxes, d0 = hg.d - hg.len / 2, d1 = hg.d + hg.len / 2;
+      for (const sg of [-1, 1]) B.push([d0, d1, sg > 0 ? hg.hw : -hg.hw - 1.4, sg > 0 ? hg.hw + 1.4 : -hg.hw, 0, hg.hh + 1]);
+      B.push([d0, d1, -hg.hw - 1.4, hg.hw + 1.4, hg.hh, hg.hh + 1.4]);
+      for (let k = -3; k <= 3; k++) B.push([hg.d + k * 6.5 - 0.7, hg.d + k * 6.5 + 0.7, -hg.hw, hg.hw, 16.4, 17.7]);
+      for (const sg of [-1, 1]) B.push([ct.d - 5.5, ct.d + 5.5, sg > 0 ? 36 : -50, sg > 0 ? 50 : -36, 0, 38]);
+    }
     return C;
   };
   // brume plus loin sur l'ile
@@ -56,6 +73,23 @@
   const hash = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
   const colTmp = new T3.Color(), COLS = {}; for (const k in PAL) COLS[k] = new T3.Color(PAL[k]);
   const RIM = new T3.Color('#7a3cf0');
+  const rangeScene = (S, I) => {
+    const foe = Z.evoFoe, st = STARTS[1], hg = I.hangar, ct = I.citadel;
+    const heliPatrol = (SS, dd, lx, y) => [SS.at(dd, lx - 8, y), SS.at(dd + 8, lx, y + 2), SS.at(dd, lx + 8, y), SS.at(dd - 8, lx, y + 2)];
+    if (foe) {
+      [[st + 40, -30], [st + 85, 8], [st + 130, -12], [st + 175, 30], [st + 215, 0]].forEach(([dd, lx]) => foe(S, 'tank', dd, lx, 0, { name: 'CHAR', keep: true, armed: false }));
+      [[st + 70, -22], [st + 125, 20], [st + 190, -6]].forEach(([dd, lx]) => foe(S, 'heli', dd, lx, 10, { name: 'HELICO', keep: true, armed: false, patrol: heliPatrol, speed: 7 }));
+      [[st + 60, 26], [st + 160, -24]].forEach(([dd, lx]) => foe(S, 'truck', dd, lx, 0, { name: 'CAMION', keep: true, armed: false }));
+    }
+    for (let k = 0; k < 7; k++) { const dd = st + 30 + k * 34, sg = k % 2 ? 1 : -1; for (let q = 0; q < 3; q++) S.bx(dd, sg * (40 + q * 2.8), 0.55, 2.6, 1.1, 1.5, 'sand', '#c8b078', false); }   // sacs de sable
+    const dc = hg.d, len = hg.len, hw = hg.hw, hh = hg.hh;
+    for (const s of [-1, 1]) { S.bx(dc, s * (hw + 0.7), hh / 2, 1.4, hh, len, 'corrugated', '#7f8666', false); S.bx(dc - len / 2, s * (hw + 0.7), hh / 2, 2.2, hh, 2.2, 'metal', '#3d444c', false); S.bx(dc + len / 2, s * (hw + 0.7), hh / 2, 2.2, hh, 2.2, 'metal', '#3d444c', false); }
+    S.bx(dc, 0, hh + 0.7, 2 * hw + 3, 1.4, len + 2, 'corrugated', '#6c7358', false);
+    for (let k = -3; k <= 3; k++) S.bx(dc + k * 6.5, 0, 17, 2 * hw, 1.3, 1.4, 'metal', '#3d444c', false);   // les poutres des ponts roulants
+    for (let k = -2; k <= 2; k++) S.glow(dc + k * 9, 0, hh - 2.2, '#ffe2a8', 16);
+    const cd = ct.d; for (const s of [-1, 1]) { S.bx(cd, s * 43, 19, 14, 38, 11, 'brick', '#9a8c7a', false); S.bx(cd, s * 43, 39, 15.4, 2.4, 12.4, 'concrete', '#8d9096', false); for (let k = -1; k <= 1; k++) for (const q of [-1, 1]) S.bx(cd + q * 5, s * 43 + k * 5, 41.4, 3, 2.6, 3, 'brick', '#9a8c7a', false); }
+    S.bx(cd, 0, 31, 76, 12, 5, 'brick', '#8c8576', false); S.bx(cd, 0, 38, 78, 2, 6, 'concrete', '#8d9096', false);   // le linteau de la citadelle, au-dessus des herses
+  };
   const sceneDef = {
     len: [300, 300], noDoor: true, noChaos: true, gw: 46,
     gwF: (d) => { const C = E.course; return C && C.isle ? C.isle.W(d) : 46; },
@@ -68,7 +102,7 @@
     },
     build(S) {
       const C = E.course; if (!C || !C.isle) return;
-      // plus de hangar : le depart est une plateforme de lancement
+      if (C.isle.map === 'range') rangeScene(S, C.isle);
     },
   };
   const BR = ['#bba294', '#b09486', '#c4aa9c', '#ab9082'], RUST = ['#8a5a44', '#7a5a48', '#6a5240'];
@@ -131,25 +165,26 @@
 
   // ---- marquages au sol (bandes de section, tirets, chevrons) et rambardes gonflables (piles de disques) ----
   const decals = (T, C) => {
-    const I = C.isle, pos = [], col = [], idx = [], tc = new T3.Color();
+    const I = C.isle, pos = [], col = [], idx = [], tc = new T3.Color(), HZ = I.map === 'range' ? ['#1d1e22', '#f2c230'] : ['#2a2540', '#ffffff'], CHV = I.map === 'range' ? '#f2c230' : '#ffffff';
     const P = (d, lx) => T.at(d, lx, I.bank(d) * lx + 0.09);
     const quad = (a, b, c, d2, hex) => { const o = pos.length / 3; for (const p of [a, b, c, d2]) pos.push(p[0], p[1], p[2]); tc.set(hex); for (let k = 0; k < 4; k++) col.push(tc.r, tc.g, tc.b); idx.push(o, o + 1, o + 2, o, o + 2, o + 3); };
-    STARTS.forEach((s, i) => { if (i === 0) return; const w = I.W(s) - 2.2; for (let k = 0; k < 4; k++) { const d0 = s + 0.5 + k * 1.9; quad(P(d0, -w), P(d0, w), P(d0 + 1.9, w), P(d0 + 1.9, -w), k % 2 ? '#2a2540' : '#ffffff'); } });   // la bande rayee qui marque chaque nouvelle section
+    STARTS.forEach((s, i) => { if (i === 0) return; const w = I.W(s) - 2.2; for (let k = 0; k < 4; k++) { const d0 = s + 0.5 + k * 1.9; quad(P(d0, -w), P(d0, w), P(d0 + 1.9, w), P(d0 + 1.9, -w), k % 2 ? HZ[0] : HZ[1]); } });   // la bande rayee qui marque chaque nouvelle section
     for (let d = 14; d < C.len - 6; d += 10) quad(P(d, -0.5), P(d, 0.5), P(d + 5, 0.5), P(d + 5, -0.5), '#ffffff');   // tirets au centre
     STARTS.forEach((s, i) => { const d = s + (i === 0 ? 60 : 30), n = Math.max(1, Math.floor(I.W(d) / 14)); for (let j = 0; j < n; j++) { const lx = (j - (n - 1) / 2) * 15;   // chevrons « par ici »
-      quad(P(d, lx - 3.4), P(d + 1.7, lx - 3.4), P(d + 6.2, lx), P(d + 4.5, lx), '#ffffff'); quad(P(d + 4.5, lx), P(d + 6.2, lx), P(d + 1.7, lx + 3.4), P(d, lx + 3.4), '#ffffff'); } });
+      quad(P(d, lx - 3.4), P(d + 1.7, lx - 3.4), P(d + 6.2, lx), P(d + 4.5, lx), CHV); quad(P(d + 4.5, lx), P(d + 6.2, lx), P(d + 1.7, lx + 3.4), P(d, lx + 3.4), CHV); } });
     const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(col, 3)); geo.setIndex(idx);
     const m = new T3.Mesh(geo, new T3.MeshBasicMaterial({ vertexColors: true, side: T3.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); m.frustumCulled = false; return m;
   };
   const rails = (T, C) => {
-    const I = C.isle, list = [], CY = ['#ff3b4d', '#ff9a1f', '#ff3b4d'];
+    const I = C.isle, list = [], rg = I.map === 'range', CY = rg ? ['#25262a', '#25262a', '#e8e8e8'] : ['#ff3b4d', '#ff9a1f', '#ff3b4d'];
     for (let d = S0 + 12; d < I.dEnd - 10; d += 4) { const w = I.W(d) - 1.2; if (w < 8) continue; for (const sg of [-1, 1]) list.push([d, sg * w, 1, ((d / 4) | 0) % 5 === 0 ? 1 : 0]); }
-    const dv = STARTS[4]; for (let d = dv + 24; d < dv + 150; d += 3.6) list.push([d, 0, 1.15, 2]);   // le muret central qui separe les deux voies
-    for (const d of [104, 118]) for (let lx = -50 + (d === 118 ? 8 : 0); lx <= 50; lx += 16) list.push([d, lx, 1.6, 3]);   // les gros coussins de la ligne de depart
+    if (!rg) { const dv = STARTS[4]; for (let d = dv + 24; d < dv + 150; d += 3.6) list.push([d, 0, 1.15, 2]); I.boxes.push([dv + 24, dv + 150, -1.4, 1.4, 0, 3.2]); }   // le muret central qui separe les deux voies
+    for (let d = S0 + 12; d < I.dEnd - 10; d += 8) { const w = I.W(d) - 1.2; if (w < 8) continue; I.boxes.push([d - 4, d + 4, w - 1.3, w + 1.3, 0, 3.1], [d - 4, d + 4, -w - 1.3, -w + 1.3, 0, 3.1]); }   // les rambardes sont solides
+    if (!rg) for (const d of [104, 118]) for (let lx = -50 + (d === 118 ? 8 : 0); lx <= 50; lx += 16) list.push([d, lx, 1.6, 3]);   // les gros coussins de la ligne de depart
     const geo = new T3.CylinderGeometry(1.15, 1.15, 0.8, 12), im = new T3.InstancedMesh(geo, new T3.MeshLambertMaterial({ color: '#ffffff' }), list.length * 3), dm = new T3.Object3D(), cc = new T3.Color(); let n = 0;
     for (const [d, lx, sc, kind] of list) for (let k = 0; k < 3; k++) {
       const p = T.at(d, lx, I.bank(d) * lx + (0.4 + k * 0.8) * sc); dm.position.set(p[0], p[1], p[2]); dm.scale.set(sc, sc, sc); dm.updateMatrix(); im.setMatrixAt(n, dm.matrix);
-      cc.set(kind === 1 ? '#ffffff' : kind === 2 ? (k % 2 ? '#ffffff' : '#ff6fae') : kind === 3 ? (k % 2 ? '#ffffff' : '#ff8a1f') : CY[k]); im.setColorAt(n, cc); n++;
+      cc.set(kind === 1 ? (rg ? '#e8e8e8' : '#ffffff') : kind === 2 ? (k % 2 ? '#ffffff' : '#ff6fae') : kind === 3 ? (k % 2 ? '#ffffff' : '#ff8a1f') : CY[k]); im.setColorAt(n, cc); n++;
     }
     im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; im.frustumCulled = false; return im;
   };
@@ -210,16 +245,23 @@
       ups.push((t) => { rot.rotation.y = dir * t * 0.7 + ph; g.updateMatrixWorld(true); });
       addHit(d, (pos) => { const l = loc(g, pos); if (l.y < h0 - RR || l.y > h1 + RR + 3) return false; if (Math.hypot(l.x, l.z) < 2.5 + RR) return true; const th = rot.rotation.y, t = l.x * Math.sin(th) + l.z * Math.cos(th), pr = Math.abs(l.x * Math.cos(th) - l.z * Math.sin(th)); return Math.abs(t) < R + 2.2 + RR && pr < 0.8 + RR && Math.abs(t) > 2; });
     };
-    const cannon = (d, lx, side, ph) => {   // canon rouge sur un affut en pierre ; tire un gros rocher en travers du chemin, avec une ombre d'avertissement au sol
+    const cannon = (d, lx, side, ph) => {   // canon sur un affut en pierre : recul, flamme et fumee au tir ; le rocher part de la bouche et retombe de l'autre cote (ombre d'avertissement)
       const g = mk(d, lx), base = stoneBlock(7, 3, 8, 1); base.position.y = 1.5; g.add(base);
-      const brl = new T3.Group(); brl.position.set(0, 4.4, 0); brl.rotation.z = side * 0.6; g.add(brl);   // le canon penche vers le chemin
-      const tube = cy(1.5, 1.9, 8, '#c8372b', 12); tube.rotation.z = Math.PI / 2; tube.position.x = side * 3.4; brl.add(tube); const ring = cy(2.1, 2.1, 0.8, '#23262b', 12); ring.rotation.z = Math.PI / 2; ring.position.x = side * 6.6; brl.add(ring);
-      for (const s2 of [-1, 1]) { const wh = cy(2, 2, 0.8, WOODD, 12); wh.rotation.x = Math.PI / 2; wh.position.set(0, 2.2, s2 * 4.4); g.add(wh); }
+      for (let k = 0; k < 2; k++) { const b2 = stoneBlock(7.4, 0.6, 8.4, k + 2); b2.position.y = 3.2 + k * 0.01; g.add(b2); }
+      const brl = new T3.Group(); brl.position.set(0, 4.8, 0); brl.rotation.z = side * 0.6; g.add(brl); const tube = new T3.Group(); brl.add(tube);
+      const bar = cy(1.5, 1.9, 8, '#4c5560', 12); bar.rotation.z = Math.PI / 2; bar.position.x = side * 3.4; tube.add(bar);
+      for (const xx of [0.8, 3.4, 6.2]) { const rg2 = cy(2.05, 2.05, 0.7, '#23262b', 12); rg2.rotation.z = Math.PI / 2; rg2.position.x = side * xx; tube.add(rg2); }
+      const mz = cy(1.1, 1.1, 0.3, '#111111', 12); mz.rotation.z = Math.PI / 2; mz.position.x = side * 7.9; tube.add(mz);
+      for (const s2 of [-1, 1]) { const wh = cy(2.2, 2.2, 0.8, WOODD, 14); wh.rotation.x = Math.PI / 2; wh.position.set(0, 2.2, s2 * 4.4); g.add(wh); const hub = cy(0.7, 0.7, 1.0, '#23262b', 8); hub.rotation.x = Math.PI / 2; hub.position.set(0, 2.2, s2 * 4.4); g.add(hub); }
+      const flash = new T3.Mesh(new T3.SphereGeometry(1.6, 10, 8), new T3.MeshBasicMaterial({ color: '#ffd27a', transparent: true, opacity: 0.9 })); flash.position.x = side * 9; tube.add(flash); flash.visible = false;
       const rock = new T3.Mesh(new T3.IcosahedronGeometry(3.6, 1), mat('#8a8070')), mark = new T3.Mesh(new T3.RingGeometry(3, 4.6, 24), new T3.MeshBasicMaterial({ color: '#ff3b3b', transparent: true, opacity: 0.7, side: T3.DoubleSide })); mark.rotation.x = -Math.PI / 2; grp.add(rock, mark); rock.visible = mark.visible = false;
-      const P = 3.6, FL = 1.7; let live = null;   // le rocher vole 1,7 s vers l'autre moitie du chemin
-      ups.push((t) => { const k = (t + ph) % P, u = k / FL; const wp = T.at(d + 6, -side * Math.abs(lx) * sx * 0.55, I.bank(d + 6) * (-side * Math.abs(lx) * sx * 0.55));
+      const P = 3.6, FL = 1.7, st0 = new T3.Vector3(), mzv = new T3.Vector3(); let live = null, lastK = 99;
+      ups.push((t) => { const k = (t + ph) % P, u = k / FL;
+        if (k < lastK) { g.updateMatrixWorld(true); mzv.set(side * 8.6, 0, 0); tube.localToWorld(mzv); st0.copy(mzv); const fx = CC.game && CC.game.effects; try { fx.smokePuff(mzv.clone(), new T3.Vector3(0, 2, 0), 2.4, 1.6); fx.flash(mzv.clone(), '#ffe2a8', 6, 80, 0.25, '#ffb030'); CC.game.audio.play('boomSmall', mzv.clone()); } catch (e) { /* effets */ } }
+        lastK = k; tube.position.x = -side * 1.7 * Math.exp(-k * 6); flash.visible = k < 0.12;
+        const wp = T.at(d + 6, -side * Math.abs(lx) * sx * 0.55, I.bank(d + 6) * (-side * Math.abs(lx) * sx * 0.55));
         mark.visible = k < FL; mark.position.set(wp[0], wp[1] + 0.2, wp[2]); mark.scale.setScalar(0.7 + 0.5 * (1 - Math.min(1, k / FL)));
-        if (u >= 0 && u < 1) { const st = T.at(d, lx * sx, I.bank(d) * lx * sx + 6); rock.position.set(lerp(st[0], wp[0], u), lerp(st[1], wp[1] + 3, u) + 10 * u * (1 - u), lerp(st[2], wp[2], u)); rock.rotation.x = t * 5; rock.visible = true; live = rock.position; } else { rock.visible = false; live = null; } });
+        if (u >= 0 && u < 1) { rock.position.set(lerp(st0.x, wp[0], u), lerp(st0.y, wp[1] + 3, u) + 10 * u * (1 - u), lerp(st0.z, wp[2], u)); rock.rotation.x = t * 5; rock.visible = true; live = rock.position; } else { rock.visible = false; live = null; } });
       addHit(d, (pos) => !!live && pos.distanceTo(live) < 3.3 + RR);
     };
     const gateRow = (d, lx, n, ph) => {   // rangee de herses : n ouvertures ; chaque herse monte et descend ; elle ne descend JAMAIS sur la fusee qui approche
@@ -236,6 +278,11 @@
         if (Math.abs(l.z) > 0.6 + RR) return false; for (const p of panels) if (Math.abs(l.x - p.x) < (OW - 3.2) / 2 + RR && l.y + RR > p.y && l.y - RR < p.y + HWL - 1) return true; return false; });
     };
     const S = (name) => STARTS[SEC.findIndex((s) => s.n === name)];
+    if (I.map === 'range') {
+      { const s = S('tir'); sweeper(s + 105, 0, 0.5, 1); for (let k = 0; k < 4; k++) { const side = k % 2 ? 1 : -1; cannon(s + 150 + k * 26, side * 36, side, k * 0.9); } }
+      { const s = S('falaise'); hammer(s + 140, -15, 0); hammer(s + 140, 15, 1.7); logp(s + 190, -15, 0.8); logp(s + 190, 15, 2.2); }
+      { const s = S('citadelle'); gateRow(s + 110, 0, 5, 0.4); }
+    } else {
     { const s = S('marteaux'); hammer(s + 70, -30, 0); hammer(s + 70, 0, 1.6); hammer(s + 70, 30, 3.2); hammer(s + 118, -15, 0.8); hammer(s + 118, 15, 2.4); }
     { const s = S('pont'); sweeper(s + 45, 0, 0, 1); sweeper(s + 100, 0, 1.6, -1); }
     { const s = S('canons'); for (let k = 0; k < 6; k++) { const side = k % 2 ? 1 : -1; cannon(s + 22 + k * 22, side * 38, side, k * 0.55); } }
@@ -243,6 +290,7 @@
     { const s = S('incline'); windmill(s + 62, -24, 1); windmill(s + 62, 24, -1); windmill(s + 122, 0, 1); }
     { const s = S('remonte'); logp(s + 55, -30, 0); logp(s + 55, 0, 1.4); logp(s + 55, 30, 2.8); logp(s + 105, -15, 0.7); logp(s + 105, 15, 2.1); }
     { const s = S('gate'); gateRow(s + 60, 0, 5, 0); gateRow(s + 116, 0, 5, 2.4); }
+    }
     return { update: (t, rp) => { for (const f of ups) f(t, rp); }, hits };
   };
 
@@ -261,7 +309,7 @@
     const place = (d, lx, objs) => { const y = T.base(d), bk = I.bank(d), p = T.at(d, lx, bk * lx), q = T.at(d + 3, lx, bk * lx), g = new T3.Group(); g.position.set(p[0], p[1], p[2]); g.lookAt(q[0], p[1], q[2]); grp.add(g); for (const o of objs) g.add(o); return g; };
     for (let d = 100; d < C.len - 40; d += 75) for (const sg of [-1, 1]) {   // poteaux de course : un drapeau « COLD IMPACT CUP » tourne vers la fusee qui arrive
       const w = I.W(d); if (w < 20) continue; const po = pole(11, '#e8e8f0'), fl = new T3.Mesh(new T3.PlaneGeometry(6.4, 2), bm); po.position.y = 5.5; fl.position.set(-sg * 3.3, 9.6, 0); fl.rotation.y = Math.PI;
-      place(d, sg * (w - 3), [po, fl]);
+      place(d, sg * (w - 3), [po, fl]); { const bl = sg * (w - 3), fc = bl + sg * 3.3; I.boxes.push([d - 0.5, d + 0.5, bl - 0.5, bl + 0.5, 0, 11], [d - 1.1, d + 1.1, fc - 3.2, fc + 3.2, 8.6, 10.7]); }   // solides
     }
     { const pl = [pole(24, '#ffd23a'), pole(24, '#ffd23a')], ban = new T3.Mesh(new T3.PlaneGeometry(38, 11.8), bm); pl[0].position.set(19.5, 12, 0); pl[1].position.set(-19.5, 12, 0); ban.position.set(0, 20, 0); ban.rotation.y = Math.PI; place(-6, 0, [pl[0], pl[1], ban]); }   // l'arche de depart
     const ob = obstacles(T, C, grp); out.update = ob.update; out.hits = ob.hits;
