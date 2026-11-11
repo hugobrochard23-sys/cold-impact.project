@@ -127,10 +127,10 @@ const CUP = SHAPES.map((s) => s.name);
     const T = run.T, lt = Math.max(0, g.flightTime || 0), w = U.clamp(1 - U.smooth(0.15, 2.9, lt), 0, 1);   // w : le decollage (1) -> la vue de course (0)
     const dR = run.dist > 1 ? run.dist : Math.min(0, -rk.pos.z), d = Math.max(0, run.dist), k = Math.min(1, (dt || 0.016) * (9 - 5.2 * w));
     relOf(T, Math.max(0, dR), rk.pos, rel);
-    const kf = cur().open ? 0.85 : 0.5, dc = dR - 8.5, d2 = dc + 40, fx = rel.x * kf, fy = rel.y * (kf * 0.8);
-    const pa = T.at(dc, T.laneX(Math.max(0, dc)) + fx, T.laneY(Math.max(0, dc)) + 2.2 + fy), pb = T.at(d2, T.laneX(Math.max(0, d2)) + fx, T.laneY(Math.max(0, d2)) + 0.2 + fy);
+    const isl = !!(E.course && E.course.isle), kf = cur().open ? 0.85 : 0.5, dc = dR - (isl ? 11 : 8.5), d2 = dc + (isl ? 66 : 40), fx = rel.x * kf, fy = rel.y * (kf * 0.8);
+    const pa = T.at(dc, T.laneX(Math.max(0, dc)) + fx, T.laneY(Math.max(0, dc)) + (isl ? 4.6 : 2.2) + fy), pb = T.at(d2, T.laneX(Math.max(0, d2)) + fx, T.laneY(Math.max(0, d2)) + 0.2 + fy);
     camP.set(pa[0], Math.max(pa[1], T.base(Math.max(0, dc)) + 1.2), pa[2]); camL.set(pb[0], pb[1], pb[2]);
-    { const y0 = camP.y; camP.y = U.clamp(camP.y, rk.pos.y + 1.2, rk.pos.y + 3.8); camL.y += camP.y - y0; }   // la fusee ne sort jamais du champ (au depart, en plongee)
+    { const y0 = camP.y; camP.y = U.clamp(camP.y, rk.pos.y + 1.2, rk.pos.y + (isl ? 6.6 : 3.8)); camL.y += camP.y - y0; }   // la fusee ne sort jamais du champ (au depart, en plongee)
     if (W && W.free) {   // raccourci : la camera suit la fusee derriere elle
       const dv = tmp.copy(rk.vel).normalize(); camP.copy(rk.pos).addScaledVector(dv, -10).y += 3.4; camL.copy(rk.pos).addScaledVector(dv, 24);
       if (!rig._mv) { rig._mv = new V().copy(camP); rig._ml = new V().copy(camL); }
@@ -169,7 +169,7 @@ const CUP = SHAPES.map((s) => s.name);
   // ---------------------------------------------------------------- ILE : sortir du chemin = chute ; revenir dans la zone = le controle revient peu a peu
   const hv = new V();
   const isleStep = (g, dt, crs, d, F, rk) => {
-    if (W && W.props && W.props.update) W.props.update(g.flightTime);
+    if (W && W.props && W.props.update) W.props.update(g.flightTime, rk.pos);
     const inX = Math.abs(rel.x) < crs.isle.W(d) + 1.5;
     if (!F.on && g.flightTime > 1.0 && !inX) { F.on = true; F.t = 0; F.ctrl = Math.min(F.ctrl, 0.7); F.vy = Math.min(0, rk.vel.y) - 4; W.fallMsg = performance.now(); }
     if (F.on) {
@@ -212,7 +212,7 @@ const CUP = SHAPES.map((s) => s.name);
       I.ax = (vlat - ffx) / 26; I.ay = (vy - ffy) / 24;
     }
     let spx = sp; if (isl && (F.on || F.ctrl < 1)) { const c = F.ctrl; vlat = ffx + (vlat - ffx) * c; vy = vy * c + F.vy * (1 - c); spx = sp * (1 + 0.22 * (1 - c)); }
-    const floor = crs ? T.base(d) + T.laneY(d) - hdn : T.base(d) + 1.2; if (open && rk.shieldT <= 0 && rk.pos.y < T.base(d) + 0.7 && g.flightTime > 1.2) { g.onRocketCrash('wall', rk.pos.clone(), new V(0, 1, 0)); return; }   // en zone ouverte, le sol tue
+    const floor = crs ? T.base(d) + T.laneY(d) - hdn + (crs.isle ? crs.isle.bank(d) * rel.x : 0) : T.base(d) + 1.2; if (open && rk.shieldT <= 0 && rk.pos.y < T.base(d) + 0.7 && g.flightTime > 1.2) { g.onRocketCrash('wall', rk.pos.clone(), new V(0, 1, 0)); return; }   // en zone ouverte, le sol tue
     if (!open && rk.pos.y < floor && vy < 0 && (!crs || run.dist > 8)) { vy = 0; rk.pos.y = floor; }
     if (crs) vy = U.clamp(vy, isl ? -80 : -60, 38);
     if (isl && isleKill(g, crs, T, d, rk)) { g.onRocketCrash('wall', rk.pos.clone(), new V(0, 1, 0)); return; }
@@ -278,7 +278,7 @@ const CUP = SHAPES.map((s) => s.name);
     });
     buildFinish(g, T, FN, grp);
   };
-  const bOff = (b, d) => b.off * (E.course ? U.clamp((E.course.hw(d) - 2.4) / 6.5, 0.15, 1.1) : 1);
+  const bOff = (b, d) => (E.course && E.course.isle ? b.off * U.clamp(E.course.isle.W(d) * 0.8 / 6.5, 0.3, 9) : b.off * (E.course ? U.clamp((E.course.hw(d) - 2.4) / 6.5, 0.15, 1.1) : 1));
   const rivalMesh = (g, b) => {   // le skin et la traînée d'un pilote (crees au premier passage a l'ecran)
     const sk = CC.Skins.byId[b.skin] || CC.Skins.byId.stock;
     b.m = CC.Models.rocket(sk); b.m.scale.setScalar(3.8); b.m.visible = false; W.grp.add(b.m);
