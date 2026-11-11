@@ -71,7 +71,7 @@ const CUP = SHAPES.map((s) => s.name);
     return al;
   };
   const fails = {};   // essais rates par niveau (pendant la session) : 0 = 3 etoiles
-  const SP = () => (cur().speed || 44) + (W && W.boostT > 0 ? (cur().isle ? 7 : 12) : 0);
+  const SP = () => ((cur().speed || 44) + (W && W.boostT > 0 ? (cur().isle ? 7 : 12) : 0) + (W && W.ground ? 3 : 0)) * (W && W.bumpT > 0 ? 0.82 : 1);
   const _rk = E.rocket;   // carburant illimite, jamais en panne
   E.rocket = (n) => { const r = _rk(n); return Object.assign({}, r, { tier: 2, fuel: 999 }); };
   E.softCrash = () => false;   // la mort = une explosion simple, pas de roule-boule
@@ -127,10 +127,10 @@ const CUP = SHAPES.map((s) => s.name);
     const T = run.T, lt = Math.max(0, g.flightTime || 0), w = U.clamp(1 - U.smooth(0.15, 2.9, lt), 0, 1);   // w : le decollage (1) -> la vue de course (0)
     const dR = run.dist > 1 ? run.dist : Math.min(0, -rk.pos.z), d = Math.max(0, run.dist), k = Math.min(1, (dt || 0.016) * (9 - 5.2 * w));
     relOf(T, Math.max(0, dR), rk.pos, rel);
-    const isl = !!(E.course && E.course.isle), kf = cur().open ? 0.85 : 0.5, dc = dR - (isl ? 11 : 8.5), d2 = dc + (isl ? 66 : 40), fx = rel.x * kf, fy = rel.y * (kf * 0.8);
-    const pa = T.at(dc, T.laneX(Math.max(0, dc)) + fx, T.laneY(Math.max(0, dc)) + (isl ? 4.6 : 2.2) + fy), pb = T.at(d2, T.laneX(Math.max(0, d2)) + fx, T.laneY(Math.max(0, d2)) + 0.2 + fy);
+    const isl = !!(E.course && E.course.isle), kf = cur().open ? 0.85 : 0.5, dc = dR - (isl ? 6.5 : 8.5), d2 = dc + (isl ? 30 : 40), fx = rel.x * kf, fy = rel.y * (kf * 0.8);
+    const pa = T.at(dc, T.laneX(Math.max(0, dc)) + fx, T.laneY(Math.max(0, dc)) + (isl ? 2.4 : 2.2) + fy), pb = T.at(d2, T.laneX(Math.max(0, d2)) + fx, T.laneY(Math.max(0, d2)) + 0.2 + fy);
     camP.set(pa[0], Math.max(pa[1], T.base(Math.max(0, dc)) + 1.2), pa[2]); camL.set(pb[0], pb[1], pb[2]);
-    { const y0 = camP.y; camP.y = U.clamp(camP.y, rk.pos.y + 1.2, rk.pos.y + (isl ? 6.6 : 3.8)); camL.y += camP.y - y0; }   // la fusee ne sort jamais du champ (au depart, en plongee)
+    { const y0 = camP.y; camP.y = U.clamp(camP.y, rk.pos.y + 1.2, rk.pos.y + 3.8); camL.y += camP.y - y0; }   // la fusee ne sort jamais du champ (au depart, en plongee)
     if (W && W.free) {   // raccourci : la camera suit la fusee derriere elle
       const dv = tmp.copy(rk.vel).normalize(); camP.copy(rk.pos).addScaledVector(dv, -10).y += 3.4; camL.copy(rk.pos).addScaledVector(dv, 24);
       if (!rig._mv) { rig._mv = new V().copy(camP); rig._ml = new V().copy(camL); }
@@ -190,6 +190,7 @@ const CUP = SHAPES.map((s) => s.name);
     const T = run.T, d = Math.max(0, run.dist); frame(T, d);
     const sp = SP(), d2 = d + 8, ease = U.clamp(g.flightTime / 1.0, 0, 1);
     relOf(T, d, rk.pos, rel); const isl = !!(E.course && E.course.isle && W && W.props), F = isl ? (W.fall || (W.fall = { on: false, ctrl: 1, vy: 0, t: 0 })) : null; if (isl) isleStep(g, dt, E.course, d, F, rk);
+    if (isl && W) W.ground = rk.pos.y - (T.base(d) + E.course.isle.bank(d) * rel.x) < 3.6 && Math.abs(rel.x) < E.course.isle.W(d) && g.flightTime > 1.5;
     const hdn = hdnAt(T, d), crs = E.course, open = !!cur().open && !crs, LATx = crs ? (crs.isle ? crs.isle.W(d) + 40 : Math.max(3, crs.hw(d) - 1.9)) : open ? 26 : LAT, HUPx = crs ? crs.wh(d) - 1.3 : open ? 22 : HUP;
     if (crs && W && W.free) { freeFly(g, dt, T, crs, rk, run); return; }
     const cutHere = crs && W && crs.cuts.length && g.flightTime > 1.2 ? E.cutAt(crs, d) : null, LATL = cutHere && cutHere.side < 0 ? 70 : LATx, LATR = cutHere && cutHere.side > 0 ? 70 : LATx;
@@ -234,7 +235,7 @@ const CUP = SHAPES.map((s) => s.name);
     { const f = /[?&]racec=(\w+)/.exec(location.search); const one = f && COURSES.find((c) => c.name.replace(/\W/g, '') === f[1]); if (one) R.courses = [one, one, one]; }   // essai d'une course a la main
   };
   if (RACE) newSession();
-  const botD = (b, t, FN) => { let p; const tc = b.pc * b.tRun; if (!b.crash || t < tc) p = t / b.tRun; else if (t < tc + 2.5) p = b.pc; else p = (t - 2.5) / b.tRun; return FN * U.clamp(p, 0, 1); };
+  const botD = (b, t, FN) => { let p; const tc = b.pc * b.tRun; if (!b.crash || t < tc) p = t / b.tRun; else if (t < tc + 2.5) p = b.pc; else p = (t - 2.5) / b.tRun; return b.d0 + (FN - b.d0) * U.clamp(p, 0, 1); };
   const lanePos = (T, d, dx, dy, out) => { const p = T.at(d, T.laneX(d) + dx, T.laneY(d) + dy); return out.set(p[0], p[1], p[2]); };
   const SKIN_IDS = ['stock', 'gamin', 'bedon', 'fuseev', 'minutemec', 'hachette', 'croquette', 'baguette', 'tridentin', 'poisson', 'gardien', 'titanite', 'satanette', 'berthe', 'croissant', 'chaton', 'tsarini', 'maman', 'bombeh', 'colis', 'caillou', 'royale', 'neon', 'phenix', 'glace', 'toxique', 'samourai', 'galaxie', 'furtive'];
   const TRN = 16;   // points d'une traînée
@@ -265,16 +266,22 @@ const CUP = SHAPES.map((s) => s.name);
       grp.add(o); W.boosts.push({ d, off, dy, grp: o, taken: false });
     }
     // les pilotes IA : une Coupe = 32 pilotes, puis seuls les qualifies reviennent (16, puis 8). Chacun a son niveau : quelques-uns te battent, d'autres sont loin derriere
-    const T0 = FN / sp - 0.5, ids = SKIN_IDS.filter((id) => CC.Skins.byId[id]);
+    const T0 = (FN + 40) / sp - 0.5, ids = SKIN_IDS.filter((id) => CC.Skins.byId[id]);
     if (rd === 0 || !R.surv) {
       for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(sr() * (i + 1)); const t = ids[i]; ids[i] = ids[j]; ids[j] = t; }
       R.cast = []; for (let i = 0; i < R.field[0] - 1; i++) R.cast.push({ name: BOT_NAMES[(i * 7) % BOT_NAMES.length], skin: ids[i % ids.length], L: -0.02 + 0.2 * Math.pow(sr(), 1.25), off: (sr() - 0.5) * 13, dy: (sr() - 0.5) * 4, ph: sr() * 6.28 });
     }
     const cast = rd === 0 || !R.surv ? R.cast : R.surv;
+    // la grille de depart : 5 colonnes, le joueur a l'arriere du peloton, les plus rapides devant : on les rattrape un a un
+    const COLX = [-30, -15, 0, 15, 30], nb = cast.length, rowsN = Math.ceil((nb + 1) / 5), pr = Math.min(rowsN - 1, Math.round(rowsN * 0.72)), slots = [];
+    for (let r = 0; r < rowsN; r++) for (let q = 0; q < 5; q++) if (!(r === pr && q === 2)) slots.push([r, q]);
+    const order = cast.map((c, i) => [c.L + (sr() - 0.5) * 0.08, i]).sort((a, b) => a[0] - b[0]), slotOf = {}; order.forEach(([, i], k) => { slotOf[i] = slots[k] || [0, 2]; });
+    W.startRow = pr;
     cast.forEach((c, i) => {
       const cut = sr() < 0.18, pow = sr() < 0.25, slow = sr() < 0.2, crash = sr() < 0.18;
-      const tRun = Math.max(T0 * 0.8, T0 * (1 + c.L) + R.ease + gz() * 0.8 - (cut ? 1.0 : 0) - (pow ? 0.7 : 0) + (slow ? 0.8 : 0));
-      W.bots.push({ i, c, name: c.name, skin: c.skin, tRun, crash, pc: 0.2 + 0.6 * sr(), T: tRun + (crash ? 2.5 : 0), off: c.off, dy: c.dy, ph: c.ph, boom: false, d: 0, m: null, tr: null, hist: [], dead: false });
+      let tRun = Math.max(T0 * 0.8, T0 * (1 + c.L) + R.ease + gz() * 0.8 - (cut ? 1.0 : 0) - (pow ? 0.7 : 0) + (slow ? 0.8 : 0));
+      const sl = slotOf[i], hs = (pr - sl[0]) * 9, d0 = -40 + hs; tRun = Math.max(8, tRun * (FN - d0) / (FN + 40));
+      W.bots.push({ i, c, d0, gx: COLX[sl[1]], name: c.name, skin: c.skin, tRun, crash, pc: 0.2 + 0.6 * sr(), T: tRun + (crash ? 2.5 : 0), off: c.off, dy: c.dy, ph: c.ph, boom: false, d: 0, m: null, tr: null, hist: [], dead: false });
     });
     buildFinish(g, T, FN, grp);
   };
@@ -310,27 +317,30 @@ const CUP = SHAPES.map((s) => s.name);
     }
     if (W.props) for (const bl of W.props.blocks) if (!bl.taken) { bl.g.rotation.y += dt * 2.2; bl.m.rotation.x += dt * 1.5; bl.m.position.y = Math.sin(t * 3 + bl.d) * 0.35; }
     if (fin) { for (const b of W.bots) { if (b.m) b.m.visible = false; if (b.tr) b.tr.visible = false; } return; }   // apres l'arrivee, plus de pilotes a l'ecran
-    let ahead = 0, lead = null; const vis = [];
+    let ahead = 0, lead = null; const vis = [], pd = run.dist > 1 ? run.dist : -rk.pos.z; if (W.bumpT > 0) W.bumpT -= dt;
     for (const b of W.bots) {
-      b.d = botD(b, t, FN); if (b.d > Math.max(0, run.dist)) { ahead++; if (!lead || b.d > lead.d) lead = b; }
+      b.d = botD(b, t, FN); if (b.d > pd) { ahead++; if (!lead || b.d > lead.d) lead = b; }
       const tc = b.pc * b.tRun, hidden = b.crash && t >= tc + 0.3 && t < tc + 2.5;
       if (b.crash && !b.boom && t >= tc && Math.abs(b.d - run.dist) < 220) { b.boom = true; lanePos(T, b.d, bOff(b, b.d), b.dy, tmp2); try { g.effects.explosion(tmp2.clone(), new V(0, 1, 0), false, 'orange'); } catch (e) { /* effets */ } }
-      if (t > 0.2 && Math.abs(b.d - run.dist) < 260 && !hidden) vis.push(b); else if (b.m) { b.m.visible = false; b.tr.visible = false; }
+      if (Math.abs(b.d - pd) < 200 && !hidden) vis.push(b); else if (b.m) { b.m.visible = false; b.tr.visible = false; }
     }
-    vis.sort((a, c) => Math.abs(a.d - run.dist) - Math.abs(c.d - run.dist));
+    vis.sort((a, c) => (Math.abs(a.d - pd) - (a.d > pd ? 15 : 0)) - (Math.abs(c.d - pd) - (c.d > pd ? 15 : 0)));
+    const MAXV = t < 3.6 ? 40 : 5;   // au depart on voit tout le monde ; ensuite au plus 5 pilotes a l'ecran
     for (let k = 0; k < vis.length; k++) {
-      const b = vis[k]; if (k >= 12) { if (b.m) { b.m.visible = false; b.tr.visible = false; } continue; }
+      const b = vis[k]; if (k >= MAXV) { if (b.m) { b.m.visible = false; b.tr.visible = false; } continue; }
       if (!b.m) rivalMesh(g, b);
       const wf = bOff(b, b.d) !== b.off ? bOff(b, b.d) / (b.off || 1) : 1, wob = 1.5 * Math.sin(t * 1.3 + b.ph) * (E.course ? 0.55 : 1), wob2 = 1.5 * Math.sin((t + 0.12) * 1.3 + b.ph) * (E.course ? 0.55 : 1);
-      lanePos(T, b.d, bOff(b, b.d) + wob, b.dy, b.m.position); lanePos(T, b.d + 6, bOff(b, b.d + 6) + wob2, b.dy, tmp2); b.m.lookAt(tmp2); b.m.visible = true;
+      { const s1 = U.clamp(t / 4.5, 0, 1), ss = s1 * s1 * (3 - 2 * s1), s2 = U.clamp(t / 2.4, 0, 1), sv = s2 * s2 * (3 - 2 * s2), lx1 = b.gx === undefined ? bOff(b, b.d) + wob : (b.gx + (bOff(b, b.d) + wob - b.gx) * ss);
+        lanePos(T, b.d, lx1, b.dy, b.m.position); lanePos(T, b.d + 6, b.gx === undefined ? bOff(b, b.d + 6) + wob2 : (b.gx + (bOff(b, b.d + 6) + wob2 - b.gx) * ss), b.dy, tmp2);
+        if (b.gx !== undefined && sv < 1) { const dk = T.at(b.d, lx1, (E.course && E.course.isle ? E.course.isle.bank(b.d) * lx1 : 0) + 0.9)[1]; b.m.position.y = dk + (b.m.position.y - dk) * sv; tmp2.y = dk + (tmp2.y - dk) * sv + 0.6 * (1 - sv); }   // sur les rampes au depart, puis elles decollent
+        b.m.lookAt(tmp2); b.m.visible = true; }
       if (E.course) b.m.rotateZ(U.clamp(-E.course.rate(b.d) * (cur().speed || 46) * 0.2, -0.75, 0.75) + 0.12 * Math.cos(t * 1.3 + b.ph));   // la fusee se penche dans les virages (et un peu quand elle bouge sur le cote)
       { const dn = rk.active ? rk.pos.distanceTo(b.m.position) : 99, op = U.clamp((dn - 4) / 11, 0.22, 1); for (const q of b.mats) q.opacity = op; b.tr.material.opacity = 0.55 * op; }   // une fusee rivale trop proche devient transparente
       b.hist.unshift(b.m.position.clone()); if (b.hist.length > TRN) b.hist.pop(); b.tr.visible = true; updRibbon(b);
-      if (flying && !fin && !b.hit && rk.shieldT <= 0 && rk.pos.distanceTo(b.m.position) < 3.8) {
-        b.hit = true;   // on fonce dans un pilote : il explose (un mort pour toi), il perd du temps
-        b.crash = true; b.pc = t / b.tRun; b.boom = true; b.T += 2.5; R.roundKills++; R.kills++;
-        try { g.effects.explosion(b.m.position.clone(), new V(0, 1, 0), false, 'orange'); g.audio.play('boomSmall', b.m.position); } catch (e) { /* effets */ }
-        b.m.visible = false; b.tr.visible = false; W.boostT = Math.max(W.boostT, 0.6);
+      if (flying && !fin && t > 1.5) {   // on touche un pilote : les deux rebondissent (etincelles, un peu de vitesse en moins), personne ne meurt
+        const dn2 = rk.pos.distanceTo(b.m.position);
+        if (!b.bump && dn2 < 3.6) { b.bump = true; b.T += 0.5; W.bumpT = 0.45; try { g.effects.flash(rk.pos.clone().lerp(b.m.position, 0.5), '#ffe2a8', 3, 50, 0.25, '#ffb030'); g.audio.play('target'); } catch (e) { /* effets */ } }
+        else if (b.bump && dn2 > 9) b.bump = false;
       }
     }
     W.lead = lead; R.live = 1 + ahead;
@@ -557,14 +567,20 @@ const CUP = SHAPES.map((s) => s.name);
       UI.text(ctx, ord(R.live) + ' / ' + R.field[rd], cx + len / 2 + S(165), cy + S(2), S(84), '#FFD23A', { outline: true });
       UI.text(ctx, 'MANCHE ' + R.round + '/3', cx - len / 2 - S(150), cy + S(2), S(46), '#ffffff', { outline: true });
       // qualifies : combien de pilotes ont deja franchi la ligne
-      const qn = Math.min(R.keep[rd], W.bots.filter((b) => b.T <= tNow).length), qx = W0 - S(150), qy = H * 0.5;
+      const ISL = !!(E.course && E.course.isle);
+      if (!ISL) { const qn = Math.min(R.keep[rd], W.bots.filter((b) => b.T <= tNow).length), qx = W0 - S(150), qy = H * 0.5;
       ctx.save(); UI.rrect(ctx, qx - S(120), qy - S(66), S(240), S(132), S(30)); ctx.fillStyle = 'rgba(12,18,30,0.62)'; ctx.fill(); ctx.lineWidth = S(5); ctx.strokeStyle = '#ffffff'; ctx.stroke(); ctx.restore();
-      UI.text(ctx, qn + ' / ' + R.keep[rd], qx, qy - S(12), S(66), qn >= R.keep[rd] ? '#FF5A4A' : '#7CFF6A', { outline: true }); UI.text(ctx, rd === 2 ? 'VICTOIRE' : 'QUALIFIES', qx, qy + S(42), S(34), '#ffffff', {});
+      UI.text(ctx, qn + ' / ' + R.keep[rd], qx, qy - S(12), S(66), qn >= R.keep[rd] ? '#FF5A4A' : '#7CFF6A', { outline: true }); UI.text(ctx, rd === 2 ? 'VICTOIRE' : 'QUALIFIES', qx, qy + S(42), S(34), '#ffffff', {}); }
       // morts : un crane et le nombre de pilotes que tu as fait exploser ; pieces
-      { const kx = S(86), ky = H * 0.19; ctx.save(); ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#0b0d12'; ctx.lineWidth = S(5); ctx.beginPath(); ctx.arc(kx, ky - S(6), S(26), 0, 6.283); ctx.fill(); ctx.stroke(); ctx.fillRect(kx - S(13), ky + S(10), S(26), S(15)); ctx.strokeRect(kx - S(13), ky + S(10), S(26), S(15)); ctx.fillStyle = '#0b0d12'; ctx.beginPath(); ctx.arc(kx - S(10), ky - S(8), S(6.5), 0, 6.283); ctx.arc(kx + S(10), ky - S(8), S(6.5), 0, 6.283); ctx.fill(); ctx.restore(); UI.text(ctx, String(R.kills), kx + S(76), ky, S(56), '#ffffff', { outline: true }); }
+      if (R.kills > 0) { const kx = S(86), ky = H * 0.19; ctx.save(); ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#0b0d12'; ctx.lineWidth = S(5); ctx.beginPath(); ctx.arc(kx, ky - S(6), S(26), 0, 6.283); ctx.fill(); ctx.stroke(); ctx.fillRect(kx - S(13), ky + S(10), S(26), S(15)); ctx.strokeRect(kx - S(13), ky + S(10), S(26), S(15)); ctx.fillStyle = '#0b0d12'; ctx.beginPath(); ctx.arc(kx - S(10), ky - S(8), S(6.5), 0, 6.283); ctx.arc(kx + S(10), ky - S(8), S(6.5), 0, 6.283); ctx.fill(); ctx.restore(); UI.text(ctx, String(R.kills), kx + S(76), ky, S(56), '#ffffff', { outline: true }); }
+      if (rk.active && g.state === 'FLIGHT' && !g.evoFinish && rk.vel.lengthSq() > 4) {   // reticule : ou la fusee va, 40 m devant
+        tmpHud.copy(rk.pos).addScaledVector(tmp.copy(rk.vel).normalize(), 40); CC.Curve.apply(tmpHud, g.camera).project(g.camera);
+        if (tmpHud.z < 1 && Math.abs(tmpHud.x) < 1.2 && Math.abs(tmpHud.y) < 1.2) { const rx = (tmpHud.x * 0.5 + 0.5) * W0, ry = (-tmpHud.y * 0.5 + 0.5) * H, rr = S(16); ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = S(3.5); ctx.beginPath(); ctx.arc(rx, ry, rr, 0, 6.283); ctx.moveTo(rx - rr * 1.7, ry); ctx.lineTo(rx - rr * 0.8, ry); ctx.moveTo(rx + rr * 0.8, ry); ctx.lineTo(rx + rr * 1.7, ry); ctx.stroke(); ctx.restore(); }
+      }
+      if (W.ground) UI.text(ctx, 'RASANT', cx, H * 0.8, S(40), '#7CFF6A', { outline: true });
       // les pseudos des pilotes a l'ecran et le premier
       const cam = g.camera, cpos = cam.position;
-      const named = W.bots.filter((b) => b.m && b.m.visible).map((b) => ({ b, dd: cpos.distanceTo(b.m.position) })).filter((o) => o.dd > 9 && o.dd < 110).sort((x, y) => x.dd - y.dd).slice(0, 4).map((o) => o.b);
+      const named = W.bots.filter((b) => b.m && b.m.visible).map((b) => ({ b, dd: cpos.distanceTo(b.m.position) })).filter((o) => o.dd > 9 && o.dd < 110).sort((x, y) => x.dd - y.dd).slice(0, 2).map((o) => o.b);
       for (const b of named) {
         tmpHud.copy(b.m.position); CC.Curve.apply(tmpHud, cam).project(cam); if (tmpHud.z > 1 || tmpHud.z < -1 || Math.abs(tmpHud.x) > 1.15 || Math.abs(tmpHud.y) > 1.15) continue;
         const sx = (tmpHud.x * 0.5 + 0.5) * W0, sy = (-tmpHud.y * 0.5 + 0.5) * H, k = U.clamp(46 / Math.max(10, cpos.distanceTo(b.m.position)), 0.5, 1.15);
