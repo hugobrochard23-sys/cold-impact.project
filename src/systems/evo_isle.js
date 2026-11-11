@@ -6,7 +6,7 @@
   const E = CC.EVO; if (!E || !E.on || !E.mkCourse) return;
   const T3 = THREE, U = CC.U, Z = CC.Zones, D = Z && Z.defs && Z.defs.campagne; if (!D) return;
   const FLY = 11, TOP = 9, S0 = -125;
-  const PAL = { blue: '#3aa6f0', pink: '#ff6fae', teal: '#42d6a4', yellow: '#ffc24a', purple: '#a77bff', asph: '#4b5059', asph2: '#585d67', sand: '#a99c7c', conc: '#8d9096' };
+  const PAL = { blue: '#3aa6f0', pink: '#ff6fae', teal: '#42d6a4', yellow: '#ffc24a', purple: '#a77bff', asph: '#4b5059', asph2: '#585d67', sand: '#a99c7c', conc: '#8d9096', moss: '#5f9e3c', mud: '#8a6a40', wood: '#a67c48', clay: '#c08550' };
   // les sections : nom, longueur, virage (+ droite), pente (descente ; negatif = on remonte), demi-largeur de l'ile, couleur du sol, inclinaison laterale
   const SEC_ARCH = [
     { n: 'depart', len: 150, turn: 0, slope: 0, W: 56, col: 'blue' },
@@ -29,7 +29,16 @@
     { n: 'pont', len: 220, turn: 0, slope: 0.04, W: 26, col: 'asph2' },
     { n: 'citadelle', len: 200, turn: 0, slope: -0.07, W: 46, col: 'conc' },
   ];
+  const SEC_JUNGLE = [   // la 3e carte : la jungle (mousse, terre, bois, argile) ; un obstacle signature par section
+    { n: 'depart', len: 170, turn: 0, slope: 0, W: 54, col: 'moss' },
+    { n: 'lianes', len: 260, turn: 40, slope: 0.07, W: 46, col: 'mud' },
+    { n: 'rondins', len: 260, turn: -50, slope: 0.12, W: 46, col: 'wood' },
+    { n: 'pont', len: 220, turn: 0, slope: -0.05, W: 26, col: 'clay' },
+    { n: 'totems', len: 260, turn: 50, slope: 0.1, W: 46, col: 'moss' },
+    { n: 'arrivee', len: 220, turn: -30, slope: 0.04, W: 52, col: 'mud' },
+  ];
   let SEC = SEC_ARCH;
+  E.jungleShape = SEC_JUNGLE.map((q, i) => [q.len, q.turn, q.slope, FLY, i === SEC_JUNGLE.length - 1 ? 24 : 17, TOP]);
   E.rangeShape = SEC_RANGE.map((s, i) => [s.len, s.turn, s.slope, FLY, i === SEC_RANGE.length - 1 ? 24 : 17, TOP]);
   E.isleShape = SEC.map((s, i) => [s.len, s.turn, s.slope, FLY, i === SEC.length - 1 ? 24 : 17, TOP]);
   const STARTS = []; const calcStarts = () => { STARTS.length = 0; let a = 0; for (const s of SEC) { STARTS.push(a); a += s.len; } }; calcStarts();
@@ -49,7 +58,7 @@
     return w;
   };
   E.mkIsle = (shape, variant, map) => {
-    SEC = map === 'range' ? SEC_RANGE : SEC_ARCH; calcStarts(); RIM.set(map === 'range' ? '#2f3238' : '#7a3cf0');
+    SEC = map === 'range' ? SEC_RANGE : map === 'jungle' ? SEC_JUNGLE : SEC_ARCH; calcStarts(); RIM.set(map === 'range' ? '#2f3238' : map === 'jungle' ? '#3a5a22' : '#7a3cf0');
     const C = E.mkCourse(shape, { fl: FLY, sw: 6 }), dEnd = C.len + 90, mir = variant === 1, W = mkW(dEnd);
     C.isle = { map: map || 'arch', boxes: [], variant: variant || 0, mir, W, dEnd, starts: STARTS, bank: (d) => (mir ? -1 : 1) * blend(d, 'bank', 0), PY: C.rel(C.len) - 90, sx: variant === 2 ? -1 : 1 };
     try { CC.CONFIG.render.viewDist = 480; } catch (e) { /* ignore */ }   // on voit les obstacles de plus loin
@@ -59,8 +68,6 @@
       for (const sg of [-1, 1]) B.push([d0, d1, sg > 0 ? hg.hw : -hg.hw - 1.4, sg > 0 ? hg.hw + 1.4 : -hg.hw, 0, hg.hh + 1]);
       B.push([d0, d1, -hg.hw - 1.4, hg.hw + 1.4, hg.hh, hg.hh + 1.4]);
       for (let k = -3; k <= 3; k++) B.push([hg.d + k * 6.5 - 0.7, hg.d + k * 6.5 + 0.7, -hg.hw, hg.hw, 16.4, 17.7]);
-      for (const sg of [-1, 1]) B.push([ct.d - 5.5, ct.d + 5.5, sg > 0 ? 36 : -50, sg > 0 ? 50 : -36, 0, 38]);
-      B.push([ct.d - 2.8, ct.d + 2.8, -38, 38, 25, 39]);   // le linteau et le parapet de la citadelle
     }
     return C;
   };
@@ -92,8 +99,6 @@
     S.bx(dc, 0, hh + 0.7, 2 * hw + 3, 1.4, len + 2, 'corrugated', '#6c7358', false);
     for (let k = -3; k <= 3; k++) S.bx(dc + k * 6.5, 0, 17, 2 * hw, 1.3, 1.4, 'metal', '#3d444c', false);   // les poutres des ponts roulants
     for (let k = -2; k <= 2; k++) S.glow(dc + k * 9, 0, hh - 2.2, '#ffe2a8', 16);
-    const cd = ct.d; for (const s of [-1, 1]) { S.bx(cd, s * 43, 19, 14, 38, 11, 'brick', '#9a8c7a', false); S.bx(cd, s * 43, 39, 15.4, 2.4, 12.4, 'concrete', '#8d9096', false); for (let k = -1; k <= 1; k++) for (const q of [-1, 1]) S.bx(cd + q * 5, s * 43 + k * 5, 41.4, 3, 2.6, 3, 'brick', '#9a8c7a', false); }
-    S.bx(cd, 0, 31, 76, 12, 5, 'brick', '#8c8576', false); S.bx(cd, 0, 38, 78, 2, 6, 'concrete', '#8d9096', false);   // le linteau de la citadelle, au-dessus des herses
   };
   const sceneDef = {
     len: [300, 300], noDoor: true, noChaos: true, gw: 46,
@@ -155,7 +160,7 @@
     'void main() {', '  vec2 p = vW.xz; float e = 0.7, h0 = hgt(p);',
     '  vec3 n = normalize(vec3(-(hgt(p + vec2(e, 0.0)) - h0) * 1.5, 1.0, -(hgt(p + vec2(0.0, e)) - h0) * 1.5));',
     '  vec3 V = normalize(cameraPosition - vW); float fres = pow(1.0 - max(dot(n, V), 0.0), 3.0);',
-    '  vec3 deep = vec3(0.05, 0.36, 0.66), shallow = vec3(0.20, 0.68, 0.86), sky = vec3(0.70, 0.88, 0.98);',
+    '  vec3 deep = vec3(0.14, 0.56, 0.84), shallow = vec3(0.42, 0.84, 0.95), sky = vec3(0.80, 0.93, 1.0);',
     '  vec3 col = mix(deep, shallow, clamp(0.5 + h0 * 0.35, 0.0, 1.0)); col = mix(col, sky, fres * 0.7);',
     '  vec3 R = reflect(-uSun, n); col += vec3(1.0, 0.96, 0.82) * pow(max(dot(R, V), 0.0), 80.0) * 1.3;',
     '  float crest = smoothstep(0.62, 1.0, h0 * 0.5 + 0.5 + sin(p.x * 0.31 + p.y * 0.23 + uTime * 1.3) * 0.06); col = mix(col, vec3(1.0), crest * 0.4);',
@@ -173,7 +178,7 @@
 
   // ---- marquages au sol (bandes de section, tirets, chevrons) et rambardes gonflables (piles de disques) ----
   const decals = (T, C) => {
-    const I = C.isle, pos = [], col = [], idx = [], tc = new T3.Color(), HZ = I.map === 'range' ? ['#1d1e22', '#f2c230'] : ['#2a2540', '#ffffff'], CHV = I.map === 'range' ? '#f2c230' : '#ffffff';
+    const I = C.isle, pos = [], col = [], idx = [], tc = new T3.Color(), HZ = I.map === 'range' ? ['#1d1e22', '#f2c230'] : I.map === 'jungle' ? ['#3a2a14', '#9ad25a'] : ['#2a2540', '#ffffff'], CHV = I.map === 'range' ? '#f2c230' : I.map === 'jungle' ? '#e8f5c0' : '#ffffff';
     const P = (d, lx) => T.at(d, lx, I.bank(d) * lx + 0.09);
     const quad = (a, b, c, d2, hex) => { const o = pos.length / 3; for (const p of [a, b, c, d2]) pos.push(p[0], p[1], p[2]); tc.set(hex); for (let k = 0; k < 4; k++) col.push(tc.r, tc.g, tc.b); idx.push(o, o + 1, o + 2, o, o + 2, o + 3); };
     STARTS.forEach((s, i) => { if (i === 0) return; const w = I.W(s) - 2.2;   // la jonction entre deux sections : plaque de seuil, rainure incrustee, filet clair, bandes de danger
@@ -186,7 +191,7 @@
     const m = new T3.Mesh(geo, new T3.MeshBasicMaterial({ vertexColors: true, side: T3.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); m.frustumCulled = false; return m;
   };
   const rails = (T, C) => {
-    const I = C.isle, list = [], rg = I.map === 'range', CY = rg ? ['#25262a', '#25262a', '#e8e8e8'] : ['#ff3b4d', '#ff9a1f', '#ff3b4d'];
+    const I = C.isle, list = [], rg = I.map === 'range', CY = rg ? ['#25262a', '#25262a', '#e8e8e8'] : I.map === 'jungle' ? ['#7a5634', '#5b3f25', '#4e9a3a'] : ['#ff3b4d', '#ff9a1f', '#ff3b4d'];
     for (let d = S0 + 12; d < I.dEnd - 10; d += 4) { const w = I.W(d) - 1.2; if (w < 8) continue; for (const sg of [-1, 1]) list.push([d, sg * w, 1, ((d / 4) | 0) % 5 === 0 ? 1 : 0]); }
     if (!rg) { const dv = STARTS[4]; for (let d = dv + 24; d < dv + 150; d += 3.6) list.push([d, 0, 1.15, 2]); I.boxes.push([dv + 24, dv + 150, -1.4, 1.4, 0, 3.2]); }   // le muret central qui separe les deux voies
     for (let d = S0 + 12; d < I.dEnd - 10; d += 8) { const w = I.W(d) - 1.2; if (w < 8) continue; I.boxes.push([d - 4, d + 4, w - 1.3, w + 1.3, 0, 3.1], [d - 4, d + 4, -w - 1.3, -w + 1.3, 0, 3.1]); }   // les rambardes sont solides
@@ -216,7 +221,7 @@
   E.isleBlob = () => { const m = new T3.Mesh(new T3.PlaneGeometry(1, 1), blobMat()); m.rotation.x = -Math.PI / 2; m.visible = false; m.frustumCulled = false; return m; };
   const cy = (rt, rb, h, c, n) => new T3.Mesh(new T3.CylinderGeometry(rt, rb, h, n || 10), mat(c));
   const STONE = ['#a39a8a', '#948b7c', '#b2a999'], WOOD = '#7a5634', WOODD = '#5b3f25';
-  const _v = new T3.Vector3(), RR = 0.95;   // RR : rayon de la fusee
+  const _v = new T3.Vector3(), RR = 0.8;   // RR : rayon de la fusee
   const segDist = (px, py, ax, ay, bx2, by2) => { const dx = bx2 - ax, dy = by2 - ay, l2 = dx * dx + dy * dy || 1, t = U.clamp(((px - ax) * dx + (py - ay) * dy) / l2, 0, 1); return Math.hypot(px - (ax + dx * t), py - (ay + dy * t)); };
   const obstacles = (T, C, grp) => {
     const I = C.isle, ups = [], hits = [], sx = I.sx, addHit = (d, f) => { f.d = d; hits.push(f); };
@@ -233,7 +238,7 @@
       const g = mk(d, lx), top = 25, L = 19, span = 14, A = 0.62; gantry(g, span, top, false, d, lx);
       const piv = new T3.Group(); piv.position.y = top - 0.6; g.add(piv);
       for (const z of [-0.9, 0.9]) { const r = rope(L - 1.8); r.position.set(0, -(L - 1.8) / 2, z); piv.add(r); }
-      const head = new T3.Group(); head.position.y = -L; piv.add(head); head.add(bx(5.2, 4, 5.2, '#d9382c')); const band = bx(5.4, 0.9, 5.4, '#ffd23a'); band.position.y = 0.4; head.add(band); const cap = bx(5.6, 0.8, 5.6, '#23262b'); cap.position.y = -2.2; head.add(cap); const eye = new T3.Mesh(new T3.TorusGeometry(0.5, 0.15, 8, 14), matS('#3a3d44')); eye.position.y = 2.3; head.add(eye); const steel = bx(5.5, 0.5, 5.5, '#9aa0aa'); steel.position.y = -0.9; head.add(steel);
+      const head = new T3.Group(); head.position.y = -L; piv.add(head); const hd = cy(2.7, 2.7, 5.6, '#d9382c', 22); hd.rotation.x = Math.PI / 2; head.add(hd); for (const z of [-2, 0, 2]) { const rg = cy(2.8, 2.8, 0.55, z === 0 ? '#ffd23a' : '#23262b', 22); rg.rotation.x = Math.PI / 2; rg.position.z = z; head.add(rg); } for (const z of [-2.9, 2.9]) { const cp = new T3.Mesh(new T3.SphereGeometry(2.45, 18, 12), matS('#9aa0aa')); cp.scale.set(1, 1, 0.4); cp.position.z = z; head.add(cp); } const eye = new T3.Mesh(new T3.TorusGeometry(0.5, 0.15, 8, 14), matS('#3a3d44')); eye.position.y = 2.7; head.add(eye);
       for (const sg of [-1, 1]) blob(g, sg * 14, 0, 11, 11); const hsh = blob(g, 0, 0, 8, 8);
       ups.push((t) => { piv.rotation.z = A * Math.sin(t * Math.PI * 2 / 3.2 + ph); hsh.position.x = L * Math.sin(piv.rotation.z); g.updateMatrixWorld(true); });
       addHit(d, (pos) => { const l = loc(g, pos); if (Math.abs(l.z) > 4) return false; const a = piv.rotation.z, hx = L * Math.sin(a), hy = top - 0.6 - L * Math.cos(a); return Math.hypot(l.x - hx, l.y - hy) < 2.7 + RR || segDist(l.x, l.y, 0, top - 0.6, hx, hy) < 0.45 + RR; });
@@ -279,23 +284,27 @@
       const mz = cy(1.1, 1.1, 0.3, '#111111', 12); mz.rotation.z = Math.PI / 2; mz.position.x = side * 7.9; tube.add(mz);
       for (const s2 of [-1, 1]) { const wh = cy(2.2, 2.2, 0.8, WOODD, 14); wh.rotation.x = Math.PI / 2; wh.position.set(0, 2.2, s2 * 4.4); g.add(wh); const hub = cy(0.7, 0.7, 1.0, '#23262b', 8); hub.rotation.x = Math.PI / 2; hub.position.set(0, 2.2, s2 * 4.4); g.add(hub); }
       const flash = new T3.Mesh(new T3.SphereGeometry(1.6, 10, 8), new T3.MeshBasicMaterial({ color: '#ffd27a', transparent: true, opacity: 0.9 })); flash.position.x = side * 9; tube.add(flash); flash.visible = false;
-      const rock = new T3.Mesh(new T3.IcosahedronGeometry(3.6, 1), mat('#8a8070')), mark = new T3.Mesh(new T3.RingGeometry(3, 4.6, 24), new T3.MeshBasicMaterial({ color: '#ff3b3b', transparent: true, opacity: 0.7, side: T3.DoubleSide })); mark.rotation.x = -Math.PI / 2; grp.add(rock, mark); rock.visible = mark.visible = false;
-      const P = 3.6, FL = 1.7, st0 = new T3.Vector3(), mzv = new T3.Vector3(); let live = null, lastK = null, fired = false;
-      ups.push((t) => { const k = (t + ph) % P, u = k / FL;
+      const rock = new T3.Mesh(new T3.SphereGeometry(2.2, 16, 12), matS('#2b2e33')), mark = new T3.Mesh(new T3.RingGeometry(3, 4.6, 24), new T3.MeshBasicMaterial({ color: '#ff3b3b', transparent: true, opacity: 0.7, side: T3.DoubleSide })); mark.rotation.x = -Math.PI / 2; grp.add(rock, mark); rock.visible = mark.visible = false;
+      const shards = []; for (let q = 0; q < 10; q++) { const sh = new T3.Mesh(new T3.IcosahedronGeometry(0.5 + Math.random() * 0.55, 0), mat(q % 3 ? '#4a4e55' : '#8a6a4a')); sh.visible = false; grp.add(sh); shards.push({ m: sh, v: new T3.Vector3() }); }
+      const P = 4.6, FL = 2.3, HH = 20, st0 = new T3.Vector3(), in0 = new T3.Vector3(), mzv = new T3.Vector3(); let live = null, lastK = null, fired = false, shat = true, shT = 9, lastT = 0, gy = 0;
+      ups.push((t) => { const dtt = Math.min(0.2, Math.max(0, t - lastT)); lastT = t; const k = (t + ph) % P, u = k / FL;
         if (lastK === null) lastK = k;
-        if (k < lastK) { fired = true; g.updateMatrixWorld(true); mzv.set(side * 8.6, 0, 0); tube.localToWorld(mzv); st0.copy(mzv); const fx = CC.game && CC.game.effects; try { fx.smokePuff(mzv.clone(), new T3.Vector3(0, 2, 0), 2.4, 1.6); fx.flash(mzv.clone(), '#ffe2a8', 6, 80, 0.25, '#ffb030'); CC.game.audio.play('boomSmall', mzv.clone()); } catch (e) { /* effets */ } }
-        lastK = k; tube.position.x = -side * 1.7 * Math.exp(-k * 6); flash.visible = k < 0.12;
-        const tl = -side * Math.abs(lx) * 0.55, wp = T.at(d, tl, I.bank(d) * tl);
+        if (k < lastK) { fired = true; shat = false; g.updateMatrixWorld(true); mzv.set(side * 8.6, 0, 0); tube.localToWorld(mzv); st0.copy(mzv); in0.set(side * 2.4, 0, 0); tube.localToWorld(in0); const fx = CC.game && CC.game.effects; try { fx.smokePuff(mzv.clone(), new T3.Vector3(0, 2, 0), 3, 1.8); fx.smokePuff(mzv.clone(), new T3.Vector3(side * 6, 3, 0), 2, 1.4); fx.flash(mzv.clone(), '#ffe2a8', 6, 80, 0.25, '#ffb030'); CC.game.audio.play('boomSmall', mzv.clone()); } catch (e) { /* effets */ } }
+        lastK = k; tube.position.x = -side * 1.9 * Math.exp(-k * 5); flash.visible = k < 0.12;
+        const tl = -side * Math.abs(lx) * 0.55, wp = T.at(d, tl, I.bank(d) * tl); gy = wp[1];
         mark.visible = fired && k < FL; mark.position.set(wp[0], wp[1] + 0.2, wp[2]); mark.scale.setScalar(0.7 + 0.5 * (1 - Math.min(1, k / FL)));
-        if (fired && u >= 0 && u < 1) { rock.position.set(lerp(st0.x, wp[0], u), lerp(st0.y, wp[1] + 3, u) + 10 * u * (1 - u), lerp(st0.z, wp[2], u)); rock.rotation.x = t * 5; rock.visible = true; live = rock.position; } else { rock.visible = false; live = null; } });
-      addHit(d, (pos) => !!live && pos.distanceTo(live) < 3.3 + RR);
+        live = null;
+        if (fired && u >= 0 && u < 1) { if (u < 0.05) rock.position.lerpVectors(in0, st0, u / 0.05); else { const w = (u - 0.05) / 0.95; rock.position.set(lerp(st0.x, wp[0], w), lerp(st0.y, wp[1] + 2.2, w) + 4 * HH * w * (1 - w), lerp(st0.z, wp[2], w)); } rock.rotation.x = t * 6; rock.visible = true; live = rock.position; }
+        else { rock.visible = false; if (fired && u >= 1 && !shat) { shat = true; shT = 0; const fx = CC.game && CC.game.effects; for (const sh of shards) { sh.m.position.set(wp[0], wp[1] + 1.2, wp[2]); sh.v.set((Math.random() - 0.5) * 16, 7 + Math.random() * 10, (Math.random() - 0.5) * 16); sh.m.scale.setScalar(1); sh.m.visible = true; } try { fx.smokePuff(new T3.Vector3(wp[0], wp[1] + 1, wp[2]), new T3.Vector3(0, 3, 0), 3.4, 1.6); fx.flash(new T3.Vector3(wp[0], wp[1] + 1.5, wp[2]), '#ffd9a0', 4, 60, 0.2, '#ff9a30'); CC.game.audio.play('boomSmall', new T3.Vector3(wp[0], wp[1], wp[2])); } catch (e) { /* effets */ } } }
+        if (shT < 1.6) { shT += dtt; for (const sh of shards) { sh.v.y -= 32 * dtt; sh.m.position.addScaledVector(sh.v, dtt); if (sh.m.position.y < gy + 0.4) { sh.m.position.y = gy + 0.4; sh.v.y *= -0.32; sh.v.x *= 0.6; sh.v.z *= 0.6; } sh.m.rotation.x += dtt * 7; sh.m.rotation.z += dtt * 5; if (shT > 1.1) sh.m.scale.setScalar(Math.max(0.01, (1.6 - shT) / 0.5)); } if (shT >= 1.6) for (const sh of shards) sh.m.visible = false; } });
+      addHit(d, (pos) => !!live && pos.distanceTo(live) < 2.7 + RR);
     };
     const gateRow = (d, lx, n, ph) => {   // rangee de herses : n ouvertures ; chaque herse monte et descend ; elle ne descend JAMAIS sur la fusee qui approche
       const g = mk(d, lx), HWL = 23, OW = 15, tot = n * OW, panels = [], lt = [], posts = [];
       for (let i = 0; i <= n; i++) blob(g, (i - n / 2) * OW, 0, 7, 8);
-      for (let i = 0; i <= n; i++) { const x = (i - n / 2) * OW, post = bx(3, HWL, 3.2, i % 2 ? '#a8402e' : '#f0e6d0'); post.position.set(x, HWL / 2, 0); g.add(post); posts.push(x); const cap = bx(3.6, 1, 3.6, '#23262b'); cap.position.set(x, HWL + 0.5, 0); g.add(cap); }
-      const lintel = bx(tot + 3, 2.2, 3.4, WOODD); lintel.position.y = HWL + 1.2; g.add(lintel); I.boxes.push([d - 1.8, d + 1.8, lx * sx - tot / 2 - 1.6, lx * sx + tot / 2 + 1.6, HWL, HWL + 2.4]);
-      for (let i = 0; i < n; i++) { const x = (i - (n - 1) / 2) * OW, pn = new T3.Group(); const panel = bx(OW - 3.2, HWL - 1, 1.2, '#ff4f9a'); panel.position.y = (HWL - 1) / 2; pn.add(panel); for (let k = 0; k < 4; k++) { const st = bx(OW - 3.2, 0.9, 1.3, k % 2 ? '#ffffff' : '#2a2540'); st.position.y = 0.6 + k * 0.9; pn.add(st); } pn.position.x = x; g.add(pn); panels.push({ pn, x }); lt.push(ph + i * 1.7); }
+      for (let i = 0; i <= n; i++) { const x = (i - n / 2) * OW, post = bx(3, HWL, 3.2, I.map === 'range' ? (i % 2 ? '#d9a21b' : '#4a5160') : (i % 2 ? '#a8402e' : '#f0e6d0')); post.position.set(x, HWL / 2, 0); g.add(post); posts.push(x); const cap = bx(3.6, 1, 3.6, '#23262b'); cap.position.set(x, HWL + 0.5, 0); g.add(cap); }
+      const lintel = bx(tot + 3, 2.2, 3.4, I.map === 'range' ? '#4a5160' : WOODD); lintel.position.y = HWL + 1.2; g.add(lintel); I.boxes.push([d - 1.8, d + 1.8, lx * sx - tot / 2 - 1.6, lx * sx + tot / 2 + 1.6, HWL, HWL + 2.4]);
+      for (let i = 0; i < n; i++) { const x = (i - (n - 1) / 2) * OW, pn = new T3.Group(); const panel = bx(OW - 3.2, HWL - 1, 1.2, I.map === 'range' ? '#5d6652' : '#ff4f9a'); panel.position.y = (HWL - 1) / 2; pn.add(panel); for (let k = 0; k < 4; k++) { const st = bx(OW - 3.2, 0.9, 1.3, I.map === 'range' ? (k % 2 ? '#d9a21b' : '#15151a') : (k % 2 ? '#ffffff' : '#2a2540')); st.position.y = 0.6 + k * 0.9; pn.add(st); } pn.position.x = x; g.add(pn); panels.push({ pn, x }); lt.push(ph + i * 1.7); }
       const PER = 7.2, yb = (k) => (k < 0.3 ? 0 : k < 0.42 ? 21 * (k - 0.3) / 0.12 : k < 0.82 ? 21 : 21 * (1 - (k - 0.82) / 0.18)); let last = 0;
       ups.push((t, rp) => { const dt = Math.max(0, Math.min(0.2, t - last)); last = t; const lc = rp ? loc(g, rp) : null;
         panels.forEach((p, i) => { let k = (lt[i] / PER) % 1; const near = lc && lc.z > -55 && lc.z < 5 && Math.abs(lc.x - p.x) < OW * 0.8; if (!(near && k >= 0.78 && k < 1)) lt[i] += dt; k = (lt[i] / PER) % 1; p.y = yb(k); p.pn.position.y = p.y; });
@@ -304,21 +313,79 @@
         for (const x of posts) if (Math.abs(l.x - x) < 1.5 + RR && Math.abs(l.z) < 1.7 + RR) return true;
         if (Math.abs(l.z) > 0.6 + RR) return false; for (const p of panels) if (Math.abs(l.x - p.x) < (OW - 3.2) / 2 + RR && l.y + RR > p.y && l.y - RR < p.y + HWL - 1) return true; return false; });
     };
+
+    const mines = (d, lx0, n, ph, step) => {   // mines flottantes : spheres a pointes qui montent et descendent, en quinconce ; on passe entre elles ou au-dessus
+      const g = mk(d, 0), ms = [], gap = step || 15; blob(g, 0, 0, 4, 4).visible = false;
+      for (let i = 0; i < n; i++) { const m = new T3.Group(), body = new T3.Mesh(new T3.SphereGeometry(2.3, 16, 12), matS('#b3261e')); m.add(body); const band = cy(2.36, 2.36, 0.7, '#15151a', 16); m.add(band);
+        for (let k = 0; k < 10; k++) { const a = k * 2.399963, y = 1 - (k + 0.5) / 5, r = Math.sqrt(Math.max(0, 1 - y * y)), sp = new T3.Mesh(new T3.ConeGeometry(0.42, 1.2, 8), mat('#8d939c')); sp.position.set(Math.cos(a) * r * 2.5, y * 2.5, Math.sin(a) * r * 2.5); sp.lookAt(sp.position.clone().multiplyScalar(2)); sp.rotateX(Math.PI / 2); m.add(sp); }
+        const x0 = lx0 * sx + (i - (n - 1) / 2) * gap, sh = blob(g, x0, 0, 7, 7); m.position.set(x0, 7, 0); g.add(m); ms.push({ m, x0, sh, i, y: 7, x: x0 }); }
+      ups.push((t) => { for (const o of ms) { o.y = 7 + 4.2 * Math.sin(t * 1.25 + ph + o.i * 1.9); o.x = o.x0 + 2.4 * Math.sin(t * 0.8 + ph + o.i); o.m.position.set(o.x, o.y, 0); o.m.rotation.y = t * 0.6; o.sh.position.x = o.x; } g.updateMatrixWorld(true); });
+      addHit(d, (pos) => { const l = loc(g, pos); if (Math.abs(l.z) > 4.5) return false; for (const o of ms) if (Math.hypot(l.x - o.x, l.y - o.y, l.z) < 3.2 + RR) return true; return false; });
+    };
+    const container = (d, lx, ph, amp) => {   // conteneur suspendu qui coulisse d'un cote a l'autre sous un rail
+      const g = mk(d, lx), top = 27; blob(g, 0, 0, 14, 12);
+      const rail = bx(2 * (amp + 16), 1.6, 1.8, '#4a5160'); rail.position.y = top; g.add(rail); for (const sg of [-1, 1]) { const pst = bx(2.4, top, 2.4, '#d9a21b'); pst.position.set(sg * (amp + 16), top / 2, 0); g.add(pst); I.boxes.push([d - 1.4, d + 1.4, lx * sx + sg * (amp + 16) - 1.4, lx * sx + sg * (amp + 16) + 1.4, 0, top + 1]); }
+      const cn = new T3.Group(); g.add(cn); const box = bx(12, 9, 9, '#c8742a'); cn.add(box); for (let k = -4; k <= 4; k++) { const rib = bx(0.5, 8.4, 9.3, '#a85a1c'); rib.position.x = k * 1.3; cn.add(rib); } const st = bx(12.2, 1, 9.2, '#15151a'); st.position.y = -4; cn.add(st); const st2 = bx(12.2, 1, 9.2, '#d9a21b'); st2.position.y = 4; cn.add(st2);
+      for (const sg of [-1, 1]) { const r = rope(top - 11); r.position.set(sg * 4, 11 + (top - 11) / 2, 0); cn.add(r); }
+      const hsh = blob(g, 0, 0, 13, 11), cyy = 7;
+      ups.push((t) => { cn.position.set(amp * Math.sin(t * 0.85 + ph), cyy, 0); hsh.position.x = cn.position.x; g.updateMatrixWorld(true); });
+      addHit(d, (pos) => { const l = loc(g, pos); return Math.abs(l.x - cn.position.x) < 6 + RR && Math.abs(l.z) < 4.5 + RR && Math.abs(l.y - cyy) < 4.5 + RR; });
+    };
+    const balloons = (d, n, ph) => {   // rangee de gros ballons gonflables qui montent et descendent (jamais le meme niveau deux fois de suite)
+      const g = mk(d, 0), W0 = Math.max(20, I.W(d) - 8), cols = ['#ff4f9a', '#ffd23a', '#2f8cff', '#7a3cf0', '#43d6a0'], bs = [];
+      for (let i = 0; i < n; i++) { const x = -W0 + (2 * W0) * (i + 0.5) / n, m = new T3.Mesh(new T3.SphereGeometry(3.6, 18, 14), matS(cols[i % 5])); m.scale.set(1, 1.12, 1); const knot = new T3.Mesh(new T3.ConeGeometry(0.7, 1, 8), mat(cols[i % 5])); knot.position.y = -4.3; knot.rotation.x = Math.PI; m.add(knot); const hl = new T3.Mesh(new T3.SphereGeometry(0.8, 8, 6), new T3.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.55 })); hl.position.set(-1.3, 1.6, 2.4); m.add(hl); g.add(m); const str = new T3.Mesh(new T3.CylinderGeometry(0.06, 0.06, 1, 4), mat('#f4f0e6')); g.add(str); const sh = blob(g, x, 0, 8, 8); bs.push({ m, x, str, sh, i, y: 8 }); }
+      ups.push((t) => { for (const o of bs) { o.y = 9 + 7.5 * Math.sin(t * 1.15 + ph + o.i * 2.1); o.m.position.set(o.x, o.y, 0); o.str.scale.y = o.y - 4; o.str.position.set(o.x, (o.y - 4) / 2, 0); } g.updateMatrixWorld(true); });
+      addHit(d, (pos) => { const l = loc(g, pos); if (Math.abs(l.z) > 4.5) return false; for (const o of bs) if (Math.hypot(l.x - o.x, (l.y - o.y) / 1.12, l.z) < 3.6 + RR) return true; return false; });
+    };
+
+    const vinePend = (d, lx, ph, dirz) => {   // liane-pendule : une grosse noix de coco au bout d'une liane, qui balance d'avant en arriere (dans l'axe de la piste)
+      const g = mk(d, lx), top = 27, L = 20, A = 0.7; blob(g, 0, 0, 9, 9); const hsh = blob(g, 0, 0, 7, 7);
+      const arm = bx(2 * 6 + 5, 1.6, 1.8, WOODD); arm.position.y = top + 0.4; g.add(arm); for (const sg of [-1, 1]) { const pst = bx(2.2, top + 1, 2.2, WOOD); pst.position.set(sg * 6, (top + 1) / 2, 0); g.add(pst); I.boxes.push([d - 1.3, d + 1.3, lx * sx + sg * 6 - 1.3, lx * sx + sg * 6 + 1.3, 0, top + 1]); }
+      const piv = new T3.Group(); piv.position.y = top - 0.4; g.add(piv); const r = rope(L - 2.4); r.position.y = -(L - 2.4) / 2; piv.add(r);
+      const head = new T3.Group(); head.position.y = -L; piv.add(head); const nut = new T3.Mesh(new T3.SphereGeometry(3, 16, 12), matS('#6b4a2a')); head.add(nut); for (const q of [[-1, 0.9, 2.4], [1, 1.1, 2.3], [0, -1.2, 2.7]]) { const eye = new T3.Mesh(new T3.SphereGeometry(0.45, 8, 6), mat('#2a1a0c')); eye.position.set(q[0], q[1], q[2]); head.add(eye); } const leaf = new T3.Mesh(new T3.ConeGeometry(1.2, 3, 6), mat('#3f9a44')); leaf.position.y = 3.2; head.add(leaf);
+      ups.push((t) => { piv.rotation.x = A * Math.sin(t * Math.PI * 2 / 3.4 + ph) * dirz; hsh.position.z = L * Math.sin(piv.rotation.x); g.updateMatrixWorld(true); });
+      addHit(d, (pos) => { const l = loc(g, pos); if (Math.abs(l.x) > 3.8 + RR) return false; const a = piv.rotation.x, hz = L * Math.sin(a), hy = top - 0.4 - L * Math.cos(a); return Math.hypot(l.z - hz, l.y - hy) < 3 + RR || segDist(l.z, l.y, 0, top - 0.4, hz, hy) < 0.4 + RR; });
+    };
+    const rollLog = (d, lx, ph, amp) => {   // rondin geant qui roule d'un bord a l'autre de la piste (il ne roule que sur le sol : on peut passer au-dessus)
+      const g = mk(d, lx), cyy = 3.2; const lg = new T3.Group(); g.add(lg); const body = cy(3.2, 3.2, 10, '#7a5634', 18); body.rotation.x = Math.PI / 2; lg.add(body);
+      for (const z of [-4.2, 0, 4.2]) { const bd = cy(3.3, 3.3, 0.6, '#3a2a14', 18); bd.rotation.x = Math.PI / 2; bd.position.z = z; lg.add(bd); } for (const z of [-5.05, 5.05]) { const ring = new T3.Mesh(new T3.TorusGeometry(2.2, 0.35, 8, 20), matS('#d8b480')); ring.position.z = z; lg.add(ring); }
+      const hsh = blob(g, 0, 0, 14, 11);
+      ups.push((t) => { const x = amp * Math.sin(t * 0.75 + ph); lg.position.set(x, cyy, 0); lg.rotation.z = -x / 3.2; hsh.position.x = x; g.updateMatrixWorld(true); });
+      addHit(d, (pos) => { const l = loc(g, pos); return Math.abs(l.z) < 5.4 + RR && Math.hypot(l.x - lg.position.x, l.y - cyy) < 3.2 + RR; });
+    };
+    const curtain = (d, n, ph) => {   // rideau de lianes : des lianes verticales qui ondulent ; on passe entre elles ou au-dessus
+      const g = mk(d, 0), W0 = Math.max(12, I.W(d) - 6), vs = [], top = 26;
+      const bar = bx(2 * W0 + 6, 1.4, 1.6, WOODD); bar.position.y = top + 0.6; g.add(bar);
+      for (let i = 0; i < n; i++) { const x = -W0 + (2 * W0) * (i + 0.5) / n, v = new T3.Group(); v.position.set(x, top, 0); g.add(v); const len = 18 + (i % 3) * 2, vr = cy(0.55, 0.45, len, '#3f8a3a', 8); vr.position.y = -len / 2; v.add(vr); for (let k = 0; k < 4; k++) { const lf = new T3.Mesh(new T3.ConeGeometry(0.9, 2.2, 5), mat('#5fbf4a')); lf.position.set(k % 2 ? 0.9 : -0.9, -3 - k * 4, 0); lf.rotation.z = k % 2 ? -1.1 : 1.1; v.add(lf); } vs.push({ v, x, len, i }); blob(g, x, 0, 4, 4); }
+      ups.push((t) => { for (const o of vs) o.v.rotation.z = 0.14 * Math.sin(t * 1.1 + ph + o.i * 0.8); g.updateMatrixWorld(true); });
+      addHit(d, (pos) => { const l = loc(g, pos); if (Math.abs(l.z) > 1.2 + RR || l.y > top + 1) return false; for (const o of vs) { const a = o.v.rotation.z, ex = o.x + Math.sin(a) * o.len, ey = top - Math.cos(a) * o.len; if (segDist(l.x, l.y, o.x, top, ex, ey) < 0.55 + RR) return true; } return false; });
+    };
+    const totem = (d, lx, ph, dir) => {   // totem de bois : mat central, trois bras a des hauteurs differentes qui tournent lentement
+      const g = mk(d, lx), HT = 26, arms = [6, 13, 20], R2 = 13; blob(g, 0, 0, 10, 10); I.boxes.push([d - 2.6, d + 2.6, lx * sx - 2.6, lx * sx + 2.6, 0, HT]);
+      const post = cy(2, 2.6, HT, '#7a5634', 14); post.position.y = HT / 2; g.add(post); for (let k = 0; k < 4; k++) { const rg = cy(2.8, 2.8, 0.7, k % 2 ? '#d8b480' : '#3a2a14', 14); rg.position.y = 3 + k * 6.5; g.add(rg); } const face = new T3.Mesh(new T3.SphereGeometry(2.6, 14, 10), matS('#a67c48')); face.position.y = HT + 1.2; g.add(face);
+      const rot = new T3.Group(); g.add(rot); const bars = []; arms.forEach((h, i) => { const ag = new T3.Group(); ag.position.y = h; ag.rotation.y = i * 1.05; const bar = bx(2 * R2, 1.5, 1.5, i % 2 ? '#c08550' : '#8a5a2a'); ag.add(bar); for (const sg of [-1, 1]) { const tip = new T3.Mesh(new T3.SphereGeometry(1.3, 10, 8), matS(i % 2 ? '#ffd23a' : '#d9382c')); tip.position.x = sg * R2; ag.add(tip); } rot.add(ag); bars.push({ ag, h }); });
+      ups.push((t) => { rot.rotation.y = dir * t * 0.55 + ph; g.updateMatrixWorld(true); });
+      addHit(d, (pos) => { const l = loc(g, pos); if (Math.hypot(l.x, l.z) < 2.6 + RR && l.y < HT + 3) return true; for (const b of bars) { if (Math.abs(l.y - b.h) > 0.75 + RR + 0.6) continue; const th = rot.rotation.y + b.ag.rotation.y, t2 = l.x * Math.cos(th) - l.z * Math.sin(th), pr = Math.abs(l.x * Math.sin(th) + l.z * Math.cos(th)); if (Math.abs(t2) < R2 + 1.3 + RR && pr < 0.75 + RR) return true; } return false; });
+    };
     const S = (name) => STARTS[SEC.findIndex((s) => s.n === name)];
-    if (I.map === 'range') {   // un seul obstacle par section (le champ de tir : les ennemis ; la falaise : le hangar)
+    if (I.map === 'jungle') {
+      { const s = S('lianes'); vinePend(s + 60, -20, 0, 1); vinePend(s + 60, 20, 1.7, -1); vinePend(s + 130, 0, 0.8, 1); vinePend(s + 195, -22, 2.4, -1); vinePend(s + 195, 22, 0.5, 1); }
+      { const s = S('rondins'); rollLog(s + 60, 0, 0, 26); rollLog(s + 120, 0, 2.2, 26); rollLog(s + 180, 0, 4.1, 26); }
+      { const s = S('pont'); curtain(s + 60, 4, 0); curtain(s + 120, 4, 2.1); curtain(s + 180, 4, 4.0); }
+      { const s = S('totems'); totem(s + 70, -16, 0, 1); totem(s + 70, 16, 2.6, -1); totem(s + 150, 0, 1.2, 1); totem(s + 220, -18, 3.6, -1); totem(s + 220, 18, 0.7, 1); }
+    } else if (I.map === 'range') {   // un seul obstacle par section (le champ de tir : les ennemis ; la falaise : le hangar)
       { const s = S('montee'); gateRow(s + 80, 0, 5, 0.4); gateRow(s + 160, 0, 5, 3.0); }
       { const s = S('canons'); for (let k = 0; k < 8; k++) { const side = k % 2 ? 1 : -1; cannon(s + 40 + k * 24, side * 38, side, k * 0.8); } }
-      { const s = S('incline'); hammer(s + 70, -15, 0); hammer(s + 70, 15, 1.7); hammer(s + 135, -15, 0.9); hammer(s + 135, 15, 2.6); }
-      { const s = S('pont'); sweeper(s + 55, 0, 0, 1); sweeper(s + 125, 0, 1.6, -1); }
-      { const s = S('citadelle'); gateRow(s + 110, 0, 5, 0.4); }
+      { const s = S('incline'); mines(s + 60, 0, 4, 0, 16); mines(s + 110, 8, 3, 2.1, 18); mines(s + 160, -8, 4, 4.0, 16); }
+      { const s = S('pont'); container(s + 55, 0, 0, 7); container(s + 120, 0, 2.4, 7); }
     } else {
     { const s = S('marteaux'); hammer(s + 70, -30, 0); hammer(s + 70, 0, 1.6); hammer(s + 70, 30, 3.2); hammer(s + 118, -15, 0.8); hammer(s + 118, 15, 2.4); }
     { const s = S('pont'); sweeper(s + 45, 0, 0, 1); sweeper(s + 100, 0, 1.6, -1); }
-    { const s = S('canons'); for (let k = 0; k < 6; k++) { const side = k % 2 ? 1 : -1; cannon(s + 22 + k * 22, side * 38, side, k * 0.55); } }
-    { const s = S('divise'); hammer(s + 62, -26, 0); hammer(s + 100, -26, 1.9); gateRow(s + 70, 26, 2, 0.5); gateRow(s + 118, 26, 2, 3.1); }
+    { const s = S('canons'); balloons(s + 45, 5, 0); balloons(s + 100, 5, 2.2); }
+    { const s = S('divise'); hammer(s + 62, -26, 0); hammer(s + 100, -26, 1.9); hammer(s + 62, 26, 1.1); hammer(s + 100, 26, 3.0); }
     { const s = S('incline'); windmill(s + 62, -24, 1); windmill(s + 62, 24, -1); windmill(s + 122, 0, 1); }
     { const s = S('remonte'); logp(s + 55, -30, 0); logp(s + 55, 0, 1.4); logp(s + 55, 30, 2.8); logp(s + 105, -15, 0.7); logp(s + 105, 15, 2.1); }
-    { const s = S('gate'); gateRow(s + 60, 0, 5, 0); gateRow(s + 116, 0, 5, 2.4); }
+    { const s = S('gate'); balloons(s + 55, 6, 1.0); balloons(s + 100, 6, 3.4); }
     }
     return { update: (t, rp) => { for (const f of ups) f(t, rp); }, hits };
   };
@@ -346,9 +413,26 @@
     }
     { const pl = [pole(40, '#ffd23a'), pole(40, '#ffd23a')], ban = new T3.Mesh(new T3.PlaneGeometry(38, 11.8), bm); pl[0].position.set(19.5, 20, 0); pl[1].position.set(-19.5, 20, 0); ban.position.set(0, 34, 0); ban.rotation.y = Math.PI; place(-6, 0, [pl[0], pl[1], ban]); }   // l'arche de depart
     { const sd = (n) => STARTS[SEC.findIndex((q) => q.n === n)];
-      const SG = I.map === 'range' ? [['CIBLES', sd('tir') - 40], ['HANGAR', sd('falaise') - 25], ['HERSES', sd('montee')], ['CANONS', sd('canons') - 40], ['MARTEAUX', sd('incline') - 10], ['PALES', sd('pont') - 25], ['HERSES', sd('citadelle') + 30]]
-        : [['MARTEAUX', sd('marteaux') - 10], ['PALES', sd('pont') - 35], ['CANONS', sd('canons') - 58], ['DEUX VOIES', sd('divise') - 18], ['MOULINS', sd('incline') - 18], ['TRONCS', sd('remonte') - 25], ['HERSES', sd('gate') - 20]];
-      for (const [txt, dd] of SG) for (const sg of [-1, 1]) { const w = I.W(dd); if (w < 16) continue; const po = pole(10, '#2a2b30'), pn = new T3.Mesh(new T3.PlaneGeometry(10, 3.5), new T3.MeshBasicMaterial({ map: signTex(txt), side: T3.DoubleSide, fog: false })); po.position.y = 5; pn.position.set(0, 9.4, 0); pn.rotation.y = Math.PI; place(dd, sg * (w - 5.5), [po, pn]); } }
+      const SG = I.map === 'jungle' ? [['LIANES', sd('lianes') - 15], ['ROULEAUX', sd('rondins') - 15], ['RIDEAUX', sd('pont') - 15], ['TOTEMS', sd('totems') - 15]] : I.map === 'range' ? [['CIBLES', sd('tir') - 40], ['HANGAR', sd('falaise') - 25], ['BARRIERES', sd('montee')], ['CANONS', sd('canons') - 40], ['MINES', sd('incline') - 10], ['CONTENEURS', sd('pont') - 25]]
+        : [['MARTEAUX', sd('marteaux') - 10], ['PALES', sd('pont') - 35], ['BALLONS', sd('canons') - 40], ['DEUX VOIES', sd('divise') - 18], ['MOULINS', sd('incline') - 18], ['TRONCS', sd('remonte') - 25], ['BALLONS', sd('gate') - 20]];
+      for (const [txt, dd] of SG) for (const sg of [-1, 1]) { const w = I.W(dd); if (w < 16) continue; const po = pole(10, '#ffd23a'), pn = new T3.Mesh(new T3.PlaneGeometry(10, 3.5), new T3.MeshBasicMaterial({ map: signTex(txt), side: T3.DoubleSide, fog: false })); po.position.y = 5; pn.position.set(0, 9.4, 0); pn.rotation.y = Math.PI; place(dd, sg * (w - 5.5), [po, pn]); } }
+    { const FNd = C.len, wF = I.W(FNd), rg = I.map === 'range', jg = I.map === 'jungle', hwB = Math.min(24, wF - 4), DEP = 54, HB = 30;   // l'arrivee : une ligne a damier au sol, puis on entre dans une grande boite
+      const cv = document.createElement('canvas'); cv.width = 256; cv.height = 32; const c2 = cv.getContext('2d'); for (let a = 0; a < 32; a++) for (let b = 0; b < 4; b++) { c2.fillStyle = (a + b) % 2 ? '#15151a' : '#ffffff'; c2.fillRect(a * 8, b * 8, 8, 8); }
+      const ct2 = new T3.CanvasTexture(cv); ct2.magFilter = T3.NearestFilter; ct2.anisotropy = 4;
+      const cm = new T3.MeshBasicMaterial({ map: ct2, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+      const line = new T3.Mesh(new T3.PlaneGeometry(2 * wF - 2, 10), cm); line.rotation.x = -Math.PI / 2; line.position.set(0, 0.2, 0);
+      const wc = rg ? '#4a5160' : jg ? '#7a5634' : '#7a3cf0', rc = rg ? '#2f3238' : jg ? '#3f9a44' : '#ff4f9a', tc = rg ? '#d9a21b' : '#ffd23a', objs = [line];
+      for (const sg of [-1, 1]) { const w = bx(3, HB, DEP, wc); w.position.set(sg * (hwB + 1.5), HB / 2, DEP / 2 + 1); objs.push(w); const st = bx(3.2, 2, DEP + 0.2, tc); st.position.set(sg * (hwB + 1.5), 3, DEP / 2 + 1); objs.push(st); const st2 = bx(3.2, 2, DEP + 0.2, tc); st2.position.set(sg * (hwB + 1.5), HB - 3, DEP / 2 + 1); objs.push(st2); }
+      const roof = bx(2 * hwB + 9, 3, DEP, rc); roof.position.set(0, HB + 1.5, DEP / 2 + 1); objs.push(roof);
+      const lint = new T3.Mesh(new T3.BoxGeometry(2 * hwB + 9, 6, 3.2), [mat(wc), mat(wc), mat(wc), mat(wc), new T3.MeshBasicMaterial({ map: ct2 }), new T3.MeshBasicMaterial({ map: ct2 })]); lint.material.forEach((q) => { if (q.map) q.map.repeat.set(1, 1); }); lint.position.set(0, HB - 3.5, 0); lint.scale.set(1, 1, 1); objs.push(lint);
+      const back = bx(2 * hwB + 9, HB, 2.4, wc); back.position.set(0, HB / 2, DEP + 2); objs.push(back);
+      for (const sg of [-1, 0, 1]) { const li = new T3.Mesh(new T3.BoxGeometry(1.6, 0.5, DEP - 4), new T3.MeshBasicMaterial({ color: '#fff3c4' })); li.position.set(sg * hwB * 0.55, HB - 0.2, DEP / 2 + 1); objs.push(li); }
+      const arrow = new T3.Mesh(new T3.PlaneGeometry(14, 14), new T3.MeshBasicMaterial({ color: tc, transparent: true, opacity: 0.0 })); objs.push(arrow);
+      place(FNd, 0, objs); I.boxes.push([FNd, FNd + DEP, -hwB - 3, -hwB, 0, HB + 3], [FNd, FNd + DEP, hwB, hwB + 3, 0, HB + 3], [FNd, FNd + DEP, -hwB - 3, hwB + 3, HB, HB + 3]); }
+    if (I.map === 'jungle') {   // arbres de jungle sur les bords : tronc, canopee ronde, lianes
+      for (let d = 60; d < C.len + 40; d += 34) for (const sg of [-1, 1]) { if (((d / 34) | 0) % 2 === (sg > 0 ? 0 : 1)) continue; const w = I.W(d); if (w < 22) continue; const lx = sg * (w - 6.5), h = 16 + ((d * 7) % 9), tr = cy(1.3, 1.9, h, '#6b4a2a', 10); tr.position.y = h / 2; const cn = []; for (const q of [[0, h + 2, 0, 5.2], [3.4, h - 1, 1.5, 3.8], [-3.2, h, -1.2, 4.1]]) { const c3 = new T3.Mesh(new T3.SphereGeometry(q[3], 14, 10), matS(q[3] > 5 ? '#3f9a44' : '#58b04a')); c3.position.set(q[0], q[1], q[2]); cn.push(c3); }
+        place(d, lx, [tr].concat(cn)); I.boxes.push([d - 1.5, d + 1.5, lx - 1.5, lx + 1.5, 0, h + 7]); }
+    }
     const ob = obstacles(T, C, grp); out.update = ob.update; out.hits = ob.hits;
     return out;
   };

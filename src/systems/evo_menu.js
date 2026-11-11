@@ -32,7 +32,7 @@
   const cupCard = (ctx, g, F, S) => {   // la carte de la Coupe : 3 manches + le paquet
     const { Y, cw, cx } = F, R = api.R, y = Y(0.60), h = S(250), w = cw * 0.92, x = cx - w / 2;
     UI.rrect(ctx, x, y, w, h, S(34)); ctx.fillStyle = 'rgba(24,18,70,0.86)'; ctx.fill(); ctx.lineWidth = S(5); ctx.strokeStyle = '#ffd23a'; ctx.stroke();
-    UI.text(ctx, (R.courses[0] && R.courses[0].map === 'range' ? "COUPE DU TERRAIN D'ESSAI" : 'COUPE DE L ARCHIPEL'), cx, y + S(38), S(50), '#FFD23A', { outline: true });
+    UI.text(ctx, 'COUPE COLD IMPACT', cx, y + S(38), S(50), '#FFD23A', { outline: true });
     const names = R.courses.map((c) => c.name), seg = (w - S(60)) / 4;
     for (let k = 0; k < 4; k++) {
       const sx = x + S(30) + k * seg, sy = y + S(80), sw = seg - S(12), sh = S(110), isPack = k === 3, cur = k === R.round - 1 && !isPack, done = k < R.round - 1;

@@ -78,7 +78,7 @@
   TP.laneY = function (d) { return E.course ? E.course.lift(d) : _ly.call(this, d); };
   TP.cx = function (d) { return E.course ? 0 : _cx.call(this, d); };
   TP.vol = function (d) { return E.course ? E.course.hw(Math.max(0, d)) + 140 : _vol.call(this, d); };   // les murs du monde sont loin derriere le couloir
-  TP.env = function (zi) { const e = _env.call(this, zi); if (E.course && e && !e._crs) { e._crs = 1; if (e.fog) e.fog.color = '#c4e2f8'; if (e.sky) { e.sky.top = '#3f9bf0'; e.sky.horizon = '#d4ecff'; e.sky.bottom = '#b9dcf6'; } } return e; };   // ciel bleu clair (au lieu du gris-vert)
+  TP.env = function (zi) { const e = _env.call(this, zi); if (E.course && e && !e._crs) { e._crs = 1; if (e.fog) e.fog.color = '#d4eafc'; if (e.sky) { e.sky.top = '#5db4ff'; e.sky.horizon = '#e4f5ff'; e.sky.bottom = '#c6e6fa'; } } return e; };   // ciel bleu clair (au lieu du gris-vert)
   if (CC.Pieces && CC.Pieces.far) { const _far = CC.Pieces.far; CC.Pieces.far = function () { if (!E.course) return _far.apply(this, arguments); }; }   // pas de grandes silhouettes grises au loin
 
   { let nh = !!E.noHorizon; try { Object.defineProperty(E, 'noHorizon', { configurable: true, get() { return !!E.course || nh; }, set(v) { nh = v; } }); } catch (e) { /* ignore */ } }   // pas d'anneau d'horizon (collines et pins peints) : on est loin au-dessus du sol

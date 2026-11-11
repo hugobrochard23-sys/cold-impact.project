@@ -76,3 +76,11 @@ Sonnet 5.5 effort MOYEN (faible pour les retouches mecaniques, eleve seulement p
 - Terrain d'essai allonge (~50 s, 8 sections, montees/descentes/devers).
 - 4 skins : requin, pirate, malicieuse, casquette (models.js : s/mir/seg).
 - Non verifie : rendu des 4 skins en menu, ressenti des collisions (autopilote bloque sur portes, normal).
+
+## v381 (retours de test v380)
+- Collisions : on est retenu et ralenti (plus de deviation de cap ni de rebond), camera sans secousse, plus de demi-tour interdit hors de l'ile.
+- Qualifies : encadre "x / 16" visible aussi sur les iles ; si toutes les places sont prises avant ton arrivee -> manche perdue (R.last.late).
+- Arrivee : ligne a damier au sol + grande boite (tunnel) a la fin de chaque carte ; plus de citadelle ; les rivaux entrent dans la boite et disparaissent.
+- Bots : hesitations aleatoires (b.hz/b.slow) ; rayon fusee 0.8 (plus permissif).
+- Obstacles par carte : ARCHIPEL = marteaux (tete ronde), balayeurs, ballons, moulins, troncs ; TERRAIN D'ESSAI = herses militaires, canons (boulet de fonte, trajectoire haute, se brise en eclats), mines flottantes, conteneurs suspendus ; JUNGLE (nouvelle) = lianes-pendules, rondins rouleurs, rideaux de lianes, totems. Manche 1 archipel, manche 2 terrain d'essai, manche 3 jungle.
+- Mer et ciel plus clairs ; poteaux de panneaux jaunes ; menu course : piste d'asphalte (plus de hangar) + fusees alignees.

@@ -51,6 +51,7 @@
     { name: 'SERPENT', seed: 37, shape: [[140, 0, 0.08, 22, 15], [220, -90, 0.2, 20, 9], [200, 180, 0.2, 22, 8], [160, -160, 0.16, 30, 7], [120, 0, 0.55, 46, 9, 4], [300, 270, 0.07, 24, 7], [150, 0, 0.06, 14, 5.5], [250, -120, 0.2, 22, 9], [170, 0, 0.04, 14, 17]] }
   ];
   for (const s0 of SHAPES) { s0.zone = 'campagne'; s0.speed = 46; s0.cap = 0; s0.scenes = E.courseScenes || ['rampe', 'camp']; COURSES.unshift(s0); }
+  if (E.jungleShape) COURSES.unshift({ name: 'JUNGLE', map: 'jungle', variant: 0, seed: 11, isle: true, shape: E.jungleShape, zone: 'campagne', speed: 36, cap: 0, scenes: E.isleScenes || ['crsI0'] });
   if (E.rangeShape) COURSES.unshift({ name: 'TERRAIN D ESSAI', map: 'range', variant: 0, seed: 9, isle: true, shape: E.rangeShape, zone: 'campagne', speed: 36, cap: 0, scenes: E.isleScenes || ['crsI0'] });
   if (E.isleShape) { const mir = E.isleShape.map((q) => [q[0], -q[1]].concat(q.slice(2))); [[2, mir], [1, mir], [0, E.isleShape]].forEach(([v, sh]) => COURSES.unshift({ name: 'ARCHIPEL ' + (v + 1), variant: v, seed: 5, isle: true, shape: v === 2 ? E.isleShape : sh, zone: 'campagne', speed: 36, cap: 0, scenes: E.isleScenes || ['crsI0'] })); }   // v370 : l'ile (la Coupe se court dessus)
 const CUP = SHAPES.map((s) => s.name);
@@ -185,7 +186,7 @@ const CUP = SHAPES.map((s) => s.name);
     return false;
   };
   const isleHit = (g, rk) => { if (g.flightTime < 1.2 || !W.props || !W.props.hits) return false; for (const f of W.props.hits) if (f(rk.pos)) return true; return false; };
-  const contactFx = (g, rk, big) => { if (W.hitCd > 0) return; W.hitCd = 0.35; try { g.audio.play('shield'); g.rig.shake = big ? 0.5 : 0.25; g.effects.flash(rk.pos.clone(), '#ffd9a0', 3, 50, 0.2, '#ff9a30'); } catch (e) { /* effets */ } };   // son et etincelles d'un contact (pas de penalite de temps : on perd de la vitesse et des places)
+  const contactFx = (g, rk, big) => { if (W.hitCd > 0) return; W.hitCd = 0.35; try { g.audio.play('shield'); g.rig.shake = big ? 0.12 : 0.05; g.effects.flash(rk.pos.clone(), '#ffd9a0', 3, 50, 0.2, '#ff9a30'); } catch (e) { /* effets */ } };   // son et etincelles d'un contact (pas de penalite de temps : on perd de la vitesse et des places)
   const hitPenalty = (g, rk, dir) => {   // un obstacle : la fusee rebondit, perd 1,5 s et de la vitesse ; elle ne meurt pas
     rk.shieldT = 1.3; W.slowT = 0.8; g.flightTime += 1.5; R.penT = performance.now(); R.penAmt = 1.5; W.kickT = (Math.random() < 0.5 ? -1 : 1) * 11; dir.y = Math.max(dir.y, 0.15); dir.normalize();
     try { g.audio.play('shield'); g.rig.shake = 0.6; g.effects.flash(rk.pos.clone(), '#ffd9a0', 4, 60, 0.25, '#ff9a30'); } catch (e) { /* effets */ }
@@ -199,7 +200,7 @@ const CUP = SHAPES.map((s) => s.name);
     if (I.mode === 'keys') { const k = I.k, yi = (k.ArrowRight || k.KeyD ? 1 : 0) - (k.ArrowLeft || k.KeyA ? 1 : 0), pi = (k.ArrowUp || k.KeyW ? 1 : 0) - (k.ArrowDown || k.KeyS ? 1 : 0); dir.applyAxisAngle(UPV, -yi * rate * dt); dir.y += pi * rate * dt * 0.8; dir.normalize(); }
     else { const cam = g.camera; org.copy(cam.position); if (/[?&]ap=1/.test(location.search)) { const q = T.at(d + 45, 0, T.laneY(d + 45) + 1); ray.set(q[0] - rk.pos.x, q[1] - rk.pos.y, q[2] - rk.pos.z).normalize(); } else ray.set(I.cx, -(I.cy * 2 - 1), 0.5).unproject(cam).sub(org).normalize(); const ang = dir.angleTo(ray); if (ang > 1e-4) { const t = Math.min(1, rate * dt / ang) * Math.min(1, ang / 0.18); dir.lerp(ray, t).normalize(); } }
     if (Math.abs(dir.y) > 0.82) { const hx = Math.hypot(dir.x, dir.z) || 1, sc = Math.sqrt(1 - 0.82 * 0.82) / hx; dir.set(dir.x * sc, Math.sign(dir.y) * 0.82, dir.z * sc); }
-    { const hx = Math.hypot(dir.x, dir.z) || 1; if ((dir.x * tf.x + dir.z * tf.z) / hx < -0.25) { dir.x += tf.x * dt * 4; dir.z += tf.z * dt * 4; dir.normalize(); } }   // on ne fait pas demi-tour
+    if (Math.abs(rel.x) < I2.W(d) + 6) { const hx = Math.hypot(dir.x, dir.z) || 1; if ((dir.x * tf.x + dir.z * tf.z) / hx < -0.25) { dir.x += tf.x * dt * 4; dir.z += tf.z * dt * 4; dir.normalize(); } }   // on ne fait pas demi-tour
     if (F.on || F.ctrl < 1) { dir.y -= (1 - F.ctrl) * dt * 1.9; dir.normalize(); sp *= 1 + 0.22 * (1 - F.ctrl); }
     const dk = T.base(d) + I2.bank(d) * rel.x, over = Math.abs(rel.x) < I2.W(d) - 0.3 && !F.on && F.ctrl >= 1;
     if (over) { if (rk.pos.y < dk + 2.2) { rk.pos.y = dk + 2.2; if (dir.y < 0) { dir.set(dir.x, 0, dir.z).normalize(); } } if (rk.pos.y > dk + 27 && dir.y > 0) dir.set(dir.x, 0, dir.z).normalize(); }
@@ -214,11 +215,11 @@ const CUP = SHAPES.map((s) => s.name);
           const sg = kk % 2 === 0 ? -1 : 1, axis = kk < 2 ? tf : kk < 4 ? nn : UPV;
           rk.pos.addScaledVector(axis, sg * cc[kk]);   // repoussee hors de l'objet
           const nrm = tmp.copy(axis).multiplyScalar(sg), dn = dir.dot(nrm);
-          if (dn < 0) { if (dn < -0.7) { dir.addScaledVector(nrm, -1.5 * dn); W.slowT = 0.5; } else dir.addScaledVector(nrm, -dn); dir.normalize(); }
+          if (dn < -0.3) W.slowT = Math.max(W.slowT || 0, 0.45);   // bloquee : on garde son cap, on est juste retenue puis ralentie un instant
           contactFx(g, rk, dn < -0.7);
         }
       }
-      if (isleHit(g, rk)) { rk.pos.copy(prev); dir.multiplyScalar(-0.45); dir.y += 0.12; dir.normalize(); W.slowT = 0.5; contactFx(g, rk, true); }   // un obstacle mobile : retour a la derniere position libre, rebond
+      if (isleHit(g, rk)) { rk.pos.copy(prev); W.slowT = Math.max(W.slowT || 0, 0.7); contactFx(g, rk, true); }   // un obstacle mobile : retour a la derniere position libre, rebond
     }
     prev.copy(rk.pos);
     rk.vel.copy(dir).multiplyScalar(sp); if (W.kick) rk.vel.addScaledVector(nn, W.kick);
@@ -272,9 +273,9 @@ const CUP = SHAPES.map((s) => s.name);
   const gz = () => (sr() + sr() + sr() + sr() - 2) * 1.7;
   const ord = (n) => (n === 1 ? '1ER' : n + 'E');
   const newSession = () => {
-    sSeed = ((Date.now() & 0xffffff) + 17 * (++R.session)) >>> 0; R.surv = null; const wantRange = R.session % 2 === 0, isl = COURSES.filter((c) => c.isle && (c.map === 'range') === wantRange), pool = isl.length ? isl : COURSES.filter((c) => c.shape);   // les parties alternent : l'archipel, puis le terrain d'essai
-    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(sr() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
-    R.courses = [pool[0], pool[1 % pool.length], pool[2 % pool.length]]; R.round = 1; R.last = null; R.kills = 0; R.coins = 0; R.deaths = 0; R.roundKills = 0;
+    sSeed = ((Date.now() & 0xffffff) + 17 * (++R.session)) >>> 0; R.surv = null; const arch = COURSES.filter((c) => c.isle && c.map !== 'range' && c.map !== 'jungle'), rng = COURSES.find((c) => c.map === 'range'), jun = COURSES.find((c) => c.map === 'jungle');   // une carte par manche : l'archipel, puis le terrain d'essai, puis la jungle
+    for (let i = arch.length - 1; i > 0; i--) { const j = Math.floor(sr() * (i + 1)); const t = arch[i]; arch[i] = arch[j]; arch[j] = t; }
+    const a0 = arch[0] || COURSES.find((c) => c.shape); R.courses = [a0, rng || arch[1 % Math.max(1, arch.length)] || a0, jun || arch[2 % Math.max(1, arch.length)] || a0]; R.round = 1; R.last = null; R.kills = 0; R.coins = 0; R.deaths = 0; R.roundKills = 0;
     { const f = /[?&]racec=(\w+)/.exec(location.search); const one = f && COURSES.find((c) => c.name.replace(/\W/g, '') === f[1]); if (one) R.courses = [one, one, one]; }   // essai d'une course a la main
   };
   if (RACE) newSession();
@@ -284,7 +285,8 @@ const CUP = SHAPES.map((s) => s.name);
     if (b.crash && !b.cDone && b.p >= b.pc) { if (!b.cT) b.cT = t; if (t - b.cT < 2.5) rate = 0; else b.cDone = true; }
     b.f += (b.fT - b.f) * Math.min(1, dt * 2); if (b.fin !== undefined) b.f = 1;
     b.p = Math.min(1, b.p + rate * b.f * dt); if (b.p >= 1 && b.fin === undefined) b.fin = t;
-    b.d = b.d0 + (FN - b.d0) * b.p;
+    b.d = b.d0 + (FN - b.d0) * b.p; if (b.fin !== undefined) b.d = FN + (t - b.fin) * (cur().speed || 44) * 0.9;   // apres la ligne, le pilote entre dans la boite
+    if (b.fin === undefined && (!b.hz || t > b.hz)) { b.hz = t + 4 + Math.random() * 8; if (Math.random() < 0.55) b.slow = Math.max(b.slow || 0, 0.5 + Math.random() * 0.9); }   // petites erreurs : un pilote hesite parfois
   };
   const settleBots = (time) => { const FN = E.shortFin || 470; for (const b of W.bots) b.T = b.fin !== undefined ? b.fin : time + Math.max(0, FN - b.d) / ((cur().speed || 44) * 0.96) + (b.crash && !b.cDone ? 1.2 : 0); };   // le temps d'arrivee de chacun, d'apres sa vraie position
   const botD = (b, t, FN) => { let p; const tc = b.pc * b.tRun; if (!b.crash || t < tc) p = t / b.tRun; else if (t < tc + 2.5) p = b.pc; else p = (t - 2.5) / b.tRun; return b.d0 + (FN - b.d0) * U.clamp(p, 0, 1); };
@@ -382,7 +384,7 @@ const CUP = SHAPES.map((s) => s.name);
       botAdv(b, t, dt, FN); if (b.d > pd) { ahead++; if (!lead || b.d > lead.d) lead = b; }
       const hidden = b.crash && b.cT && t - b.cT >= 0.3 && t - b.cT < 2.5;
       if (b.crash && !b.boom && b.p >= b.pc && Math.abs(b.d - run.dist) < 220) { b.boom = true; lanePos(T, b.d, bOff(b, b.d), b.dy, tmp2); try { g.effects.explosion(tmp2.clone(), new V(0, 1, 0), false, 'orange'); } catch (e) { /* effets */ } }
-      if (Math.abs(b.d - pd) < 200 && !hidden) vis.push(b); else if (b.m) { b.m.visible = false; b.tr.visible = false; if (b.sh) b.sh.visible = false; }
+      if (Math.abs(b.d - pd) < 200 && !hidden && !(b.fin !== undefined && b.d > FN + 26)) vis.push(b); else if (b.m) { b.m.visible = false; b.tr.visible = false; if (b.sh) b.sh.visible = false; }
     }
     vis.sort((a, c) => (Math.abs(a.d - pd) - (a.d > pd ? 15 : 0)) - (Math.abs(c.d - pd) - (c.d > pd ? 15 : 0)));
     const MAXV = t < 3.6 ? 40 : 5;   // au depart on voit tout le monde ; ensuite au plus 5 pilotes a l'ecran
@@ -400,7 +402,7 @@ const CUP = SHAPES.map((s) => s.name);
       b.tr.visible = false; { const fx = g.effects, fw = tmp.copy(tmp2).sub(b.m.position).normalize(), nz = b.m.position.clone().addScaledVector(fw, -2.1), vv = fw.clone().multiplyScalar(36); try { fx.exhaustCore(nz, fw, vv, 1, dt); fx.exhaustSmoke(nz.clone().addScaledVector(fw, -0.7), vv, 1); fx.exhaustSmoke(nz.clone().addScaledVector(fw, -1.5), vv, 1); } catch (e) { /* effets */ } }   // la meme flamme et la meme fumee que la fusee du joueur
       if (flying && !fin && t > 1.5) {   // on touche un pilote : les deux rebondissent (etincelles, un peu de vitesse en moins), personne ne meurt
         const dn2 = rk.pos.distanceTo(b.m.position), df = tmp.copy(b.m.position).sub(rk.pos), fd = W.fc ? W.fc.dir : tf, al = df.dot(fd), pp = Math.sqrt(Math.max(0, df.lengthSq() - al * al));
-        if (!b.bump && b.vk > 0.8 && Math.abs(al) < 3.2 && pp < 1.5) { b.bump = true; b.slow = 0.9; W.bumpT = 0.35; { const sg = Math.sign(df.dot(nn)) || 1; b.pushT = sg * 6; W.kickT = -sg * 8; } try { g.effects.flash(rk.pos.clone().lerp(b.m.position, 0.5), '#ffe2a8', 3, 50, 0.25, '#ffb030'); g.audio.play('target'); } catch (e) { /* effets */ } }
+        if (!b.bump && b.vk > 0.8 && Math.abs(al) < 3.2 && pp < 1.5) { b.bump = true; b.slow = 0.9; W.bumpT = 0.35; { const sg = Math.sign(df.dot(nn)) || 1; b.pushT = sg * 6; W.kickT = 0; } try { g.effects.flash(rk.pos.clone().lerp(b.m.position, 0.5), '#ffe2a8', 3, 50, 0.25, '#ffb030'); g.audio.play('target'); } catch (e) { /* effets */ } }
         else if (b.bump && dn2 > 9) b.bump = false;
       }
     }
@@ -412,6 +414,7 @@ const CUP = SHAPES.map((s) => s.name);
   };
   // la ligne d'arrivee : deux pylones, une banderole a damier, un anneau lumineux et des faisceaux
   const buildFinish = (g, T, FN, grp) => {
+    if (E.course && E.course.isle) return;   // sur les iles, l'arrivee est une boite construite avec la carte
     const fg = new T3.Group(); frame(T, FN); const lp = T.at(FN, T.laneX(FN), 0), yaw = Math.atan2(tf.x, tf.z), cy = T.laneY(FN), hw = E.course ? E.course.hw(FN) + 4 : 22;
     const cv = document.createElement('canvas'); cv.width = 128; cv.height = 32; const c2 = cv.getContext('2d'); for (let a = 0; a < 16; a++) for (let b = 0; b < 4; b++) { c2.fillStyle = (a + b) % 2 ? '#111111' : '#ffffff'; c2.fillRect(a * 8, b * 8, 8, 8); }
     const tx = new T3.CanvasTexture(cv); tx.magFilter = T3.NearestFilter; tx.wrapS = T3.RepeatWrapping; tx.repeat.set(3, 1);
@@ -462,6 +465,10 @@ const CUP = SHAPES.map((s) => s.name);
     }
     if (W && W.pb && (g.evoFinish || !rk.active)) W.pb.tr.visible = false;
     if (ended && wantEnd && performance.now() >= wantEnd) { wantEnd = 0; g.evoWin = { mv: true, race: RACE, t0: performance.now(), lv: LV, info: ended }; g.ui.overlay = 'evoWin'; try { g.audio.play('victory'); } catch (e) { /* son */ } }
+    if (RACE && W && W.run === run && !g.evoFinish && !g._mvEnd && !ended && g.state === 'FLIGHT' && rk.active && g.flightTime > 4) {   // toutes les places qualificatives sont prises : la manche est perdue sans passer la ligne
+      const tn = g.flightTime, keepN = R.keep[R.round - 1];
+      if (W.bots.filter((b) => b.fin !== undefined && b.fin <= tn).length >= keepN) { g._mvEnd = 1; settleBots(tn); const rk2 = 1 + W.bots.filter((b) => b.T < tn).length; ended = mkResult(g, tn, rk2, true); R.last.late = true; g.evoFinish = { t0: performance.now(), hold: true }; wantEnd = performance.now() + 1100; return; }
+    }
     if (RACE && g.evoFinish && !g._mvEnd && W) {   // fin de manche : le rang parmi les pilotes
       g._mvEnd = 1; const time = Math.max(0, g.flightTime); settleBots(time); const rank = 1 + W.bots.filter((b) => b.T < time).length;
       ended = mkResult(g, time, rank, false); wantEnd = performance.now() + 750; return;
@@ -633,7 +640,7 @@ const CUP = SHAPES.map((s) => s.name);
       UI.text(ctx, 'MANCHE ' + R.round + '/3', cx - len / 2 - S(150), cy + S(2), S(46), '#ffffff', { outline: true });
       // qualifies : combien de pilotes ont deja franchi la ligne
       const ISL = !!(E.course && E.course.isle);
-      if (!ISL) { const qn = Math.min(R.keep[rd], W.bots.filter((b) => b.T <= tNow).length), qx = W0 - S(150), qy = H * 0.5;
+      { const qn = Math.min(R.keep[rd], W.bots.filter((b) => b.fin !== undefined && b.fin <= tNow).length), qx = W0 - S(150), qy = H * 0.5;
       ctx.save(); UI.rrect(ctx, qx - S(120), qy - S(66), S(240), S(132), S(30)); ctx.fillStyle = 'rgba(12,18,30,0.62)'; ctx.fill(); ctx.lineWidth = S(5); ctx.strokeStyle = '#ffffff'; ctx.stroke(); ctx.restore();
       UI.text(ctx, qn + ' / ' + R.keep[rd], qx, qy - S(12), S(66), qn >= R.keep[rd] ? '#FF5A4A' : '#7CFF6A', { outline: true }); UI.text(ctx, rd === 2 ? 'VICTOIRE' : 'QUALIFIES', qx, qy + S(42), S(34), '#ffffff', {}); }
       // morts : un crane et le nombre de pilotes que tu as fait exploser ; pieces

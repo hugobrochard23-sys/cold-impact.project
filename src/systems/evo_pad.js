@@ -102,6 +102,15 @@
       L.add(H); }
     // decor lointain
     pad.backdrop = backdrop(); L.add(pad.backdrop);
+    if (CC.EVO.mvp && CC.EVO.mvp() === 'r') {   // mode course : le menu est la piste de decollage (asphalte, bandes, fusees alignees, mer), plus de hangar
+      pad.noHangar = true; const RW = new T3.Group(), asph = lam('#3b3f47'), yel = bas('#ffd23a'), wh = bas('#f4f4f4');
+      box(RW, 34, 0.3, 160, asph, 0, -0.78, -40).userData.noShadow = true;
+      for (const sx of [-1, 1]) { box(RW, 0.3, 0.05, 160, yel, sx * 16, -0.62, -40); box(RW, 0.5, 0.05, 160, bas('#15151a'), sx * 16.6, -0.62, -40); }
+      for (let k = 0; k < 30; k++) box(RW, 0.2, 0.05, 2.4, wh, 0, -0.62, -110 + k * 5);
+      for (let k = 0; k < 8; k++) for (let c = 0; c < 2; c++) box(RW, 1.4, 0.05, 1.4, bas((k + c) % 2 ? '#15151a' : '#ffffff'), -0.7 + c * 1.4, -0.62, 6.2 + k * 0);
+      try { const ids = ['gamin', 'bedon', 'fuseev', 'poisson', 'requin', 'pirate', 'casquette', 'malicieuse']; let n = 0; for (const sx of [-1, 1]) for (let r = 0; r < 4; r++) { const sk = CC.Skins.get(ids[n++ % ids.length]), m = CC.Models.rocket(sk); m.scale.setScalar(1.15); m.position.set(sx * (3.2 + (r % 2) * 2.6), -0.35, -3 - r * 2.8); m.rotation.y = Math.PI; RW.add(m); } } catch (e) { /* skins */ }
+      L.add(RW); pad.runway = RW;
+    }
     pad.vents = [new V(-0.5, -0.5, 1.0), new V(0.5, -0.5, 1.0), new V(-0.7, -0.5, -0.8), new V(0.7, -0.5, -0.8)];
     pad.evoCh = 0; pad.evoJ = 0;
   };
@@ -111,7 +120,9 @@
     const pad = g.pad; if (!pad || !pad.evoL) return; const a = g.evoAim, now = performance.now(), A = g.audio;
     const hold = !!(a && a.hold && !a.lock), ch = a ? (a.lock ? 1 : a.ch || 0) : 0, rk = g.rocket;
     if (pad.hangar) { if (EVO.isS2() && !EVO.waterFn) { pad.hangar.visible = g.state === 'MENU' || g.state === 'LAUNCH' || g.state === 'AIM'; if (pad.hangar.userData.roof) pad.hangar.userData.roof.visible = g.state === 'MENU' && !g.evoAim; { const aim = g.state !== 'MENU' || g.evoAim, la = EVO.launcher(EVO.save(g).la).n; if (pad.hItems && !g.evoAnim) for (const o of pad.hItems) if (o.userData.lv === 3 || o.userData.lv === 8) o.visible = !aim && la >= o.userData.lv; } } else pad.hangar.visible = g.state === 'MENU' && !g.evoAim; }   // niveau 2 : le hangar reste, seul le toit disparait au lancement   // le hangar disparait des qu'on vise / lance : plus de toit devant la vue
-    if (pad.backdrop) pad.backdrop.visible = g.state === 'MENU' || g.state === 'LAUNCH';   // le decor lointain n'existe que dans le menu (on ne peut pas voler a travers)
+    if (pad.backdrop) pad.backdrop.visible = g.state === 'MENU' || g.state === 'LAUNCH';
+    if (pad.runway) pad.runway.visible = g.state === 'MENU';
+    if (pad.noHangar) { if (pad.hangar) pad.hangar.visible = false; if (pad.backdrop) pad.backdrop.visible = false; }   // le decor lointain n'existe que dans le menu (on ne peut pas voler a travers)
     if (pad.beacon) pad.beacon.color.setRGB(0.4 + 0.6 * (Math.sin(now / 280) > 0 ? 1 : 0), 0.05, 0.05);
     if (pad.towerArm) { const open = a && (a.lock || (a.hold && ch > 0.35)) ? 1 : 0; pad.towerArm.rotation.y += (open * -1.25 - pad.towerArm.rotation.y) * Math.min(1, dt * 3); }
     if (pad.boosters) for (const b of pad.boosters) { const k = hold || (a && a.lock) ? Math.min(1, ch * 1.3) : 0; b.fl.material.opacity = k * (0.55 + 0.35 * Math.random()); b.fl.scale.set(1, 0.6 + 1.2 * k * (0.8 + 0.4 * Math.random()), 1); }
