@@ -135,13 +135,15 @@
       const mat = p.basic ? basic(p.c) : lam(p.c);
       let m;
       if (p.k === 'box') m = new THREE.Mesh(new THREE.BoxGeometry(p.w, p.h, p.d), mat);
-      else if (p.k === 'sph') m = new THREE.Mesh(new THREE.SphereGeometry(p.r, 8, 6), mat);
+      else if (p.k === 'sph') m = new THREE.Mesh(new THREE.SphereGeometry(p.r, p.seg || 8, Math.max(4, (p.seg || 8) - 2)), mat);
       else m = new THREE.Mesh(new THREE.CylinderGeometry(p.r2 !== undefined ? p.r2 : p.r, p.r, p.h, p.seg || 10), mat);
       m.position.fromArray(p.p || [0, 0, 0]);
       const rot = p.rot || [0, 0, 0];
       m.rotation.set(rot[0] * D2R, rot[1] * D2R, rot[2] * D2R);
       m.castShadow = p.cast !== false && !p.basic; m.receiveShadow = true;
+      if (p.s) m.scale.set(p.s[0], p.s[1], p.s[2]);   // echelle de la piece (ovales, dents plates)
       g.add(m);
+      if (p.mir) { const m2 = m.clone(); m2.position.x = -m.position.x; m2.rotation.set(rot[0] * D2R, -rot[1] * D2R, -rot[2] * D2R); g.add(m2); }   // piece en miroir gauche/droite
     }
     if (d.scale !== 1) g.scale.setScalar(d.scale);
     // petites buses de rétro-fusées (visuelles)

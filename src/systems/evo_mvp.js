@@ -184,7 +184,8 @@ const CUP = SHAPES.map((s) => s.name);
     if (rk.pos.y < crs.isle.PY + 1.5 || E.isleSolid(crs, T, d, rel.x, rk.pos.y)) return true;
     return false;
   };
-  const isleHit = (g, rk) => { if (g.flightTime < 1.2 || rk.shieldT > 0 || !W.props || !W.props.hits) return false; for (const f of W.props.hits) if (f(rk.pos)) return true; return false; };
+  const isleHit = (g, rk) => { if (g.flightTime < 1.2 || !W.props || !W.props.hits) return false; for (const f of W.props.hits) if (f(rk.pos)) return true; return false; };
+  const contactFx = (g, rk, big) => { if (W.hitCd > 0) return; W.hitCd = 0.35; try { g.audio.play('shield'); g.rig.shake = big ? 0.5 : 0.25; g.effects.flash(rk.pos.clone(), '#ffd9a0', 3, 50, 0.2, '#ff9a30'); } catch (e) { /* effets */ } };   // son et etincelles d'un contact (pas de penalite de temps : on perd de la vitesse et des places)
   const hitPenalty = (g, rk, dir) => {   // un obstacle : la fusee rebondit, perd 1,5 s et de la vitesse ; elle ne meurt pas
     rk.shieldT = 1.3; W.slowT = 0.8; g.flightTime += 1.5; R.penT = performance.now(); R.penAmt = 1.5; W.kickT = (Math.random() < 0.5 ? -1 : 1) * 11; dir.y = Math.max(dir.y, 0.15); dir.normalize();
     try { g.audio.play('shield'); g.rig.shake = 0.6; g.effects.flash(rk.pos.clone(), '#ffd9a0', 4, 60, 0.25, '#ff9a30'); } catch (e) { /* effets */ }
@@ -202,7 +203,24 @@ const CUP = SHAPES.map((s) => s.name);
     if (F.on || F.ctrl < 1) { dir.y -= (1 - F.ctrl) * dt * 1.9; dir.normalize(); sp *= 1 + 0.22 * (1 - F.ctrl); }
     const dk = T.base(d) + I2.bank(d) * rel.x, over = Math.abs(rel.x) < I2.W(d) - 0.3 && !F.on && F.ctrl >= 1;
     if (over) { if (rk.pos.y < dk + 2.2) { rk.pos.y = dk + 2.2; if (dir.y < 0) { dir.set(dir.x, 0, dir.z).normalize(); } } if (rk.pos.y > dk + 27 && dir.y > 0) dir.set(dir.x, 0, dir.z).normalize(); }
-    if (g.flightTime > 1.2) { if (isleKill(g, crs, T, d, rk)) { R.penT = performance.now(); R.penAmt = 2.5; respawn(g); return; } if (isleHit(g, rk)) hitPenalty(g, rk, dir); if (rk.shieldT <= 0 && I2.boxes) { const yy = rk.pos.y - dk; for (const b of I2.boxes) if (d > b[0] - 1 && d < b[1] + 1 && rel.x > b[2] - 0.95 && rel.x < b[3] + 0.95 && yy > b[4] - 0.95 && yy < b[5] + 0.95) { hitPenalty(g, rk, dir); break; } } }
+    const prev = W.prevPos || (W.prevPos = rk.pos.clone());
+    if (g.flightTime > 1.2) {   // VRAIES collisions : on ne traverse jamais un objet ; la fusee est repoussee, glisse ou rebondit, et perd de la vitesse
+      if (isleKill(g, crs, T, d, rk)) { R.penT = performance.now(); R.penAmt = 2.5; respawn(g); return; }
+      if (I2.boxes) {
+        const yy = rk.pos.y - dk, RRc = 0.95;
+        for (const b of I2.boxes) {
+          if (d < b[0] - RRc || d > b[1] + RRc || rel.x < b[2] - RRc || rel.x > b[3] + RRc || yy < b[4] - RRc || yy > b[5] + RRc) continue;
+          const cc = [d - (b[0] - RRc), (b[1] + RRc) - d, rel.x - (b[2] - RRc), (b[3] + RRc) - rel.x, yy - (b[4] - RRc), (b[5] + RRc) - yy]; let kk = 0; for (let q = 1; q < 6; q++) if (cc[q] < cc[kk]) kk = q;
+          const sg = kk % 2 === 0 ? -1 : 1, axis = kk < 2 ? tf : kk < 4 ? nn : UPV;
+          rk.pos.addScaledVector(axis, sg * cc[kk]);   // repoussee hors de l'objet
+          const nrm = tmp.copy(axis).multiplyScalar(sg), dn = dir.dot(nrm);
+          if (dn < 0) { if (dn < -0.7) { dir.addScaledVector(nrm, -1.5 * dn); W.slowT = 0.5; } else dir.addScaledVector(nrm, -dn); dir.normalize(); }
+          contactFx(g, rk, dn < -0.7);
+        }
+      }
+      if (isleHit(g, rk)) { rk.pos.copy(prev); dir.multiplyScalar(-0.45); dir.y += 0.12; dir.normalize(); W.slowT = 0.5; contactFx(g, rk, true); }   // un obstacle mobile : retour a la derniere position libre, rebond
+    }
+    prev.copy(rk.pos);
     rk.vel.copy(dir).multiplyScalar(sp); if (W.kick) rk.vel.addScaledVector(nn, W.kick);
     g.input.setAim(Math.atan2(-dir.x, -dir.z), Math.asin(U.clamp(dir.y, -0.9, 0.9)));
   };
@@ -271,7 +289,7 @@ const CUP = SHAPES.map((s) => s.name);
   const settleBots = (time) => { const FN = E.shortFin || 470; for (const b of W.bots) b.T = b.fin !== undefined ? b.fin : time + Math.max(0, FN - b.d) / ((cur().speed || 44) * 0.96) + (b.crash && !b.cDone ? 1.2 : 0); };   // le temps d'arrivee de chacun, d'apres sa vraie position
   const botD = (b, t, FN) => { let p; const tc = b.pc * b.tRun; if (!b.crash || t < tc) p = t / b.tRun; else if (t < tc + 2.5) p = b.pc; else p = (t - 2.5) / b.tRun; return b.d0 + (FN - b.d0) * U.clamp(p, 0, 1); };
   const lanePos = (T, d, dx, dy, out) => { const p = T.at(d, T.laneX(d) + dx, T.laneY(d) + dy); return out.set(p[0], p[1], p[2]); };
-  const SKIN_IDS = ['stock', 'gamin', 'bedon', 'fuseev', 'minutemec', 'hachette', 'croquette', 'baguette', 'tridentin', 'poisson', 'gardien', 'titanite', 'satanette', 'berthe', 'croissant', 'chaton', 'tsarini', 'maman', 'bombeh', 'colis', 'caillou', 'royale', 'neon', 'phenix', 'glace', 'toxique', 'samourai', 'galaxie', 'furtive'];
+  const SKIN_IDS = ['stock', 'gamin', 'bedon', 'fuseev', 'minutemec', 'hachette', 'croquette', 'baguette', 'tridentin', 'poisson', 'gardien', 'titanite', 'satanette', 'berthe', 'croissant', 'chaton', 'tsarini', 'maman', 'bombeh', 'colis', 'caillou', 'royale', 'neon', 'phenix', 'glace', 'toxique', 'samourai', 'galaxie', 'furtive', 'requin', 'pirate', 'malicieuse', 'casquette'];
   const TRN = 16;   // points d'une traînée
   const mkRibbon = (col) => {
     const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(new Float32Array(TRN * 2 * 3), 3));
@@ -294,7 +312,7 @@ const CUP = SHAPES.map((s) => s.name);
     g.scene.add(grp); if (E.course && E.course.isle) { W.props = E.buildIsle(T, E.course, grp); W.free = null; W.wheel = null; W.fall = null; }
     else if (E.course) { E.buildCorridor(T, E.course, -4, FN + 150, grp); W.props = E.buildCourseProps(T, E.course, grp); W.free = null; W.wheel = null; }
     const offs = [-5, 4, -3, 5, -4, 3], dys = [0, 2, -1, 2, 0, 1];   // des fleches de vitesse : il faut un peu bouger pour les prendre
-    for (let k = 0, d = 110; d < FN - 70; k++, d += 115) {
+    for (let k = 0, d = 110; d < FN - 70 && !(E.course && E.course.isle); k++, d += 115) {   // plus de fleches vertes sur les iles
       const off = offs[k % offs.length] * (E.course ? U.clamp((E.course.hw(d) - 3) / 6, 0.2, 1) : 1), dy = dys[k % dys.length], o = new T3.Group(), tmpA = new V(), tmpB = new V();
       for (let j = 0; j < 3; j++) { const ar = CC.Models.guideArrow(); lanePos(T, d + j * 5 - 5, off, dy, tmpA); ar.position.copy(tmpA); lanePos(T, d + j * 5 - 2, off, dy, tmpB); ar.lookAt(tmpB); ar.scale.setScalar(2.4); o.add(ar); }
       grp.add(o); W.boosts.push({ d, off, dy, grp: o, taken: false });
@@ -358,25 +376,26 @@ const CUP = SHAPES.map((s) => s.name);
     }
     if (W.props) for (const bl of W.props.blocks) if (!bl.taken) { bl.g.rotation.y += dt * 2.2; bl.m.rotation.x += dt * 1.5; bl.m.position.y = Math.sin(t * 3 + bl.d) * 0.35; }
     if (fin) { for (const b of W.bots) { if (b.m) b.m.visible = false; if (b.tr) b.tr.visible = false; } return; }   // apres l'arrivee, plus de pilotes a l'ecran
-    let ahead = 0, lead = null; const vis = [], pd = run.dist > 1 ? run.dist : -rk.pos.z; if (W.bumpT > 0) W.bumpT -= dt; if (W.slowT > 0) W.slowT -= dt; W.kickT = (W.kickT || 0) * Math.exp(-dt * 1.6); W.kick = (W.kick || 0) + (W.kickT - (W.kick || 0)) * Math.min(1, dt * 5);
+    let ahead = 0, lead = null; const vis = [], pd = run.dist > 1 ? run.dist : -rk.pos.z; if (W.bumpT > 0) W.bumpT -= dt; if (W.slowT > 0) W.slowT -= dt; if (W.hitCd > 0) W.hitCd -= dt; W.kickT = (W.kickT || 0) * Math.exp(-dt * 1.6); W.kick = (W.kick || 0) + (W.kickT - (W.kick || 0)) * Math.min(1, dt * 5);
     if (t > 4) { const byD = W.bots.slice().sort((a, c) => Math.abs(a.d - pd) - Math.abs(c.d - pd)); byD.forEach((b, k) => { const gp = b.d - pd; b.fT = k < 3 && Math.abs(gp) > 100 && b.fin === undefined ? 1 - Math.sign(gp) * U.clamp((Math.abs(gp) - 100) / 300, 0, 0.12) : 1; }); }   // les 3 pilotes les plus proches sont rapproches du joueur (ralentis s'ils sont loin devant, accelerees s'ils sont loin derriere)
     for (const b of W.bots) {
       botAdv(b, t, dt, FN); if (b.d > pd) { ahead++; if (!lead || b.d > lead.d) lead = b; }
       const hidden = b.crash && b.cT && t - b.cT >= 0.3 && t - b.cT < 2.5;
       if (b.crash && !b.boom && b.p >= b.pc && Math.abs(b.d - run.dist) < 220) { b.boom = true; lanePos(T, b.d, bOff(b, b.d), b.dy, tmp2); try { g.effects.explosion(tmp2.clone(), new V(0, 1, 0), false, 'orange'); } catch (e) { /* effets */ } }
-      if (Math.abs(b.d - pd) < 200 && !hidden) vis.push(b); else if (b.m) { b.m.visible = false; b.tr.visible = false; }
+      if (Math.abs(b.d - pd) < 200 && !hidden) vis.push(b); else if (b.m) { b.m.visible = false; b.tr.visible = false; if (b.sh) b.sh.visible = false; }
     }
     vis.sort((a, c) => (Math.abs(a.d - pd) - (a.d > pd ? 15 : 0)) - (Math.abs(c.d - pd) - (c.d > pd ? 15 : 0)));
     const MAXV = t < 3.6 ? 40 : 5;   // au depart on voit tout le monde ; ensuite au plus 5 pilotes a l'ecran
     for (let k = 0; k < vis.length; k++) {
       const b = vis[k], show = k < MAXV || (b.shown && k < MAXV + 1); b.shown = show; b.vk = (b.vk || 0) + ((show ? 1 : 0) - (b.vk || 0)) * Math.min(1, dt * 7);
-      if (!show && b.vk < 0.04) { if (b.m) { b.m.visible = false; b.tr.visible = false; } continue; }
+      if (!show && b.vk < 0.04) { if (b.m) { b.m.visible = false; b.tr.visible = false; if (b.sh) b.sh.visible = false; } continue; }
       if (!b.m) rivalMesh(g, b);
       const wf = bOff(b, b.d) !== b.off ? bOff(b, b.d) / (b.off || 1) : 1, wob = 1.5 * Math.sin(t * 1.3 + b.ph) * (E.course ? 0.55 : 1), wob2 = 1.5 * Math.sin((t + 0.12) * 1.3 + b.ph) * (E.course ? 0.55 : 1);
       { const s1 = U.clamp(t / 4.5, 0, 1), ss = s1 * s1 * (3 - 2 * s1), s2 = U.clamp(t / 2.4, 0, 1), sv = s2 * s2 * (3 - 2 * s2), lx1 = b.gx === undefined ? bOff(b, b.d) + wob : (b.gx + (bOff(b, b.d) + wob - b.gx) * ss);
         b.pushT = (b.pushT || 0) * Math.exp(-dt * 1.4); b.push = (b.push || 0) + (b.pushT - (b.push || 0)) * Math.min(1, dt * 5); lanePos(T, b.d, lx1 + b.push, b.dy, b.m.position); lanePos(T, b.d + 6, b.gx === undefined ? bOff(b, b.d + 6) + wob2 : (b.gx + (bOff(b, b.d + 6) + wob2 - b.gx) * ss), b.dy, tmp2);
         if (b.gx !== undefined && sv < 1) { const dk = T.at(b.d, lx1, (E.course && E.course.isle ? E.course.isle.bank(b.d) * lx1 : 0) + 0.9)[1]; b.m.position.y = dk + (b.m.position.y - dk) * sv; tmp2.y = dk + (tmp2.y - dk) * sv + 0.6 * (1 - sv); }   // sur les rampes au depart, puis elles decollent
-        b.m.lookAt(tmp2); b.m.visible = true; b.m.scale.set(5.4 * b.vk, 5.4 * b.vk, 3.8 * b.vk); }
+        b.m.lookAt(tmp2); b.m.visible = true; b.m.scale.set(5.4 * b.vk, 5.4 * b.vk, 3.8 * b.vk);
+        if (E.isleBlob && E.course && E.course.isle) { if (!b.sh) { b.sh = E.isleBlob(); W.grp.add(b.sh); } const I4 = E.course.isle, lxs = lx1 + b.push; if (Math.abs(lxs) < I4.W(b.d) - 0.5) { const p = T.at(b.d, lxs, I4.bank(b.d) * lxs + 0.08), h = Math.max(0, b.m.position.y - p[1]); b.sh.visible = true; b.sh.position.set(b.m.position.x, p[1], b.m.position.z); b.sh.scale.setScalar((4.2 + h * 0.1) * b.vk); b.sh.material.opacity = Math.max(0.12, 0.62 - h * 0.022) * b.vk; } else b.sh.visible = false; } }
       if (E.course) b.m.rotateZ(U.clamp(-E.course.rate(b.d) * (cur().speed || 46) * 0.2, -0.75, 0.75) + 0.12 * Math.cos(t * 1.3 + b.ph));   // la fusee se penche dans les virages (et un peu quand elle bouge sur le cote)
       b.tr.visible = false; { const fx = g.effects, fw = tmp.copy(tmp2).sub(b.m.position).normalize(), nz = b.m.position.clone().addScaledVector(fw, -2.1), vv = fw.clone().multiplyScalar(36); try { fx.exhaustCore(nz, fw, vv, 1, dt); fx.exhaustSmoke(nz.clone().addScaledVector(fw, -0.7), vv, 1); fx.exhaustSmoke(nz.clone().addScaledVector(fw, -1.5), vv, 1); } catch (e) { /* effets */ } }   // la meme flamme et la meme fumee que la fusee du joueur
       if (flying && !fin && t > 1.5) {   // on touche un pilote : les deux rebondissent (etincelles, un peu de vitesse en moins), personne ne meurt
@@ -386,6 +405,10 @@ const CUP = SHAPES.map((s) => s.name);
       }
     }
     W.lead = lead; R.live = 1 + ahead;
+    if (E.isleBlob && E.course && E.course.isle) {   // l'ombre de la fusee du joueur sur la piste
+      const I3 = E.course.isle, sh = W.sh || (W.sh = (() => { const m = E.isleBlob(); W.grp.add(m); return m; })());
+      if (rk.active && flying && Math.abs(rel.x) < I3.W(pd) - 0.5) { const p = T.at(pd, rel.x, I3.bank(pd) * rel.x + 0.08), h = Math.max(0, rk.pos.y - p[1]); sh.visible = true; sh.position.set(rk.pos.x, p[1], rk.pos.z); sh.scale.setScalar(4.2 + h * 0.1); sh.material.opacity = Math.max(0.12, 0.62 - h * 0.022); } else sh.visible = false;
+    }
   };
   // la ligne d'arrivee : deux pylones, une banderole a damier, un anneau lumineux et des faisceaux
   const buildFinish = (g, T, FN, grp) => {

@@ -156,6 +156,44 @@
         box(0.16, 0.14, 0.16, [0.05, -0.05, -0.05], { rot: [12, 30, 6], c: '#83868b' })],
       flame: '#b8b8b8',
     },
+    // ---- v380 : skins a caractere (silhouette forte vue de derriere : aileron, chapeau, cornes, casquette)
+    {
+      id: 'requin', name: 'REQUIN', short: 'REQUIN', tier: 'rare', tagline: 'On ne l\'entend pas arriver. Il a deja mange le concurrent.',
+      c: { body: '#6f8ea3', nose: '#6f8ea3', tip: '#2a3a46', band: '#e8f0f4', fin: '#4f6f84', nozzle: '#3a4650' },
+      dims: { r: 0.105, len: 0.92, noseLen: 0.22, fins: 0 },
+      parts: [box(0.03, 0.2, 0.24, [0, 0.16, -0.04], { c: '#557489', rot: [-28, 0, 0] }), box(0.22, 0.022, 0.13, [0.15, -0.03, 0.08], { c: '#557489', rot: [0, 0, -18], mir: true }),
+        box(0.03, 0.2, 0.15, [0, 0.12, -0.46], { c: '#557489', rot: [32, 0, 0] }), box(0.03, 0.14, 0.14, [0, -0.1, -0.46], { c: '#557489', rot: [-32, 0, 0] }),
+        box(0.17, 0.04, 0.05, [0, -0.066, 0.45], { c: '#1b1016' }), box(0.15, 0.028, 0.05, [0, -0.052, 0.47], { c: '#ffffff', basic: true }),
+        sph(0.03, [0.085, 0.045, 0.34], { c: '#ffffff', basic: true, mir: true }), sph(0.015, [0.1, 0.045, 0.37], { c: '#101010', basic: true, mir: true })],
+      flame: '#9fe3ff',
+    },
+    {
+      id: 'pirate', name: 'PIRATE', short: 'PIRATE', tier: 'rare', tagline: 'Il ne rend jamais le butin, ni les points.',
+      c: { body: '#a8322a', nose: '#e8dcc0', tip: '#15151a', band: '#15151a', fin: '#2b2b30', nozzle: '#3a3a40' },
+      dims: { r: 0.105, len: 0.9, noseLen: 0.28, fins: 4, finH: 0.2 },
+      parts: [cyl(0.17, 0.02, [0, 0.118, 0.1], { c: '#15151a', rot: [0, 0, 0] }), cyl(0.082, 0.07, [0, 0.158, 0.1], { c: '#15151a', rot: [0, 0, 0], r2: 0.064 }), cyl(0.172, 0.018, [0, 0.11, 0.1], { c: '#e8c24a', rot: [0, 0, 0] }),
+        sph(0.022, [0, 0.168, 0.168], { c: '#ffffff', basic: true }), box(0.07, 0.07, 0.02, [0.086, 0.04, 0.34], { c: '#111111', rot: [0, 0, 0], mir: false }),
+        cyl(0.006, 0.26, [0, 0.2, -0.3], { c: '#6b4a2a', rot: [0, 0, 0] }), box(0.004, 0.09, 0.14, [0, 0.29, -0.37], { c: '#111111', basic: true }), sph(0.016, [0, 0.29, -0.37], { c: '#ffffff', basic: true })],
+      flame: '#ffb347',
+    },
+    {
+      id: 'malicieuse', name: 'MALICIEUSE', short: 'MALICIEUSE', tier: 'rare', tagline: 'Elle a l\'air gentille. Elle ne l\'est pas.',
+      c: { body: '#7b3fbf', nose: '#7b3fbf', tip: '#ffd23a', band: '#ffd23a', fin: '#2a1744', nozzle: '#2a1744' },
+      dims: { r: 0.105, len: 0.88, noseLen: 0.26, fins: 4, finH: 0.2 },
+      parts: [cyl(0.032, 0.15, [0.055, 0.15, 0.22], { c: '#ffd23a', r2: 0.002, rot: [-12, 0, -20], mir: true }),
+        box(0.14, 0.026, 0.03, [0, -0.07, 0.42], { c: '#ffffff', basic: true }), box(0.15, 0.02, 0.025, [0, -0.09, 0.42], { c: '#17081f' }),
+        box(0.05, 0.02, 0.02, [0.07, 0.055, 0.34], { c: '#ffffff', basic: true, rot: [0, 0, -28], mir: true }), sph(0.012, [0.074, 0.05, 0.352], { c: '#101010', basic: true, mir: true }),
+        box(0.02, 0.1, 0.12, [0.03, 0.03, -0.5], { c: '#ffd23a', rot: [0, 0, -24], mir: true })],
+      flame: '#d58cff',
+    },
+    {
+      id: 'casquette', name: 'CASQUETTE', short: 'CASQUETTE', tier: 'rare', tagline: 'Visiere vers l\'avant, comme un champion.',
+      c: { body: '#2f6fd8', nose: '#e8e8ef', tip: '#d42a2a', band: '#d42a2a', fin: '#1f4aa0', nozzle: '#26406e' },
+      dims: { r: 0.105, len: 0.9, noseLen: 0.28, fins: 4, finH: 0.2 },
+      parts: [sph(0.112, [0, 0.082, 0.12], { c: '#d42a2a', seg: 12, s: [1, 0.72, 1.12] }), box(0.2, 0.014, 0.15, [0, 0.092, 0.285], { c: '#d42a2a', rot: [10, 0, 0] }),
+        sph(0.02, [0, 0.165, 0.12], { c: '#ffffff' }), box(0.05, 0.05, 0.012, [0, 0.1, 0.225], { c: '#ffffff', basic: true })],
+      flame: '#ff9a7a',
+    },
   ];
 
   const byId = {};
