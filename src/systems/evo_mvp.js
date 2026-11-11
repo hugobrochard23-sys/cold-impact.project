@@ -71,7 +71,7 @@ const CUP = SHAPES.map((s) => s.name);
     return al;
   };
   const fails = {};   // essais rates par niveau (pendant la session) : 0 = 3 etoiles
-  const SP = () => ((cur().speed || 44) + (W && W.boostT > 0 ? (cur().isle ? 7 : 12) : 0) + (W && W.ground ? 3 : 0)) * (W && W.bumpT > 0 ? 0.82 : 1);
+  const SP = () => ((cur().speed || 44) + (W && W.boostT > 0 ? (cur().isle ? 7 : 12) : 0) + (W && W.ground ? 3 : 0)) * (W && W.bumpT > 0 ? 0.82 : 1) * (W && W.slowT > 0 ? 0.45 : 1);
   const _rk = E.rocket;   // carburant illimite, jamais en panne
   E.rocket = (n) => { const r = _rk(n); return Object.assign({}, r, { tier: 2, fuel: 999 }); };
   E.softCrash = () => false;   // la mort = une explosion simple, pas de roule-boule
@@ -136,6 +136,12 @@ const CUP = SHAPES.map((s) => s.name);
       if (!rig._mv) { rig._mv = new V().copy(camP); rig._ml = new V().copy(camL); }
       rig._mv.lerp(camP, Math.min(1, (dt || 0.016) * 6)); rig._ml.lerp(camL, Math.min(1, (dt || 0.016) * 8)); cam.position.copy(rig._mv); cam.up.set(0, 1, 0); cam.lookAt(rig._ml); return;
     }
+    if (isl && W && W.fc && !W.free) {   // controle libre : camera derriere la fusee, dans son axe, toujours centree sur elle
+      const fc = W.fc, sdt = dt || 0.016; fc.cd.lerp(fc.dir, 1 - Math.exp(-sdt * 8)).normalize(); W.camB = (W.camB || 0) + ((W.boostT > 0 ? 1 : 0) - (W.camB || 0)) * Math.min(1, sdt * 6);
+      camP.copy(rk.pos).addScaledVector(fc.cd, -(6.6 + 1.8 * W.camB)); camP.y += 2.3 - 0.3 * W.camB; camL.copy(rk.pos).addScaledVector(fc.cd, 14); if (W.camB > 0.05) rig.punch = Math.max(rig.punch || 0, 0.6 * W.camB);
+      if (!rig._mv) { rig._mv = new V().copy(camP); rig._ml = new V().copy(camL); }
+      rig._mv.lerp(camP, Math.min(1, sdt * 16)); rig._ml.lerp(camL, Math.min(1, sdt * 18)); cam.position.copy(rig._mv); cam.up.set(0, 1, 0); cam.lookAt(rig._ml); return;
+    }
     if (w > 0.001) {   // decollage : on voit la fusee partir du lanceur, la camera la suit de loin et d'en haut, puis redescend vers la vue de course en la gardant au centre
       frame(T, Math.max(0, d)); const fz = tmp.set(tf.x, 0, tf.z), side = tmp2.set(nn.x, 0, nn.z);
       LPOS.copy(rk.pos).addScaledVector(fz, -(8.5 + 8 * w)).addScaledVector(side, 4 * w); LPOS.y += 2.4 + 5 * w;
@@ -180,8 +186,29 @@ const CUP = SHAPES.map((s) => s.name);
   const isleKill = (g, crs, T, d, rk) => {   // sol (prairie), roche de l'ile, marteau
     if (g.flightTime < 1.2 || rk.shieldT > 0) return false;
     if (rk.pos.y < crs.isle.PY + 1.5 || E.isleSolid(crs, T, d, rel.x, rk.pos.y)) return true;
-    if (W.props && W.props.hits) for (const f of W.props.hits) if (f(rk.pos)) return true;
     return false;
+  };
+  const isleHit = (g, rk) => { if (g.flightTime < 1.2 || rk.shieldT > 0 || !W.props || !W.props.hits) return false; for (const f of W.props.hits) if (f(rk.pos)) return true; return false; };
+  const hitPenalty = (g, rk, dir) => {   // un obstacle : la fusee rebondit, perd 1,5 s et de la vitesse ; elle ne meurt pas
+    rk.shieldT = 1.3; W.slowT = 0.8; g.flightTime += 1.5; R.penT = performance.now(); R.penAmt = 1.5; W.kick = (Math.random() < 0.5 ? -1 : 1) * 14; dir.y = Math.max(dir.y, 0.15); dir.normalize();
+    try { g.audio.play('shield'); g.rig.shake = 0.6; g.effects.flash(rk.pos.clone(), '#ffd9a0', 4, 60, 0.25, '#ff9a30'); } catch (e) { /* effets */ }
+  };
+  // ---------------------------------------------------------------- ILE : controle LIBRE a 100 % (le curseur oriente la fusee, la camera reste sur elle)
+  const UPV = new V(0, 1, 0);
+  const driveFree = (g, dt, T, crs, rk, run, F, d) => {
+    const I2 = crs.isle; let sp = SP();
+    if (!W.fc) { const v0 = rk.vel.clone(); if (v0.lengthSq() < 1) v0.set(tf.x, 0, tf.z); v0.normalize(); W.fc = { dir: v0, cd: v0.clone() }; }
+    const dir = W.fc.dir, c = F.on || F.ctrl < 1 ? F.ctrl : 1, rate = 2.3 * c;
+    if (I.mode === 'keys') { const k = I.k, yi = (k.ArrowRight || k.KeyD ? 1 : 0) - (k.ArrowLeft || k.KeyA ? 1 : 0), pi = (k.ArrowUp || k.KeyW ? 1 : 0) - (k.ArrowDown || k.KeyS ? 1 : 0); dir.applyAxisAngle(UPV, -yi * rate * dt); dir.y += pi * rate * dt * 0.8; dir.normalize(); }
+    else { const cam = g.camera; org.copy(cam.position); if (/[?&]ap=1/.test(location.search)) { const q = T.at(d + 45, 0, T.laneY(d + 45) + 1); ray.set(q[0] - rk.pos.x, q[1] - rk.pos.y, q[2] - rk.pos.z).normalize(); } else ray.set(I.cx, -(I.cy * 2 - 1), 0.5).unproject(cam).sub(org).normalize(); const ang = dir.angleTo(ray); if (ang > 1e-4) { const t = Math.min(1, rate * dt / ang) * Math.min(1, ang / 0.1); dir.lerp(ray, t).normalize(); } }
+    if (Math.abs(dir.y) > 0.82) { const hx = Math.hypot(dir.x, dir.z) || 1, sc = Math.sqrt(1 - 0.82 * 0.82) / hx; dir.set(dir.x * sc, Math.sign(dir.y) * 0.82, dir.z * sc); }
+    { const hx = Math.hypot(dir.x, dir.z) || 1; if ((dir.x * tf.x + dir.z * tf.z) / hx < -0.25) { dir.x += tf.x * dt * 4; dir.z += tf.z * dt * 4; dir.normalize(); } }   // on ne fait pas demi-tour
+    if (F.on || F.ctrl < 1) { dir.y -= (1 - F.ctrl) * dt * 1.9; dir.normalize(); sp *= 1 + 0.22 * (1 - F.ctrl); }
+    const dk = T.base(d) + I2.bank(d) * rel.x, over = Math.abs(rel.x) < I2.W(d) - 0.3 && !F.on && F.ctrl >= 1;
+    if (over) { if (rk.pos.y < dk + 2.2) { rk.pos.y = dk + 2.2; if (dir.y < 0) { dir.set(dir.x, 0, dir.z).normalize(); } } if (rk.pos.y > dk + 27 && dir.y > 0) dir.set(dir.x, 0, dir.z).normalize(); }
+    if (g.flightTime > 1.2) { if (isleKill(g, crs, T, d, rk)) { g.onRocketCrash('wall', rk.pos.clone(), new V(0, 1, 0)); return; } if (isleHit(g, rk)) hitPenalty(g, rk, dir); }
+    rk.vel.copy(dir).multiplyScalar(sp); if (W.kick) rk.vel.addScaledVector(nn, W.kick);
+    g.input.setAim(Math.atan2(-dir.x, -dir.z), Math.asin(U.clamp(dir.y, -0.9, 0.9)));
   };
 
   // ---------------------------------------------------------------- pilotage : la fusee suit la piste, le joueur la decale
@@ -191,6 +218,7 @@ const CUP = SHAPES.map((s) => s.name);
     const sp = SP(), d2 = d + 8, ease = U.clamp(g.flightTime / 1.0, 0, 1);
     relOf(T, d, rk.pos, rel); const isl = !!(E.course && E.course.isle && W && W.props), F = isl ? (W.fall || (W.fall = { on: false, ctrl: 1, vy: 0, t: 0 })) : null; if (isl) isleStep(g, dt, E.course, d, F, rk);
     if (isl && W) W.ground = rk.pos.y - (T.base(d) + E.course.isle.bank(d) * rel.x) < 3.6 && Math.abs(rel.x) < E.course.isle.W(d) && g.flightTime > 1.5;
+    if (isl && g.flightTime > 1.15 && !(W && W.free)) { driveFree(g, dt, T, E.course, rk, run, F, d); return; }
     const hdn = hdnAt(T, d), crs = E.course, open = !!cur().open && !crs, LATx = crs ? (crs.isle ? crs.isle.W(d) + 40 : Math.max(3, crs.hw(d) - 1.9)) : open ? 26 : LAT, HUPx = crs ? crs.wh(d) - 1.3 : open ? 22 : HUP;
     if (crs && W && W.free) { freeFly(g, dt, T, crs, rk, run); return; }
     const cutHere = crs && W && crs.cuts.length && g.flightTime > 1.2 ? E.cutAt(crs, d) : null, LATL = cutHere && cutHere.side < 0 ? 70 : LATx, LATR = cutHere && cutHere.side > 0 ? 70 : LATx;
@@ -208,6 +236,7 @@ const CUP = SHAPES.map((s) => s.name);
       const cam = g.camera; org.copy(cam.position); ray.set(I.cx, -(I.cy * 2 - 1), 0.5).unproject(cam).sub(org).normalize();
       const den = ray.dot(tf); let tx = rel.x, ty = rel.y;
       if (Math.abs(den) > 0.05) { const t = (tmp.copy(rk.pos).sub(org).dot(tf) + 40) / den; if (t > 0) { const P = tmp.copy(org).addScaledVector(ray, t); relOf(T, d + 40, P, relP); tx = relP.x; ty = relP.y; } }
+      if (isl) { tx = 0; ty = 0; }   // au decollage la fusee suit le centre ; le controle libre prend le relais apres 1,15 s
       tx = U.clamp(tx, -LATL, LATR) * ease; ty = U.clamp(ty, -hdn, HUPx) * ease;
       vlat = ffx + U.clamp((tx - rel.x) * 5, -30, 30); vy = ffy + U.clamp((ty - rel.y) * 5, -30, 30);
       I.ax = (vlat - ffx) / 26; I.ay = (vy - ffy) / 24;
@@ -283,12 +312,19 @@ const CUP = SHAPES.map((s) => s.name);
       const sl = slotOf[i], hs = (pr - sl[0]) * 9, d0 = -40 + hs; tRun = Math.max(8, tRun * (FN - d0) / (FN + 40));
       W.bots.push({ i, c, d0, gx: COLX[sl[1]], name: c.name, skin: c.skin, tRun, crash, pc: 0.2 + 0.6 * sr(), T: tRun + (crash ? 2.5 : 0), off: c.off, dy: c.dy, ph: c.ph, boom: false, d: 0, m: null, tr: null, hist: [], dead: false });
     });
+    if (E.course && E.course.isle && W.bots.length) {   // chaque pilote a sa rampe de lancement (comme la notre)
+      const n = W.bots.length, slab = new T3.InstancedMesh(new T3.BoxGeometry(3.8, 0.5, 8), new T3.MeshLambertMaterial({ color: '#4a4f57' }), n), rail = new T3.InstancedMesh(new T3.BoxGeometry(0.35, 0.45, 7), new T3.MeshLambertMaterial({ color: '#c9ccd2' }), n * 2), dm = new T3.Object3D();
+      W.bots.forEach((b, i) => { const bk = E.course.isle.bank(b.d0) * b.gx, p0 = T.at(b.d0, b.gx, 0.25 + bk), q0 = T.at(b.d0 + 3, b.gx, 0.25 + bk);
+        dm.position.set(p0[0], p0[1], p0[2]); dm.scale.set(1, 1, 1); dm.lookAt(q0[0], p0[1], q0[2]); dm.updateMatrix(); slab.setMatrixAt(i, dm.matrix);
+        for (const sg of [-1, 1]) { dm.position.set(p0[0], p0[1] + 0.3, p0[2]); dm.lookAt(q0[0], p0[1] + 0.3, q0[2]); dm.translateX(sg * 1.1); dm.updateMatrix(); rail.setMatrixAt(i * 2 + (sg > 0 ? 1 : 0), dm.matrix); } });
+      slab.instanceMatrix.needsUpdate = true; rail.instanceMatrix.needsUpdate = true; slab.frustumCulled = false; rail.frustumCulled = false; grp.add(slab, rail);
+    }
     buildFinish(g, T, FN, grp);
   };
   const bOff = (b, d) => (E.course && E.course.isle ? b.off * U.clamp(E.course.isle.W(d) * 0.8 / 6.5, 0.3, 9) : b.off * (E.course ? U.clamp((E.course.hw(d) - 2.4) / 6.5, 0.15, 1.1) : 1));
   const rivalMesh = (g, b) => {   // le skin et la traînée d'un pilote (crees au premier passage a l'ecran)
     const sk = CC.Skins.byId[b.skin] || CC.Skins.byId.stock;
-    b.m = CC.Models.rocket(sk); b.m.scale.setScalar(3.8); b.m.visible = false; W.grp.add(b.m);
+    b.m = CC.Models.rocket(sk); b.m.scale.set(5.4, 5.4, 3.8); b.m.visible = false; W.grp.add(b.m);
     b.mats = []; b.m.traverse((o) => { if (o.isMesh && o.material) { const arr = Array.isArray(o.material) ? o.material : [o.material], cl = arr.map((q) => { const c2 = q.clone(); c2.transparent = true; b.mats.push(c2); return c2; }); o.material = Array.isArray(o.material) ? cl : cl[0]; } });
     b.tr = mkRibbon(sk.flame || (sk.c && (sk.c.band || sk.c.body)) || '#ffffff'); W.grp.add(b.tr);
   };
@@ -317,7 +353,7 @@ const CUP = SHAPES.map((s) => s.name);
     }
     if (W.props) for (const bl of W.props.blocks) if (!bl.taken) { bl.g.rotation.y += dt * 2.2; bl.m.rotation.x += dt * 1.5; bl.m.position.y = Math.sin(t * 3 + bl.d) * 0.35; }
     if (fin) { for (const b of W.bots) { if (b.m) b.m.visible = false; if (b.tr) b.tr.visible = false; } return; }   // apres l'arrivee, plus de pilotes a l'ecran
-    let ahead = 0, lead = null; const vis = [], pd = run.dist > 1 ? run.dist : -rk.pos.z; if (W.bumpT > 0) W.bumpT -= dt;
+    let ahead = 0, lead = null; const vis = [], pd = run.dist > 1 ? run.dist : -rk.pos.z; if (W.bumpT > 0) W.bumpT -= dt; if (W.slowT > 0) W.slowT -= dt; if (W.kick) W.kick *= Math.exp(-dt * 3.5);
     for (const b of W.bots) {
       b.d = botD(b, t, FN); if (b.d > pd) { ahead++; if (!lead || b.d > lead.d) lead = b; }
       const tc = b.pc * b.tRun, hidden = b.crash && t >= tc + 0.3 && t < tc + 2.5;
@@ -331,15 +367,14 @@ const CUP = SHAPES.map((s) => s.name);
       if (!b.m) rivalMesh(g, b);
       const wf = bOff(b, b.d) !== b.off ? bOff(b, b.d) / (b.off || 1) : 1, wob = 1.5 * Math.sin(t * 1.3 + b.ph) * (E.course ? 0.55 : 1), wob2 = 1.5 * Math.sin((t + 0.12) * 1.3 + b.ph) * (E.course ? 0.55 : 1);
       { const s1 = U.clamp(t / 4.5, 0, 1), ss = s1 * s1 * (3 - 2 * s1), s2 = U.clamp(t / 2.4, 0, 1), sv = s2 * s2 * (3 - 2 * s2), lx1 = b.gx === undefined ? bOff(b, b.d) + wob : (b.gx + (bOff(b, b.d) + wob - b.gx) * ss);
-        lanePos(T, b.d, lx1, b.dy, b.m.position); lanePos(T, b.d + 6, b.gx === undefined ? bOff(b, b.d + 6) + wob2 : (b.gx + (bOff(b, b.d + 6) + wob2 - b.gx) * ss), b.dy, tmp2);
+        b.push = (b.push || 0) * Math.exp(-dt * 2.2); lanePos(T, b.d, lx1 + b.push, b.dy, b.m.position); lanePos(T, b.d + 6, b.gx === undefined ? bOff(b, b.d + 6) + wob2 : (b.gx + (bOff(b, b.d + 6) + wob2 - b.gx) * ss), b.dy, tmp2);
         if (b.gx !== undefined && sv < 1) { const dk = T.at(b.d, lx1, (E.course && E.course.isle ? E.course.isle.bank(b.d) * lx1 : 0) + 0.9)[1]; b.m.position.y = dk + (b.m.position.y - dk) * sv; tmp2.y = dk + (tmp2.y - dk) * sv + 0.6 * (1 - sv); }   // sur les rampes au depart, puis elles decollent
         b.m.lookAt(tmp2); b.m.visible = true; }
       if (E.course) b.m.rotateZ(U.clamp(-E.course.rate(b.d) * (cur().speed || 46) * 0.2, -0.75, 0.75) + 0.12 * Math.cos(t * 1.3 + b.ph));   // la fusee se penche dans les virages (et un peu quand elle bouge sur le cote)
-      { const dn = rk.active ? rk.pos.distanceTo(b.m.position) : 99, op = U.clamp((dn - 4) / 11, 0.22, 1); for (const q of b.mats) q.opacity = op; b.tr.material.opacity = 0.55 * op; }   // une fusee rivale trop proche devient transparente
-      b.hist.unshift(b.m.position.clone()); if (b.hist.length > TRN) b.hist.pop(); b.tr.visible = true; updRibbon(b);
+      b.tr.visible = false; { const fx = g.effects, fw = tmp.copy(tmp2).sub(b.m.position).normalize(), nz = b.m.position.clone().addScaledVector(fw, -2.1), vv = fw.clone().multiplyScalar(36); try { fx.exhaustCore(nz, fw, vv, 1, dt); fx.exhaustSmoke(nz.clone().addScaledVector(fw, -0.7), vv, 1); fx.exhaustSmoke(nz.clone().addScaledVector(fw, -1.5), vv, 1); } catch (e) { /* effets */ } }   // la meme flamme et la meme fumee que la fusee du joueur
       if (flying && !fin && t > 1.5) {   // on touche un pilote : les deux rebondissent (etincelles, un peu de vitesse en moins), personne ne meurt
         const dn2 = rk.pos.distanceTo(b.m.position);
-        if (!b.bump && dn2 < 3.6) { b.bump = true; b.T += 0.5; W.bumpT = 0.45; try { g.effects.flash(rk.pos.clone().lerp(b.m.position, 0.5), '#ffe2a8', 3, 50, 0.25, '#ffb030'); g.audio.play('target'); } catch (e) { /* effets */ } }
+        if (!b.bump && dn2 < 4.2) { b.bump = true; b.T += 0.5; W.bumpT = 0.45; tmp.copy(b.m.position).sub(rk.pos); { const sg = Math.sign(tmp.dot(nn)) || 1; b.push = sg * 8; W.kick = -sg * 13; } try { g.effects.flash(rk.pos.clone().lerp(b.m.position, 0.5), '#ffe2a8', 3, 50, 0.25, '#ffb030'); g.audio.play('target'); } catch (e) { /* effets */ } }
         else if (b.bump && dn2 > 9) b.bump = false;
       }
     }
@@ -364,7 +399,7 @@ const CUP = SHAPES.map((s) => s.name);
     const pos = new V(p[0], p[1], p[2]), dir = new V(q[0] - p[0], q[1] - p[1], q[2] - p[2]).normalize(), yaw = Math.atan2(-dir.x, -dir.z), pit = Math.asin(dir.y);
     g.input.setAim(yaw, pit); g.rig.setAim(yaw, pit); g.acc = 0;
     rk.launch(pos, dir, { speed: cur().speed || 44, ignited: true, freeBoost: 0.5 }); rk.shieldT = 1.4;
-    run.dist = d; if (W) W.fall = null; if (g.rig) g.rig._mv = null; g.rig.startFlight(); g.state = 'FLIGHT'; g.stallT = 0; g.impactT = 0; g.flightTime += 2.5; R.penT = performance.now();
+    run.dist = d; if (W) { W.fall = null; W.fc = null; } if (g.rig) g.rig._mv = null; g.rig.startFlight(); g.state = 'FLIGHT'; g.stallT = 0; g.impactT = 0; g.flightTime += 2.5; R.penT = performance.now();
     try { g.audio.play('shield'); } catch (e) { /* son */ }
   };
   const tmpHud = new V();
@@ -389,10 +424,10 @@ const CUP = SHAPES.map((s) => s.name);
     const FN = E.shortFin || 470;
     if (g.world && !g.world._crsSw) { const sw = g.world.sweep; g.world._crsSw = 1; g.world.sweep = function () { return E.course ? null : sw.apply(this, arguments); }; }   // parcours en couloir : les decors du sol ne bloquent pas la fusee (le couloir a ses murs)
     { const gt = g._shortGate; if (gt && gt.grp) gt.grp.visible = false; }   // l'ancien mur a damier est remplace par la nouvelle arrivee
-    if (rk.mesh && rk.active) rk.mesh.scale.setScalar(3.6);   // la fusee est plus grosse a l'ecran
+    if (rk.mesh && rk.active) rk.mesh.scale.set(5.2, 5.2, 3.6);   // plus larges : on les voit mieux   // la fusee est plus grosse a l'ecran
     if (RACE && W && W.run === run) raceStep(g, dt);
     if (RACE && W && W.run === run && rk.active && g.state === 'FLIGHT' && !g.evoFinish) {   // le costume choisi dans le menu et la traînee de la fusee du joueur
-      if (!W._sk && g.flightTime > 0.15) { W._sk = 1; const ps = playerSkin(); if (ps) { try { rk.setSkin(ps); } catch (e) { /* skin */ } } const col = PRO.trail() || (ps && ps.flame) || '#cfe8ff'; W.pb = { hist: [], tr: mkRibbon(col) }; W.pb.tr.visible = true; W.grp.add(W.pb.tr); }
+      if (!W._sk && g.flightTime > 0.15) { W._sk = 1; const ps = playerSkin(); if (ps) { try { rk.setSkin(ps); } catch (e) { /* skin */ } } }
       if (W.pb) { W.pb.hist.unshift(rk.pos.clone()); if (W.pb.hist.length > TRN) W.pb.hist.pop(); updRibbon(W.pb); }
     }
     if (W && W.pb && (g.evoFinish || !rk.active)) W.pb.tr.visible = false;
@@ -514,7 +549,7 @@ const CUP = SHAPES.map((s) => s.name);
       ctx.fillStyle = '#1b2236'; UI.rrect(ctx, -S(190), -S(240), S(380), S(480), S(36)); ctx.fill(); ctx.lineWidth = S(10); ctx.strokeStyle = col; ctx.stroke();
       if (sk) drawRocketIcon(ctx, 0, -S(30), S(260), sk); ctx.restore();
       if (sk) { UI.text(ctx, pk.fresh ? 'NOUVEAU COSTUME !' : 'DEJA POSSEDE : +300 PIECES', cx, Y(0.69), S(52), '#FFD23A', { outline: true }); UI.text(ctx, (sk.short || sk.name || pk.skin).toUpperCase() + '  -  ' + PRO.rarName[pk.rar || 0], cx, Y(0.75), S(38), '#ffffff', { outline: true }); }
-      const bw = cw * 0.6, bh = S(130), bx = cx - bw / 2, by = Y(0.89) - bh / 2; UI.btnPrimary(ctx, bx, by, bw, bh, 'SUPER !'); UI.tap(ui, bx, by, bw, bh, () => { w.stage = 'lineup'; w.t0 = performance.now(); });
+      const bw = cw * 0.6, bh = S(130), bx = cx - bw / 2, by = Y(0.89) - bh / 2; UI.btnPrimary(ctx, bx, by, bw, bh, 'SUPER !'); UI.tap(ui, bx, by, bw, bh, () => { goNext(g); });
     }
   };
   const restart = (g) => {
@@ -575,9 +610,10 @@ const CUP = SHAPES.map((s) => s.name);
       if (R.kills > 0) { const kx = S(86), ky = H * 0.19; ctx.save(); ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#0b0d12'; ctx.lineWidth = S(5); ctx.beginPath(); ctx.arc(kx, ky - S(6), S(26), 0, 6.283); ctx.fill(); ctx.stroke(); ctx.fillRect(kx - S(13), ky + S(10), S(26), S(15)); ctx.strokeRect(kx - S(13), ky + S(10), S(26), S(15)); ctx.fillStyle = '#0b0d12'; ctx.beginPath(); ctx.arc(kx - S(10), ky - S(8), S(6.5), 0, 6.283); ctx.arc(kx + S(10), ky - S(8), S(6.5), 0, 6.283); ctx.fill(); ctx.restore(); UI.text(ctx, String(R.kills), kx + S(76), ky, S(56), '#ffffff', { outline: true }); }
       if (rk.active && g.state === 'FLIGHT' && !g.evoFinish && rk.vel.lengthSq() > 4) {   // reticule : ou la fusee va, 40 m devant
         tmpHud.copy(rk.pos).addScaledVector(tmp.copy(rk.vel).normalize(), 40); CC.Curve.apply(tmpHud, g.camera).project(g.camera);
-        if (tmpHud.z < 1 && Math.abs(tmpHud.x) < 1.2 && Math.abs(tmpHud.y) < 1.2) { const rx = (tmpHud.x * 0.5 + 0.5) * W0, ry = (-tmpHud.y * 0.5 + 0.5) * H, rr = S(16); ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = S(3.5); ctx.beginPath(); ctx.arc(rx, ry, rr, 0, 6.283); ctx.moveTo(rx - rr * 1.7, ry); ctx.lineTo(rx - rr * 0.8, ry); ctx.moveTo(rx + rr * 0.8, ry); ctx.lineTo(rx + rr * 1.7, ry); ctx.stroke(); ctx.restore(); }
+        if (tmpHud.z < 1 && Math.abs(tmpHud.x) < 1.2 && Math.abs(tmpHud.y) < 1.2) { const cur2 = ISL && I.mode === 'mouse', rx = cur2 ? (I.cx * 0.5 + 0.5) * W0 : (tmpHud.x * 0.5 + 0.5) * W0, ry = cur2 ? I.cy * H : (-tmpHud.y * 0.5 + 0.5) * H, rr = S(16); ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = S(3.5); ctx.beginPath(); ctx.arc(rx, ry, rr, 0, 6.283); ctx.moveTo(rx - rr * 1.7, ry); ctx.lineTo(rx - rr * 0.8, ry); ctx.moveTo(rx + rr * 0.8, ry); ctx.lineTo(rx + rr * 1.7, ry); ctx.stroke(); ctx.restore(); }
       }
       if (W.ground) UI.text(ctx, 'RASANT', cx, H * 0.8, S(40), '#7CFF6A', { outline: true });
+      if (W.boostT > 0) { ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,' + (0.3 * Math.min(1, W.boostT)) + ')'; ctx.lineWidth = S(3); const cx0 = W0 / 2, cy0 = H * 0.55, mn = Math.min(W0, H); for (let q = 0; q < 30; q++) { const a = q / 30 * 6.283, r0 = mn * (0.36 + 0.1 * ((q * 7) % 5) / 5), r1 = r0 + mn * 0.24; ctx.beginPath(); ctx.moveTo(cx0 + Math.cos(a) * r0, cy0 + Math.sin(a) * r0 * 0.8); ctx.lineTo(cx0 + Math.cos(a) * r1, cy0 + Math.sin(a) * r1 * 0.8); ctx.stroke(); } ctx.restore(); }   // lignes de vitesse du turbo
       // les pseudos des pilotes a l'ecran et le premier
       const cam = g.camera, cpos = cam.position;
       const named = W.bots.filter((b) => b.m && b.m.visible).map((b) => ({ b, dd: cpos.distanceTo(b.m.position) })).filter((o) => o.dd > 9 && o.dd < 110).sort((x, y) => x.dd - y.dd).slice(0, 2).map((o) => o.b);
@@ -601,7 +637,7 @@ const CUP = SHAPES.map((s) => s.name);
       }
       if (W.missile && performance.now() - W.missile.t0 < 1800) UI.text(ctx, W.missile.name + ' TOUCHE', cx, H * 0.5, S(54), '#FF8A3A', { outline: true });
       if (W.cutMsg && performance.now() - W.cutMsg < 1600) UI.text(ctx, 'RACCOURCI !', cx, H * 0.3, S(96), '#43e05a', { outline: true });
-      if (performance.now() - R.penT < 1500) UI.text(ctx, '+2.5 S', cx, H * 0.3, S(96), '#FF5A4A', { outline: true });
+      if (performance.now() - R.penT < 1500) UI.text(ctx, '+' + (R.penAmt || 2.5) + ' S', cx, H * 0.3, S(96), '#FF5A4A', { outline: true });
       else if (W && W.boostT > 0) UI.text(ctx, 'TURBO !', cx, H * 0.3, S(78), '#7CFF6A', { outline: true });
     }
   };
@@ -685,7 +721,7 @@ const CUP = SHAPES.map((s) => s.name);
     UI.text(ctx, '+' + L.coins + ' PIECES' + (L.gems ? '    +' + L.gems + ' GEMMES' : ''), cx, Y(0.8), S(52), '#FFD23A', { outline: true });
     if (t > 0.8) {
       const bw = cw * 0.66, bh = S(140), bx = cx - bw / 2, by = Y(0.9) - bh / 2, pulse = 1 + 0.03 * Math.sin(t * 5);
-      ctx.save(); ctx.translate(cx, by + bh / 2); ctx.scale(pulse, pulse); ctx.translate(-cx, -(by + bh / 2)); UI.btnPrimary(ctx, bx, by, bw, bh, 'CONTINUER'); ctx.restore(); UI.tap(ui, bx, by, bw, bh, () => { w.stage = L.pack ? 'pack' : 'lineup'; w.t0 = performance.now(); });
+      ctx.save(); ctx.translate(cx, by + bh / 2); ctx.scale(pulse, pulse); ctx.translate(-cx, -(by + bh / 2)); UI.btnPrimary(ctx, bx, by, bw, bh, 'CONTINUER'); ctx.restore(); UI.tap(ui, bx, by, bw, bh, () => { if (L.pack) { w.stage = 'pack'; w.t0 = performance.now(); } else goNext(g); });
     }
   };
   const _win = Home.drawEvoWin;
