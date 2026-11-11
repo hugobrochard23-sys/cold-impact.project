@@ -159,7 +159,7 @@
   const bx = (w, h, d, c) => new T3.Mesh(new T3.BoxGeometry(w, h, d), mat(c));
   const cy = (rt, rb, h, c, n) => new T3.Mesh(new T3.CylinderGeometry(rt, rb, h, n || 10), mat(c));
   const STONE = ['#a39a8a', '#948b7c', '#b2a999'], WOOD = '#7a5634', WOODD = '#5b3f25';
-  const _v = new T3.Vector3(), RR = 1.6;   // RR : rayon de la fusee
+  const _v = new T3.Vector3(), RR = 0.95;   // RR : rayon de la fusee
   const segDist = (px, py, ax, ay, bx2, by2) => { const dx = bx2 - ax, dy = by2 - ay, l2 = dx * dx + dy * dy || 1, t = U.clamp(((px - ax) * dx + (py - ay) * dy) / l2, 0, 1); return Math.hypot(px - (ax + dx * t), py - (ay + dy * t)); };
   const obstacles = (T, C, grp) => {
     const I = C.isle, ups = [], hits = [], sx = I.sx, addHit = (d, f) => { f.d = d; hits.push(f); };
@@ -177,7 +177,7 @@
       for (const z of [-0.9, 0.9]) { const r = bx(0.3, L - 1.8, 0.3, '#1a1a1a'); r.position.set(0, -(L - 1.8) / 2, z); piv.add(r); }
       const head = new T3.Group(); head.position.y = -L; piv.add(head); head.add(bx(5.2, 4, 5.2, '#d9382c')); const band = bx(5.4, 0.9, 5.4, '#ffd23a'); band.position.y = 0.4; head.add(band); const cap = bx(5.6, 0.8, 5.6, '#23262b'); cap.position.y = -2.2; head.add(cap);
       ups.push((t) => { piv.rotation.z = A * Math.sin(t * Math.PI * 2 / 3.2 + ph); g.updateMatrixWorld(true); });
-      addHit(d, (pos) => { const l = loc(g, pos); if (Math.abs(l.z) > 4) return false; const a = piv.rotation.z, hx = L * Math.sin(a), hy = top - 0.6 - L * Math.cos(a); return Math.hypot(l.x - hx, l.y - hy) < 3.3 + RR || segDist(l.x, l.y, 0, top - 0.6, hx, hy) < 0.6 + RR; });
+      addHit(d, (pos) => { const l = loc(g, pos); if (Math.abs(l.z) > 4) return false; const a = piv.rotation.z, hx = L * Math.sin(a), hy = top - 0.6 - L * Math.cos(a); return Math.hypot(l.x - hx, l.y - hy) < 2.7 + RR || segDist(l.x, l.y, 0, top - 0.6, hx, hy) < 0.45 + RR; });
     };
     const logp = (d, lx, ph) => {   // tronc pendulaire sur chevalet de bois
       const g = mk(d, lx), top = 25, L = 19, span = 14, A = 0.62; gantry(g, span, top, true);
@@ -208,7 +208,7 @@
       const rot = new T3.Group(); rot.position.y = 0; g.add(rot);
       for (const s of [-1, 1]) { const blade = bx(R, h1 - h0, 1.6, s > 0 ? '#ff4f9a' : '#ffd23a'); blade.position.set(s * (R / 2 + 2), (h0 + h1) / 2, 0); rot.add(blade); const cap = bx(2.2, h1 - h0 + 0.6, 2.2, '#23262b'); cap.position.set(s * (R + 2), (h0 + h1) / 2, 0); rot.add(cap); }
       ups.push((t) => { rot.rotation.y = dir * t * 0.7 + ph; g.updateMatrixWorld(true); });
-      addHit(d, (pos) => { const l = loc(g, pos); if (l.y < h0 - RR || l.y > h1 + RR + 3) return false; if (Math.hypot(l.x, l.z) < 3 + RR) return true; const th = rot.rotation.y, t = l.x * Math.sin(th) + l.z * Math.cos(th), pr = Math.abs(l.x * Math.cos(th) - l.z * Math.sin(th)); return Math.abs(t) < R + 3 + RR && pr < 0.8 + RR && Math.abs(t) > 2; });
+      addHit(d, (pos) => { const l = loc(g, pos); if (l.y < h0 - RR || l.y > h1 + RR + 3) return false; if (Math.hypot(l.x, l.z) < 2.5 + RR) return true; const th = rot.rotation.y, t = l.x * Math.sin(th) + l.z * Math.cos(th), pr = Math.abs(l.x * Math.cos(th) - l.z * Math.sin(th)); return Math.abs(t) < R + 2.2 + RR && pr < 0.8 + RR && Math.abs(t) > 2; });
     };
     const cannon = (d, lx, side, ph) => {   // canon rouge sur un affut en pierre ; tire un gros rocher en travers du chemin, avec une ombre d'avertissement au sol
       const g = mk(d, lx), base = stoneBlock(7, 3, 8, 1); base.position.y = 1.5; g.add(base);
@@ -220,7 +220,7 @@
       ups.push((t) => { const k = (t + ph) % P, u = k / FL; const wp = T.at(d + 6, -side * Math.abs(lx) * sx * 0.55, I.bank(d + 6) * (-side * Math.abs(lx) * sx * 0.55));
         mark.visible = k < FL; mark.position.set(wp[0], wp[1] + 0.2, wp[2]); mark.scale.setScalar(0.7 + 0.5 * (1 - Math.min(1, k / FL)));
         if (u >= 0 && u < 1) { const st = T.at(d, lx * sx, I.bank(d) * lx * sx + 6); rock.position.set(lerp(st[0], wp[0], u), lerp(st[1], wp[1] + 3, u) + 10 * u * (1 - u), lerp(st[2], wp[2], u)); rock.rotation.x = t * 5; rock.visible = true; live = rock.position; } else { rock.visible = false; live = null; } });
-      addHit(d, (pos) => !!live && pos.distanceTo(live) < 3.6 + RR);
+      addHit(d, (pos) => !!live && pos.distanceTo(live) < 3.3 + RR);
     };
     const gateRow = (d, lx, n, ph) => {   // rangee de herses : n ouvertures ; chaque herse monte et descend ; elle ne descend JAMAIS sur la fusee qui approche
       const g = mk(d, lx), HWL = 23, OW = 15, tot = n * OW, panels = [], lt = [], posts = [];

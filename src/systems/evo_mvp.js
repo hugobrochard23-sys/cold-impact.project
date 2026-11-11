@@ -190,7 +190,7 @@ const CUP = SHAPES.map((s) => s.name);
   };
   const isleHit = (g, rk) => { if (g.flightTime < 1.2 || rk.shieldT > 0 || !W.props || !W.props.hits) return false; for (const f of W.props.hits) if (f(rk.pos)) return true; return false; };
   const hitPenalty = (g, rk, dir) => {   // un obstacle : la fusee rebondit, perd 1,5 s et de la vitesse ; elle ne meurt pas
-    rk.shieldT = 1.3; W.slowT = 0.8; g.flightTime += 1.5; R.penT = performance.now(); R.penAmt = 1.5; W.kick = (Math.random() < 0.5 ? -1 : 1) * 14; dir.y = Math.max(dir.y, 0.15); dir.normalize();
+    rk.shieldT = 1.3; W.slowT = 0.8; g.flightTime += 1.5; R.penT = performance.now(); R.penAmt = 1.5; W.kickT = (Math.random() < 0.5 ? -1 : 1) * 11; dir.y = Math.max(dir.y, 0.15); dir.normalize();
     try { g.audio.play('shield'); g.rig.shake = 0.6; g.effects.flash(rk.pos.clone(), '#ffd9a0', 4, 60, 0.25, '#ff9a30'); } catch (e) { /* effets */ }
   };
   // ---------------------------------------------------------------- ILE : controle LIBRE a 100 % (le curseur oriente la fusee, la camera reste sur elle)
@@ -198,9 +198,9 @@ const CUP = SHAPES.map((s) => s.name);
   const driveFree = (g, dt, T, crs, rk, run, F, d) => {
     const I2 = crs.isle; let sp = SP();
     if (!W.fc) { const v0 = rk.vel.clone(); if (v0.lengthSq() < 1) v0.set(tf.x, 0, tf.z); v0.normalize(); W.fc = { dir: v0, cd: v0.clone() }; }
-    const dir = W.fc.dir, c = F.on || F.ctrl < 1 ? F.ctrl : 1, rate = 2.3 * c;
+    const dir = W.fc.dir, c = F.on || F.ctrl < 1 ? F.ctrl : 1, rate = 1.7 * c;
     if (I.mode === 'keys') { const k = I.k, yi = (k.ArrowRight || k.KeyD ? 1 : 0) - (k.ArrowLeft || k.KeyA ? 1 : 0), pi = (k.ArrowUp || k.KeyW ? 1 : 0) - (k.ArrowDown || k.KeyS ? 1 : 0); dir.applyAxisAngle(UPV, -yi * rate * dt); dir.y += pi * rate * dt * 0.8; dir.normalize(); }
-    else { const cam = g.camera; org.copy(cam.position); if (/[?&]ap=1/.test(location.search)) { const q = T.at(d + 45, 0, T.laneY(d + 45) + 1); ray.set(q[0] - rk.pos.x, q[1] - rk.pos.y, q[2] - rk.pos.z).normalize(); } else ray.set(I.cx, -(I.cy * 2 - 1), 0.5).unproject(cam).sub(org).normalize(); const ang = dir.angleTo(ray); if (ang > 1e-4) { const t = Math.min(1, rate * dt / ang) * Math.min(1, ang / 0.1); dir.lerp(ray, t).normalize(); } }
+    else { const cam = g.camera; org.copy(cam.position); if (/[?&]ap=1/.test(location.search)) { const q = T.at(d + 45, 0, T.laneY(d + 45) + 1); ray.set(q[0] - rk.pos.x, q[1] - rk.pos.y, q[2] - rk.pos.z).normalize(); } else ray.set(I.cx, -(I.cy * 2 - 1), 0.5).unproject(cam).sub(org).normalize(); const ang = dir.angleTo(ray); if (ang > 1e-4) { const t = Math.min(1, rate * dt / ang) * Math.min(1, ang / 0.18); dir.lerp(ray, t).normalize(); } }
     if (Math.abs(dir.y) > 0.82) { const hx = Math.hypot(dir.x, dir.z) || 1, sc = Math.sqrt(1 - 0.82 * 0.82) / hx; dir.set(dir.x * sc, Math.sign(dir.y) * 0.82, dir.z * sc); }
     { const hx = Math.hypot(dir.x, dir.z) || 1; if ((dir.x * tf.x + dir.z * tf.z) / hx < -0.25) { dir.x += tf.x * dt * 4; dir.z += tf.z * dt * 4; dir.normalize(); } }   // on ne fait pas demi-tour
     if (F.on || F.ctrl < 1) { dir.y -= (1 - F.ctrl) * dt * 1.9; dir.normalize(); sp *= 1 + 0.22 * (1 - F.ctrl); }
@@ -264,6 +264,15 @@ const CUP = SHAPES.map((s) => s.name);
     { const f = /[?&]racec=(\w+)/.exec(location.search); const one = f && COURSES.find((c) => c.name.replace(/\W/g, '') === f[1]); if (one) R.courses = [one, one, one]; }   // essai d'une course a la main
   };
   if (RACE) newSession();
+  const botAdv = (b, t, dt, FN) => {   // la progression d'un pilote ; l'IA s'adapte : les plus proches du joueur restent pres de lui
+    if (b.p === undefined) { b.p = 0; b.f = 1; b.fT = 1; }
+    let rate = 1 / b.tRun;
+    if (b.crash && !b.cDone && b.p >= b.pc) { if (!b.cT) b.cT = t; if (t - b.cT < 2.5) rate = 0; else b.cDone = true; }
+    b.f += (b.fT - b.f) * Math.min(1, dt * 2); if (b.fin !== undefined) b.f = 1;
+    b.p = Math.min(1, b.p + rate * b.f * dt); if (b.p >= 1 && b.fin === undefined) b.fin = t;
+    b.d = b.d0 + (FN - b.d0) * b.p;
+  };
+  const settleBots = (time) => { const FN = E.shortFin || 470; for (const b of W.bots) b.T = b.fin !== undefined ? b.fin : time + Math.max(0, FN - b.d) / ((cur().speed || 44) * 0.96) + (b.crash && !b.cDone ? 1.2 : 0); };   // le temps d'arrivee de chacun, d'apres sa vraie position
   const botD = (b, t, FN) => { let p; const tc = b.pc * b.tRun; if (!b.crash || t < tc) p = t / b.tRun; else if (t < tc + 2.5) p = b.pc; else p = (t - 2.5) / b.tRun; return b.d0 + (FN - b.d0) * U.clamp(p, 0, 1); };
   const lanePos = (T, d, dx, dy, out) => { const p = T.at(d, T.laneX(d) + dx, T.laneY(d) + dy); return out.set(p[0], p[1], p[2]); };
   const SKIN_IDS = ['stock', 'gamin', 'bedon', 'fuseev', 'minutemec', 'hachette', 'croquette', 'baguette', 'tridentin', 'poisson', 'gardien', 'titanite', 'satanette', 'berthe', 'croissant', 'chaton', 'tsarini', 'maman', 'bombeh', 'colis', 'caillou', 'royale', 'neon', 'phenix', 'glace', 'toxique', 'samourai', 'galaxie', 'furtive'];
@@ -336,7 +345,7 @@ const CUP = SHAPES.map((s) => s.name);
     else if (kind === 'BOUCLIER') { rk.shieldT = Math.max(rk.shieldT || 0, 5 + lv); try { g.audio.play('shield'); } catch (e) { /* son */ } }
     else {   // missile : le pilote devant le plus proche explose
       let best = null; for (const b of W.bots) if (!b.hit && !b.crash && b.d > run.dist + 4 && b.d < run.dist + 260 + 60 * lv && (!best || b.d < best.d)) best = b;
-      if (best) { best.hit = true; best.crash = true; best.pc = t / best.tRun; best.boom = true; best.T += 4; R.roundKills++; R.kills++; const P = best.m ? best.m.position.clone() : rk.pos.clone().addScaledVector(tf, 40); try { g.effects.explosion(P, new V(0, 1, 0), false, 'orange'); g.audio.play('boomSmall', P); } catch (e) { /* effets */ } if (best.m) { best.m.visible = false; best.tr.visible = false; } W.missile = { name: best.name, t0: performance.now() }; }
+      if (best) { best.hit = true; best.crash = true; best.pc = best.p || 0; best.boom = true; best.p = Math.max(0, (best.p || 0) - 1.5 / best.tRun); R.roundKills++; R.kills++; const P = best.m ? best.m.position.clone() : rk.pos.clone().addScaledVector(tf, 40); try { g.effects.explosion(P, new V(0, 1, 0), false, 'orange'); g.audio.play('boomSmall', P); } catch (e) { /* effets */ } if (best.m) { best.m.visible = false; best.tr.visible = false; } W.missile = { name: best.name, t0: performance.now() }; }
     }
   };
   const raceStep = (g, dt) => {
@@ -353,28 +362,30 @@ const CUP = SHAPES.map((s) => s.name);
     }
     if (W.props) for (const bl of W.props.blocks) if (!bl.taken) { bl.g.rotation.y += dt * 2.2; bl.m.rotation.x += dt * 1.5; bl.m.position.y = Math.sin(t * 3 + bl.d) * 0.35; }
     if (fin) { for (const b of W.bots) { if (b.m) b.m.visible = false; if (b.tr) b.tr.visible = false; } return; }   // apres l'arrivee, plus de pilotes a l'ecran
-    let ahead = 0, lead = null; const vis = [], pd = run.dist > 1 ? run.dist : -rk.pos.z; if (W.bumpT > 0) W.bumpT -= dt; if (W.slowT > 0) W.slowT -= dt; if (W.kick) W.kick *= Math.exp(-dt * 3.5);
+    let ahead = 0, lead = null; const vis = [], pd = run.dist > 1 ? run.dist : -rk.pos.z; if (W.bumpT > 0) W.bumpT -= dt; if (W.slowT > 0) W.slowT -= dt; W.kickT = (W.kickT || 0) * Math.exp(-dt * 1.6); W.kick = (W.kick || 0) + (W.kickT - (W.kick || 0)) * Math.min(1, dt * 5);
+    if (t > 4) { const byD = W.bots.slice().sort((a, c) => Math.abs(a.d - pd) - Math.abs(c.d - pd)); byD.forEach((b, k) => { const gp = b.d - pd; b.fT = k < 3 && Math.abs(gp) > 100 && b.fin === undefined ? 1 - Math.sign(gp) * U.clamp((Math.abs(gp) - 100) / 300, 0, 0.12) : 1; }); }   // les 3 pilotes les plus proches sont rapproches du joueur (ralentis s'ils sont loin devant, accelerees s'ils sont loin derriere)
     for (const b of W.bots) {
-      b.d = botD(b, t, FN); if (b.d > pd) { ahead++; if (!lead || b.d > lead.d) lead = b; }
-      const tc = b.pc * b.tRun, hidden = b.crash && t >= tc + 0.3 && t < tc + 2.5;
-      if (b.crash && !b.boom && t >= tc && Math.abs(b.d - run.dist) < 220) { b.boom = true; lanePos(T, b.d, bOff(b, b.d), b.dy, tmp2); try { g.effects.explosion(tmp2.clone(), new V(0, 1, 0), false, 'orange'); } catch (e) { /* effets */ } }
+      botAdv(b, t, dt, FN); if (b.d > pd) { ahead++; if (!lead || b.d > lead.d) lead = b; }
+      const hidden = b.crash && b.cT && t - b.cT >= 0.3 && t - b.cT < 2.5;
+      if (b.crash && !b.boom && b.p >= b.pc && Math.abs(b.d - run.dist) < 220) { b.boom = true; lanePos(T, b.d, bOff(b, b.d), b.dy, tmp2); try { g.effects.explosion(tmp2.clone(), new V(0, 1, 0), false, 'orange'); } catch (e) { /* effets */ } }
       if (Math.abs(b.d - pd) < 200 && !hidden) vis.push(b); else if (b.m) { b.m.visible = false; b.tr.visible = false; }
     }
     vis.sort((a, c) => (Math.abs(a.d - pd) - (a.d > pd ? 15 : 0)) - (Math.abs(c.d - pd) - (c.d > pd ? 15 : 0)));
     const MAXV = t < 3.6 ? 40 : 5;   // au depart on voit tout le monde ; ensuite au plus 5 pilotes a l'ecran
     for (let k = 0; k < vis.length; k++) {
-      const b = vis[k]; if (k >= MAXV) { if (b.m) { b.m.visible = false; b.tr.visible = false; } continue; }
+      const b = vis[k], show = k < MAXV || (b.shown && k < MAXV + 1); b.shown = show; b.vk = (b.vk || 0) + ((show ? 1 : 0) - (b.vk || 0)) * Math.min(1, dt * 7);
+      if (!show && b.vk < 0.04) { if (b.m) { b.m.visible = false; b.tr.visible = false; } continue; }
       if (!b.m) rivalMesh(g, b);
       const wf = bOff(b, b.d) !== b.off ? bOff(b, b.d) / (b.off || 1) : 1, wob = 1.5 * Math.sin(t * 1.3 + b.ph) * (E.course ? 0.55 : 1), wob2 = 1.5 * Math.sin((t + 0.12) * 1.3 + b.ph) * (E.course ? 0.55 : 1);
       { const s1 = U.clamp(t / 4.5, 0, 1), ss = s1 * s1 * (3 - 2 * s1), s2 = U.clamp(t / 2.4, 0, 1), sv = s2 * s2 * (3 - 2 * s2), lx1 = b.gx === undefined ? bOff(b, b.d) + wob : (b.gx + (bOff(b, b.d) + wob - b.gx) * ss);
-        b.push = (b.push || 0) * Math.exp(-dt * 2.2); lanePos(T, b.d, lx1 + b.push, b.dy, b.m.position); lanePos(T, b.d + 6, b.gx === undefined ? bOff(b, b.d + 6) + wob2 : (b.gx + (bOff(b, b.d + 6) + wob2 - b.gx) * ss), b.dy, tmp2);
+        b.pushT = (b.pushT || 0) * Math.exp(-dt * 1.4); b.push = (b.push || 0) + (b.pushT - (b.push || 0)) * Math.min(1, dt * 5); lanePos(T, b.d, lx1 + b.push, b.dy, b.m.position); lanePos(T, b.d + 6, b.gx === undefined ? bOff(b, b.d + 6) + wob2 : (b.gx + (bOff(b, b.d + 6) + wob2 - b.gx) * ss), b.dy, tmp2);
         if (b.gx !== undefined && sv < 1) { const dk = T.at(b.d, lx1, (E.course && E.course.isle ? E.course.isle.bank(b.d) * lx1 : 0) + 0.9)[1]; b.m.position.y = dk + (b.m.position.y - dk) * sv; tmp2.y = dk + (tmp2.y - dk) * sv + 0.6 * (1 - sv); }   // sur les rampes au depart, puis elles decollent
-        b.m.lookAt(tmp2); b.m.visible = true; }
+        b.m.lookAt(tmp2); b.m.visible = true; b.m.scale.set(5.4 * b.vk, 5.4 * b.vk, 3.8 * b.vk); }
       if (E.course) b.m.rotateZ(U.clamp(-E.course.rate(b.d) * (cur().speed || 46) * 0.2, -0.75, 0.75) + 0.12 * Math.cos(t * 1.3 + b.ph));   // la fusee se penche dans les virages (et un peu quand elle bouge sur le cote)
       b.tr.visible = false; { const fx = g.effects, fw = tmp.copy(tmp2).sub(b.m.position).normalize(), nz = b.m.position.clone().addScaledVector(fw, -2.1), vv = fw.clone().multiplyScalar(36); try { fx.exhaustCore(nz, fw, vv, 1, dt); fx.exhaustSmoke(nz.clone().addScaledVector(fw, -0.7), vv, 1); fx.exhaustSmoke(nz.clone().addScaledVector(fw, -1.5), vv, 1); } catch (e) { /* effets */ } }   // la meme flamme et la meme fumee que la fusee du joueur
       if (flying && !fin && t > 1.5) {   // on touche un pilote : les deux rebondissent (etincelles, un peu de vitesse en moins), personne ne meurt
-        const dn2 = rk.pos.distanceTo(b.m.position);
-        if (!b.bump && dn2 < 4.2) { b.bump = true; b.T += 0.5; W.bumpT = 0.45; tmp.copy(b.m.position).sub(rk.pos); { const sg = Math.sign(tmp.dot(nn)) || 1; b.push = sg * 8; W.kick = -sg * 13; } try { g.effects.flash(rk.pos.clone().lerp(b.m.position, 0.5), '#ffe2a8', 3, 50, 0.25, '#ffb030'); g.audio.play('target'); } catch (e) { /* effets */ } }
+        const dn2 = rk.pos.distanceTo(b.m.position), df = tmp.copy(b.m.position).sub(rk.pos), fd = W.fc ? W.fc.dir : tf, al = df.dot(fd), pp = Math.sqrt(Math.max(0, df.lengthSq() - al * al));
+        if (!b.bump && b.vk > 0.8 && Math.abs(al) < 3.2 && pp < 1.5) { b.bump = true; b.p = Math.max(0, b.p - 0.6 / b.tRun); W.bumpT = 0.35; { const sg = Math.sign(df.dot(nn)) || 1; b.pushT = sg * 6; W.kickT = -sg * 8; } try { g.effects.flash(rk.pos.clone().lerp(b.m.position, 0.5), '#ffe2a8', 3, 50, 0.25, '#ffb030'); g.audio.play('target'); } catch (e) { /* effets */ } }
         else if (b.bump && dn2 > 9) b.bump = false;
       }
     }
@@ -407,7 +418,7 @@ const CUP = SHAPES.map((s) => s.name);
   const coinsFor = (rank, kills, died) => (died ? 10 : Math.max(20, 130 - 3 * rank)) + kills * 15;
   const mkResult = (g, time, rank, died) => {   // le classement de la manche, les pieces gagnees, les eliminés
     const rd = R.round - 1, keep = R.keep[rd], qual = !died && rank <= keep;
-    const all = W.bots.map((b) => ({ name: b.name, time: b.T })); all.push({ name: 'TOI', time: died ? 999 : time, you: true }); all.sort((x, y) => x.time - y.time);
+    settleBots(time); const all = W.bots.map((b) => ({ name: b.name, time: b.T })); all.push({ name: 'TOI', time: died ? 999 : time, you: true }); all.sort((x, y) => x.time - y.time);
     const you = all.findIndex((x) => x.you); if (died) { all.splice(you, 1); all.splice(Math.max(0, rank - 1), 0, { name: 'TOI', time: time, you: true, dnf: true }); }
     if (qual && !(rd === 2)) R.surv = all.slice(0, keep).filter((x) => !x.you).map((x) => (W.bots.find((b) => b.name === x.name) || {}).c).filter(Boolean).slice(0, keep - 1);
     const coins = coinsFor(rank, R.roundKills, died), S0 = E.save(g); S0.coins = (S0.coins || 0) + coins; R.coins += coins;
@@ -433,7 +444,7 @@ const CUP = SHAPES.map((s) => s.name);
     if (W && W.pb && (g.evoFinish || !rk.active)) W.pb.tr.visible = false;
     if (ended && wantEnd && performance.now() >= wantEnd) { wantEnd = 0; g.evoWin = { mv: true, race: RACE, t0: performance.now(), lv: LV, info: ended }; g.ui.overlay = 'evoWin'; try { g.audio.play('victory'); } catch (e) { /* son */ } }
     if (RACE && g.evoFinish && !g._mvEnd && W) {   // fin de manche : le rang parmi les pilotes
-      g._mvEnd = 1; const time = Math.max(0, g.flightTime), rank = 1 + W.bots.filter((b) => b.T < time).length;
+      g._mvEnd = 1; const time = Math.max(0, g.flightTime); settleBots(time); const rank = 1 + W.bots.filter((b) => b.T < time).length;
       ended = mkResult(g, time, rank, false); wantEnd = performance.now() + 750; return;
     }
     if (g.evoFinish && !g._mvEnd) {
