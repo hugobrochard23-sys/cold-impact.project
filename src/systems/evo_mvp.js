@@ -51,9 +51,9 @@
     { name: 'SERPENT', seed: 37, shape: [[140, 0, 0.08, 22, 15], [220, -90, 0.2, 20, 9], [200, 180, 0.2, 22, 8], [160, -160, 0.16, 30, 7], [120, 0, 0.55, 46, 9, 4], [300, 270, 0.07, 24, 7], [150, 0, 0.06, 14, 5.5], [250, -120, 0.2, 22, 9], [170, 0, 0.04, 14, 17]] }
   ];
   for (const s0 of SHAPES) { s0.zone = 'campagne'; s0.speed = 46; s0.cap = 0; s0.scenes = E.courseScenes || ['rampe', 'camp']; COURSES.unshift(s0); }
-  if (E.jungleShape) COURSES.unshift({ name: 'JUNGLE', map: 'jungle', variant: 0, seed: 11, isle: true, shape: E.jungleShape, zone: 'campagne', speed: 36, cap: 0, scenes: E.isleScenes || ['crsI0'] });
-  if (E.rangeShape) COURSES.unshift({ name: 'TERRAIN D ESSAI', map: 'range', variant: 0, seed: 9, isle: true, shape: E.rangeShape, zone: 'campagne', speed: 36, cap: 0, scenes: E.isleScenes || ['crsI0'] });
-  if (E.isleShape) { const mir = E.isleShape.map((q) => [q[0], -q[1]].concat(q.slice(2))); [[2, mir], [1, mir], [0, E.isleShape]].forEach(([v, sh]) => COURSES.unshift({ name: 'ARCHIPEL ' + (v + 1), variant: v, seed: 5, isle: true, shape: v === 2 ? E.isleShape : sh, zone: 'campagne', speed: 36, cap: 0, scenes: E.isleScenes || ['crsI0'] })); }   // v370 : l'ile (la Coupe se court dessus)
+  if (E.jungleShape) COURSES.unshift({ name: 'JUNGLE', map: 'jungle', variant: 0, seed: 11, isle: true, shape: E.jungleShape, zone: 'campagne', speed: 38, cap: 0, scenes: E.isleScenes || ['crsI0'] });
+  if (E.rangeShape) COURSES.unshift({ name: 'TERRAIN D ESSAI', map: 'range', variant: 0, seed: 9, isle: true, shape: E.rangeShape, zone: 'campagne', speed: 38, cap: 0, scenes: E.isleScenes || ['crsI0'] });
+  if (E.isleShape) { const mir = E.isleShape.map((q) => [q[0], -q[1]].concat(q.slice(2))); [[2, mir], [1, mir], [0, E.isleShape]].forEach(([v, sh]) => COURSES.unshift({ name: 'ARCHIPEL ' + (v + 1), variant: v, seed: 5, isle: true, shape: v === 2 ? E.isleShape : sh, zone: 'campagne', speed: 38, cap: 0, scenes: E.isleScenes || ['crsI0'] })); }   // v370 : l'ile (la Coupe se court dessus)
 const CUP = SHAPES.map((s) => s.name);
   const R = { round: 1, courses: [], field: [32, 16, 8], keep: [16, 8, 1], last: null, live: 1, ease: parseFloat(lsGet('cc.race.ease', '0')) || 0, penT: 0, session: 0 };
   let W = null;   // le monde de la manche (pilotes, fleches de vitesse)
@@ -73,7 +73,7 @@ const CUP = SHAPES.map((s) => s.name);
     return al;
   };
   const fails = {};   // essais rates par niveau (pendant la session) : 0 = 3 etoiles
-  const SP = () => ((cur().speed || 44) + (W && W.boostT > 0 ? (cur().isle ? 7 : 12) : 0) + (W && W.ground ? 3 : 0)) * (W && W.bumpT > 0 ? 0.82 : 1) * (W && W.slowT > 0 ? 0.45 : 1);
+  const SP = () => ((cur().speed || 44) + (W && W.boostT > 0 ? (cur().isle ? 7 : 12) : 0) + (W && W.bst ? 9 : 0) + (W && W.ground ? 3 : 0)) * (W && W.bumpT > 0 ? 0.82 : 1) * (W && W.slowT > 0 ? 0.45 : 1);
   const _rk = E.rocket;   // carburant illimite, jamais en panne
   E.rocket = (n) => { const r = _rk(n); return Object.assign({}, r, { tier: 2, fuel: 999 }); };
   E.softCrash = () => false;   // la mort = une explosion simple, pas de roule-boule
@@ -98,12 +98,13 @@ const CUP = SHAPES.map((s) => s.name);
   const I = { cx: 0, cy: 0.5, mode: 'mouse', k: {}, mx: -1, my: -1, ax: 0, ay: 0 };
   const ARR = { ArrowLeft: 1, ArrowRight: 1, ArrowUp: 1, ArrowDown: 1, KeyA: 1, KeyD: 1, KeyW: 1, KeyS: 1 };
   const setC = (x, y) => { I.cx = x / window.innerWidth * 2 - 1; I.cy = y / window.innerHeight; };
-  window.addEventListener('mousemove', (e) => { if (Math.abs(e.clientX - I.mx) + Math.abs(e.clientY - I.my) > 3) I.mode = 'mouse'; I.mx = e.clientX; I.my = e.clientY; setC(e.clientX, e.clientY); });
-  window.addEventListener('mousedown', (e) => { if (e.button === 0) setC(e.clientX, e.clientY); });
-  window.addEventListener('touchstart', (e) => { I.mode = 'mouse'; const t = e.touches[0]; if (t) setC(t.clientX, t.clientY); }, { passive: true });
+  window.addEventListener('mousemove', (e) => { const mv = Math.abs(e.clientX - I.mx) + Math.abs(e.clientY - I.my); I.mx = e.clientX; I.my = e.clientY; setC(e.clientX, e.clientY); if (I.mode === 'keys') { I.trav = (I.trav || 0) + mv; if (I.trav > (performance.now() - (I.keyT || 0) < 2500 ? 260 : 60)) { I.mode = 'mouse'; I.anReset = 1; } } });   // apres une fleche, la souris ne reprend la main que si on la bouge franchement
+  window.addEventListener('mousedown', (e) => { if (e.button === 0) { setC(e.clientX, e.clientY); I.boost = 1; } });
+  window.addEventListener('mouseup', (e) => { if (e.button === 0) I.boost = 0; });
+  window.addEventListener('touchstart', (e) => { I.mode = 'mouse'; const t = e.touches[0]; if (t) { setC(t.clientX, t.clientY); I.anReset = 1; } }, { passive: true });
   window.addEventListener('touchmove', (e) => { const t = e.touches[0]; if (t) setC(t.clientX, t.clientY); }, { passive: true });
-  window.addEventListener('keydown', (e) => { I.k[e.code] = 1; if (ARR[e.code]) { I.mode = 'keys'; const g = CC.game; if (g && g.state === 'FLIGHT') e.preventDefault(); } });
-  window.addEventListener('keyup', (e) => { I.k[e.code] = 0; });
+  window.addEventListener('keydown', (e) => { I.k[e.code] = 1; if (e.code === 'Space') { I.boost = 1; const g0 = CC.game; if (g0 && g0.state === 'FLIGHT') e.preventDefault(); } if (ARR[e.code]) { I.mode = 'keys'; I.keyT = performance.now(); I.trav = 0; const g = CC.game; if (g && g.state === 'FLIGHT') e.preventDefault(); } });
+  window.addEventListener('keyup', (e) => { I.k[e.code] = 0; if (e.code === 'Space') I.boost = 0; });
   E.mvpInput = I;
 
   // ---------------------------------------------------------------- geometrie le long de la piste du niveau
@@ -139,10 +140,12 @@ const CUP = SHAPES.map((s) => s.name);
       rig._mv.lerp(camP, Math.min(1, (dt || 0.016) * 6)); rig._ml.lerp(camL, Math.min(1, (dt || 0.016) * 8)); cam.position.copy(rig._mv); cam.up.set(0, 1, 0); cam.lookAt(rig._ml); return;
     }
     if (isl && W && W.fc && !W.free) {   // controle libre : camera derriere la fusee, dans son axe, toujours centree sur elle
-      const fc = W.fc, sdt = dt || 0.016; fc.cd.lerp(fc.dir, 1 - Math.exp(-sdt * 8)).normalize(); W.camB = (W.camB || 0) + ((W.boostT > 0 ? 1 : 0) - (W.camB || 0)) * Math.min(1, sdt * 6);
+      const fc = W.fc, sdt = dt || 0.016; fc.cd.lerp(fc.dir, 1 - Math.exp(-sdt * 8)).normalize(); W.camB = (W.camB || 0) + ((W.boostT > 0 || W.bst ? 1 : 0) - (W.camB || 0)) * Math.min(1, sdt * 6);
       camP.copy(rk.pos).addScaledVector(fc.cd, -(6.6 + 1.8 * W.camB)); camP.y += 2.3 - 0.3 * W.camB; camL.copy(rk.pos).addScaledVector(fc.cd, 14); if (W.camB > 0.05) rig.punch = Math.max(rig.punch || 0, 0.6 * W.camB);
       if (!rig._mv) { rig._mv = new V().copy(camP); rig._ml = new V().copy(camL); }
-      rig._mv.lerp(camP, Math.min(1, sdt * 16)); rig._ml.lerp(camL, Math.min(1, sdt * 18)); cam.position.copy(rig._mv); cam.up.set(0, 1, 0); cam.lookAt(rig._ml); return;
+      rig._mv.lerp(camP, Math.min(1, sdt * 16)); rig._ml.lerp(camL, Math.min(1, sdt * 18)); cam.position.copy(rig._mv); cam.up.set(0, 1, 0); cam.lookAt(rig._ml);
+      { const fvT = (g.baseFov || cam.fov) * (1.07 + 0.12 * W.camB); if (Math.abs(cam.fov - fvT) > 0.02) { cam.fov = fvT; cam.updateProjectionMatrix(); } }   // le champ s'elargit : les decors defilent plus vite
+      return;
     }
     if (w > 0.001) {   // decollage : on voit la fusee partir du lanceur, la camera la suit de loin et d'en haut, puis redescend vers la vue de course en la gardant au centre
       frame(T, Math.max(0, d)); const fz = tmp.set(tf.x, 0, tf.z), side = tmp2.set(nn.x, 0, nn.z);
@@ -193,12 +196,21 @@ const CUP = SHAPES.map((s) => s.name);
   };
   // ---------------------------------------------------------------- ILE : controle LIBRE a 100 % (le curseur oriente la fusee, la camera reste sur elle)
   const UPV = new V(0, 1, 0);
+  let _rip = null; const wallRipple = (g, pos, nrm) => {   // l'onde du mur invisible : des anneaux bleutes qui s'elargissent a l'endroit du contact
+    if (!W || !W.grp) return; if (!_rip || _rip.parent !== W.grp) { const cv = document.createElement('canvas'); cv.width = cv.height = 128; const c2 = cv.getContext('2d'); for (let k = 0; k < 3; k++) { c2.strokeStyle = 'rgba(190,235,255,' + (0.9 - k * 0.25) + ')'; c2.lineWidth = 5 - k; c2.beginPath(); c2.arc(64, 64, 18 + k * 17, 0, 6.283); c2.stroke(); } const tx = new T3.CanvasTexture(cv); _rip = new T3.Mesh(new T3.PlaneGeometry(1, 1), new T3.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false, side: T3.DoubleSide, fog: false })); _rip.userData.t0 = -9; W.grp.add(_rip); }
+    if (_rip.visible && performance.now() - _rip.userData.t0 < 450) return; _rip.position.copy(pos); _rip.lookAt(pos.clone().add(nrm)); _rip.userData.t0 = performance.now(); _rip.visible = true; };
   const driveFree = (g, dt, T, crs, rk, run, F, d) => {
     const I2 = crs.isle; let sp = SP();
     if (!W.fc) { const v0 = rk.vel.clone(); if (v0.lengthSq() < 1) v0.set(tf.x, 0, tf.z); v0.normalize(); W.fc = { dir: v0, cd: v0.clone() }; }
     const dir = W.fc.dir, c = F.on || F.ctrl < 1 ? F.ctrl : 1, rate = 1.7 * c;
     if (I.mode === 'keys') { const k = I.k, yi = (k.ArrowRight || k.KeyD ? 1 : 0) - (k.ArrowLeft || k.KeyA ? 1 : 0), pi = (k.ArrowUp || k.KeyW ? 1 : 0) - (k.ArrowDown || k.KeyS ? 1 : 0); dir.applyAxisAngle(UPV, -yi * rate * dt); dir.y += pi * rate * dt * 0.8; dir.normalize(); }
-    else { const cam = g.camera; org.copy(cam.position); if (/[?&]ap=1/.test(location.search)) { const q = T.at(d + 45, 0, T.laneY(d + 45) + 1); ray.set(q[0] - rk.pos.x, q[1] - rk.pos.y, q[2] - rk.pos.z).normalize(); } else ray.set(I.cx, -(I.cy * 2 - 1), 0.5).unproject(cam).sub(org).normalize(); const ang = dir.angleTo(ray); if (ang > 1e-4) { const t = Math.min(1, rate * dt / ang) * Math.min(1, ang / 0.18); dir.lerp(ray, t).normalize(); } }
+    else if (/[?&]ap=1/.test(location.search)) { const cam = g.camera; org.copy(cam.position); const q = T.at(d + 45, 0, T.laneY(d + 45) + 1); ray.set(q[0] - rk.pos.x, q[1] - rk.pos.y, q[2] - rk.pos.z).normalize(); const ang = dir.angleTo(ray); if (ang > 1e-4) { const t = Math.min(1, rate * dt / ang) * Math.min(1, ang / 0.18); dir.lerp(ray, t).normalize(); } }
+    else {   // souris / doigt : controle RELATIF ; l'ecart au point d'ancrage fait tourner la fusee et l'ancre rattrape le curseur en 0,5 s : quand la main s'arrete, le cap reste stable
+      if (I.anx === undefined || I.anReset) { I.anx = I.cx; I.any = I.cy; I.anReset = 0; }
+      const ox = I.cx - I.anx, oy = I.any - I.cy, DZ = 0.022, ex = U.clamp(Math.sign(ox) * Math.max(0, Math.abs(ox) - DZ) / 0.45, -1, 1), ey = U.clamp(Math.sign(oy) * Math.max(0, Math.abs(oy) - DZ) / 0.28, -1, 1);
+      dir.applyAxisAngle(UPV, -ex * 1.9 * c * dt); dir.y += ey * 1.5 * c * dt; dir.normalize();
+      const ka = 1 - Math.exp(-dt / 0.5); I.anx += (I.cx - I.anx) * ka; I.any += (I.cy - I.any) * ka;
+    }
     if (Math.abs(dir.y) > 0.82) { const hx = Math.hypot(dir.x, dir.z) || 1, sc = Math.sqrt(1 - 0.82 * 0.82) / hx; dir.set(dir.x * sc, Math.sign(dir.y) * 0.82, dir.z * sc); }
     if (Math.abs(rel.x) < I2.W(d) + 6) { const hx = Math.hypot(dir.x, dir.z) || 1; if ((dir.x * tf.x + dir.z * tf.z) / hx < -0.25) { dir.x += tf.x * dt * 4; dir.z += tf.z * dt * 4; dir.normalize(); } }   // on ne fait pas demi-tour
     if (F.on || F.ctrl < 1) { dir.y -= (1 - F.ctrl) * dt * 1.9; dir.normalize(); sp *= 1 + 0.22 * (1 - F.ctrl); }
@@ -206,6 +218,8 @@ const CUP = SHAPES.map((s) => s.name);
     if (over) { if (rk.pos.y < dk + 2.2) { rk.pos.y = dk + 2.2; if (dir.y < 0) { dir.set(dir.x, 0, dir.z).normalize(); } } if (rk.pos.y > dk + 27 && dir.y > 0) dir.set(dir.x, 0, dir.z).normalize(); }
     const prev = W.prevPos || (W.prevPos = rk.pos.clone());
     if (g.flightTime > 1.2) {   // VRAIES collisions : on ne traverse jamais un objet ; la fusee est repoussee, glisse ou rebondit, et perd de la vitesse
+      { const lim = I2.W(d) + 34, ax = Math.abs(rel.x), ceil = dk + 75;   // mur invisible : trop loin de la piste, on est repousse et une onde apparait
+        if (ax > lim || rk.pos.y > ceil) { const sg = Math.sign(rel.x) || 1; if (ax > lim) { rk.pos.addScaledVector(nn, -sg * (ax - lim)); const dn0 = dir.dot(nn) * sg; if (dn0 > 0) dir.addScaledVector(nn, -sg * dn0); } if (rk.pos.y > ceil) { rk.pos.y = ceil; if (dir.y > 0) { dir.y = 0; dir.normalize(); } } wallRipple(g, rk.pos, ax > lim || true ? nn : UPV); } }
       if (isleKill(g, crs, T, d, rk)) { R.penT = performance.now(); R.penAmt = 2.5; respawn(g); return; }
       if (I2.boxes) {
         const yy = rk.pos.y - dk, RRc = 0.95;
@@ -267,7 +281,7 @@ const CUP = SHAPES.map((s) => s.name);
   };
 
   // ---------------------------------------------------------------- fin, essais, relances
-  const BOT_NAMES = ['NOVA', 'ROCKY', 'TURBO', 'ZIGGY', 'COMETE', 'FLASH', 'BOLT', 'ORION', 'PEPPER', 'VIPER', 'MAVERICK', 'LUNA', 'JETTE', 'STORM', 'PIXEL', 'ACE', 'BLITZ', 'COSMO', 'DINGO', 'ECHO', 'FALCON', 'GIZMO', 'HAWK', 'IGOR', 'JUNO', 'KIWI', 'LYNX', 'MOXIE', 'NITRO', 'OTTO', 'PHOENIX', 'QUARK', 'RADAR', 'SPARK', 'TANGO', 'UMBRA', 'VEGA', 'WASP', 'XENO', 'YETI'];
+  const BOT_NAMES = (() => { const F = ['Lucas', 'Hugo', 'Emma', 'Lea', 'Theo', 'Nathan', 'Maxime', 'Chloe', 'Tom', 'Zoe', 'Enzo', 'Jade', 'Noah', 'Lina', 'Axel', 'Manon', 'Louis', 'Ines', 'Remi', 'Clara', 'Yanis', 'Sarah', 'Kevin', 'Anais', 'Mehdi', 'Julie', 'Adam', 'Camille', 'Dylan', 'Eva', 'Rayan', 'Lola', 'Mathis', 'Alice', 'Bastien', 'Oceane', 'Jules', 'Maeva', 'Romain', 'Nina'], X = ['_93', '_du59', '75', '_FR', '_YT', '2012', '_off', '974', '_gaming', '06', '_BZH', '_ttv', '123', '_xx', '2k', '_62', '_13', 'TV'], out = []; for (let i = 0; i < 96; i++) { const b = F[(i * 7) % F.length], x = X[(i * 5 + (i >> 3)) % X.length], p = i % 6; out.push((p === 0 ? b + x : p === 1 ? 'xX' + b + 'Xx' : p === 2 ? b.toLowerCase() + '_' + b.slice(0, 2).toLowerCase() + x.replace('_', '') : p === 3 ? b + '_' + String.fromCharCode(65 + (i * 3) % 26) + (10 + (i * 11) % 80) : p === 4 ? 'Mr' + b + x : b.slice(0, 4) + 'Gamer' + (i % 40)).slice(0, 14)); } return out; })();
   const BOT_COL = ['#e8352b', '#2f8cff', '#2fae22', '#f5c518', '#a64cf0', '#ff7a1a', '#17c3b2', '#ff4f9a', '#9aa3ad', '#7bd13a'];
   let sSeed = 1; const sr = () => (sSeed = (sSeed * 1664525 + 1013904223) >>> 0) / 4294967296;
   const gz = () => (sr() + sr() + sr() + sr() - 2) * 1.7;
@@ -279,16 +293,20 @@ const CUP = SHAPES.map((s) => s.name);
     { const f = /[?&]racec=(\w+)/.exec(location.search); const one = f && COURSES.find((c) => c.name.replace(/\W/g, '') === f[1]); if (one) R.courses = [one, one, one]; }   // essai d'une course a la main
   };
   if (RACE) newSession();
-  const botAdv = (b, t, dt, FN) => {   // la progression d'un pilote ; l'IA s'adapte : les plus proches du joueur restent pres de lui
-    if (b.p === undefined) { b.p = 0; b.f = 1; b.fT = 1; }
-    let rate = 1 / b.tRun; if (b.slow > 0) { b.slow -= dt; rate *= 0.35; }
-    if (b.crash && !b.cDone && b.p >= b.pc) { if (!b.cT) b.cT = t; if (t - b.cT < 2.5) rate = 0; else b.cDone = true; }
-    b.f += (b.fT - b.f) * Math.min(1, dt * 2); if (b.fin !== undefined) b.f = 1;
-    b.p = Math.min(1, b.p + rate * b.f * dt); if (b.p >= 1 && b.fin === undefined) b.fin = t;
-    b.d = b.d0 + (FN - b.d0) * b.p; if (b.fin !== undefined) b.d = FN + (t - b.fin) * (cur().speed || 44) * 0.9;   // apres la ligne, le pilote entre dans la boite
-    if (b.fin === undefined && (!b.hz || t > b.hz)) { b.hz = t + 4 + Math.random() * 8; if (Math.random() < 0.55) b.slow = Math.max(b.slow || 0, 0.5 + Math.random() * 0.9); }   // petites erreurs : un pilote hesite parfois
+  const botAdv = (b, t, dt, FN) => {   // la position d'un pilote : meme vitesse pour tous, des arrets (obstacles touches) calcules a l'avance, plus les chocs avec le joueur
+    if (b.dl === undefined) { b.dl = 0; b.p = 0; b.blk = 0; }
+    if (b.slow > 0) { b.slow -= dt; b.dl += dt * 0.65; }
+    if (b.crash && !b.cDone && b.p >= b.pc) { if (!b.cT) b.cT = t; if (t - b.cT < 2.5) b.dl += dt; else b.cDone = true; }
+    if (b.fin === undefined) {
+      const te = t - b.dl; let acc = 0, d = null; b.blk = 0;
+      for (const e of b.ev) { const ta = (e.d - b.d0) / b.v + acc; if (te < ta) break; if (te < ta + e.dur) { d = e.d; b.blk = 1; break; } acc += e.dur; }
+      if (d === null) d = b.d0 + b.v * (te - acc);
+      if (d >= FN) { b.fin = t - (d - FN) / b.v; d = FN; b.blk = 0; if (W.feed) W.feed.push({ name: b.name, t0: performance.now() }); }
+      b.d = d;
+    } else b.d = FN + (t - b.fin) * (cur().speed || 44) * 0.9;   // apres la ligne, le pilote entre dans la boite
+    b.p = U.clamp((Math.min(b.d, FN) - b.d0) / (FN - b.d0), 0, 1);
   };
-  const settleBots = (time) => { const FN = E.shortFin || 470; for (const b of W.bots) b.T = b.fin !== undefined ? b.fin : time + Math.max(0, FN - b.d) / ((cur().speed || 44) * 0.96) + (b.crash && !b.cDone ? 1.2 : 0); };   // le temps d'arrivee de chacun, d'apres sa vraie position
+  const settleBots = (time) => { for (const b of W.bots) b.T = b.fin !== undefined ? b.fin : b.T0 + (b.dl || 0) + (b.crash && !b.cDone ? 2.5 : 0); };   
   const botD = (b, t, FN) => { let p; const tc = b.pc * b.tRun; if (!b.crash || t < tc) p = t / b.tRun; else if (t < tc + 2.5) p = b.pc; else p = (t - 2.5) / b.tRun; return b.d0 + (FN - b.d0) * U.clamp(p, 0, 1); };
   const lanePos = (T, d, dx, dy, out) => { const p = T.at(d, T.laneX(d) + dx, T.laneY(d) + dy); return out.set(p[0], p[1], p[2]); };
   const SKIN_IDS = ['stock', 'gamin', 'bedon', 'fuseev', 'minutemec', 'hachette', 'croquette', 'baguette', 'tridentin', 'poisson', 'gardien', 'titanite', 'satanette', 'berthe', 'croissant', 'chaton', 'tsarini', 'maman', 'bombeh', 'colis', 'caillou', 'royale', 'neon', 'phenix', 'glace', 'toxique', 'samourai', 'galaxie', 'furtive', 'requin', 'pirate', 'malicieuse', 'casquette'];
@@ -310,7 +328,7 @@ const CUP = SHAPES.map((s) => s.name);
   const buildRace = (g, run) => {   // le monde de la manche : fleches de vitesse sur la piste, pilotes IA
     if (W) { try { g.scene.remove(W.grp); } catch (e) { /* ignore */ } }
     const T = run.T, grp = new T3.Group(), FN = E.shortFin || 470, sp = cur().speed || 44, rd = R.round - 1;
-    W = { run, grp, boosts: [], bots: [], boostT: 0, kills: 0, fin: FN, coins: 0, roundKills: 0 }; R.deaths = 0; R.roundKills = 0;
+    W = { run, grp, boosts: [], bots: [], boostT: 0, kills: 0, fin: FN, coins: 0, roundKills: 0, en: 1, feed: [] }; R.deaths = 0; R.roundKills = 0;
     g.scene.add(grp); if (E.course && E.course.isle) { W.props = E.buildIsle(T, E.course, grp); W.free = null; W.wheel = null; W.fall = null; }
     else if (E.course) { E.buildCorridor(T, E.course, -4, FN + 150, grp); W.props = E.buildCourseProps(T, E.course, grp); W.free = null; W.wheel = null; }
     const offs = [-5, 4, -3, 5, -4, 3], dys = [0, 2, -1, 2, 0, 1];   // des fleches de vitesse : il faut un peu bouger pour les prendre
@@ -327,15 +345,17 @@ const CUP = SHAPES.map((s) => s.name);
     }
     const cast = rd === 0 || !R.surv ? R.cast : R.surv;
     // la grille de depart : 5 colonnes, le joueur a l'arriere du peloton, les plus rapides devant : on les rattrape un a un
-    const COLX = [-30, -15, 0, 15, 30], nb = cast.length, rowsN = Math.ceil((nb + 1) / 5), pr = Math.min(rowsN - 1, Math.round(rowsN * 0.72)), slots = [];
-    for (let r = 0; r < rowsN; r++) for (let q = 0; q < 5; q++) if (!(r === pr && q === 2)) slots.push([r, q]);
-    const order = cast.map((c, i) => [c.L + (sr() - 0.5) * 0.08, i]).sort((a, b) => a[0] - b[0]), slotOf = {}; order.forEach(([, i], k) => { slotOf[i] = slots[k] || [0, 2]; });
+    const COLX = [-20, -12, -4, 4, 12, 20], nb = cast.length, rowsN = Math.ceil(nb / 6), slots = [], pr = 1;   // meme ligne de depart pour tous (rangs de 5 m), le joueur au centre
+    for (let r = 0; r < rowsN; r++) for (let q = 0; q < 6; q++) slots.push([r, q]);
+    for (let i = slots.length - 1; i > 0; i--) { const j = Math.floor(sr() * (i + 1)); const t = slots[i]; slots[i] = slots[j]; slots[j] = t; }
     W.startRow = pr;
+    const ds = []; { const hs = W.props && W.props.hits ? W.props.hits.map((q) => q.d).sort((a, b) => a - b) : []; for (const d of hs) if (!ds.length || d - ds[ds.length - 1] > 18) ds.push(d); if (!ds.length) for (let d = 150; d < FN - 100; d += 90) ds.push(d); }
+    const vB = sp * 0.985, easeK = U.clamp(1 + R.ease * 0.8, 0.5, 1.8);   // tous roulent a la meme vitesse (un peu moins que le joueur parfait) : seules leurs erreurs les separent
     cast.forEach((c, i) => {
-      const cut = sr() < 0.18, pow = sr() < 0.25, slow = sr() < 0.2, crash = sr() < 0.18;
-      let tRun = Math.max(T0 * 0.8, T0 * (1 + c.L) + R.ease + gz() * 0.8 - (cut ? 1.0 : 0) - (pow ? 0.7 : 0) + (slow ? 0.8 : 0));
-      const sl = slotOf[i], hs = (pr - sl[0]) * 9, d0 = -40 + hs; tRun = Math.max(8, tRun * (FN - d0) / (FN + 40));
-      W.bots.push({ i, c, d0, gx: COLX[sl[1]], name: c.name, skin: c.skin, tRun, crash, pc: 0.2 + 0.6 * sr(), T: tRun + (crash ? 2.5 : 0), off: c.off, dy: c.dy, ph: c.ph, boom: false, d: 0, m: null, tr: null, hist: [], dead: false });
+      const sk = U.clamp(1 - (c.L + 0.02) / 0.2, 0, 1), sl = slots[i] || [0, 2], d0 = -40 + (pr - sl[0]) * 5, v = vB * (1 + (sr() - 0.5) * 0.014), ev = [];
+      for (const d of ds) { if (d < d0 + 60) continue; const p = (0.05 + 0.6 * Math.pow(1 - sk, 1.2)) * easeK; if (sr() < p) ev.push({ d: d + (sr() - 0.5) * 8, dur: 0.8 + sr() * 1.2 }); }
+      let tot = 0; for (const e of ev) tot += e.dur; const T0 = (FN - d0) / v + tot + gz() * 0.12;
+      W.bots.push({ i, c, d0, v, ev, T0, gx: COLX[sl[1]], name: c.name, skin: c.skin, tRun: T0, crash: false, pc: 0.5, T: T0, off: c.off, dy: c.dy, ph: c.ph, boom: false, d: 0, m: null, tr: null, hist: [], dead: false });
     });
     if (E.course && E.course.isle && W.bots.length) {   // chaque pilote a sa rampe de lancement (comme la notre)
       const n = W.bots.length, slab = new T3.InstancedMesh(new T3.BoxGeometry(3.8, 0.5, 8), new T3.MeshLambertMaterial({ color: '#4a4f57' }), n), rail = new T3.InstancedMesh(new T3.BoxGeometry(0.35, 0.45, 7), new T3.MeshLambertMaterial({ color: '#c9ccd2' }), n * 2), dm = new T3.Object3D();
@@ -378,8 +398,9 @@ const CUP = SHAPES.map((s) => s.name);
     }
     if (W.props) for (const bl of W.props.blocks) if (!bl.taken) { bl.g.rotation.y += dt * 2.2; bl.m.rotation.x += dt * 1.5; bl.m.position.y = Math.sin(t * 3 + bl.d) * 0.35; }
     if (fin) { for (const b of W.bots) { if (b.m) b.m.visible = false; if (b.tr) b.tr.visible = false; } return; }   // apres l'arrivee, plus de pilotes a l'ecran
+    if (_rip && _rip.visible) { const age = (performance.now() - _rip.userData.t0) / 900; if (age >= 1) _rip.visible = false; else { _rip.scale.setScalar(6 + 46 * age); _rip.material.opacity = 0.85 * (1 - age); } }
+    if (flying && !fin) { const want = I.boost && (W.en === undefined ? 1 : W.en) > 0.02; if (W.en === undefined) W.en = 1; if (want && !W.bstWas) { try { g.rig.boostKick(); g.audio.play('target'); } catch (e) { /* effets */ } } W.bst = want ? 1 : 0; W.bstWas = W.bst; W.en = U.clamp(W.en + (want ? -0.62 : (W.enCd > 0 ? 0 : 0.22)) * dt, 0, 1); if (want) W.enCd = 0.7; else if (W.enCd > 0) W.enCd -= dt; } else W.bst = 0;   // boost : espace ou clic, une mini-barre qui se vide vite puis se recharge
     let ahead = 0, lead = null; const vis = [], pd = run.dist > 1 ? run.dist : -rk.pos.z; if (W.bumpT > 0) W.bumpT -= dt; if (W.slowT > 0) W.slowT -= dt; if (W.hitCd > 0) W.hitCd -= dt; W.kickT = (W.kickT || 0) * Math.exp(-dt * 1.6); W.kick = (W.kick || 0) + (W.kickT - (W.kick || 0)) * Math.min(1, dt * 5);
-    if (t > 4) { const byD = W.bots.slice().sort((a, c) => Math.abs(a.d - pd) - Math.abs(c.d - pd)); byD.forEach((b, k) => { const gp = b.d - pd; b.fT = k < 3 && Math.abs(gp) > 100 && b.fin === undefined ? 1 - Math.sign(gp) * U.clamp((Math.abs(gp) - 100) / 300, 0, 0.12) : 1; }); }   // les 3 pilotes les plus proches sont rapproches du joueur (ralentis s'ils sont loin devant, accelerees s'ils sont loin derriere)
     for (const b of W.bots) {
       botAdv(b, t, dt, FN); if (b.d > pd) { ahead++; if (!lead || b.d > lead.d) lead = b; }
       const hidden = b.crash && b.cT && t - b.cT >= 0.3 && t - b.cT < 2.5;
@@ -387,7 +408,7 @@ const CUP = SHAPES.map((s) => s.name);
       if (Math.abs(b.d - pd) < 200 && !hidden && !(b.fin !== undefined && b.d > FN + 26)) vis.push(b); else if (b.m) { b.m.visible = false; b.tr.visible = false; if (b.sh) b.sh.visible = false; }
     }
     vis.sort((a, c) => (Math.abs(a.d - pd) - (a.d > pd ? 15 : 0)) - (Math.abs(c.d - pd) - (c.d > pd ? 15 : 0)));
-    const MAXV = t < 3.6 ? 40 : 5;   // au depart on voit tout le monde ; ensuite au plus 5 pilotes a l'ecran
+    const MAXV = 40;   // au depart on voit tout le monde ; ensuite au plus 5 pilotes a l'ecran
     for (let k = 0; k < vis.length; k++) {
       const b = vis[k], show = k < MAXV || (b.shown && k < MAXV + 1); b.shown = show; b.vk = (b.vk || 0) + ((show ? 1 : 0) - (b.vk || 0)) * Math.min(1, dt * 7);
       if (!show && b.vk < 0.04) { if (b.m) { b.m.visible = false; b.tr.visible = false; if (b.sh) b.sh.visible = false; } continue; }
@@ -397,9 +418,10 @@ const CUP = SHAPES.map((s) => s.name);
         b.pushT = (b.pushT || 0) * Math.exp(-dt * 1.4); b.push = (b.push || 0) + (b.pushT - (b.push || 0)) * Math.min(1, dt * 5); lanePos(T, b.d, lx1 + b.push, b.dy, b.m.position); lanePos(T, b.d + 6, b.gx === undefined ? bOff(b, b.d + 6) + wob2 : (b.gx + (bOff(b, b.d + 6) + wob2 - b.gx) * ss), b.dy, tmp2);
         if (b.gx !== undefined && sv < 1) { const dk = T.at(b.d, lx1, (E.course && E.course.isle ? E.course.isle.bank(b.d) * lx1 : 0) + 0.9)[1]; b.m.position.y = dk + (b.m.position.y - dk) * sv; tmp2.y = dk + (tmp2.y - dk) * sv + 0.6 * (1 - sv); }   // sur les rampes au depart, puis elles decollent
         b.m.lookAt(tmp2); b.m.visible = true; b.m.scale.set(5.4 * b.vk, 5.4 * b.vk, 3.8 * b.vk);
-        if (E.isleBlob && E.course && E.course.isle) { if (!b.sh) { b.sh = E.isleBlob(); W.grp.add(b.sh); } const I4 = E.course.isle, lxs = lx1 + b.push; if (Math.abs(lxs) < I4.W(b.d) - 0.5) { const p = T.at(b.d, lxs, I4.bank(b.d) * lxs + 0.08), h = Math.max(0, b.m.position.y - p[1]); b.sh.visible = true; b.sh.position.set(b.m.position.x, p[1], b.m.position.z); b.sh.scale.setScalar((4.2 + h * 0.1) * b.vk); b.sh.material.opacity = Math.max(0.12, 0.62 - h * 0.022) * b.vk; } else b.sh.visible = false; } }
+        if (E.isleBlob && E.course && E.course.isle) { if (!b.sh) { b.sh = E.isleBlob(); W.grp.add(b.sh); } const I4 = E.course.isle, lxs = lx1 + b.push; if (Math.abs(lxs) < I4.W(b.d) - 0.5) { const p = T.at(b.d, lxs, I4.bank(b.d) * lxs + 0.08), h = Math.max(0, b.m.position.y - p[1]); b.sh.visible = true; b.sh.position.set(b.m.position.x + E.isleLS.x * h, p[1], b.m.position.z + E.isleLS.z * h); b.sh.scale.setScalar((4.2 + h * 0.1) * b.vk); b.sh.material.opacity = Math.max(0.12, 0.62 - h * 0.022) * b.vk; } else b.sh.visible = false; } }
+      if (b.blk) { if (!b.blkP) { try { g.effects.flash(b.m.position.clone(), '#ffd9a0', 3, 50, 0.2, '#ff9a30'); } catch (e) { /* effets */ } } b.m.rotateZ(0.35 * Math.sin(t * 38)); b.m.position.y += 0.35 * Math.sin(t * 27); } b.blkP = b.blk;
       if (E.course) b.m.rotateZ(U.clamp(-E.course.rate(b.d) * (cur().speed || 46) * 0.2, -0.75, 0.75) + 0.12 * Math.cos(t * 1.3 + b.ph));   // la fusee se penche dans les virages (et un peu quand elle bouge sur le cote)
-      b.tr.visible = false; { const fx = g.effects, fw = tmp.copy(tmp2).sub(b.m.position).normalize(), nz = b.m.position.clone().addScaledVector(fw, -2.1), vv = fw.clone().multiplyScalar(36); try { fx.exhaustCore(nz, fw, vv, 1, dt); fx.exhaustSmoke(nz.clone().addScaledVector(fw, -0.7), vv, 1); fx.exhaustSmoke(nz.clone().addScaledVector(fw, -1.5), vv, 1); } catch (e) { /* effets */ } }   // la meme flamme et la meme fumee que la fusee du joueur
+      b.tr.visible = false; if (k < 10) { const fx = g.effects, fw = tmp.copy(tmp2).sub(b.m.position).normalize(), nz = b.m.position.clone().addScaledVector(fw, -2.1), vv = fw.clone().multiplyScalar(36); try { fx.exhaustCore(nz, fw, vv, 1, dt); fx.exhaustSmoke(nz.clone().addScaledVector(fw, -0.7), vv, 1); fx.exhaustSmoke(nz.clone().addScaledVector(fw, -1.5), vv, 1); } catch (e) { /* effets */ } }   // la meme flamme et la meme fumee que la fusee du joueur
       if (flying && !fin && t > 1.5) {   // on touche un pilote : les deux rebondissent (etincelles, un peu de vitesse en moins), personne ne meurt
         const dn2 = rk.pos.distanceTo(b.m.position), df = tmp.copy(b.m.position).sub(rk.pos), fd = W.fc ? W.fc.dir : tf, al = df.dot(fd), pp = Math.sqrt(Math.max(0, df.lengthSq() - al * al));
         if (!b.bump && b.vk > 0.8 && Math.abs(al) < 3.2 && pp < 1.5) { b.bump = true; b.slow = 0.9; W.bumpT = 0.35; { const sg = Math.sign(df.dot(nn)) || 1; b.pushT = sg * 6; W.kickT = 0; } try { g.effects.flash(rk.pos.clone().lerp(b.m.position, 0.5), '#ffe2a8', 3, 50, 0.25, '#ffb030'); g.audio.play('target'); } catch (e) { /* effets */ } }
@@ -409,7 +431,7 @@ const CUP = SHAPES.map((s) => s.name);
     W.lead = lead; R.live = 1 + ahead;
     if (E.isleBlob && E.course && E.course.isle) {   // l'ombre de la fusee du joueur sur la piste
       const I3 = E.course.isle, sh = W.sh || (W.sh = (() => { const m = E.isleBlob(); W.grp.add(m); return m; })());
-      if (rk.active && flying && Math.abs(rel.x) < I3.W(pd) - 0.5) { const p = T.at(pd, rel.x, I3.bank(pd) * rel.x + 0.08), h = Math.max(0, rk.pos.y - p[1]); sh.visible = true; sh.position.set(rk.pos.x, p[1], rk.pos.z); sh.scale.setScalar(4.2 + h * 0.1); sh.material.opacity = Math.max(0.12, 0.62 - h * 0.022); } else sh.visible = false;
+      if (rk.active && flying && Math.abs(rel.x) < I3.W(pd) - 0.5) { const p = T.at(pd, rel.x, I3.bank(pd) * rel.x + 0.08), h = Math.max(0, rk.pos.y - p[1]); sh.visible = true; sh.position.set(rk.pos.x + E.isleLS.x * h, p[1], rk.pos.z + E.isleLS.z * h); sh.scale.setScalar(4.2 + h * 0.1); sh.material.opacity = Math.max(0.12, 0.62 - h * 0.022); } else sh.visible = false;
     }
   };
   // la ligne d'arrivee : deux pylones, une banderole a damier, un anneau lumineux et des faisceaux
@@ -620,6 +642,7 @@ const CUP = SHAPES.map((s) => s.name);
     const run = g.endlessRun, rk = g.rocket; if (!run || !rk || g.ui.overlay) return;
     const u = H > W0 ? W0 : Math.min(W0, H * 0.62); UI.begin(u, g.hudPr || 1); const S = UI.S, FN = E.shortFin || 470;
     const pct = U.clamp(run.dist / FN, 0, 1), len = Math.min(W0 * 0.3, H * 0.6), bw = len * 0.13, cx = W0 / 2, cy = H * 0.016 + bw / 2 + S(4);
+    if (!RACE) {
     ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.PI / 2);   // la barre verticale devient horizontale : depart a gauche, drapeau a droite
     const bh = len, bx = -bw / 2, by = -bh / 2, tx = bx + bw * 0.213, tw2 = bw * 0.567, ty = by + bh * 0.125, th = bh * 0.77, rr = tw2 / 2;
     ctx.save(); ctx.beginPath(); ctx.moveTo(tx + rr, ty); ctx.arc(tx + rr, ty + rr, rr, -Math.PI / 2, 0); ctx.lineTo(tx + tw2, ty + th - rr); ctx.arc(tx + rr, ty + th - rr, rr, 0, Math.PI); ctx.lineTo(tx, ty + rr); ctx.closePath(); ctx.clip();
@@ -634,23 +657,33 @@ const CUP = SHAPES.map((s) => s.name);
     ctx.restore();
     const tm = (g.evoFinish && ended ? ended.time : Math.max(0, g.flightTime)).toFixed(1) + ' S';
     UI.text(ctx, tm, cx, cy + bw / 2 + S(34), S(52), '#ffffff', { outline: true });
+    }
     if (RACE && W) {
       const rd = R.round - 1, fn = E.shortFin || 470, tNow = Math.max(0, g.flightTime);
-      UI.text(ctx, ord(R.live) + ' / ' + R.field[rd], cx + len / 2 + S(165), cy + S(2), S(84), '#FFD23A', { outline: true });
-      UI.text(ctx, 'MANCHE ' + R.round + '/3', cx - len / 2 - S(150), cy + S(2), S(46), '#ffffff', { outline: true });
+      { const x0 = S(24), y0 = S(22), w0 = S(430), h0 = S(92); ctx.save(); ctx.fillStyle = '#ff2f9a'; UI.rrect(ctx, x0, y0, w0, h0, S(22)); ctx.fill(); ctx.lineWidth = S(5); ctx.strokeStyle = '#ffffff'; ctx.stroke(); ctx.fillStyle = '#12131a'; ctx.fillRect(x0 + S(18), y0 + h0 - S(9), w0 - S(36), S(5)); ctx.restore();
+        UI.text(ctx, "COURSE VERS", x0 + w0 / 2, y0 + S(30), S(34), '#ffffff', { outline: true }); UI.text(ctx, "L'ARRIVEE !", x0 + w0 / 2, y0 + S(66), S(34), '#ffffff', { outline: true });
+        UI.text(ctx, 'MANCHE ' + R.round + '/3  -  ' + ord(R.live) + ' / ' + R.field[rd] + '  -  ' + Math.max(0, g.flightTime).toFixed(1) + ' S', x0 + w0 / 2, y0 + h0 + S(34), S(30), '#ffffff', { outline: true }); }
       // qualifies : combien de pilotes ont deja franchi la ligne
       const ISL = !!(E.course && E.course.isle);
-      { const qn = Math.min(R.keep[rd], W.bots.filter((b) => b.fin !== undefined && b.fin <= tNow).length), qx = W0 - S(150), qy = H * 0.5;
-      ctx.save(); UI.rrect(ctx, qx - S(120), qy - S(66), S(240), S(132), S(30)); ctx.fillStyle = 'rgba(12,18,30,0.62)'; ctx.fill(); ctx.lineWidth = S(5); ctx.strokeStyle = '#ffffff'; ctx.stroke(); ctx.restore();
-      UI.text(ctx, qn + ' / ' + R.keep[rd], qx, qy - S(12), S(66), qn >= R.keep[rd] ? '#FF5A4A' : '#7CFF6A', { outline: true }); UI.text(ctx, rd === 2 ? 'VICTOIRE' : 'QUALIFIES', qx, qy + S(42), S(34), '#ffffff', {}); }
+      { const qn = Math.min(R.keep[rd], W.bots.filter((b) => b.fin !== undefined && b.fin <= tNow).length), w1 = S(300), h1 = S(104), x1 = W0 - S(24) - w1, y1 = S(22);
+        ctx.save(); ctx.fillStyle = '#14151c'; UI.rrect(ctx, x1, y1, w1, h1, S(22)); ctx.fill(); ctx.lineWidth = S(5); ctx.strokeStyle = '#ffffff'; ctx.stroke(); ctx.fillStyle = '#ff2f9a'; ctx.fillRect(x1 + S(18), y1 + h1 - S(11), w1 - S(36), S(6)); ctx.restore();
+        UI.text(ctx, rd === 2 ? 'VICTOIRE' : 'QUALIFIES', x1 + w1 / 2, y1 + S(28), S(30), '#ffffff', { outline: true }); UI.text(ctx, qn + ' / ' + R.keep[rd], x1 + w1 / 2, y1 + S(68), S(56), qn >= R.keep[rd] ? '#FF5A4A' : '#7CFF6A', { outline: true });
+        const nowF = performance.now(), fd = (W.feed || []).filter((q) => nowF - q.t0 < 4200).slice(-4); fd.forEach((q, i2) => { const a = U.clamp((4200 - (nowF - q.t0)) / 700, 0, 1) * U.clamp((nowF - q.t0) / 150, 0, 1); ctx.save(); ctx.globalAlpha = a; UI.text(ctx, q.name, W0 - S(34), y1 + h1 + S(40) + i2 * S(36), S(28), '#ffffff', { align: 'right', stroke: true }); ctx.restore(); }); }
       // morts : un crane et le nombre de pilotes que tu as fait exploser ; pieces
       if (R.kills > 0) { const kx = S(86), ky = H * 0.19; ctx.save(); ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#0b0d12'; ctx.lineWidth = S(5); ctx.beginPath(); ctx.arc(kx, ky - S(6), S(26), 0, 6.283); ctx.fill(); ctx.stroke(); ctx.fillRect(kx - S(13), ky + S(10), S(26), S(15)); ctx.strokeRect(kx - S(13), ky + S(10), S(26), S(15)); ctx.fillStyle = '#0b0d12'; ctx.beginPath(); ctx.arc(kx - S(10), ky - S(8), S(6.5), 0, 6.283); ctx.arc(kx + S(10), ky - S(8), S(6.5), 0, 6.283); ctx.fill(); ctx.restore(); UI.text(ctx, String(R.kills), kx + S(76), ky, S(56), '#ffffff', { outline: true }); }
       if (rk.active && g.state === 'FLIGHT' && !g.evoFinish && rk.vel.lengthSq() > 4) {   // reticule : ou la fusee va, 40 m devant
         tmpHud.copy(rk.pos).addScaledVector(tmp.copy(rk.vel).normalize(), 40); CC.Curve.apply(tmpHud, g.camera).project(g.camera);
-        if (tmpHud.z < 1 && Math.abs(tmpHud.x) < 1.2 && Math.abs(tmpHud.y) < 1.2) { const cur2 = ISL && I.mode === 'mouse', rx = cur2 ? (I.cx * 0.5 + 0.5) * W0 : (tmpHud.x * 0.5 + 0.5) * W0, ry = cur2 ? I.cy * H : (-tmpHud.y * 0.5 + 0.5) * H, rr = S(16); ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = S(3.5); ctx.beginPath(); ctx.arc(rx, ry, rr, 0, 6.283); ctx.moveTo(rx - rr * 1.7, ry); ctx.lineTo(rx - rr * 0.8, ry); ctx.moveTo(rx + rr * 0.8, ry); ctx.lineTo(rx + rr * 1.7, ry); ctx.stroke(); ctx.restore(); }
+        if (tmpHud.z < 1 && Math.abs(tmpHud.x) < 1.2 && Math.abs(tmpHud.y) < 1.2) { const cur2 = false, rx = cur2 ? (I.cx * 0.5 + 0.5) * W0 : (tmpHud.x * 0.5 + 0.5) * W0, ry = cur2 ? I.cy * H : (-tmpHud.y * 0.5 + 0.5) * H, rr = S(16); ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = S(3.5); ctx.beginPath(); ctx.arc(rx, ry, rr, 0, 6.283); ctx.moveTo(rx - rr * 1.7, ry); ctx.lineTo(rx - rr * 0.8, ry); ctx.moveTo(rx + rr * 0.8, ry); ctx.lineTo(rx + rr * 1.7, ry); ctx.stroke(); ctx.restore(); }
       }
       if (W.ground) UI.text(ctx, 'RASANT', cx, H * 0.8, S(40), '#7CFF6A', { outline: true });
-      if (W.boostT > 0) { ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,' + (0.3 * Math.min(1, W.boostT)) + ')'; ctx.lineWidth = S(3); const cx0 = W0 / 2, cy0 = H * 0.55, mn = Math.min(W0, H); for (let q = 0; q < 30; q++) { const a = q / 30 * 6.283, r0 = mn * (0.36 + 0.1 * ((q * 7) % 5) / 5), r1 = r0 + mn * 0.24; ctx.beginPath(); ctx.moveTo(cx0 + Math.cos(a) * r0, cy0 + Math.sin(a) * r0 * 0.8); ctx.lineTo(cx0 + Math.cos(a) * r1, cy0 + Math.sin(a) * r1 * 0.8); ctx.stroke(); } ctx.restore(); }   // lignes de vitesse du turbo
+      if (ISL && g.state === 'FLIGHT' && g.flightTime > 0.6 && g.flightTime < 8) { const al = U.clamp(8 - g.flightTime, 0, 1) * U.clamp((g.flightTime - 0.6) / 0.5, 0, 1), hw = S(560), hh = S(70), hx = W0 / 2 - hw / 2, hy = H * 0.9 - hh / 2; ctx.save(); ctx.globalAlpha = al; ctx.fillStyle = 'rgba(14,15,22,0.78)'; UI.rrect(ctx, hx, hy, hw, hh, S(20)); ctx.fill(); ctx.lineWidth = S(4); ctx.strokeStyle = '#ff2f9a'; ctx.stroke(); ctx.restore(); ctx.save(); ctx.globalAlpha = al; UI.text(ctx, 'FLECHES OU SOURIS : PILOTER    -    ESPACE / CLIC : BOOST', W0 / 2, hy + hh / 2, S(27), '#ffffff', { outline: true }); ctx.restore(); }   // l'aide du depart : les fleches, et le boost
+      if (rk.active && g.state === 'FLIGHT' && !g.evoFinish) {   // une fleche au-dessus de notre fusee, et la mini-barre de boost dessous
+        tmpHud.copy(rk.pos); CC.Curve.apply(tmpHud, g.camera).project(g.camera);
+        if (tmpHud.z < 1 && Math.abs(tmpHud.x) < 1.1 && Math.abs(tmpHud.y) < 1.1) { const px = (tmpHud.x * 0.5 + 0.5) * W0, py = (-tmpHud.y * 0.5 + 0.5) * H, bob = Math.sin(performance.now() / 220) * S(4);
+          ctx.save(); ctx.translate(px, py - S(86) + bob); ctx.fillStyle = '#ffd23a'; ctx.strokeStyle = '#0b0d12'; ctx.lineWidth = S(4); ctx.beginPath(); ctx.moveTo(-S(15), -S(12)); ctx.lineTo(S(15), -S(12)); ctx.lineTo(0, S(14)); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+          const en = W.en === undefined ? 1 : W.en; if (en < 0.995 || W.bst) { const bw2 = S(120), bh2 = S(13), bx2 = px - bw2 / 2, by2 = py + S(74); ctx.save(); ctx.fillStyle = 'rgba(10,12,20,0.7)'; UI.rrect(ctx, bx2 - S(3), by2 - S(3), bw2 + S(6), bh2 + S(6), S(8)); ctx.fill(); ctx.fillStyle = en > 0.25 ? '#7CFF6A' : '#ff9a30'; UI.rrect(ctx, bx2, by2, Math.max(S(4), bw2 * en), bh2, S(6)); ctx.fill(); ctx.restore(); } } }
+      if (ISL && rk.active && g.state === 'FLIGHT' && !g.evoFinish) { const now2 = performance.now(), mn2 = Math.min(W0, H), bi = W.bst ? 2 : 1; ctx.save(); ctx.lineCap = 'round'; for (let q = 0; q < 26; q++) { const ph = ((q * 0.381 + now2 / (520 / bi)) % 1), a = q * 2.399 + 0.5, r0 = mn2 * (0.34 + 0.42 * ph), r1 = r0 + mn2 * (0.02 + 0.1 * ph * bi); ctx.strokeStyle = 'rgba(255,255,255,' + (0.05 + 0.2 * ph * (bi > 1 ? 1.4 : 1)) + ')'; ctx.lineWidth = S(2 + 2.2 * ph); ctx.beginPath(); ctx.moveTo(W0 / 2 + Math.cos(a) * r0 * 1.25, H * 0.52 + Math.sin(a) * r0 * 0.8); ctx.lineTo(W0 / 2 + Math.cos(a) * r1 * 1.25, H * 0.52 + Math.sin(a) * r1 * 0.8); ctx.stroke(); } ctx.restore(); }
+      if (W.boostT > 0 || W.bst) { ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,' + (0.3 * (W.bst ? 1 : Math.min(1, W.boostT))) + ')'; ctx.lineWidth = S(3); const cx0 = W0 / 2, cy0 = H * 0.55, mn = Math.min(W0, H); for (let q = 0; q < 30; q++) { const a = q / 30 * 6.283, r0 = mn * (0.36 + 0.1 * ((q * 7) % 5) / 5), r1 = r0 + mn * 0.24; ctx.beginPath(); ctx.moveTo(cx0 + Math.cos(a) * r0, cy0 + Math.sin(a) * r0 * 0.8); ctx.lineTo(cx0 + Math.cos(a) * r1, cy0 + Math.sin(a) * r1 * 0.8); ctx.stroke(); } ctx.restore(); }   // lignes de vitesse du turbo
       // les pseudos des pilotes a l'ecran et le premier
       const cam = g.camera, cpos = cam.position;
       const named = W.bots.filter((b) => b.m && b.m.visible).map((b) => ({ b, dd: cpos.distanceTo(b.m.position) })).filter((o) => o.dd > 9 && o.dd < 110).sort((x, y) => x.dd - y.dd).slice(0, 2).map((o) => o.b);

@@ -84,3 +84,13 @@ Sonnet 5.5 effort MOYEN (faible pour les retouches mecaniques, eleve seulement p
 - Bots : hesitations aleatoires (b.hz/b.slow) ; rayon fusee 0.8 (plus permissif).
 - Obstacles par carte : ARCHIPEL = marteaux (tete ronde), balayeurs, ballons, moulins, troncs ; TERRAIN D'ESSAI = herses militaires, canons (boulet de fonte, trajectoire haute, se brise en eclats), mines flottantes, conteneurs suspendus ; JUNGLE (nouvelle) = lianes-pendules, rondins rouleurs, rideaux de lianes, totems. Manche 1 archipel, manche 2 terrain d'essai, manche 3 jungle.
 - Mer et ciel plus clairs ; poteaux de panneaux jaunes ; menu course : piste d'asphalte (plus de hangar) + fusees alignees.
+
+## v382-v385 (4 etapes d'un coup, apres retours v381)
+- IA : tous au meme depart (6 colonnes, rangs de 5 m), meme vitesse (0.985 x), seuls les obstacles touches (arrets calcules a l'avance, `b.ev`, `b.T0`) les separent ; plus d'elastique ; `R.ease` regle la frequence des erreurs. Calibrage : `cctest/bots1.js`.
+- Controles : souris RELATIVE (ancre qui rattrape le curseur en 0,5 s, zone morte) ; une fleche coupe la souris (reprise seulement si mouvement franc) ; aide au depart ; boost espace/clic (W.en, barre sous la fusee, +9 m/s).
+- HUD : bandeaux rose (gauche) / sombre (droite, QUALIFIES x/16), pseudos realistes qui apparaissent a chaque qualifie (W.feed), fleche sur le joueur, plus de barre de progression, rivaux tous visibles.
+- Vitesse : isle speed 38, FOV +7 % (+12 % boost), traits de vitesse permanents.
+- Ombres : `autoShadow`/`dynSh` (evo_isle) : une direction de lumiere (E.isleLS), une enveloppe par objet ; PAS de pochoir (le pochoir faisait tout disparaitre) -> recouvrements legerement plus sombres.
+- Mur invisible (W+34 lateral, +75 hauteur) avec onde ; mer/ciel plus clairs.
+- Cartes ~2400-2700 m (1 min 10), sections `vide` (W=0) entre iles, panneaux generes par les obstacles (`signs`), decor aerien (`skyDecor` : montgolfieres, dirigeables, ilots), arrivee : banderole ARRIVEE, pylones, fanions.
+- A faire / non verifie : UI (palette unique, police), menu, calibrage reel de la difficulte, reflets.
