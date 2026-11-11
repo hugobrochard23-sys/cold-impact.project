@@ -68,7 +68,7 @@
     },
     build(S) {
       const C = E.course; if (!C || !C.isle) return;
-      if (S.d0 <= 40 && S.d1 > 40) hangar(S, 40, -34);
+      // plus de hangar : le depart est une plateforme de lancement
     },
   };
   const BR = ['#bba294', '#b09486', '#c4aa9c', '#ab9082'], RUST = ['#8a5a44', '#7a5a48', '#6a5240'];
@@ -162,7 +162,7 @@
   const _v = new T3.Vector3(), RR = 1.6;   // RR : rayon de la fusee
   const segDist = (px, py, ax, ay, bx2, by2) => { const dx = bx2 - ax, dy = by2 - ay, l2 = dx * dx + dy * dy || 1, t = U.clamp(((px - ax) * dx + (py - ay) * dy) / l2, 0, 1); return Math.hypot(px - (ax + dx * t), py - (ay + dy * t)); };
   const obstacles = (T, C, grp) => {
-    const I = C.isle, ups = [], hits = [], sx = I.sx;
+    const I = C.isle, ups = [], hits = [], sx = I.sx, addHit = (d, f) => { f.d = d; hits.push(f); };
     const mk = (d, lx) => { const L = lx * sx, bk = I.bank(d), p = T.at(d, L, bk * L), q = T.at(d + 3, L, bk * L), g = new T3.Group(); g.position.set(p[0], p[1], p[2]); g.lookAt(q[0], p[1], q[2]); g.rotateZ(-Math.atan(bk)); grp.add(g); g.updateMatrixWorld(true); return g; };
     const loc = (g, pos) => g.worldToLocal(_v.copy(pos));
     const stoneBlock = (w, h, d, i) => bx(w, h, d, STONE[i % 3]);
@@ -177,7 +177,7 @@
       for (const z of [-0.9, 0.9]) { const r = bx(0.3, L - 1.8, 0.3, '#1a1a1a'); r.position.set(0, -(L - 1.8) / 2, z); piv.add(r); }
       const head = new T3.Group(); head.position.y = -L; piv.add(head); head.add(bx(5.2, 4, 5.2, '#d9382c')); const band = bx(5.4, 0.9, 5.4, '#ffd23a'); band.position.y = 0.4; head.add(band); const cap = bx(5.6, 0.8, 5.6, '#23262b'); cap.position.y = -2.2; head.add(cap);
       ups.push((t) => { piv.rotation.z = A * Math.sin(t * Math.PI * 2 / 3.2 + ph); g.updateMatrixWorld(true); });
-      hits.push((pos) => { const l = loc(g, pos); if (Math.abs(l.z) > 4) return false; const a = piv.rotation.z, hx = L * Math.sin(a), hy = top - 0.6 - L * Math.cos(a); return Math.hypot(l.x - hx, l.y - hy) < 3.3 + RR || segDist(l.x, l.y, 0, top - 0.6, hx, hy) < 0.6 + RR; });
+      addHit(d, (pos) => { const l = loc(g, pos); if (Math.abs(l.z) > 4) return false; const a = piv.rotation.z, hx = L * Math.sin(a), hy = top - 0.6 - L * Math.cos(a); return Math.hypot(l.x - hx, l.y - hy) < 3.3 + RR || segDist(l.x, l.y, 0, top - 0.6, hx, hy) < 0.6 + RR; });
     };
     const logp = (d, lx, ph) => {   // tronc pendulaire sur chevalet de bois
       const g = mk(d, lx), top = 25, L = 19, span = 14, A = 0.62; gantry(g, span, top, true);
@@ -185,7 +185,7 @@
       for (const z of [-2.6, 2.6]) { const r = bx(0.35, L - 1.4, 0.35, '#2a2118'); r.position.set(0, -(L - 1.4) / 2, z); piv.add(r); }
       const head = new T3.Group(); head.position.y = -L; piv.add(head); const log = cy(1.7, 1.7, 8, '#6b4a2a', 10); log.rotation.x = Math.PI / 2; head.add(log); for (const z of [-3.2, 0, 3.2]) { const band = cy(1.85, 1.85, 0.5, '#3a3a3a', 10); band.rotation.x = Math.PI / 2; band.position.z = z; head.add(band); }
       ups.push((t) => { piv.rotation.z = A * Math.sin(t * Math.PI * 2 / 3.9 + ph); g.updateMatrixWorld(true); });
-      hits.push((pos) => { const l = loc(g, pos), a = piv.rotation.z, hx = L * Math.sin(a), hy = top - 0.6 - L * Math.cos(a); if (Math.abs(l.z) > 4.2 + RR) return false; return Math.hypot(l.x - hx, l.y - hy) < 2.0 + RR || segDist(l.x, l.y, 0, top - 0.6, hx, hy) < 0.5 + RR; });
+      addHit(d, (pos) => { const l = loc(g, pos), a = piv.rotation.z, hx = L * Math.sin(a), hy = top - 0.6 - L * Math.cos(a); if (Math.abs(l.z) > 4.2 + RR) return false; return Math.hypot(l.x - hx, l.y - hy) < 2.0 + RR || segDist(l.x, l.y, 0, top - 0.6, hx, hy) < 0.5 + RR; });
     };
     const windmill = (d, lx, dir) => {   // moulin a vent en pierre : tour a bandes, toit en bois, ailes tournantes face a la fusee
       const g = mk(d, lx), H = 17;
@@ -197,18 +197,18 @@
       const blades = new T3.Group(); blades.position.z = -1.4; hub.add(blades);
       for (let k = 0; k < 4; k++) { const arm = new T3.Group(); arm.rotation.z = k * Math.PI / 2; const sp = bx(0.9, 13.5, 0.7, WOOD); sp.position.y = 7.4; arm.add(sp); for (let j = 0; j < 5; j++) { const sl = bx(3.4, 0.5, 0.5, '#d8c79a'); sl.position.set(1.9, 3.4 + j * 2.4, 0.2); arm.add(sl); } const sail = bx(3.2, 10, 0.2, '#e8dcc0'); sail.position.set(2.2, 8, 0.1); arm.add(sail); blades.add(arm); }
       ups.push((t) => { blades.rotation.z = -dir * t * 0.95; g.updateMatrixWorld(true); });
-      hits.push((pos) => { const l = loc(g, pos), hy = H - 1, hz = -(4.4 + 1.4);
+      addHit(d, (pos) => { const l = loc(g, pos), hy = H - 1, hz = -(4.4 + 1.4);
         if (l.y < H + 1 && Math.hypot(l.x, l.z) < 5.6 + RR && l.y > -2) return true;
         if (Math.abs(l.z - hz) > 1.5 + RR) return false; const dx = l.x, dy = l.y - hy, r = Math.hypot(dx, dy); if (r < 2.4 + RR) return true; if (r > 14.2 + RR) return false;
         const a = Math.atan2(dy, dx) - (blades.rotation.z + Math.PI / 2); for (let k = 0; k < 4; k++) { const da = a - k * Math.PI / 2, ang = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.cos(ang) > 0 && r * Math.abs(Math.sin(ang)) < 1.5 + RR) return true; } return false; });
     };
     const sweeper = (d, lx, ph, dir) => {   // barre tournante sur un mat de pierre (axe vertical) : deux grandes pales
-      const g = mk(d, lx), R = 19, h0 = 3.5, h1 = 18.5;
+      const g = mk(d, lx), R = 14.5, h0 = 3.5, h1 = 18.5;
       const pole = cy(2.2, 3.0, h1 + 3, STONE[1], 14); pole.position.y = (h1 + 3) / 2; g.add(pole); for (let k = 0; k < 3; k++) { const b2 = cy(3.4, 3.4, 0.7, STONE[(k + 2) % 3], 14); b2.position.y = 2 + k * 6; g.add(b2); }
       const rot = new T3.Group(); rot.position.y = 0; g.add(rot);
       for (const s of [-1, 1]) { const blade = bx(R, h1 - h0, 1.6, s > 0 ? '#ff4f9a' : '#ffd23a'); blade.position.set(s * (R / 2 + 2), (h0 + h1) / 2, 0); rot.add(blade); const cap = bx(2.2, h1 - h0 + 0.6, 2.2, '#23262b'); cap.position.set(s * (R + 2), (h0 + h1) / 2, 0); rot.add(cap); }
-      ups.push((t) => { rot.rotation.y = dir * t * 0.95 + ph; g.updateMatrixWorld(true); });
-      hits.push((pos) => { const l = loc(g, pos); if (l.y < h0 - RR || l.y > h1 + RR + 3) return false; if (Math.hypot(l.x, l.z) < 3 + RR) return true; const th = rot.rotation.y, t = l.x * Math.sin(th) + l.z * Math.cos(th), pr = Math.abs(l.x * Math.cos(th) - l.z * Math.sin(th)); return Math.abs(t) < R + 3 + RR && pr < 0.8 + RR && Math.abs(t) > 2; });
+      ups.push((t) => { rot.rotation.y = dir * t * 0.7 + ph; g.updateMatrixWorld(true); });
+      addHit(d, (pos) => { const l = loc(g, pos); if (l.y < h0 - RR || l.y > h1 + RR + 3) return false; if (Math.hypot(l.x, l.z) < 3 + RR) return true; const th = rot.rotation.y, t = l.x * Math.sin(th) + l.z * Math.cos(th), pr = Math.abs(l.x * Math.cos(th) - l.z * Math.sin(th)); return Math.abs(t) < R + 3 + RR && pr < 0.8 + RR && Math.abs(t) > 2; });
     };
     const cannon = (d, lx, side, ph) => {   // canon rouge sur un affut en pierre ; tire un gros rocher en travers du chemin, avec une ombre d'avertissement au sol
       const g = mk(d, lx), base = stoneBlock(7, 3, 8, 1); base.position.y = 1.5; g.add(base);
@@ -220,7 +220,7 @@
       ups.push((t) => { const k = (t + ph) % P, u = k / FL; const wp = T.at(d + 6, -side * Math.abs(lx) * sx * 0.55, I.bank(d + 6) * (-side * Math.abs(lx) * sx * 0.55));
         mark.visible = k < FL; mark.position.set(wp[0], wp[1] + 0.2, wp[2]); mark.scale.setScalar(0.7 + 0.5 * (1 - Math.min(1, k / FL)));
         if (u >= 0 && u < 1) { const st = T.at(d, lx * sx, I.bank(d) * lx * sx + 6); rock.position.set(lerp(st[0], wp[0], u), lerp(st[1], wp[1] + 3, u) + 10 * u * (1 - u), lerp(st[2], wp[2], u)); rock.rotation.x = t * 5; rock.visible = true; live = rock.position; } else { rock.visible = false; live = null; } });
-      hits.push((pos) => !!live && pos.distanceTo(live) < 3.6 + RR);
+      addHit(d, (pos) => !!live && pos.distanceTo(live) < 3.6 + RR);
     };
     const gateRow = (d, lx, n, ph) => {   // rangee de herses : n ouvertures ; chaque herse monte et descend ; elle ne descend JAMAIS sur la fusee qui approche
       const g = mk(d, lx), HWL = 23, OW = 15, tot = n * OW, panels = [], lt = [], posts = [];
@@ -231,7 +231,7 @@
       ups.push((t, rp) => { const dt = Math.max(0, Math.min(0.2, t - last)); last = t; const lc = rp ? loc(g, rp) : null;
         panels.forEach((p, i) => { let k = (lt[i] / PER) % 1; const near = lc && lc.z > -55 && lc.z < 5 && Math.abs(lc.x - p.x) < OW * 0.8; if (!(near && k >= 0.78 && k < 1)) lt[i] += dt; k = (lt[i] / PER) % 1; p.y = yb(k); p.pn.position.y = p.y; });
         g.updateMatrixWorld(true); });
-      hits.push((pos) => { const l = loc(g, pos); if (l.y < -2 || l.y > HWL + 2) return false;
+      addHit(d, (pos) => { const l = loc(g, pos); if (l.y < -2 || l.y > HWL + 2) return false;
         for (const x of posts) if (Math.abs(l.x - x) < 1.5 + RR && Math.abs(l.z) < 1.7 + RR) return true;
         if (Math.abs(l.z) > 0.6 + RR) return false; for (const p of panels) if (Math.abs(l.x - p.x) < (OW - 3.2) / 2 + RR && l.y + RR > p.y && l.y - RR < p.y + HWL - 1) return true; return false; });
     };

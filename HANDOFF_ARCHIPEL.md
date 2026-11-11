@@ -63,3 +63,4 @@ Sonnet 5.5 effort MOYEN (faible pour les retouches mecaniques, eleve seulement p
 - Brume reculee a 230/520 m et `viewDist` 480 sur l'ile ; camera plus haute (+4,6) et regard a 66 m. Les rivaux se repartissent sur toute la largeur.
 - Le sol du depart (d<0) prend aussi les couleurs de l'ile (`evoGroundMesh` : sd0 de repli = crsI0).
 - A mesurer : difficulte des obstacles, poids sur telephone (viewDist 480), section inclinee et canons (vus seulement de loin).
+- v375 : vitesse de course 46 -> 36 m/s (turbo +7), barres tournantes plus petites et plus lentes, hangar rouge retire. Analyse chiffree `cctest/ana1.js <vitesse>` : chaque obstacle a au moins un chemin toujours sans danger (mais souvent en bordure : peu de defi). A decider : DA (terrain d'essai de fusees / jouet / mixte).

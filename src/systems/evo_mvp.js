@@ -51,7 +51,7 @@
     { name: 'SERPENT', seed: 37, shape: [[140, 0, 0.08, 22, 15], [220, -90, 0.2, 20, 9], [200, 180, 0.2, 22, 8], [160, -160, 0.16, 30, 7], [120, 0, 0.55, 46, 9, 4], [300, 270, 0.07, 24, 7], [150, 0, 0.06, 14, 5.5], [250, -120, 0.2, 22, 9], [170, 0, 0.04, 14, 17]] }
   ];
   for (const s0 of SHAPES) { s0.zone = 'campagne'; s0.speed = 46; s0.cap = 0; s0.scenes = E.courseScenes || ['rampe', 'camp']; COURSES.unshift(s0); }
-  if (E.isleShape) { const mir = E.isleShape.map((q) => [q[0], -q[1]].concat(q.slice(2))); [[2, mir], [1, mir], [0, E.isleShape]].forEach(([v, sh]) => COURSES.unshift({ name: 'ARCHIPEL ' + (v + 1), variant: v, seed: 5, isle: true, shape: v === 2 ? E.isleShape : sh, zone: 'campagne', speed: 46, cap: 0, scenes: E.isleScenes || ['crsI0'] })); }   // v370 : l'ile (la Coupe se court dessus)
+  if (E.isleShape) { const mir = E.isleShape.map((q) => [q[0], -q[1]].concat(q.slice(2))); [[2, mir], [1, mir], [0, E.isleShape]].forEach(([v, sh]) => COURSES.unshift({ name: 'ARCHIPEL ' + (v + 1), variant: v, seed: 5, isle: true, shape: v === 2 ? E.isleShape : sh, zone: 'campagne', speed: 36, cap: 0, scenes: E.isleScenes || ['crsI0'] })); }   // v370 : l'ile (la Coupe se court dessus)
 const CUP = SHAPES.map((s) => s.name);
   const R = { round: 1, courses: [], field: [32, 16, 8], keep: [16, 8, 1], last: null, live: 1, ease: parseFloat(lsGet('cc.race.ease', '0')) || 0, penT: 0, session: 0 };
   let W = null;   // le monde de la manche (pilotes, fleches de vitesse)
@@ -71,7 +71,7 @@ const CUP = SHAPES.map((s) => s.name);
     return al;
   };
   const fails = {};   // essais rates par niveau (pendant la session) : 0 = 3 etoiles
-  const SP = () => (cur().speed || 44) + (W && W.boostT > 0 ? 12 : 0);
+  const SP = () => (cur().speed || 44) + (W && W.boostT > 0 ? (cur().isle ? 7 : 12) : 0);
   const _rk = E.rocket;   // carburant illimite, jamais en panne
   E.rocket = (n) => { const r = _rk(n); return Object.assign({}, r, { tier: 2, fuel: 999 }); };
   E.softCrash = () => false;   // la mort = une explosion simple, pas de roule-boule
