@@ -49,6 +49,11 @@
     { n: 'totems2', len: 250, turn: 40, slope: 0.1, W: 48, col: 'clay' },
     { n: 'arrivee', len: 220, turn: 0, slope: 0.06, W: 52, col: 'moss' },
   ];
+  const CEIL = {   // hauteur maximale de vol au-dessus du tablier dans chaque section : on ne peut plus passer au-dessus des obstacles
+    arch: { marteaux: 11, canons: 14, divise: 11, remonte: 10.5, gate: 14, pont: 22, pont2: 22 },
+    range: { montee: 22, canons: 16, incline: 12, pont: 11, sprint: 12 },
+    jungle: { lianes: 10, rondins: 11, pont: 16, totems: 22, racines: 16, rondins2: 11, lianes2: 10, totems2: 22 } };
+  for (const [m, arr] of [['arch', SEC_ARCH], ['range', SEC_RANGE], ['jungle', SEC_JUNGLE]]) for (const q of arr) if (CEIL[m][q.n]) q.ceil = CEIL[m][q.n];
   let SEC = SEC_ARCH;
   E.jungleShape = SEC_JUNGLE.map((q, i) => [q.len, q.turn, q.slope, FLY, i === SEC_JUNGLE.length - 1 ? 24 : 17, TOP]);
   E.rangeShape = SEC_RANGE.map((s, i) => [s.len, s.turn, s.slope, FLY, i === SEC_RANGE.length - 1 ? 24 : 17, TOP]);
@@ -72,7 +77,7 @@
   E.mkIsle = (shape, variant, map) => {
     SEC = map === 'range' ? SEC_RANGE : map === 'jungle' ? SEC_JUNGLE : SEC_ARCH; calcStarts(); RIM.set(map === 'range' ? '#2f3238' : map === 'jungle' ? '#3a5a22' : '#7a3cf0');
     const C = E.mkCourse(shape, { fl: FLY, sw: 6 }), dEnd = C.len + 90, mir = variant === 1, W = mkW(dEnd);
-    C.isle = { map: map || 'arch', boxes: [], variant: variant || 0, mir, W, dEnd, starts: STARTS, bank: (d) => (mir ? -1 : 1) * blend(d, 'bank', 0), PY: C.rel(C.len) - 90, sx: variant === 2 ? -1 : 1 };
+    C.isle = { map: map || 'arch', boxes: [], variant: variant || 0, mir, W, dEnd, starts: STARTS, bank: (d) => (mir ? -1 : 1) * blend(d, 'bank', 0), ceilAt: (d) => blend(d, 'ceil', 26), tubes: [], winds: [], PY: C.rel(C.len) - 90, sx: variant === 2 ? -1 : 1 };
     try { CC.CONFIG.render.viewDist = 480; } catch (e) { /* ignore */ }   // on voit les obstacles de plus loin
     if (map === 'range') {   // zones pleines (repere piste : [d0, d1, x0, x1, hauteur0, hauteur1]) : hangar, tours de la citadelle
       const hg = { d: STARTS[2] + 55, len: 44, hw: 20, hh: 24 }, ct = { d: STARTS[7] + 110 }; C.isle.hangar = hg; C.isle.citadel = ct;
@@ -172,7 +177,7 @@
     'void main() {', '  vec2 p = vW.xz; float e = 0.7, h0 = hgt(p);',
     '  vec3 n = normalize(vec3(-(hgt(p + vec2(e, 0.0)) - h0) * 1.5, 1.0, -(hgt(p + vec2(0.0, e)) - h0) * 1.5));',
     '  vec3 V = normalize(cameraPosition - vW); float fres = pow(1.0 - max(dot(n, V), 0.0), 3.0);',
-    '  vec3 deep = vec3(0.34, 0.74, 0.95), shallow = vec3(0.66, 0.92, 0.99), sky = vec3(0.86, 0.96, 1.0);',
+    '  vec3 deep = vec3(0.08, 0.68, 0.84), shallow = vec3(0.40, 0.92, 0.94), sky = vec3(0.84, 0.97, 1.0);',
     '  vec3 col = mix(deep, shallow, clamp(0.5 + h0 * 0.35, 0.0, 1.0)); col = mix(col, sky, fres * 0.45);',
     '  vec3 R = reflect(-uSun, n); col += vec3(1.0, 0.96, 0.82) * pow(max(dot(R, V), 0.0), 80.0) * 0.35;',
     '  float crest = smoothstep(0.62, 1.0, h0 * 0.5 + 0.5 + sin(p.x * 0.31 + p.y * 0.23 + uTime * 1.3) * 0.06); col = mix(col, vec3(1.0), crest * 0.14);',
@@ -202,6 +207,14 @@
     const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(col, 3)); geo.setIndex(idx);
     const m = new T3.Mesh(geo, new T3.MeshBasicMaterial({ vertexColors: true, side: T3.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); m.frustumCulled = false; return m;
   };
+  const ceilings = (T, C) => {   // un ruban translucide a bandes jaunes montre ou est le plafond d'une section
+    const I = C.isle, pos = [], uv = [], idx = [], cv = document.createElement('canvas'); cv.width = cv.height = 64; const c2 = cv.getContext('2d');
+    c2.fillStyle = 'rgba(255,210,58,0.62)'; for (let k = -1; k < 3; k++) { c2.beginPath(); c2.moveTo(k * 32, 0); c2.lineTo(k * 32 + 16, 0); c2.lineTo(k * 32 + 48, 64); c2.lineTo(k * 32 + 32, 64); c2.fill(); }
+    const tx = new T3.CanvasTexture(cv); tx.wrapS = tx.wrapT = T3.RepeatWrapping;
+    SEC.forEach((q, i) => { if (!(q.ceil < 26)) return; for (let d = STARTS[i] + 6; d < STARTS[i] + q.len - 6; d += 8) { const w = I.W(d) - 1.2, w2 = I.W(d + 8) - 1.2; if (w < 6 || w2 < 6) continue; const h = q.ceil, a = T.at(d, -w, I.bank(d) * -w + h), b = T.at(d, w, I.bank(d) * w + h), c = T.at(d + 8, w2, I.bank(d + 8) * w2 + h), e = T.at(d + 8, -w2, I.bank(d + 8) * -w2 + h), o = pos.length / 3;
+      pos.push(...a, ...b, ...c, ...e); uv.push(0, d / 8, w / 6, d / 8, w2 / 6, d / 8 + 1, 0, d / 8 + 1); idx.push(o, o + 1, o + 2, o, o + 2, o + 3); } });
+    const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new T3.Float32BufferAttribute(uv, 2)); geo.setIndex(idx);
+    const m = new T3.Mesh(geo, new T3.MeshBasicMaterial({ map: tx, transparent: true, opacity: 0.32, side: T3.DoubleSide, depthWrite: false, fog: false })); m.frustumCulled = false; return m; };
   const rails = (T, C) => {
     const I = C.isle, list = [], rg = I.map === 'range', CY = rg ? ['#25262a', '#25262a', '#e8e8e8'] : I.map === 'jungle' ? ['#7a5634', '#5b3f25', '#4e9a3a'] : ['#ff3b4d', '#ff9a1f', '#ff3b4d'];
     for (let d = S0 + 12; d < I.dEnd - 10; d += 4.6) { const w = I.W(d) - 1.2; if (w < 8) continue; for (const sg of [-1, 1]) list.push([d, sg * w, 1, ((d / 4.6) | 0) % 5 === 0 ? 1 : 0]); }
@@ -210,7 +223,13 @@
     if (!rg) for (const d of [104, 118]) for (let lx = -50 + (d === 118 ? 8 : 0); lx <= 50; lx += 16) { list.push([d, lx, 1.6, 3]); I.boxes.push([d - 1.9, d + 1.9, lx - 1.9, lx + 1.9, 0, 3.9]); }   // les gros coussins de la ligne de depart
     const prof = [[0.02, 0], [1.0, 0], [1.12, 0.2], [1.12, 0.6], [1.0, 0.8], [0.02, 0.8]].map((q) => new T3.Vector2(q[0], q[1] - 0.4)), geo = new T3.LatheGeometry(prof, 8), lm = new T3.MeshLambertMaterial({ color: '#ffffff' }), dm = new T3.Object3D(), cc = new T3.Color(), CH = 160, byC = new Map(), gr = new T3.Group();
     for (const it of list) { const c = Math.floor(it[0] / CH); if (!byC.has(c)) byC.set(c, []); byC.get(c).push(it); }
-    for (const [c, arr] of byC) {
+    const jg = I.map === 'jungle', eg = rg ? new T3.BoxGeometry(1.7, 2.1, 4.8) : (() => { const g0 = jg ? new T3.CylinderGeometry(0.9, 0.9, 4.4, 8) : new T3.CapsuleGeometry(0.95, 3.4, 3, 8); g0.rotateX(Math.PI / 2); return g0; })(), LV = rg ? [1.05] : [1.0, 2.55];
+    for (const [c, arr0] of byC) {
+      const edges = arr0.filter((q) => q[3] < 2), arr = arr0.filter((q) => q[3] >= 2);
+      if (edges.length) { const ie = new T3.InstancedMesh(eg, lm, edges.length * LV.length); let m2 = 0; for (const [d, lx, , kind] of edges) { const seg = Math.round(d / 4.6); for (let li = 0; li < LV.length; li++) { const y = I.bank(d) * lx + LV[li], p = T.at(d, lx, y), q = T.at(d + 2, lx, I.bank(d + 2) * lx + LV[li]); dm.position.set(p[0], p[1], p[2]); dm.scale.set(1, 1, 1); dm.lookAt(q[0], q[1], q[2]); dm.updateMatrix(); ie.setMatrixAt(m2, dm.matrix);
+          cc.set(rg ? (kind ? '#d33a2a' : seg % 2 ? '#d9d9d9' : '#f2c230') : jg ? (kind ? '#4e9a3a' : (seg + li) % 2 ? '#7a5634' : '#6b4a2a') : (kind ? '#ffd23a' : (seg + li) % 2 ? '#ff4f9a' : '#ffffff')); ie.setColorAt(m2, cc); m2++; } }
+        ie.instanceMatrix.needsUpdate = true; if (ie.instanceColor) ie.instanceColor.needsUpdate = true; ie.frustumCulled = false; const mid2 = T.at((c + 0.5) * CH, 0, 5); ie.userData.c = new T3.Vector3(mid2[0], mid2[1], mid2[2]); gr.add(ie); }
+      if (!arr.length) continue;
       const im = new T3.InstancedMesh(geo, lm, arr.length * 3); let n = 0;
       for (const [d, lx, sc, kind] of arr) for (let k = 0; k < 3; k++) {
         const p = T.at(d, lx, I.bank(d) * lx + (0.4 + k * 0.8) * sc); dm.position.set(p[0], p[1], p[2]); dm.scale.set(sc, sc, sc); dm.updateMatrix(); im.setMatrixAt(n, dm.matrix);
@@ -238,7 +257,7 @@
   const blob = (g, x, z, w, d) => { const m = new T3.Object3D(); m.position.set(x, 0.1, z); return m; };   // plus de taches rondes : voir autoShadow
   E.isleBlob = () => { const m = new T3.Mesh(new T3.PlaneGeometry(1, 1), blobMat()); m.rotation.x = -Math.PI / 2; m.visible = false; m.frustumCulled = false; return m; };
   const cy = (rt, rb, h, c, n) => new T3.Mesh(new T3.CylinderGeometry(rt, rb, h, n || 10), mat(c));
-  const STONE = ['#a39a8a', '#948b7c', '#b2a999'], WOOD = '#7a5634', WOODD = '#5b3f25';
+  const THEME = { arch: ['#f6eaff', '#e3cffb', '#ffd8ec'], range: ['#8f959c', '#7e848b', '#a1a7ad'], jungle: ['#a8743f', '#8a5a2c', '#c08a52'] }, STONE = ['#a39a8a', '#948b7c', '#b2a999'], WOOD = '#7a5634', WOODD = '#5b3f25';
 
   // ---- OMBRES : une seule direction de lumiere dans le monde ; chaque objet projette UNE ombre (l'enveloppe de ses pieces), jamais assombrie deux fois (pochoir)
   const LS = new T3.Vector3(0.42, 0, -0.3); E.isleLS = LS;   // decalage de l'ombre par metre de hauteur
@@ -273,6 +292,15 @@
     if (!out.length) return; const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(out, 3)); const m = new T3.Mesh(geo, SHM); m.frustumCulled = false; m.renderOrder = 2; m.userData.noShadow = true; g.add(m); };
   const _v = new T3.Vector3(), RR = 0.8;   // RR : rayon de la fusee
   const segDist = (px, py, ax, ay, bx2, by2) => { const dx = bx2 - ax, dy = by2 - ay, l2 = dx * dx + dy * dy || 1, t = U.clamp(((px - ax) * dx + (py - ay) * dy) / l2, 0, 1); return Math.hypot(px - (ax + dx * t), py - (ay + dy * t)); };
+
+  const tubeMesh = (T, I, d0, len, hw, ht, cols, op, accent) => {   // coque d'un tuyau : section carree arrondie, bandes de couleur, deux colliers aux extremites
+    const N = 24, pos = [], col = [], idx = [], A = hw + 1.2, B = (ht + 3) / 2, HC = ht / 2, tc = new T3.Color(), sp = (v) => Math.sign(v) * Math.pow(Math.abs(v), 0.5);
+    const ring = (d, grow, c) => { const o = pos.length / 3; tc.set(c); for (let k = 0; k < N; k++) { const th = k / N * 6.2832, x = (A + grow) * sp(Math.cos(th)), y = HC + (B + grow) * sp(Math.sin(th)), p = T.at(d, x, I.bank(d) * x + y); pos.push(p[0], p[1], p[2]); col.push(tc.r, tc.g, tc.b); } return o; };
+    const link = (o0, o1) => { for (let k = 0; k < N; k++) { const k2 = (k + 1) % N; idx.push(o0 + k, o1 + k, o1 + k2, o0 + k, o1 + k2, o0 + k2); } };
+    let prev = -1; for (let d = d0; d <= d0 + len + 0.01; d += 4) { const o = ring(d, 0, Math.floor((d - d0) / 8) % 2 ? cols[0] : cols[1]); if (prev >= 0) link(prev, o); prev = o; }
+    for (const dd of [d0 - 0.6, d0 + len - 2.4]) { const a = ring(dd, 0.9, accent), b = ring(dd + 3, 0.9, accent); link(a, b); }
+    const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(col, 3)); geo.setIndex(idx); geo.computeVertexNormals();
+    const m = new T3.Mesh(geo, new T3.MeshLambertMaterial({ vertexColors: true, side: T3.DoubleSide, transparent: op < 1, opacity: op, depthWrite: op >= 1 })); m.frustumCulled = false; m.userData.noShadow = true; return m; };
   const obstacles = (T, C, grp) => {
     const I = C.isle, ups = [], hits = [], sx = I.sx, addHit = (d, f) => { f.d = d; hits.push(f); };
     const signs = [], groups = [], mk = (d, lx) => { const L = lx * sx, bk = I.bank(d), p = T.at(d, L, bk * L), q = T.at(d + 3, L, bk * L), g = new T3.Group(); g.position.set(p[0], p[1], p[2]); g.lookAt(q[0], p[1], q[2]); g.rotateZ(-Math.atan(bk)); grp.add(g); groups.push(g); g.updateMatrixWorld(true); return g; };
@@ -280,8 +308,8 @@
     const stoneBlock = (w, h, d, i) => bx(w, h, d, STONE[i % 3]);
     const gantry = (g, span, top, wood, dd, lxx) => {
       if (dd !== undefined) { const L = lxx * sx; for (const sg of [-1, 1]) I.boxes.push([dd - 2.7, dd + 2.7, L + sg * span - 2.7, L + sg * span + 2.7, 0, top + 1]); I.boxes.push([dd - 1.4, dd + 1.4, L - span - 2.5, L + span + 2.5, top - 0.6, top + 1.6]); }   // portique : deux piliers (pierre a bandes ou bois), une poutre a bandes jaunes et noires
-      for (const s of [-1, 1]) { const col = wood ? bx(2.2, top + 1, 2.2, WOOD) : stoneBlock(4, top + 1, 4, 0); col.position.set(s * span, (top + 1) / 2, 0); g.add(col); if (!wood) for (let k = 0; k < 4; k++) { const band = stoneBlock(4.4, 0.7, 4.4, k + 1); band.position.set(s * span, 3 + k * 5.5, 0); g.add(band); } const foot = bx(5.4, 1.2, 5.4, wood ? WOODD : '#7c7468'); foot.position.set(s * span, 0.6, 0); g.add(foot); }
-      const beam = bx(2 * span + 5, 2, 2.6, wood ? WOOD : '#8a8174'); beam.position.y = top + 0.5; g.add(beam);
+      for (const s of [-1, 1]) { const col = wood ? bx(2.2, top + 1, 2.2, WOOD) : stoneBlock(4, top + 1, 4, 0); col.position.set(s * span, (top + 1) / 2, 0); g.add(col); if (!wood) for (let k = 0; k < 4; k++) { const band = stoneBlock(4.4, 0.7, 4.4, k + 1); band.position.set(s * span, 3 + k * 5.5, 0); g.add(band); } const foot = bx(5.4, 1.2, 5.4, wood ? WOODD : STONE[1]); foot.position.set(s * span, 0.6, 0); g.add(foot); }
+      const beam = bx(2 * span + 5, 2, 2.6, wood ? WOOD : STONE[2]); beam.position.y = top + 0.5; g.add(beam);
       for (let k = -2; k <= 2; k++) { const sp = bx(2.6, 2.04, 2.64, k % 2 ? '#ffd23a' : '#23262b'); sp.position.set(k * 5.6, top + 0.5, 0); if (Math.abs(k * 5.6) < span + 1) g.add(sp); }
     };
     const hammer = (d, lx, ph) => {   // marteau pendulaire sur portique en pierre
@@ -317,7 +345,7 @@
         const a = Math.atan2(dy, dx) - (blades.rotation.z + Math.PI / 2); for (let k = 0; k < 4; k++) { const da = a - k * Math.PI / 2, ang = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.cos(ang) > 0 && r * Math.abs(Math.sin(ang)) < 1.5 + RR) return true; } return false; });
     };
     const sweeper = (d, lx, ph, dir) => {   // barre tournante sur un mat de pierre (axe vertical) : deux grandes pales
-      const g = mk(d, lx), R = 14.5, h0 = 3.5, h1 = 18.5; blob(g, 0, 0, 10, 10); I.boxes.push([d - 2.8, d + 2.8, lx * sx - 2.8, lx * sx + 2.8, 0, h1 + 3]);
+      const g = mk(d, lx), R = 14.5, h0 = 2.0, h1 = 23; blob(g, 0, 0, 10, 10); I.boxes.push([d - 2.8, d + 2.8, lx * sx - 2.8, lx * sx + 2.8, 0, h1 + 3]);
       const pole = cy(2.2, 3.0, h1 + 3, STONE[1], 14); pole.position.y = (h1 + 3) / 2; g.add(pole); for (let k = 0; k < 3; k++) { const b2 = cy(3.4, 3.4, 0.7, STONE[(k + 2) % 3], 14); b2.position.y = 2 + k * 6; g.add(b2); }
       const rot = new T3.Group(); rot.position.y = 0; g.add(rot); rot.userData.dyn = true;
       for (const s of [-1, 1]) { const blade = bx(R, h1 - h0, 1.6, s > 0 ? '#ff4f9a' : '#ffd23a'); blade.position.set(s * (R / 2 + 2), (h0 + h1) / 2, 0); rot.add(blade); dynSh(g, blade); const cap = bx(2.2, h1 - h0 + 0.6, 2.2, '#23262b'); cap.position.set(s * (R + 2), (h0 + h1) / 2, 0); rot.add(cap); }
@@ -397,11 +425,11 @@
       addHit(d, (pos) => { const l = loc(g, pos); if (Math.abs(l.x) > 3.8 + RR) return false; const a = piv.rotation.x, hz = L * Math.sin(a), hy = top - 0.4 - L * Math.cos(a); return Math.hypot(l.z - hz, l.y - hy) < 3 + RR || segDist(l.z, l.y, 0, top - 0.4, hz, hy) < 0.4 + RR; });
     };
     const rollLog = (d, lx, ph, amp) => {   // rondin geant qui roule d'un bord a l'autre de la piste (il ne roule que sur le sol : on peut passer au-dessus)
-      const g = mk(d, lx), cyy = 3.2; const lg = new T3.Group(); g.add(lg); lg.userData.dyn = true; const body = cy(3.2, 3.2, 10, '#7a5634', 18); body.rotation.x = Math.PI / 2; lg.add(body); dynSh(g, body);
-      for (const z of [-4.2, 0, 4.2]) { const bd = cy(3.3, 3.3, 0.6, '#3a2a14', 18); bd.rotation.x = Math.PI / 2; bd.position.z = z; lg.add(bd); } for (const z of [-5.05, 5.05]) { const ring = new T3.Mesh(new T3.TorusGeometry(2.2, 0.35, 8, 20), matS('#d8b480')); ring.position.z = z; lg.add(ring); }
+      const g = mk(d, lx), cyy = 5.6; const lg = new T3.Group(); g.add(lg); lg.userData.dyn = true; const body = cy(5.6, 5.6, 10, '#7a5634', 22); body.rotation.x = Math.PI / 2; lg.add(body); dynSh(g, body);
+      for (const z of [-4.2, 0, 4.2]) { const bd = cy(5.7, 5.7, 0.6, '#3a2a14', 22); bd.rotation.x = Math.PI / 2; bd.position.z = z; lg.add(bd); } for (const z of [-5.05, 5.05]) { const ring = new T3.Mesh(new T3.TorusGeometry(3.6, 0.5, 8, 24), matS('#d8b480')); ring.position.z = z; lg.add(ring); }
       const hsh = blob(g, 0, 0, 14, 11);
-      ups.push((t) => { const x = amp * Math.sin(t * 0.75 + ph); lg.position.set(x, cyy, 0); lg.rotation.z = -x / 3.2; hsh.position.x = x; g.updateMatrixWorld(true); });
-      addHit(d, (pos) => { const l = loc(g, pos); return Math.abs(l.z) < 5.4 + RR && Math.hypot(l.x - lg.position.x, l.y - cyy) < 3.2 + RR; });
+      ups.push((t) => { const x = amp * Math.sin(t * 0.75 + ph); lg.position.set(x, cyy, 0); lg.rotation.z = -x / 5.6; hsh.position.x = x; g.updateMatrixWorld(true); });
+      addHit(d, (pos) => { const l = loc(g, pos); return Math.abs(l.z) < 5.4 + RR && Math.hypot(l.x - lg.position.x, l.y - cyy) < 5.6 + RR; });
     };
     const curtain = (d, n, ph) => {   // rideau de lianes : des lianes verticales qui ondulent ; on passe entre elles ou au-dessus
       const g = mk(d, 0), W0 = Math.max(12, I.W(d) - 6), vs = [], top = 26;
@@ -411,14 +439,36 @@
       addHit(d, (pos) => { const l = loc(g, pos); if (Math.abs(l.z) > 1.2 + RR || l.y > top + 1) return false; for (const o of vs) { const a = o.v.rotation.z, ex = o.x + Math.sin(a) * o.len, ey = top - Math.cos(a) * o.len; if (segDist(l.x, l.y, o.x, top, ex, ey) < 0.55 + RR) return true; } return false; });
     };
     const totem = (d, lx, ph, dir) => {   // totem de bois : mat central, trois bras a des hauteurs differentes qui tournent lentement
-      const g = mk(d, lx), HT = 26, arms = [6, 13, 20], R2 = 13; blob(g, 0, 0, 10, 10); I.boxes.push([d - 2.6, d + 2.6, lx * sx - 2.6, lx * sx + 2.6, 0, HT]);
+      const g = mk(d, lx), HT = 26, arms = [13, 13, 13], R2 = 13; blob(g, 0, 0, 10, 10); I.boxes.push([d - 2.6, d + 2.6, lx * sx - 2.6, lx * sx + 2.6, 0, HT]);
       const post = cy(2, 2.6, HT, '#7a5634', 14); post.position.y = HT / 2; g.add(post); for (let k = 0; k < 4; k++) { const rg = cy(2.8, 2.8, 0.7, k % 2 ? '#d8b480' : '#3a2a14', 14); rg.position.y = 3 + k * 6.5; g.add(rg); } const face = new T3.Mesh(new T3.SphereGeometry(2.6, 14, 10), matS('#a67c48')); face.position.y = HT + 1.2; g.add(face);
-      const rot = new T3.Group(); g.add(rot); rot.userData.dyn = true; const bars = []; arms.forEach((h, i) => { const ag = new T3.Group(); ag.position.y = h; ag.rotation.y = i * 1.05; const bar = bx(2 * R2, 1.5, 1.5, i % 2 ? '#c08550' : '#8a5a2a'); ag.add(bar); dynSh(g, bar); for (const sg of [-1, 1]) { const tip = new T3.Mesh(new T3.SphereGeometry(1.3, 10, 8), matS(i % 2 ? '#ffd23a' : '#d9382c')); tip.position.x = sg * R2; ag.add(tip); } rot.add(ag); bars.push({ ag, h }); });
+      const rot = new T3.Group(); g.add(rot); rot.userData.dyn = true; const bars = []; arms.forEach((h, i) => { const ag = new T3.Group(); ag.position.y = h; ag.rotation.y = i * 2.094; const bar = bx(2 * R2, 22, 1.5, i % 2 ? '#c08550' : '#8a5a2a'); ag.add(bar); dynSh(g, bar); for (const sg of [-1, 1]) { const tip = new T3.Mesh(new T3.SphereGeometry(1.3, 10, 8), matS(i % 2 ? '#ffd23a' : '#d9382c')); tip.position.x = sg * R2; ag.add(tip); } rot.add(ag); bars.push({ ag, h }); });
       ups.push((t) => { rot.rotation.y = dir * t * 0.55 + ph; g.updateMatrixWorld(true); });
-      addHit(d, (pos) => { const l = loc(g, pos); if (Math.hypot(l.x, l.z) < 2.6 + RR && l.y < HT + 3) return true; for (const b of bars) { if (Math.abs(l.y - b.h) > 0.75 + RR + 0.6) continue; const th = rot.rotation.y + b.ag.rotation.y, t2 = l.x * Math.cos(th) - l.z * Math.sin(th), pr = Math.abs(l.x * Math.sin(th) + l.z * Math.cos(th)); if (Math.abs(t2) < R2 + 1.3 + RR && pr < 0.75 + RR) return true; } return false; });
+      addHit(d, (pos) => { const l = loc(g, pos); if (Math.hypot(l.x, l.z) < 2.6 + RR && l.y < HT + 3) return true; for (const b of bars) { if (Math.abs(l.y - b.h) > 11 + RR) continue; const th = rot.rotation.y + b.ag.rotation.y, t2 = l.x * Math.cos(th) - l.z * Math.sin(th), pr = Math.abs(l.x * Math.sin(th) + l.z * Math.cos(th)); if (Math.abs(t2) < R2 + 1.3 + RR && pr < 0.75 + RR) return true; } return false; });
+    };
+
+    const tube = (d0, len, o) => {   // tuyau : on entre, la fusee est guidee par les parois, on ressort de l'autre cote ; le vide se traverse a l'interieur (+ un peu de vitesse)
+      const hw = o.hw || 9, ht = o.ht || 21;
+      I.boxes.push([d0, d0 + len, -hw - 3, -hw, -3, ht + 3], [d0, d0 + len, hw, hw + 3, -3, ht + 3], [d0, d0 + len, -hw - 3, hw + 3, ht, ht + 3], [d0, d0 + len, -hw - 3, hw + 3, -3.4, 0]);
+      I.tubes.push({ d0, d1: d0 + len }); grp.add(tubeMesh(T, I, d0, len, hw, ht, o.cols, o.op === undefined ? 1 : o.op, o.accent));
+    };
+    const windSlot = [];
+    const wind = (d0, len, o) => {   // rafale VISIBLE : des filets d'air filent dans le sens du vent (lateral, de face ou ascendant) et poussent vraiment la fusee
+      const lat = o.lat || 0, head = o.head || 0, up = o.up || 0, dm = d0 + len / 2, g = mk(dm, 0), n = 80; I.winds.push({ d0, d1: d0 + len, lat, head, up });
+      const xw = new T3.Vector3(1, 0, 0).applyQuaternion(g.getWorldQuaternion(new T3.Quaternion())), a0 = T.at(dm, 0, 0), a1 = T.at(dm, 1, 0), sgL = ((a1[0] - a0[0]) * xw.x + (a1[2] - a0[2]) * xw.z) >= 0 ? 1 : -1;
+      const dir = new T3.Vector3(Math.sign(lat) * sgL, Math.sign(up), -Math.sign(head)).normalize(), hwid = Math.max(14, I.W(dm) - 3), st = [];
+      for (let i = 0; i < n; i++) st.push({ x: (Math.random() * 2 - 1) * hwid, y: 2 + Math.random() * 20, z: (Math.random() - 0.5) * len, sp: 24 + Math.random() * 16, L: 5 + Math.random() * 7 });
+      const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(new Float32Array(n * 6), 3)); const ln = new T3.LineSegments(geo, new T3.LineBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.75, fog: false })); ln.frustumCulled = false; ln.userData.noShadow = true; g.add(ln);
+      const wr = (v, a, b) => a + (((v - a) % (b - a)) + (b - a)) % (b - a);
+      ups.push((t, rp) => { if (rp && g.position.distanceToSquared(rp) > (len / 2 + 240) * (len / 2 + 240)) { ln.visible = false; return; } ln.visible = true; const pa = geo.attributes.position.array;
+        for (let i = 0; i < n; i++) { const q = st[i], tr = t * q.sp, x = wr(q.x + dir.x * tr, -hwid, hwid), y = wr(q.y + dir.y * tr, 2, 22), z = wr(q.z + dir.z * tr, -len / 2, len / 2); pa[i * 6] = x; pa[i * 6 + 1] = y; pa[i * 6 + 2] = z; pa[i * 6 + 3] = x - dir.x * q.L; pa[i * 6 + 4] = y - dir.y * q.L; pa[i * 6 + 5] = z - dir.z * q.L; } geo.attributes.position.needsUpdate = true; });
     };
     const S = (name) => STARTS[SEC.findIndex((s) => s.n === name)];
     const LEN = (n) => SEC[SEC.findIndex((q) => q.n === n)].len, rowsAt = (n, a, b, step, fn) => { const s0 = S(n), L = LEN(n); let k = 0; for (let d = s0 + a; d <= s0 + L - b; d += step, k++) fn(d, k); }, sgn = (txt, n, off) => signs.push([txt, S(n) + (off === undefined ? -15 : off)]);
+    const tubeCols = { arch: { cols: ['#ff7ab8', '#ffffff'], accent: '#ffd23a', op: 0.6 }, range: { cols: ['#6b7280', '#4a5160'], accent: '#f2c230', op: 1 }, jungle: { cols: ['#8a5a2c', '#6b4a22'], accent: '#58b04a', op: 1 } }[I.map] || { cols: ['#ffffff', '#cccccc'], accent: '#ffd23a', op: 1 };
+    for (const n of ['vide', 'vide2']) if (SEC.some((q) => q.n === n)) { tube(S(n) - 22, LEN(n) + 44, tubeCols); sgn('TUYAU', n, -62); }
+    if (I.map === 'arch') { wind(S('arrivee') + 20, 110, { head: 14 }); sgn('VENT DE FACE', 'arrivee', -10); }
+    else if (I.map === 'range') { wind(S('tir') + 110, 100, { lat: 12 }); wind(S('tir') + 215, 70, { lat: -12 }); sgn('VENT', 'tir', 70); }
+    else if (I.map === 'jungle') { wind(S('arrivee') + 20, 80, { lat: 12 }); wind(S('arrivee') + 110, 80, { lat: -12 }); sgn('VENT', 'arrivee', -10); }
     if (I.map === 'jungle') {
       for (const n of ['lianes', 'lianes2']) { sgn('LIANES', n); rowsAt(n, 70, 50, 62, (d, k) => { const p = k % 3; if (p === 0) { vinePend(d, -20, k * 0.7, 1); vinePend(d, 20, k * 0.7 + 1.7, -1); } else if (p === 1) vinePend(d, 0, k * 0.9, k % 2 ? 1 : -1); else { vinePend(d, -22, k, -1); vinePend(d, 22, k + 0.5, 1); } }); }
       for (const n of ['rondins', 'rondins2']) { sgn('ROULEAUX', n); rowsAt(n, 70, 50, 60, (d, k) => rollLog(d, 0, k * 1.9, n === 'rondins' ? 26 : 22)); }
@@ -481,8 +531,8 @@
     return (t) => { for (const it of items) { it.o.position.y = it.y0 + Math.sin(t * 0.5 + it.ph) * 2.4; it.o.rotation.y += it.sp; } };
   };
   E.buildIsle = (T, C, grp) => {
-    const I = C.isle, out = { isle: true, blocks: [], obst: [] }; SH_DYN.length = 0;
-    const railsG = rails(T, C); grp.add(bodyMesh(T, C)); grp.add(ocean(T, C)); grp.add(decals(T, C)); grp.add(railsG);
+    const I = C.isle, out = { isle: true, blocks: [], obst: [] }; SH_DYN.length = 0; { const th = THEME[I.map] || THEME.arch; for (let q = 0; q < 3; q++) STONE[q] = th[q]; }
+    const railsG = rails(T, C); grp.add(ceilings(T, C)); grp.add(bodyMesh(T, C)); grp.add(ocean(T, C)); grp.add(decals(T, C)); grp.add(railsG);
     const bm = new T3.MeshBasicMaterial({ map: bannerTex(), side: T3.DoubleSide, fog: false });
     const place = (d, lx, objs) => { const y = T.base(d), bk = I.bank(d), p = T.at(d, lx, bk * lx), q = T.at(d + 3, lx, bk * lx), g = new T3.Group(); g.position.set(p[0], p[1], p[2]); g.lookAt(q[0], p[1], q[2]); grp.add(g); for (const o of objs) g.add(o); autoShadow(g); return g; };
     for (let d = 100; d < C.len - 40; d += 75) for (const sg of [-1, 1]) {   // poteaux de course : un drapeau « COLD IMPACT CUP » tourne vers la fusee qui arrive
@@ -507,9 +557,15 @@
       for (const sgp of [-1, 1]) { const px = sgp * (hwB + 10); for (let q = 0; q < 8; q++) { const c3 = cy(2.3, 2.3, 5.4, q % 2 ? '#ffffff' : (rg ? '#d9a21b' : jg ? '#4e9a3a' : '#ff4f9a'), 16); c3.position.set(px, 2.7 + q * 5.4, 2); objs.push(c3); } const ball = new T3.Mesh(new T3.SphereGeometry(3.4, 16, 12), new T3.MeshBasicMaterial({ color: tc })); ball.position.set(px, 8 * 5.4 + 3, 2); objs.push(ball); I.boxes.push([FNd - 1, FNd + 5, px - 2.6, px + 2.6, 0, 48]); }
       for (let q = 0; q < 17; q++) { const f2 = new T3.Mesh(new T3.CircleGeometry(1.3, 3), new T3.MeshBasicMaterial({ color: ['#ff4f9a', '#ffd23a', '#2f8cff', '#43d6a0'][q % 4], side: T3.DoubleSide })); const u = q / 16; f2.position.set((hwB + 10) * (2 * u - 1), 47 - 7 * Math.sin(Math.PI * u), 2); f2.rotation.z = Math.PI; objs.push(f2); }
       place(FNd, 0, objs); I.boxes.push([FNd, FNd + DEP, -hwB - 3, -hwB, 0, HB + 3], [FNd, FNd + DEP, hwB, hwB + 3, 0, HB + 3], [FNd, FNd + DEP, -hwB - 3, hwB + 3, HB, HB + 3]); }
-    if (I.map === 'jungle') {   // arbres de jungle sur les bords : tronc, canopee ronde, lianes
-      for (let d = 60; d < C.len + 40; d += 34) for (const sg of [-1, 1]) { if (((d / 34) | 0) % 2 === (sg > 0 ? 0 : 1)) continue; const w = I.W(d); if (w < 22) continue; const lx = sg * (w - 6.5), h = 16 + ((d * 7) % 9), tr = cy(1.3, 1.9, h, '#6b4a2a', 10); tr.position.y = h / 2; const cn = []; for (const q of [[0, h + 2, 0, 5.2], [3.4, h - 1, 1.5, 3.8], [-3.2, h, -1.2, 4.1]]) { const c3 = new T3.Mesh(new T3.SphereGeometry(q[3], 14, 10), matS(q[3] > 5 ? '#3f9a44' : '#58b04a')); c3.position.set(q[0], q[1], q[2]); cn.push(c3); }
-        place(d, lx, [tr].concat(cn)); I.boxes.push([d - 1.5, d + 1.5, lx - 1.5, lx + 1.5, 0, h + 7]); }
+    if (I.map === 'jungle') {   // arbres de jungle sur les bords : baobab a racines, palmier courbe, canopee en grappe de boules, lianes qui pendent
+      const greens = ['#2f8a3c', '#3f9a44', '#58b04a', '#7cc65a'];
+      const baobab = (h, k) => { const o = [], tr = cy(1.2, 2.4, h, '#7a5634', 12); tr.position.y = h / 2; o.push(tr); for (let q = 0; q < 4; q++) { const a = q * 1.57 + 0.4, rt = new T3.Mesh(new T3.ConeGeometry(1.1, 4, 6), mat('#6b4a2a')); rt.position.set(Math.cos(a) * 2.2, 1.6, Math.sin(a) * 2.2); rt.rotation.z = Math.cos(a) * 0.5; rt.rotation.x = -Math.sin(a) * 0.5; o.push(rt); }
+        for (const [x, y, z, r] of [[0, h + 3, 0, 6.2], [4.2, h, 1.2, 4.4], [-4, h + 0.5, -1.5, 4.8], [1.2, h + 6, -1, 3.8], [-1.5, h - 0.5, 4, 4]]) { const c3 = new T3.Mesh(new T3.SphereGeometry(r, 14, 10), matS(greens[(k + Math.round(x)) & 3])); c3.position.set(x, y, z); c3.scale.y = 0.78; o.push(c3); }
+        for (let q = 0; q < 3; q++) { const vn = cy(0.14, 0.14, 7, '#3f8a3a', 5); vn.position.set(Math.cos(q * 2.1) * 4.6, h - 2.5, Math.sin(q * 2.1) * 4.6); o.push(vn); } return o; };
+      const palm = (h, k) => { const o = []; for (let q = 0; q < 4; q++) { const sg = cy(0.8 - q * 0.1, 0.9 - q * 0.1, h / 4 + 0.4, q % 2 ? '#8a6238' : '#7a5634', 8); sg.position.set(q * 0.7, h / 8 + q * (h / 4), 0); sg.rotation.z = -0.13 * q; o.push(sg); }
+        for (let q = 0; q < 7; q++) { const a = q * 0.898, fr = new T3.Mesh(new T3.ConeGeometry(0.9, 7, 4), mat(q % 2 ? '#3f9a44' : '#58b04a')); fr.scale.set(1, 1, 0.25); fr.position.set(2.7 + Math.cos(a) * 3, h + 0.2 - 1, Math.sin(a) * 3); fr.rotation.z = Math.cos(a) * 1.25 - 1.57 * 0 + 1.3; fr.rotation.y = a; o.push(fr); } const cc3 = new T3.Mesh(new T3.SphereGeometry(0.9, 8, 6), matS('#6b4a2a')); cc3.position.set(2.1, h - 0.6, 0.4); o.push(cc3); return o; };
+      for (let d = 60, k = 0; d < C.len + 40; d += 30, k++) for (const sg of [-1, 1]) { if (((d / 30) | 0) % 2 === (sg > 0 ? 0 : 1)) continue; const w = I.W(d); if (w < 22) continue; const lx = sg * (w - 6.5), h = 15 + ((d * 7) % 9), objs = (k % 3 === 2) ? palm(h, k) : baobab(h, k);
+        place(d, lx, objs); I.boxes.push([d - 1.6, d + 1.6, lx - 1.6, lx + 1.6, 0, h + 8]); }
     }
     const ob = obstacles(T, C, grp); out.hits = ob.hits;
     for (const [txt, dd] of ob.signs) for (const sg of [-1, 1]) { const w = I.W(dd); if (w < 16) continue; const po = pole(10, '#ffd23a'), pn = new T3.Mesh(new T3.PlaneGeometry(10, 3.5), new T3.MeshBasicMaterial({ map: signTex(txt), side: T3.DoubleSide, fog: false })); po.position.y = 5; pn.position.set(0, 9.4, 0); pn.rotation.y = Math.PI; place(dd, sg * (w - 5.5), [po, pn]); }

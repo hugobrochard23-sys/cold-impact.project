@@ -210,15 +210,16 @@ const CUP = SHAPES.map((s) => s.name);
       const ka = 1 - Math.exp(-dt / 0.5); I.anx += (I.cx - I.anx) * ka; I.any += (I.cy - I.any) * ka;
     }
     if (ap) { ax = U.clamp(-P.ox / 8, -1, 1); ay = U.clamp((11 - P.h) / 6, -1, 1); }
-    const gas = ap || touch || k.Space || g.flightTime < 2.6 || now < (W.grace || 0), sp = SP();
+    const gas = ap || touch || k.Space || g.flightTime < 2.6 || now < (W.grace || 0), inTube = I2.tubes && I2.tubes.some((q) => P.d > q.d0 && P.d < q.d1), sp = SP() + (inTube ? 6 : 0);
     P.vf += U.clamp((gas ? sp : 0) - P.vf, -34 * dt, 42 * dt);   // sans ESPACE la fusee ralentit et s'arrete
     const steerK = 0.45 + 0.55 * U.clamp(P.vf / Math.max(1, sp), 0, 1), ea = 1 - Math.exp(-dt / 0.13);
     P.vl += (ax * 24 * steerK - P.vl) * ea; P.vy += (ay * 17 * steerK - P.vy) * ea;
     P.d += P.vf * dt; P.ox += P.vl * dt; P.h += P.vy * dt;
+    if (I2.winds) for (const w of I2.winds) if (P.d > w.d0 && P.d < w.d1) { P.ox += w.lat * dt; P.h += w.up * dt; P.d -= w.head * (W.bst ? 0.25 : 1) * dt; }   // les vents poussent la fusee (le boost lutte contre le vent de face)
     const Wd = I2.W(P.d), over = Wd > 1 && Math.abs(P.ox) < Wd - 0.3, lim = Wd + 34;
     if (Math.abs(P.ox) > lim) { const sg = Math.sign(P.ox); P.ox = sg * lim; if (P.vl * sg > 0) P.vl = 0; wallRipple(g, rk.pos, nn); }   // mur invisible
     if (over && P.h < 2.2) { P.h = 2.2; if (P.vy < 0) P.vy = 0; }
-    if (P.h > 26) { P.h = 26; if (P.vy > 0) P.vy = 0; }
+    { const ceilH = I2.ceilAt ? I2.ceilAt(P.d) : 26; if (P.h > ceilH) { P.h = ceilH; if (P.vy > 0) P.vy = 0; wallRipple(g, rk.pos, UPV); } }   // plafond de la section
     // collisions : seulement le nez (2,6 m devant le centre)
     const NO = 2.6, RRc = 0.5, vln = Math.hypot(P.vf, P.vl, P.vy) || 1, ux = vln > 4 ? P.vf / vln : 1, uy = vln > 4 ? P.vl / vln : 0, uz = vln > 4 ? P.vy / vln : 0;
     let nd = P.d + NO * ux, nx = P.ox + NO * uy, nh = P.h + NO * uz;

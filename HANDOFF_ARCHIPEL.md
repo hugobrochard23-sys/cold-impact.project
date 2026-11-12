@@ -100,3 +100,9 @@ Sonnet 5.5 effort MOYEN (faible pour les retouches mecaniques, eleve seulement p
 - Collisions au NEZ (2,6 m devant le centre) dans le repere de la piste : de face = retenu sans recul, de cote = glisse ; obstacle mobile = vitesse x0.3 puis 0,5 s de traversee (W.ghostT). Chute (vide / sous le tablier) -> retour au debut de l'obstacle ou de la section (respawn), +1,2 s.
 - Camera 13 m derriere, plus haute, FOV 1.02-1.12 ; fusee x1.27 avec contour jaune ; marqueur arrondi plus gros et plus haut.
 - Perf : rails (595k triangles !) -> 8 facettes + troncons de 160 m visibles par distance ; materiaux partages (mat/matS) ; ombres dynamiques 170 m et 1 image sur 2.
+
+## v387 (bloc 3 : vrais obstacles, tuyaux, vents, coherence)
+- Plafonds par section (`CEIL`, `C.isle.ceilAt`) + ruban translucide a bandes jaunes (`ceilings`) : on ne survole plus les obstacles ; sweeper plein (h 2..23), totem a 3 planches pleine hauteur, rondin geant (r 5,6).
+- Tuyaux (`tube`/`tubeMesh`) sur les sections `vide` : coque arrondie, parois solides (boites), vitesse +6 a l'interieur ; styles par carte (bonbon translucide, acier, tronc creux).
+- Vents visibles (`wind` : filets d'air animes) qui poussent vraiment (lateral, de face, ascendant ; le boost lutte contre le vent de face).
+- Structures aux couleurs de la carte (`THEME`), barrieres de bord par carte (capsules gonflables / blocs de beton rayes / rondins), mer turquoise, arbres de jungle refaits (baobab a racines, palmier).
