@@ -52,6 +52,9 @@
   ];
   for (const s0 of SHAPES) { s0.zone = 'campagne'; s0.speed = 46; s0.cap = 0; s0.scenes = E.courseScenes || ['rampe', 'camp']; COURSES.unshift(s0); }
   if (E.jungleShape) COURSES.unshift({ name: 'JUNGLE', map: 'jungle', variant: 0, seed: 11, isle: true, shape: E.jungleShape, zone: 'campagne', speed: 38, cap: 0, scenes: E.isleScenes || ['crsI0'] });
+  if (E.iceShape) COURSES.unshift({ name: 'GLACE', map: 'ice', variant: 0, seed: 13, isle: true, shape: E.iceShape, zone: 'campagne', speed: 38, cap: 0, scenes: E.isleScenes || ['crsI0'] });
+  if (E.desertShape) COURSES.unshift({ name: 'DESERT', map: 'desert', variant: 0, seed: 17, isle: true, shape: E.desertShape, zone: 'campagne', speed: 38, cap: 0, scenes: E.isleScenes || ['crsI0'] });
+  if (E.factoryShape) COURSES.unshift({ name: 'USINE', map: 'factory', variant: 0, seed: 19, isle: true, shape: E.factoryShape, zone: 'campagne', speed: 38, cap: 0, scenes: E.isleScenes || ['crsI0'] });
   if (E.rangeShape) COURSES.unshift({ name: 'TERRAIN D ESSAI', map: 'range', variant: 0, seed: 9, isle: true, shape: E.rangeShape, zone: 'campagne', speed: 38, cap: 0, scenes: E.isleScenes || ['crsI0'] });
   if (E.isleShape) { const mir = E.isleShape.map((q) => [q[0], -q[1]].concat(q.slice(2))); [[2, mir], [1, mir], [0, E.isleShape]].forEach(([v, sh]) => COURSES.unshift({ name: 'ARCHIPEL ' + (v + 1), variant: v, seed: 5, isle: true, shape: v === 2 ? E.isleShape : sh, zone: 'campagne', speed: 38, cap: 0, scenes: E.isleScenes || ['crsI0'] })); }   // v370 : l'ile (la Coupe se court dessus)
 const CUP = SHAPES.map((s) => s.name);
@@ -212,7 +215,7 @@ const CUP = SHAPES.map((s) => s.name);
     if (ap) { ax = U.clamp(-P.ox / 8, -1, 1); ay = U.clamp((11 - P.h) / 6, -1, 1); }
     const gas = ap || touch || k.Space || g.flightTime < 2.6 || now < (W.grace || 0), inTube = I2.tubes && I2.tubes.some((q) => P.d > q.d0 && P.d < q.d1), sp = SP() + (inTube ? 6 : 0);
     P.vf += U.clamp((gas ? sp : 0) - P.vf, -34 * dt, 42 * dt);   // sans ESPACE la fusee ralentit et s'arrete
-    const steerK = 0.45 + 0.55 * U.clamp(P.vf / Math.max(1, sp), 0, 1), ea = 1 - Math.exp(-dt / 0.13);
+    const steerK = 0.45 + 0.55 * U.clamp(P.vf / Math.max(1, sp), 0, 1), slk = I2.slick && I2.slick.some((q) => P.d > q.d0 && P.d < q.d1), ea = 1 - Math.exp(-dt / (slk ? 0.75 : 0.13));   // sur la glace la fusee derape (inertie laterale)
     P.vl += (ax * 24 * steerK - P.vl) * ea; P.vy += (ay * 17 * steerK - P.vy) * ea;
     P.d += P.vf * dt; P.ox += P.vl * dt; P.h += P.vy * dt;
     if (I2.winds) for (const w of I2.winds) if (P.d > w.d0 && P.d < w.d1) { P.ox += w.lat * dt; P.h += w.up * dt; P.d -= w.head * (W.bst ? 0.25 : 1) * dt; }   // les vents poussent la fusee (le boost lutte contre le vent de face)
@@ -288,9 +291,9 @@ const CUP = SHAPES.map((s) => s.name);
   const gz = () => (sr() + sr() + sr() + sr() - 2) * 1.7;
   const ord = (n) => (n === 1 ? '1ER' : n + 'E');
   const newSession = () => {
-    sSeed = ((Date.now() & 0xffffff) + 17 * (++R.session)) >>> 0; R.surv = null; const arch = COURSES.filter((c) => c.isle && c.map !== 'range' && c.map !== 'jungle'), rng = COURSES.find((c) => c.map === 'range'), jun = COURSES.find((c) => c.map === 'jungle');   // une carte par manche : l'archipel, puis le terrain d'essai, puis la jungle
-    for (let i = arch.length - 1; i > 0; i--) { const j = Math.floor(sr() * (i + 1)); const t = arch[i]; arch[i] = arch[j]; arch[j] = t; }
-    const a0 = arch[0] || COURSES.find((c) => c.shape); R.courses = [a0, rng || arch[1 % Math.max(1, arch.length)] || a0, jun || arch[2 % Math.max(1, arch.length)] || a0]; R.round = 1; R.last = null; R.kills = 0; R.coins = 0; R.deaths = 0; R.roundKills = 0;
+    sSeed = ((Date.now() & 0xffffff) + 17 * (++R.session)) >>> 0; R.surv = null; const READY = ['arch', 'range', 'jungle', 'ice', 'desert', 'factory'], byMap = (m) => COURSES.filter((c) => c.isle && (c.map || 'arch') === m), maps = READY.filter((m) => byMap(m).length);   // 3 cartes differentes par coupe, dans un ordre aleatoire
+    for (let i = maps.length - 1; i > 0; i--) { const j = Math.floor(sr() * (i + 1)); const t = maps[i]; maps[i] = maps[j]; maps[j] = t; }
+    R.courses = [0, 1, 2].map((q) => { const L = byMap(maps[q % maps.length]); return L[Math.floor(sr() * L.length)] || L[0]; }); R.round = 1; R.last = null; R.kills = 0; R.coins = 0; R.deaths = 0; R.roundKills = 0;
     { const f = /[?&]racec=(\w+)/.exec(location.search); const one = f && COURSES.find((c) => c.name.replace(/\W/g, '') === f[1]); if (one) R.courses = [one, one, one]; }   // essai d'une course a la main
   };
   if (RACE) newSession();

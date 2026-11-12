@@ -106,3 +106,8 @@ Sonnet 5.5 effort MOYEN (faible pour les retouches mecaniques, eleve seulement p
 - Tuyaux (`tube`/`tubeMesh`) sur les sections `vide` : coque arrondie, parois solides (boites), vitesse +6 a l'interieur ; styles par carte (bonbon translucide, acier, tronc creux).
 - Vents visibles (`wind` : filets d'air animes) qui poussent vraiment (lateral, de face, ascendant ; le boost lutte contre le vent de face).
 - Structures aux couleurs de la carte (`THEME`), barrieres de bord par carte (capsules gonflables / blocs de beton rayes / rondins), mer turquoise, arbres de jungle refaits (baobab a racines, palmier).
+
+## v388 (bloc 4 : 3 nouvelles cartes -> 6 au total)
+- Cartes : ARCHIPEL, TERRAIN D'ESSAI, JUNGLE, GLACE, DESERT, USINE (`SEC_*`, table `MT` = identite visuelle par carte : bord, decals, barrieres, couleurs de structures, tuyaux, arrivee).
+- Obstacles propres : GLACE = murs coulissants a trou, stalactites (cercle rouge), cristaux, glissade (derapage `I.slick`) ; DESERT = marches de pyramide, pistons de temple, tempete de sable ; USINE = engrenages geants, jets de vapeur, convoyeur lateral, piles de caisses. Chaque carte a un `conduit` / tuyaux sur les vides.
+- Une coupe = 3 cartes DIFFERENTES tirees au hasard parmi les 6 (`READY` dans newSession).
