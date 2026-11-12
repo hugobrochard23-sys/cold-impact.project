@@ -68,6 +68,7 @@
     { n: 'temple', len: 300, turn: -40, slope: 0.1, W: 46, col: 'brick' },
     { n: 'vide', len: 80, turn: 0, slope: -0.05, W: 0, col: 'dune' },
     { n: 'canyon', len: 300, turn: 60, slope: 0.12, W: 38, col: 'dune2' },
+    { n: 'dunes2', len: 260, turn: 30, slope: 0.06, W: 48, col: 'dune2' },
     { n: 'temple2', len: 270, turn: -50, slope: -0.1, W: 46, col: 'brick' },
     { n: 'vide2', len: 80, turn: 0, slope: 0.06, W: 0, col: 'dune' },
     { n: 'marches', len: 270, turn: 40, slope: 0.12, W: 50, col: 'dune' },
@@ -80,6 +81,7 @@
     { n: 'vide', len: 80, turn: 0, slope: 0.04, W: 0, col: 'steel' },
     { n: 'vapeur', len: 300, turn: -50, slope: 0.1, W: 46, col: 'hazard' },
     { n: 'convoyeur', len: 280, turn: 30, slope: -0.08, W: 44, col: 'steel2' },
+    { n: 'vapeur2', len: 260, turn: -30, slope: 0.08, W: 46, col: 'hazard' },
     { n: 'vide2', len: 80, turn: 0, slope: -0.06, W: 0, col: 'steel' },
     { n: 'engrenages2', len: 270, turn: 60, slope: 0.12, W: 48, col: 'steel' },
     { n: 'caisses', len: 260, turn: -40, slope: 0.06, W: 50, col: 'hazard' },
@@ -90,8 +92,8 @@
     arch: { marteaux: 11, canons: 14, divise: 11, remonte: 10.5, gate: 14, pont: 22, pont2: 22 },
     range: { montee: 22, canons: 16, incline: 12, pont: 11, sprint: 12 },
     ice: { patinoire: 22, stalactites: 22, glissade: 18, patinoire2: 22, stalactites2: 22, glissade2: 18 },
-    desert: { dunes: 18, temple: 22, canyon: 22, temple2: 22, marches: 18 },
-    factory: { engrenages: 22, vapeur: 22, convoyeur: 22, engrenages2: 22, caisses: 17 },
+    desert: { dunes2: 18, dunes: 18, temple: 22, canyon: 22, temple2: 22, marches: 18 },
+    factory: { vapeur2: 22, engrenages: 22, vapeur: 22, convoyeur: 22, engrenages2: 22, caisses: 17 },
     jungle: { lianes: 10, rondins: 11, pont: 16, totems: 22, racines: 16, rondins2: 11, lianes2: 10, totems2: 22 } };
   for (const [m, arr] of [['arch', SEC_ARCH], ['range', SEC_RANGE], ['jungle', SEC_JUNGLE], ['ice', SEC_ICE], ['desert', SEC_DESERT], ['factory', SEC_FACTORY]]) for (const q of arr) if (CEIL[m][q.n]) q.ceil = CEIL[m][q.n];
   let SEC = SEC_ARCH;
@@ -128,7 +130,7 @@
   E.mkIsle = (shape, variant, map) => {
     SEC = ({ range: SEC_RANGE, jungle: SEC_JUNGLE, ice: SEC_ICE, desert: SEC_DESERT, factory: SEC_FACTORY })[map] || SEC_ARCH; calcStarts(); RIM.set((MT[map] || MT.arch).rim);
     const C = E.mkCourse(shape, { fl: FLY, sw: 6 }), dEnd = C.len + 90, mir = variant === 1, W = mkW(dEnd);
-    C.isle = { map: map || 'arch', boxes: [], variant: variant || 0, mir, W, dEnd, starts: STARTS, bank: (d) => (mir ? -1 : 1) * blend(d, 'bank', 0), ceilAt: (d) => blend(d, 'ceil', 26), tubes: [], winds: [], slick: [], PY: C.rel(C.len) - 90, sx: variant === 2 ? -1 : 1 };
+    C.isle = { map: map || 'arch', boxes: [], variant: variant || 0, mir, W, dEnd, starts: STARTS, bank: (d) => (mir ? -1 : 1) * blend(d, 'bank', 0), ceilAt: (d) => blend(d, 'ceil', 26), tubes: [], winds: [], slick: [], evD: [], PY: C.rel(C.len) - 90, sx: variant === 2 ? -1 : 1 };
     try { CC.CONFIG.render.viewDist = 480; } catch (e) { /* ignore */ }   // on voit les obstacles de plus loin
     if (map === 'range') {   // zones pleines (repere piste : [d0, d1, x0, x1, hauteur0, hauteur1]) : hangar, tours de la citadelle
       const hg = { d: STARTS[2] + 55, len: 44, hw: 20, hh: 24 }, ct = { d: STARTS[7] + 110 }; C.isle.hangar = hg; C.isle.citadel = ct;
@@ -517,13 +519,13 @@
       ups.push((t) => { for (const c of cols) { const k = (t + c.off) % P; let y = TOP; if (k < 2.2) y = TOP; else if (k < 3.0) y = TOP; else if (k < 3.2) y = TOP + (0.3 - TOP) * ((k - 3.0) / 0.2); else if (k < 3.9) y = 0.3; else y = 0.3 + (TOP - 0.3) * ((k - 3.9) / 0.7); c.tip = y; c.gr.position.y = y; c.ring.visible = k >= 2.2 && k < 3.9 && (k < 3.0 ? ((t * 8) | 0) % 2 === 0 : true); } g.updateMatrixWorld(true); });
       addHit(d, (pos) => { const l = loc(g, pos); for (const c of cols) { if (Math.abs(l.x - c.x) < 3.2 + RR && Math.abs(l.z) < 3.2 + RR && l.y + RR > c.tip && l.y - RR < c.tip + 14) return true; } return false; });
     };
-    const crystals = (d, k) => {   // cristaux de glace (solides) en slalom
+    const crystals = (d, k) => { I.evD.push(d);   // cristaux de glace (solides) en slalom
       const xs = k % 2 ? [-30, -10, 10, 30] : [-20, 0, 20];
       for (const lx of xs) { const g = mk(d, lx); const base = new T3.Mesh(new T3.ConeGeometry(2.6, 18, 6), matS(k % 2 ? '#9fdcff' : '#cdeeff')); base.position.y = 9; g.add(base); const s2 = new T3.Mesh(new T3.ConeGeometry(1.5, 11, 6), matS('#ffffff')); s2.position.set(2.8, 5.5, 1.2); s2.rotation.z = -0.35; g.add(s2); const s3 = new T3.Mesh(new T3.ConeGeometry(1.2, 9, 6), matS('#ff9bea')); s3.position.set(-2.6, 4.5, -1); s3.rotation.z = 0.4; g.add(s3); I.boxes.push([d - 2.4, d + 2.4, lx * sx - 2.4, lx * sx + 2.4, 0, 19]); }
     };
     const slick = (d0, len) => { I.slick.push({ d0, d1: d0 + len }); };
 
-    const stairs = (d, k) => {   // marches de pyramide (solides), en slalom
+    const stairs = (d, k) => { I.evD.push(d);   // marches de pyramide (solides), en slalom
       const x1 = ((k * 17) % 29) - 28;
       for (const lx of [x1, x1 + 24]) { const g = mk(d, lx); const tiers = [[14, 6], [10, 6], [6, 6]]; let y0 = 0;
         tiers.forEach(([w, h], q) => { const b = bx(w, h, w, q % 2 ? '#d9a55b' : '#e8c27a'); b.position.y = y0 + h / 2; g.add(b); const st = bx(w + 0.2, 0.9, w + 0.2, '#2fb8b0'); st.position.y = y0 + 1.2; g.add(st); I.boxes.push([d - w / 2, d + w / 2, lx * sx - w / 2, lx * sx + w / 2, y0, y0 + h]); y0 += h; });
@@ -552,7 +554,7 @@
       ups.push((t) => { for (const c of cols) { const k = (t + c.off) % P; c.hot.visible = k >= 2.2 && k < 3.0 && ((t * 7) | 0) % 2 === 0; c.on = k >= 3.0 && k < 3.9; c.col.visible = c.on; if (c.on) c.col.scale.x = c.col.scale.z = 0.9 + 0.12 * Math.sin(t * 30); } });
       addHit(d, (pos) => { const l = loc(g, pos); for (const c of cols) if (c.on && Math.abs(l.x - c.x) < 3.2 + RR && Math.abs(l.z) < 3.2 + RR && l.y < 24) return true; return false; });
     };
-    const crates = (d, k) => {   // piles de caisses (solides) en slalom
+    const crates = (d, k) => { I.evD.push(d);   // piles de caisses (solides) en slalom
       const xs = k % 2 ? [-30, -10, 10, 30] : [-20, 0, 20];
       for (const lx of xs) { const g = mk(d, lx), n = 2 + ((k + Math.abs(lx)) % 2); for (let q = 0; q < n; q++) { const b = bx(7.4, 6.2, 7.4, q % 2 ? '#c98b4a' : '#f0b429'); b.position.y = 3.1 + q * 6.2; b.rotation.y = (q - 1) * 0.12; g.add(b); const st = bx(7.6, 0.8, 7.6, '#2a2d33'); st.position.y = 3.1 + q * 6.2; g.add(st); } I.boxes.push([d - 3.8, d + 3.8, lx * sx - 3.8, lx * sx + 3.8, 0, n * 6.2]); }
     };
@@ -583,14 +585,14 @@
       tube(S('conduit') + 10, 180, tubeCols); sgn('CONDUIT', 'conduit', -30);
     } else if (I.map === 'desert') {
       sgn('DUNES', 'dunes'); sgn('PISTONS', 'temple'); sgn('PISTONS', 'temple2'); sgn('TEMPETE', 'canyon'); sgn('MARCHES', 'marches'); sgn('CONDUIT', 'conduit', -30);
-      rowsAt('dunes', 70, 50, 52, (d, k) => stairs(d, k)); rowsAt('marches', 70, 50, 48, (d, k) => stairs(d, k + 5));
+      rowsAt('dunes', 70, 50, 52, (d, k) => stairs(d, k)); rowsAt('dunes2', 70, 50, 48, (d, k) => stairs(d, k + 3)); rowsAt('marches', 70, 50, 48, (d, k) => stairs(d, k + 5));
       for (const n of ['temple', 'temple2']) rowsAt(n, 70, 50, 62, (d, k) => pistons(d, k + (n === 'temple' ? 0 : 2)));
       wind(S('canyon') + 40, 110, { lat: 13, col: '#f3d9a0' }); wind(S('canyon') + 160, 110, { lat: -13, col: '#f3d9a0' });
       tube(S('conduit') + 10, 180, tubeCols);
     } else if (I.map === 'factory') {
       sgn('ENGRENAGES', 'engrenages'); sgn('ENGRENAGES', 'engrenages2'); sgn('VAPEUR', 'vapeur'); sgn('CONVOYEUR', 'convoyeur'); sgn('CAISSES', 'caisses'); sgn('CONDUIT', 'conduit', -30);
       for (const n of ['engrenages', 'engrenages2']) rowsAt(n, 70, 50, 78, (d, k) => gears(d, k * 1.3));
-      rowsAt('vapeur', 70, 50, 56, (d, k) => steam(d, 4 + (k % 2), k * 0.9));
+      rowsAt('vapeur', 70, 50, 56, (d, k) => steam(d, 4 + (k % 2), k * 0.9)); rowsAt('vapeur2', 70, 50, 52, (d, k) => steam(d, 5 - (k % 2), k * 1.3 + 2));
       wind(S('convoyeur') + 30, 110, { lat: 14, col: '#f0b429' }); wind(S('convoyeur') + 150, 100, { lat: -14, col: '#f0b429' });
       rowsAt('caisses', 70, 50, 44, (d, k) => crates(d, k));
       tube(S('conduit') + 10, 180, tubeCols);

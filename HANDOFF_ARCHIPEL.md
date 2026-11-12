@@ -114,3 +114,6 @@ Sonnet 5.5 effort MOYEN (faible pour les retouches mecaniques, eleve seulement p
 
 ## v389 (bloc 5 : enchainement des manches)
 - Affiches de cartes generees (`E.mapPoster`), affichees dans la carte de coupe du menu ; roulette de cartes + compte a rebours 3-2-1-GO en DOM (`beginCd`) avant chaque manche (sauf `?ap=1`/`?nocd=1`) ; apres une manche gagnee on enchaine sans repasser par le menu (`goNext` -> startRun).
+
+## v390
+- Desert (+dunes2) et usine (+vapeur2) allonges (~2400 m) ; les obstacles statiques (marches, cristaux, caisses) alimentent aussi les erreurs des rivaux (`I.evD`). Verifie par `cctest/bots1.js` (temps des rivaux par carte).

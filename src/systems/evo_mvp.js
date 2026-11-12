@@ -353,7 +353,7 @@ const CUP = SHAPES.map((s) => s.name);
     for (let r = 0; r < rowsN; r++) for (let q = 0; q < 6; q++) slots.push([r, q]);
     for (let i = slots.length - 1; i > 0; i--) { const j = Math.floor(sr() * (i + 1)); const t = slots[i]; slots[i] = slots[j]; slots[j] = t; }
     W.startRow = pr;
-    const ds = []; { const hs = W.props && W.props.hits ? W.props.hits.map((q) => q.d).sort((a, b) => a - b) : []; for (const d of hs) if (!ds.length || d - ds[ds.length - 1] > 18) ds.push(d); if (!ds.length) for (let d = 150; d < FN - 100; d += 90) ds.push(d); }
+    const ds = []; { const hs = (W.props && W.props.hits ? W.props.hits.map((q) => q.d) : []).concat(E.course && E.course.isle && E.course.isle.evD ? E.course.isle.evD : []).sort((a, b) => a - b); for (const d of hs) if (!ds.length || d - ds[ds.length - 1] > 18) ds.push(d); if (!ds.length) for (let d = 150; d < FN - 100; d += 90) ds.push(d); }
     const vB = sp * 0.985, easeK = U.clamp(1 + R.ease * 0.8, 0.5, 1.8);   // tous roulent a la meme vitesse (un peu moins que le joueur parfait) : seules leurs erreurs les separent
     cast.forEach((c, i) => {
       const sk = U.clamp(1 - (c.L + 0.02) / 0.2, 0, 1), sl = slots[i] || [0, 2], d0 = -40 + (pr - sl[0]) * 5, v = vB * (1 + (sr() - 0.5) * 0.014), ev = [];
