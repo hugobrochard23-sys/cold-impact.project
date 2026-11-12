@@ -328,13 +328,14 @@
     for (let i = p.length - 1; i >= 0; i--) { const q = p[i]; while (up.length >= 2 && cr(up[up.length - 2], up[up.length - 1], q) <= 0) up.pop(); up.push(q); }
     lo.pop(); up.pop(); return lo.concat(up); };
   const _rel = new T3.Matrix4(), _pv = new T3.Vector3(), _sc = new T3.Vector3(), _bb = new T3.Box3(), _qq = new T3.Quaternion();
-  const meshShadowPts = (g, m, ls) => {   // les points de l'ombre d'une piece (dans le repere de l'obstacle), chaque point decale selon sa hauteur
+  const KSH = (y) => (y <= 0 ? y : y < 7 ? y * 3.6 : 25.2 + (y - 7));   // v404 : pres du sol l'ombre s'allonge (on la voit a cote de l'objet) ; en hauteur elle reste presque a l'aplomb
+  const meshShadowPts = (g, m, ls, far) => {   // les points de l'ombre d'une piece (dans le repere de l'obstacle), chaque point decale selon sa hauteur
     if (!m.geometry.boundingBox) m.geometry.computeBoundingBox(); m.updateWorldMatrix(true, false); _rel.copy(g.matrixWorld).invert().multiply(m.matrixWorld);
     const bb = m.geometry.boundingBox, pts = [], ty = m.geometry.type, vert = Math.abs(_rel.elements[5]) > 0.97; _sc.setFromMatrixScale(_rel);
-    const circ = (cx, cy, cz, r) => { for (let k = 0; k < 10; k++) { const a = k * 0.6283; pts.push([cx + Math.cos(a) * r + ls.x * cy, cz + Math.sin(a) * r + ls.z * cy]); } };
+    const circ = (cx, cy, cz, r) => { for (let k = 0; k < 10; k++) { const a = k * 0.6283; pts.push([cx + Math.cos(a) * r + ls.x * (far ? KSH(cy) : cy), cz + Math.sin(a) * r + ls.z * (far ? KSH(cy) : cy)]); } };
     if (ty === 'SphereGeometry') { _pv.set((bb.min.x + bb.max.x) / 2, (bb.min.y + bb.max.y) / 2, (bb.min.z + bb.max.z) / 2).applyMatrix4(_rel); circ(_pv.x, _pv.y, _pv.z, (bb.max.x - bb.min.x) / 2 * _sc.x); }
     else if ((ty === 'CylinderGeometry' || ty === 'ConeGeometry') && vert) { const r = Math.max(bb.max.x, bb.max.z) * _sc.x; _pv.set(0, bb.min.y, 0).applyMatrix4(_rel); circ(_pv.x, _pv.y, _pv.z, r * (ty === 'ConeGeometry' ? 1 : 1)); _pv.set(0, bb.max.y, 0).applyMatrix4(_rel); circ(_pv.x, _pv.y, _pv.z, ty === 'ConeGeometry' ? 0.1 : r); }
-    else for (let k = 0; k < 8; k++) { _pv.set(k & 1 ? bb.max.x : bb.min.x, k & 2 ? bb.max.y : bb.min.y, k & 4 ? bb.max.z : bb.min.z).applyMatrix4(_rel); pts.push([_pv.x + ls.x * _pv.y, _pv.z + ls.z * _pv.y]); }
+    else for (let k = 0; k < 8; k++) { _pv.set(k & 1 ? bb.max.x : bb.min.x, k & 2 ? bb.max.y : bb.min.y, k & 4 ? bb.max.z : bb.min.z).applyMatrix4(_rel); pts.push([_pv.x + ls.x * (far ? KSH(_pv.y) : _pv.y), _pv.z + ls.z * (far ? KSH(_pv.y) : _pv.y)]); }
     return pts; };
   const localLS = (g) => { g.updateMatrixWorld(true); g.getWorldQuaternion(_qq); return LS.clone().applyQuaternion(_qq.clone().invert()); };
   const fan = (poly, out) => { for (let i = 1; i + 1 < poly.length; i++) out.push(poly[0][0], 0.14, poly[0][1], poly[i][0], 0.14, poly[i][1], poly[i + 1][0], 0.14, poly[i + 1][1]); };
@@ -348,7 +349,7 @@
     const ls = localLS(g), out = [];
     g.traverse((o) => { if (!o.isMesh || o.userData.noShadow || o.userData.dyn || o.visible === false || !o.geometry) return; for (let a = o.parent; a && a !== g; a = a.parent) if (a.userData && a.userData.dyn) return;
       if (o.material && o.material.isMeshBasicMaterial && o.material.transparent) return; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); _bb.copy(o.geometry.boundingBox); const sz = _bb.getSize(_pv); if (Math.max(sz.x, sz.y, sz.z) < 1.1) return;
-      let pts = meshShadowPts(g, o, ls); if (pts.length < 3) return; const cx = g.userData.clampX; if (cx) pts = pts.map((p) => [cx(p[0], p[1]), p[1]]); fan(hull(pts), out); });
+      let pts = meshShadowPts(g, o, ls, true); if (pts.length < 3) return; const cx = g.userData.clampX; if (cx) pts = pts.map((p) => [cx(p[0], p[1]), p[1]]); fan(hull(pts), out); });
     if (!out.length) return; const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(out, 3)); const m = new T3.Mesh(geo, SHM); m.frustumCulled = false; m.renderOrder = 2; m.userData.noShadow = true; g.add(m); };
   const _v = new T3.Vector3(), RR = 0.8;   // RR : rayon de la fusee
   const segDist = (px, py, ax, ay, bx2, by2) => { const dx = bx2 - ax, dy = by2 - ay, l2 = dx * dx + dy * dy || 1, t = U.clamp(((px - ax) * dx + (py - ay) * dy) / l2, 0, 1); return Math.hypot(px - (ax + dx * t), py - (ay + dy * t)); };
@@ -602,7 +603,7 @@
     };
     const hublot = (d) => {   // un grand disque a trou qui tourne : il faut viser le trou
       const g = mk(d, 0), Wb = I.W(d) + 3, RD = 24, HR = 6.8, HO = 12.5, cy0 = 11, wheel = new T3.Group(); wheel.position.y = cy0; g.add(wheel); wheel.userData.dyn = true; I.evD.push(d);
-      const sh = new T3.Shape(); sh.absarc(0, 0, RD, 0, 6.2832, false); const hole = new T3.Path(); hole.absarc(HO, 0, HR, 0, 6.2832, true); sh.holes.push(hole);
+      const op = [], hp = []; for (let q = 0; q < 56; q++) { const a = q / 56 * 2 * Math.PI; op.push(new T3.Vector2(Math.cos(a) * RD, Math.sin(a) * RD)); } for (let q = 0; q < 32; q++) { const a = -q / 32 * 2 * Math.PI; hp.push(new T3.Vector2(HO + Math.cos(a) * HR, Math.sin(a) * HR)); } const sh = new T3.Shape(op); sh.holes.push(new T3.Path(hp));   // v404 : contours donnes point par point (disque bien plein)
       const geo = new T3.ExtrudeGeometry(sh, { depth: 2.4, bevelEnabled: false, curveSegments: 40 }); geo.translate(0, 0, -1.2); const disc = new T3.Mesh(geo, matS('#ff6fae')); wheel.add(disc); dynSh(g, disc);
       const rim = new T3.Mesh(new T3.TorusGeometry(RD, 0.9, 8, 48), matS('#ffd23a')); wheel.add(rim); const hr = new T3.Mesh(new T3.TorusGeometry(HR, 0.6, 8, 28), matS('#ffffff')); hr.position.x = HO; wheel.add(hr);
       for (let q = 0; q < 8; q++) { const a = q / 8 * 6.2832, dot = new T3.Mesh(new T3.SphereGeometry(1.1, 8, 6), matS(q % 2 ? '#ffffff' : '#2f8cff')); dot.position.set(Math.cos(a) * 19, Math.sin(a) * 19, 1.3); wheel.add(dot); }
