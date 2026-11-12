@@ -137,3 +137,9 @@ Sonnet 5.5 effort MOYEN (faible pour les retouches mecaniques, eleve seulement p
 - C : DESERT (marches|tourbillons, pistons, vautours, etages scarabees|portes / obelisques|haches, surf de dune, tempete, salle des piliers) et USINE (engrenages, presses|lance-flammes, convoyeurs, tuyau-looping, etages wagonnets|caisses / bras|rouleaux broyeurs, vapeur, arcs). Tuyaux = usine seulement (`loopPipe`), vent = desert seulement.
 - Portiques de zone (`ZONE n` + nom) a chaque nouvelle section ; sols avec un motif different par section.
 - Menu : grande photo de la carte avec fleches (`raceApi.setMap`), icones du bas (boutique en image, trophee dessine), barre en degrade. Les scripts de test doivent utiliser `CC.EVO.raceApi.start(CC.game)` (le bouton [0] est maintenant une fleche de carte).
+
+## v398 (nouvelle interface de la course)
+- `src/ui/ui_race.js` = CC.RUI : palette bleue + jaune d'action, police Lilita One, bouton calcule (ombre, contour, levre, face en degrade, reflet, ombre interne, arete ; etats survol / appui lisses), bouton rond, panneau clair/sombre a bandeau, pastille de compteur, etiquette, barre, 17 icones d'un seul style, fond de page. Planche : `?uikit=1`.
+- `evo_menu.js` entierement reecrit avec RUI (accueil, boutique, costumes, pouvoirs, classement, barre du bas) ; sur ecran large l'interface est agrandie (u = HH*0.74). `E.menuTab(id)` pour les tests.
+- evo_mvp.js : HUD (bandeau course, qualifies + barre, aide de depart), ecran de resultat de manche, selection de carte (CSS `.cdb/.cdy/.cdg`) au meme style. Restent a l'ancien style : revive, paquet, ecran des elimines (drawArena), lineup.
+- Tests : `cctest/ui3.js` (captures accueil, costumes, selection, HUD, resultat), `cctest/kit1.js` (planche).
