@@ -117,3 +117,10 @@ Sonnet 5.5 effort MOYEN (faible pour les retouches mecaniques, eleve seulement p
 
 ## v390
 - Desert (+dunes2) et usine (+vapeur2) allonges (~2400 m) ; les obstacles statiques (marches, cristaux, caisses) alimentent aussi les erreurs des rivaux (`I.evD`). Verifie par `cctest/bots1.js` (temps des rivaux par carte).
+
+## v392 (version A : fondations + ARCHIPEL + JUNGLE)
+- Regle : un obstacle = un seul exemplaire (un "set" compact) par carte, aucun obstacle partage entre cartes ; tuyaux et vent retires de l'archipel/jungle (restent a nettoyer ailleurs : range a du vent, glace/desert ont des tuyaux -> versions B/C).
+- Fondation : trajets guides (`guide`, `I.paths`, `W.path` dans driveFree) : trampolines (arc au-dessus d'un mur) et liane-tyrolienne ; verifie par `cctest/pathtest.js`.
+- ARCHIPEL (14 sections, ~2850 m, 13 obstacles) : bumpers, marteaux, pales, beignets (vide), ballons, trampolines + mur de gelee, deux voies (moulins | macarons), tourniquet, sucettes, gommes rebondissantes, hublot tournant, guillotines.
+- JUNGLE (15 sections, ~2950 m, 13 obstacles) : lianes, rondins, rideaux, liane-tyrolienne (vide), fleurs carnivores, cascade (plaque vers le bas), racines (haut/bas), singes lanceurs, abeilles, troncs abattus, araignees, grotte, totems.
+- Corrections : obstacle mobile = blocage reel, ombres decoupees au bord du tablier, plus d'herbe (`sceneDef.grass = false`).

@@ -205,6 +205,12 @@ const CUP = SHAPES.map((s) => s.name);
   const driveFree = (g, dt, T, crs, rk, run, F, d0) => {   // pilotage dans le plan de la piste : ESPACE avance, les fleches dirigent (gauche, droite, haut, bas), jamais de cap libre ; collisions au NEZ seulement
     const I2 = crs.isle, k = I.k, now = performance.now(); dt = Math.min(dt, 0.05);
     let P = W.pc; if (!P) { const dk0 = T.base(d0) + I2.bank(d0) * rel.x; P = W.pc = { d: Math.max(0, run.dist), ox: rel.x, h: Math.max(2.2, rk.pos.y - dk0), vf: Math.max(8, rk.vel.dot(tf)), vl: 0, vy: 0 }; W.aim = new V().copy(tf); W.ghostT = 0; }
+    if (W.path) {   // trajet guide (liane, trampoline) : la fusee est emportee le long de la courbe, sans pilotage ni collision
+      const pa = W.path, ph = pa.pth; pa.s += ph.sp * dt; const i0 = Math.floor(pa.s / ph.step);
+      if (i0 >= ph.samp.length - 1) { P.vf = ph.sp * 0.92; P.vl = 0; P.vy = 0; W.path = null; W.pathCd = 1.2; }
+      else { const fr = pa.s / ph.step - i0, a0 = ph.samp[i0], b0 = ph.samp[i0 + 1]; P.d = a0[0] + (b0[0] - a0[0]) * fr; P.ox = a0[1] + (b0[1] - a0[1]) * fr; P.h = a0[2] + (b0[2] - a0[2]) * fr; P.vf = ph.sp; P.vl = 0; P.vy = 0; W.boostT = Math.max(W.boostT || 0, 0.35);
+        const pq = T.at(P.d, P.ox, I2.bank(P.d) * P.ox + P.h), dq = Math.max(dt, 1e-3); rk.vel.set((pq[0] - rk.pos.x) / dq, (pq[1] - rk.pos.y) / dq, (pq[2] - rk.pos.z) / dq); tmp.copy(rk.vel); if (tmp.length() > 3) tmp.normalize(); else tmp.copy(tf); W.aim.lerp(tmp, 1 - Math.exp(-dt * 9)).normalize(); g.input.setAim(Math.atan2(-W.aim.x, -W.aim.z), Math.asin(U.clamp(W.aim.y, -0.9, 0.9))); return; }
+    } else { W.pathCd = Math.max(0, (W.pathCd || 0) - dt); if (!W.pathCd && I2.paths) for (const pth of I2.paths) if (Math.abs(P.d - pth.d) < 2.5 + P.vf * dt && Math.abs(P.ox - pth.ox) < pth.r && Math.abs(P.h - pth.h) < pth.rh) { W.path = { pth, s: 0 }; try { g.rig.boostKick(); g.audio.play('target'); } catch (e) { /* effets */ } break; } }
     const ap = /[?&]ap=1/.test(location.search), touch = I.mode === 'touch';
     let ax = (k.ArrowRight || k.KeyD ? 1 : 0) - (k.ArrowLeft || k.KeyA ? 1 : 0), ay = (k.ArrowUp || k.KeyW ? 1 : 0) - (k.ArrowDown || k.KeyS ? 1 : 0);
     if (touch) {   // tactile : le doigt oriente, l'ancre rattrape le doigt (cap stable quand on s'arrete)
@@ -455,7 +461,7 @@ const CUP = SHAPES.map((s) => s.name);
   };
   const respawn = (g) => {   // un echec : on repart au debut de l'obstacle (ou de la section), avec un peu de temps perdu
     const run = g.endlessRun, rk = g.rocket, T = run.T; let d = Math.max(20, run.dist - 40);
-    if (E.course && E.course.isle) { const I9 = E.course.isle, c = [20]; for (const st of I9.starts) c.push(st + 16); if (W && W.props && W.props.hits) for (const f of W.props.hits) if (f.d !== undefined) c.push(f.d - 70); d = 20; for (const q of c) if (q <= run.dist - 12 && q > d) d = q; if (W) { W.pc = null; W.grace = performance.now() + 1600; } }
+    if (E.course && E.course.isle) { const I9 = E.course.isle, c = [20]; for (const st of I9.starts) c.push(st + 16); if (W && W.props && W.props.hits) for (const f of W.props.hits) if (f.d !== undefined) c.push(f.d - 70); d = 20; for (const q of c) if (q <= run.dist - 12 && q > d) d = q; if (W) { W.pc = null; W.path = null; W.grace = performance.now() + 1600; } }
     const p = T.at(d, T.laneX(d), T.laneY(d)), q = T.at(d + 3, T.laneX(d + 3), T.laneY(d + 3));
     const pos = new V(p[0], p[1], p[2]), dir = new V(q[0] - p[0], q[1] - p[1], q[2] - p[2]).normalize(), yaw = Math.atan2(-dir.x, -dir.z), pit = Math.asin(dir.y);
     g.input.setAim(yaw, pit); g.rig.setAim(yaw, pit); g.acc = 0;
