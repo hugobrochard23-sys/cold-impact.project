@@ -129,9 +129,9 @@ const CUP = SHAPES.map((s) => s.name);
   E.mvpCam = (rig, rk, cam, dt) => {
     const g = rig.game, run = g.endlessRun; if (!run || !run.T) return;
     if (W && W.intro && E.course && E.course.isle) {   // v404 : presentation de la carte avant le depart (3 plans le long du parcours)
-      const T5 = run.T, I5 = E.course.isle, nw = performance.now(), u = U.clamp((nw - W.intro.t0) / W.intro.dur, 0, 0.999), k3 = Math.floor(u * 3), f = u * 3 - k3, FN5 = E.shortFin || 470, dk = FN5 * (0.2 + 0.3 * k3), sg = k3 % 2 ? -1 : 1, w5 = Math.max(12, I5.W(dk)), dd = dk - 50 + 42 * f, lx = sg * w5 * (0.5 - 0.3 * f);
-      const pa = T5.at(dd, lx, I5.bank(dd) * lx + 24 + 3 * k3), pb = T5.at(dk + 40, -sg * w5 * 0.12, 5);
-      cam.position.set(pa[0], pa[1], pa[2]); cam.up.set(0, 1, 0); cam.lookAt(pb[0], pb[1], pb[2]); rig._mv = null;
+      const T5 = run.T, I5 = E.course.isle, nw = performance.now(), u = U.clamp((nw - W.intro.t0) / W.intro.dur, 0, 0.999), k3 = Math.floor(u * 3), f = u * 3 - k3, FN5 = E.shortFin || 470, dk = FN5 * (0.18 + 0.3 * k3), sg = k3 % 2 ? -1 : 1, dd = dk - 70 + 36 * f, lx = sg * 6;
+      const pa = T5.at(dd, lx, T5.laneY(dd) + 78), pb = T5.at(dd + 95, 0, T5.laneY(dd + 95) + 4);   // vue aerienne : bien au-dessus de tous les obstacles, on voit toujours la piste
+      cam.position.set(pa[0], pa[1], pa[2]); cam.up.set(0, 1, 0); cam.lookAt(pb[0], pb[1], pb[2]); rig._mv = null; rig.shake = 0; rig.punch = 0; if (cam.fov !== (g.baseFov || cam.fov)) { cam.fov = g.baseFov || cam.fov; cam.updateProjectionMatrix(); }
       if (W.props && W.props.update) { W.clock = (W.clock || 0) + Math.min(0.05, (nw - (W.intro.lt || nw)) / 1000); W.intro.lt = nw; try { W.props.update(W.clock, cam.position); } catch (e) { /* decor */ } }
       return;
     }
@@ -322,10 +322,11 @@ const CUP = SHAPES.map((s) => s.name);
     if (b.slow > 0) { b.slow -= dt; b.dl += dt * 0.65; }
     if (b.crash && !b.cDone && b.p >= b.pc) { if (!b.cT) b.cT = t; if (t - b.cT < 2.5) b.dl += dt; else b.cDone = true; }
     if (b.fin === undefined) {
-      if (b.rub && W.pc && t > 5 && !b.crash) {   // rival : il revient a hauteur du joueur, le double parfois ; si le joueur pilote bien, il reste derriere a l'arrivee
+      if (b.rub && W.pc && t > 7 && !b.crash) {   // rival : il revient a hauteur du joueur, le double parfois ; si le joueur pilote bien, il reste derriere a l'arrivee
         const pd0 = W.pc.d, good = W.good === undefined ? 1 : W.good, late = pd0 > FN * 0.86, gap = (late ? (good > 0.6 ? 13 : -10) : -8 + 22 * good + 18 * Math.sin(t * 0.21 + b.rub * 2.1)) + (b.rub - 1) * 12;
         b.rb = Math.max(0, (b.rb || 0) + U.clamp(((pd0 - gap) - b.d) / b.v / 1.5, -0.1, 0.12) * dt); }
-      const te = t - b.dl + (b.rb || 0); let acc = 0, d = null; b.blk = 0;
+      const t0r = t < 0.6 ? t * t / 1.2 : t - 0.3, te = t0r - b.dl + (b.rb || 0); let acc = 0, d = null; b.blk = 0;   // v405 : les rivaux accelerent comme la fusee du joueur (0 -> pleine vitesse en 0,6 s), jamais de depart lance
+
       for (const e of b.ev) { const ta = (e.d - b.d0) / b.v + acc; if (te < ta) break; if (te < ta + e.dur) { d = e.d; b.blk = 1; break; } acc += e.dur; }
       if (d === null) d = b.d0 + b.v * (te - acc);
       if (d >= FN) { b.fin = t - (d - FN) / b.v; d = FN; b.blk = 0; if (W.feed) W.feed.push({ name: b.name, t0: performance.now() }); }
@@ -512,17 +513,15 @@ const CUP = SHAPES.map((s) => s.name);
         race_factory: { bpm: 140, root: 40, scale: [0, 3, 5, 6, 7, 10], prog: [0, 0, 3, -2], kick: P16([0, 4, 8, 12]), snare: P16([4, 12]), hat: P16([2, 6, 10, 14, 15]), clank: P16([3, 11]), bass: { type: 'square', steps: P16([0, 2, 3, 6, 8, 10, 11, 14]), oct: -12, len: 0.9, vol: 0.1, cut: 480 }, arp: { type: 'square', steps: P16([0, 4, 7, 8, 12, 15]), oct: 2, len: 0.5, vol: 0.03, cut: 2400 } },
       }); }
     if (CC.Audio && !CC.Audio.prototype._lim) {   // v404 : limiteur de sons : un meme son ne se repete pas en rafale, les sons lointains sont ignores, et chaque son place dans l'espace libere son etage de volume (ils s'accumulaient et finissaient par brouiller tout le son)
-      const AP = CC.Audio.prototype, last = {}; let win = []; AP._lim = 1;
-      AP.play = function (name, pos, param) {
+      const AP = CC.Audio.prototype, last = {}, prev = AP.play, sv = AP.setVolumes; let win = []; AP._lim = 1;
+      AP.play = function (name, pos, param) {   // v405 : limiteur autour du play d'origine (les sons enregistres : victoire, coffre, recompense, restent branches)
         if (!this.ctx || this.muted) return; const now = performance.now();
         if (pos && this.cam && pos.distanceTo && pos.distanceTo(this.cam.position) > 150) return;
         if (now - (last[name] || 0) < 45) return;
         if (pos) { win = win.filter((q) => now - q < 500); if (win.length >= 7) return; win.push(now); }
-        last[name] = now; const dg = this.distGain(pos); let d = null;
-        if (dg < 0.999) { d = this.dest = this.ctx.createGain(); d.gain.value = dg; d.connect(this.sfx); }
-        try { this.playRaw(name, param); } finally { this.dest = null; }
-        if (d) setTimeout(() => { try { d.disconnect(); } catch (e) { /* deja libere */ } }, 6000);
+        last[name] = now; return prev.call(this, name, pos, param);
       };
+      AP.setVolumes = function (m, mu, sf) { return sv.call(this, m, Math.min(1, mu * 3.2), sf); };   // v405 : la musique de la course bien plus forte
     }
   }
   const buildSolo = (g, run) => { if (W) { try { g.scene.remove(W.grp); } catch (e) { /* ignore */ } } const grp = new T3.Group(); W = { run, grp, boosts: [], bots: [], boostT: 0, kills: 0 }; g.scene.add(grp); buildFinish(g, run.T, E.shortFin || 470, grp); };
@@ -551,6 +550,7 @@ const CUP = SHAPES.map((s) => s.name);
     if (rk.mesh && rk.active) { rk.mesh.scale.set(6.6, 6.6, 4.6); if (W && rk.mesh !== W._olFor) { W._olFor = rk.mesh; const olM = new T3.MeshBasicMaterial({ color: '#ffe066', side: T3.BackSide, fog: false }); rk.mesh.traverse((o) => { if (o.isMesh && !o.userData.ol && o.material && !o.material.transparent) { const c = new T3.Mesh(o.geometry, olM); c.userData.ol = true; c.scale.setScalar(1.1); o.add(c); } }); } }   // plus larges + un contour jaune : elle ressort du decor   // plus larges : on les voit mieux   // la fusee est plus grosse a l'ecran
     if (RACE && W && W.run === run) raceStep(g, dt);
     if (RACE && g.effects && g.effects.pal) { if (!E._smk0) E._smk0 = g.effects.pal.exhaustSmoke; g.effects.pal.exhaustSmoke = (W && W.smk && g.state === 'FLIGHT') ? W.smk : E._smk0; }
+    if (RACE && g.audio && g.audio.ctx && !g.audio._mb) { g.audio._mb = 1; try { g.audio.setVolumes(CC.CONFIG.audio.master, g.settings.music, g.settings.sfx); } catch (e) { /* volumes */ } }
     if (RACE && g.audio && g.audio.music) { try { const mu = g.audio.music, key = g.state === 'FLIGHT' && W ? 'race_' + (cur().map || 'arch') : (g.audio.zoneNow || 'evoDawn'); mu.setStyle(key, false); if (mu.pending) { mu.st = mu.pending; mu.pending = null; mu.step = 0; } } catch (e) { /* musique */ } }   // v404 : une musique par carte
     if (RACE && W && W.run === run && rk.active && g.state === 'FLIGHT' && !g.evoFinish) {   // le costume choisi dans le menu et la traînee de la fusee du joueur
       if (!W._sk && g.flightTime > 0.15) { W._sk = 1; const ps = playerSkin(); if (ps) { try { rk.setSkin(ps); } catch (e) { /* skin */ } }

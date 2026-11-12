@@ -46,7 +46,7 @@
     if (dim) ctx.restore();
     if (bk > 0) { ctx.fillStyle = 'rgba(255,255,255,' + bk * 0.35 + ')'; UI.cham(ctx, rx, y, w, h, S(26)); ctx.fill(); }
     ctx.restore();
-    K.hit(ui, rx, y, w, h, () => { if (max) return; if (can) { SV.coins -= cost; lv[id] = n + 1; PRO.setPw(lv); save(g); M.bought = { id, t0: performance.now() }; snd(g, 'coinPing'); } else { M.shake = { id, t0: performance.now() }; snd(g, 'uiTick'); } });
+    K.hit(ui, rx, y, w, h, () => { if (max) return; if (can) { SV.coins -= cost; lv[id] = n + 1; PRO.setPw(lv); save(g); M.bought = { id, t0: performance.now() }; snd(g, n + 1 >= 5 ? 'uiPromote' : 'uiBuy'); } else { M.shake = { id, t0: performance.now() }; snd(g, 'uiTick'); } });
   }
 
   // ---------- accueil ----------

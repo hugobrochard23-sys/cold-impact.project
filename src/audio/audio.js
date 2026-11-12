@@ -211,7 +211,7 @@
       const acc = dt > 0 ? (sp - (this.lastSp || 0)) / dt : 0; this.lastSp = sp;
       this.accS = U.lerp(this.accS || 0, U.clamp(acc / 30, 0, 1), U.damp(4, dt));   // accélération lissée 0..1
       const v = U.clamp(sp / 75, 0, 1);
-      this.engBus.gain.setTargetAtTime(thrust * 0.16,   // v091 : réacteur de fond beaucoup moins fort
+      this.engBus.gain.setTargetAtTime(thrust * 0.05,   // v405 : encore moins fort ; v091 : réacteur de fond beaucoup moins fort
          t, thrust ? 0.05 : 0.09);
       this.subA.frequency.setTargetAtTime(42 + v * 14 + this.accS * 5, t, 0.2);
       this.subB.frequency.setTargetAtTime((42 + v * 14 + this.accS * 5) * 1.505, t, 0.2);
