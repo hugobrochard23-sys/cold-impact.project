@@ -129,3 +129,6 @@ Sonnet 5.5 effort MOYEN (faible pour les retouches mecaniques, eleve seulement p
 - Ombres : pochoir (stencilWrite + forceSinglePass) -> chaque pixel n'est assombri qu'une fois (une seule forme par objet). Plafonds invisibles. Panneaux a 2 lignes (nom + consigne, `HINT`). Trampolines/lianes/catapulte/silo/tremplin lisibles (anneaux guides, faisceaux, zone large, texte HUD `label`).
 - Etages : `deckUp` (dalle suspendue, bas/haut) + `onLevel(h, fn)` (decale groupes et boites) + `divider` (voies doubles). Archipel/jungle/range/glace ont une section 'etages' (`ceil` 42).
 - B : TERRAIN D'ESSAI (cibles, chicane, herses|conteneurs, catapulte, canons, mines|tourelles, ballons de barrage|helicopteres, projecteurs, missiles, grue, silo) et GLACE (murs, tremplin, stalactites, cristaux|pics|machoires, boule de neige, pont de glace, igloos|foret, banquise). Vent et tuyaux retires de ces cartes (vent -> desert, tuyaux -> usine).
+
+## v395 (choix de la carte)
+- Avant chaque manche (y compris depuis JOUER) : overlay DOM `beginCd` = roulette de photos reelles (assets/maps/*.jpg, captees par `cctest/photos.js`) puis fleches / touches gauche-droite pour choisir la carte, ALEATOIRE, bouton LANCER ; le 3-2-1-GO ne demarre qu'apres LANCER ; l'overlay disparait au GO avant le decollage. La carte choisie remplace `R.courses[R.round-1]`.
