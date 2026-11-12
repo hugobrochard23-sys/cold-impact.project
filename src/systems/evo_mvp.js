@@ -215,8 +215,8 @@ const CUP = SHAPES.map((s) => s.name);
     let ax = (k.ArrowRight || k.KeyD ? 1 : 0) - (k.ArrowLeft || k.KeyA ? 1 : 0), ay = (k.ArrowUp || k.KeyW ? 1 : 0) - (k.ArrowDown || k.KeyS ? 1 : 0);
     if (touch) {   // tactile : le doigt oriente, l'ancre rattrape le doigt (cap stable quand on s'arrete)
       if (I.anx === undefined || I.anReset) { I.anx = I.cx; I.any = I.cy; I.anReset = 0; }
-      const ox2 = I.cx - I.anx, oy2 = I.any - I.cy, DZ = 0.022; ax = U.clamp(Math.sign(ox2) * Math.max(0, Math.abs(ox2) - DZ) / 0.35, -1, 1); ay = U.clamp(Math.sign(oy2) * Math.max(0, Math.abs(oy2) - DZ) / 0.22, -1, 1);
-      const ka = 1 - Math.exp(-dt / 0.5); I.anx += (I.cx - I.anx) * ka; I.any += (I.cy - I.any) * ka;
+      const ox2 = I.cx - I.anx, oy2 = I.any - I.cy, DZ = 0.014; ax = U.clamp(Math.sign(ox2) * Math.max(0, Math.abs(ox2) - DZ) / 0.17, -1, 1); ay = U.clamp(Math.sign(oy2) * Math.max(0, Math.abs(oy2) - DZ) / 0.11, -1, 1);   // v403 : deux fois plus sensible
+      const ka = 1 - Math.exp(-dt / 0.75); I.anx += (I.cx - I.anx) * ka; I.any += (I.cy - I.any) * ka;
     }
     if (ap) { ax = U.clamp(-P.ox / 8, -1, 1); ay = U.clamp((11 - P.h) / 6, -1, 1); }
     const gas = ap || touch || k.Space || g.flightTime < 2.6 || now < (W.grace || 0), inTube = I2.tubes && I2.tubes.some((q) => P.d > q.d0 && P.d < q.d1), sp = SP() + (inTube ? 6 : 0);
@@ -297,6 +297,7 @@ const CUP = SHAPES.map((s) => s.name);
   let sSeed = 1; const sr = () => (sSeed = (sSeed * 1664525 + 1013904223) >>> 0) / 4294967296;
   const gz = () => (sr() + sr() + sr() + sr() - 2) * 1.7;
   const ord = (n) => (n === 1 ? '1ER' : n + 'E');
+  const floorOf = (I, d, h) => { if (I.decks) for (const q of I.decks) if (d > q.d0 && d < q.d1 && h > q.ht - 1) return q.ht; return 0; };   // hauteur de l'etage sous une fusee (0 = le sol)
   const newSession = () => {
     sSeed = ((Date.now() & 0xffffff) + 17 * (++R.session)) >>> 0; R.surv = null; const READY = ['arch', 'range', 'jungle', 'ice', 'desert', 'factory'], byMap = (m) => COURSES.filter((c) => c.isle && (c.map || 'arch') === m), maps = READY.filter((m) => byMap(m).length);   // 3 cartes differentes par coupe, dans un ordre aleatoire
     for (let i = maps.length - 1; i > 0; i--) { const j = Math.floor(sr() * (i + 1)); const t = maps[i]; maps[i] = maps[j]; maps[j] = t; }
@@ -382,7 +383,7 @@ const CUP = SHAPES.map((s) => s.name);
   const bOff = (b, d) => (E.course && E.course.isle ? b.off * U.clamp(E.course.isle.W(d) * 0.8 / 6.5, 0.3, 9) : b.off * (E.course ? U.clamp((E.course.hw(d) - 2.4) / 6.5, 0.15, 1.1) : 1));
   const rivalMesh = (g, b) => {   // le skin et la traînée d'un pilote (crees au premier passage a l'ecran)
     const sk = CC.Skins.byId[b.skin] || CC.Skins.byId.stock;
-    b.m = CC.Models.rocket(sk); b.m.scale.set(5.4, 5.4, 3.8); b.m.visible = false; W.grp.add(b.m);
+    b.m = CC.Models.rocket(sk); b.skn = sk; b.m.scale.set(5.4, 5.4, 3.8); b.m.visible = false; W.grp.add(b.m);
     b.mats = []; b.m.traverse((o) => { if (o.isMesh && o.material) { const arr = Array.isArray(o.material) ? o.material : [o.material], cl = arr.map((q) => { const c2 = q.clone(); c2.transparent = true; b.mats.push(c2); return c2; }); o.material = Array.isArray(o.material) ? cl : cl[0]; } });
     b.tr = mkRibbon(sk.flame || (sk.c && (sk.c.band || sk.c.body)) || '#ffffff'); W.grp.add(b.tr);
   };
@@ -431,7 +432,8 @@ const CUP = SHAPES.map((s) => s.name);
         b.pushT = (b.pushT || 0) * Math.exp(-dt * 1.4); b.push = (b.push || 0) + (b.pushT - (b.push || 0)) * Math.min(1, dt * 5); lanePos(T, b.d, lx1 + b.push, b.dy, b.m.position); lanePos(T, b.d + 6, b.gx === undefined ? bOff(b, b.d + 6) + wob2 : (b.gx + (bOff(b, b.d + 6) + wob2 - b.gx) * ss), b.dy, tmp2);
         if (b.gx !== undefined && sv < 1) { const dk = T.at(b.d, lx1, (E.course && E.course.isle ? E.course.isle.bank(b.d) * lx1 : 0) + 0.9)[1]; b.m.position.y = dk + (b.m.position.y - dk) * sv; tmp2.y = dk + (tmp2.y - dk) * sv + 0.6 * (1 - sv); }   // sur les rampes au depart, puis elles decollent
         b.m.lookAt(tmp2); b.m.visible = true; b.m.scale.set(5.4 * b.vk, 5.4 * b.vk, 3.8 * b.vk);
-        if (E.isleBlob && E.course && E.course.isle) { if (!b.sh) { b.sh = E.isleBlob(); W.grp.add(b.sh); } const I4 = E.course.isle, lxs = lx1 + b.push; if (Math.abs(lxs) < I4.W(b.d) - 0.5) { const p = T.at(b.d, lxs, I4.bank(b.d) * lxs + 0.08), h = Math.max(0, b.m.position.y - p[1]); b.sh.visible = true; b.sh.position.set(b.m.position.x + E.isleLS.x * h, p[1], b.m.position.z + E.isleLS.z * h); b.sh.scale.setScalar((4.2 + h * 0.1) * b.vk); b.sh.material.opacity = Math.max(0.12, 0.62 - h * 0.022) * b.vk; } else b.sh.visible = false; } }
+        if (E.isleRocketSh && E.course && E.course.isle) { if (b.sh === undefined) { b.sh = E.isleRocketSh(g, b.skn, [5.4, 5.4, 3.8]); if (b.sh) W.grp.add(b.sh); }   // l'ombre du rival : la silhouette exacte de sa fusee, posee sur le sol (ou sur l'etage)
+          if (b.sh) { const I4 = E.course.isle, lxs = lx1 + b.push; if (b.vk > 0.5 && Math.abs(lxs) < I4.W(b.d) - 0.5) { let p = T.at(b.d, lxs, I4.bank(b.d) * lxs + 0.1), h = b.m.position.y - p[1]; const fl = floorOf(I4, b.d, h); if (fl) { p = T.at(b.d, lxs, I4.bank(b.d) * lxs + fl + 0.1); h -= fl; } h = Math.max(0, h); b.sh.visible = true; b.sh.position.set(b.m.position.x + E.isleLS.x * h, p[1], b.m.position.z + E.isleLS.z * h); b.sh.rotation.y = Math.atan2(tmp2.x - b.m.position.x, tmp2.z - b.m.position.z); } else b.sh.visible = false; } } }
       if (b.blk) { if (!b.blkP) { try { g.effects.flash(b.m.position.clone(), '#ffd9a0', 3, 50, 0.2, '#ff9a30'); } catch (e) { /* effets */ } } b.m.rotateZ(0.35 * Math.sin(t * 38)); b.m.position.y += 0.35 * Math.sin(t * 27); } b.blkP = b.blk;
       if (E.course) b.m.rotateZ(U.clamp(-E.course.rate(b.d) * (cur().speed || 46) * 0.2, -0.75, 0.75) + 0.12 * Math.cos(t * 1.3 + b.ph));   // la fusee se penche dans les virages (et un peu quand elle bouge sur le cote)
       b.tr.visible = false; if (k < 10) { const fx = g.effects, fw = tmp.copy(tmp2).sub(b.m.position).normalize(), nz = b.m.position.clone().addScaledVector(fw, -2.1), vv = fw.clone().multiplyScalar(36); try { fx.exhaustCore(nz, fw, vv, 1, dt); fx.exhaustSmoke(nz.clone().addScaledVector(fw, -0.7), vv, 1); fx.exhaustSmoke(nz.clone().addScaledVector(fw, -1.5), vv, 1); } catch (e) { /* effets */ } }   // la meme flamme et la meme fumee que la fusee du joueur
@@ -442,9 +444,12 @@ const CUP = SHAPES.map((s) => s.name);
       }
     }
     W.lead = lead; R.live = 1 + ahead;
-    if (E.isleBlob && E.course && E.course.isle) {   // l'ombre de la fusee du joueur sur la piste
-      const I3 = E.course.isle, sh = W.sh || (W.sh = (() => { const m = E.isleBlob(); W.grp.add(m); return m; })());
-      if (rk.active && flying && Math.abs(rel.x) < I3.W(pd) - 0.5) { const p = T.at(pd, rel.x, I3.bank(pd) * rel.x + 0.08), h = Math.max(0, rk.pos.y - p[1]); sh.visible = true; sh.position.set(rk.pos.x + E.isleLS.x * h, p[1], rk.pos.z + E.isleLS.z * h); sh.scale.setScalar(4.2 + h * 0.1); sh.material.opacity = Math.max(0.12, 0.62 - h * 0.022); } else sh.visible = false;
+    if (E.isleObjSh && g.targets && W && W.grp) for (const t of g.targets) {   // les ennemis du terrain d'essai (chars, camions, helicos) : une ombre a leur forme, posee au sol
+      const o = t.object; if (!o) continue; if (t._sh === undefined) { t._sh = (t.alive && o.parent) ? E.isleObjSh(g, o) : null; if (t._sh) { W.grp.add(t._sh); t._shY = t._sh.userData.y0 + 0.14 - (t.type === 'heli' ? Math.max(0, t._sh.userData.y0 - (T.base ? T.base(Math.max(0, pd)) : t._sh.userData.y0)) * 0 : 0); t._shH = t.type === 'heli'; } }
+      const s2 = t._sh; if (!s2) continue; s2.visible = !!t.alive && o.visible !== false && !!o.parent; if (!s2.visible) continue; const of = s2.userData.off; let gy = t._shY; if (t._shH) { gy = t._shG = Math.min(t._shG === undefined ? 1e9 : t._shG, o.position.y - 9.8); } s2.position.set(o.position.x + of[0], gy, o.position.z + of[1]); }
+    if (E.isleRocketSh && E.course && E.course.isle) {   // l'ombre de la fusee du joueur : sa silhouette exacte
+      const I3 = E.course.isle; if (W.sh === undefined) { const sk0 = playerSkin() || CC.Skins.byId.stock, bbm = new T3.Box3(); let scq = [5.4, 5.4, 3.8]; try { const q0 = rk.mesh.quaternion.clone(); rk.mesh.quaternion.identity(); rk.mesh.updateMatrixWorld(true); bbm.setFromObject(rk.mesh); rk.mesh.quaternion.copy(q0); rk.mesh.updateMatrixWorld(true); const ref = CC.Models.rocket(sk0), rb = new T3.Box3().setFromObject(ref), ra = rb.getSize(new V()), pa = bbm.getSize(new V()); if (ra.z > 0.01 && ra.x > 0.01) scq = [pa.x / ra.x, 1, pa.z / ra.z]; } catch (e) { /* taille par defaut */ } W.sh = E.isleRocketSh(g, sk0, scq); if (W.sh) W.grp.add(W.sh); }
+      const sh = W.sh; if (sh) { if (rk.active && flying && Math.abs(rel.x) < I3.W(pd) - 0.5) { let p = T.at(pd, rel.x, I3.bank(pd) * rel.x + 0.1), h = rk.pos.y - p[1]; const fl = floorOf(I3, pd, h); if (fl) { p = T.at(pd, rel.x, I3.bank(pd) * rel.x + fl + 0.1); h -= fl; } h = Math.max(0, h); sh.visible = true; sh.position.set(rk.pos.x + E.isleLS.x * h, p[1], rk.pos.z + E.isleLS.z * h); if (W.aim) sh.rotation.y = Math.atan2(W.aim.x, W.aim.z); } else sh.visible = false; }
     }
   };
   // la ligne d'arrivee : deux pylones, une banderole a damier, un anneau lumineux et des faisceaux
@@ -620,7 +625,7 @@ const CUP = SHAPES.map((s) => s.name);
     } else {
       const k = U.clamp((performance.now() - w.t1) / 500, 0, 1), sk = pk.skin ? CC.Skins.byId[pk.skin] : null, pw = S(560), ph = S(600);
       ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); UI.panel(ctx, -pw / 2, -ph / 2, pw, ph, { c: S(36), border: T.border2, bw: S(4) });
-      { const tc = sk && E.skinThumb ? E.skinThumb(pk.skin) : null; if (tc) ctx.drawImage(tc, -S(250), -S(250), S(500), S(375)); else UI.artImg(ctx, 'chest_open', 0, -S(70), S(400)); }
+      { const tc = sk && E.skinThumb ? E.skinThumb(pk.skin) : null; if (tc) { const k = Math.min(S(470) / tc.width, S(330) / tc.height); ctx.drawImage(tc, -tc.width * k / 2, -S(70) - tc.height * k / 2, tc.width * k, tc.height * k); } else UI.artImg(ctx, 'chest_open', 0, -S(70), S(400)); }
       if (sk) { const nm = (sk.short || sk.name || pk.skin).toUpperCase(); UI.text(ctx, nm, 0, S(170), UI.fit(ctx, nm, pw * 0.84, S(60)), T.white, { shadow: false }); UI.text(ctx, PRO.rarName[pk.rar || 0], 0, S(236), S(38), T.dim, { shadow: false }); }
       ctx.restore();
       { const msg = sk ? (pk.fresh ? 'NOUVEAU COSTUME !' : 'DEJA POSSEDE : +300 PIECES') : '+' + (pk.coins || 300) + ' PIECES' + (pk.gems ? '   +' + pk.gems + ' GEMME' : ''); UI.text(ctx, msg, cx, Y(0.76), UI.fit(ctx, 'DEJA POSSEDE : +300 PIECES', cw * 0.9, S(56)), T.yellow, { outline: true }); }
@@ -681,7 +686,7 @@ const CUP = SHAPES.map((s) => s.name);
     }
     if (RACE && W) {
       const rd = R.round - 1, fn = E.shortFin || 470, tNow = Math.max(0, g.flightTime);
-      { const pl = R.live, ps = String(pl), keepN = R.keep[rd], col = pl === 1 ? '#E4B84D' : pl <= keepN ? '#2ECC71' : (rd === 2 && pl <= 3) ? '#FF8C00' : '#FF2B2B', x0 = S(40), y0 = S(92), px = S(132), sf = (pl === 1 ? 'ER' : 'E') + '  / ' + R.field[rd];   // ta place : chiffre colore selon le rang (or, vert = qualifie, rouge = elimine), le reste en blanc, contour noir et relief
+      { const pl = R.live, ps = String(pl), keepN = R.keep[rd], col = pl === 1 ? '#E4B84D' : pl <= keepN ? '#2ECC71' : (rd === 2 && pl <= 3) ? '#FF8C00' : '#FF2B2B', x0 = S(40), y0 = S(92), px = S(132), sf = ' / ' + R.field[rd];   // ta place : chiffre colore selon le rang (or, vert = qualifie, rouge = elimine), le reste en blanc, contour noir et relief
         UI.text(ctx, ps, x0, y0, px, col, { align: 'left', outline: true }); UI.text(ctx, sf, x0 + UI.tw(ctx, ps, px) + S(10), y0 + S(26), S(60), '#FFFFFF', { align: 'left', outline: true }); }
       // qualifies : combien de pilotes ont deja franchi la ligne
       const ISL = !!(E.course && E.course.isle);
@@ -765,15 +770,15 @@ const CUP = SHAPES.map((s) => s.name);
     wait();
   };
   const beginCd = (g) => {   // avant chaque manche : la roulette des cartes (aucun choix) ; elle part vite, ralentit longuement, la carte tiree « s'enfonce », puis on arrive sur la course et le 3-2-1 demarre
-    if (_cd) return; const keys = Object.keys(MAP_NAMES), target = cur().map || 'arch', VW = window.innerWidth, VH = window.innerHeight;
+    if (_cd) return; const tr = (x) => (CC.I18n && CC.I18n.t ? CC.I18n.t(x) : x), keys = Object.keys(MAP_NAMES), target = cur().map || 'arch', VW = window.innerWidth, VH = window.innerHeight;
     const cw = Math.round(Math.min(VW * 0.42, VH * 0.6)), gap = Math.round(cw * 0.08), pad = Math.round(cw * 0.035), rad = Math.round(cw * 0.04), ch = Math.round((cw - pad * 2) / 1.6 + pad * 2 + cw * 0.17);
     const seq = []; for (let c = 0; c < 5; c++) for (const m of keys.slice().sort(() => Math.random() - 0.5)) seq.push(m);
     const iT = seq.length - 3; seq[iT] = target; for (const j of [iT - 1, iT + 1]) if (seq[j] === target) seq[j] = keys[(keys.indexOf(target) + (j < iT ? 1 : 2)) % keys.length];
     const el = document.createElement('div'); el.style.cssText = "position:fixed;inset:0;z-index:9999;overflow:hidden;color:#F0EDE4;text-align:center;font-family:'Rajdhani','Barlow Condensed','Arial Narrow',sans-serif;font-weight:700;letter-spacing:.02em;line-height:1;user-select:none;opacity:0;transition:opacity .25s";
     const X = (i) => Math.round(VW / 2 - (i * (cw + gap) + cw / 2));
     el.innerHTML = '<canvas id="cdBg" width="' + VW + '" height="' + VH + '" style="position:absolute;inset:0;width:100%;height:100%"></canvas>'
-      + '<div style="position:absolute;left:0;right:0;top:5vh;display:flex;flex-direction:column;align-items:center;gap:1.6vh"><div style="font-size:4vh;background:#26394B;border-radius:.9vh;box-shadow:0 .5vh 0 rgba(8,12,18,.32);padding:1vh 2.6vw 1.1vh">MANCHE ' + R.round + ' / 3</div><div style="font-size:7vh;text-shadow:0 .55vh 0 rgba(8,9,12,.95)">TIRAGE DE LA CARTE</div></div>'
-      + '<div id="cdStrip" style="position:absolute;left:0;top:54%;display:flex;gap:' + gap + 'px;transform:translate(' + X(1) + 'px,-50%);will-change:transform">' + seq.map((m) => '<div style="flex:0 0 ' + cw + 'px;height:' + ch + 'px;box-sizing:border-box;padding:' + pad + 'px;background:#26394B;border-radius:' + rad + 'px;box-shadow:0 ' + Math.round(cw * 0.025) + 'px 0 rgba(8,12,18,.32);display:flex;flex-direction:column"><canvas width="640" height="400" data-m="' + m + '" style="width:100%;aspect-ratio:1.6;border-radius:' + Math.round(cw * 0.025) + 'px;background:#1B2A38"></canvas><div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:' + Math.round(cw * 0.105) + 'px">' + MAP_NAMES[m] + '</div></div>').join('') + '</div>'
+      + '<div style="position:absolute;left:0;right:0;top:5vh;display:flex;flex-direction:column;align-items:center;gap:1.6vh"><div style="font-size:4vh;background:#26394B;border-radius:.9vh;box-shadow:0 .5vh 0 rgba(8,12,18,.32);padding:1vh 2.6vw 1.1vh">' + tr('MANCHE ' + R.round + ' / 3') + '</div><div style="font-size:7vh;text-shadow:0 .55vh 0 rgba(8,9,12,.95)">' + tr('TIRAGE DE LA CARTE') + '</div></div>'
+      + '<div id="cdStrip" style="position:absolute;left:0;top:54%;display:flex;gap:' + gap + 'px;transform:translate(' + X(1) + 'px,-50%);will-change:transform">' + seq.map((m) => '<div style="flex:0 0 ' + cw + 'px;height:' + ch + 'px;box-sizing:border-box;padding:' + pad + 'px;background:#26394B;border-radius:' + rad + 'px;box-shadow:0 ' + Math.round(cw * 0.025) + 'px 0 rgba(8,12,18,.32);display:flex;flex-direction:column"><canvas width="640" height="400" data-m="' + m + '" style="width:100%;aspect-ratio:1.6;border-radius:' + Math.round(cw * 0.025) + 'px;background:#1B2A38"></canvas><div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:' + Math.round(cw * 0.105) + 'px">' + tr(MAP_NAMES[m]) + '</div></div>').join('') + '</div>'
       + '<img src="assets/ui/pin.png" style="position:absolute;left:50%;top:calc(54% - ' + Math.round(ch / 2) + 'px);height:11vh;transform:translate(-50%,-78%);filter:drop-shadow(0 .6vh 0 rgba(8,12,18,.4))">';
     document.body.appendChild(el); requestAnimationFrame(() => { el.style.opacity = '1'; }); _cd = { el };
     const bg = el.querySelector('#cdBg').getContext('2d'), strip = el.querySelector('#cdStrip'), cvs = [].slice.call(strip.querySelectorAll('canvas')); let alive = true;

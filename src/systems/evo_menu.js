@@ -13,7 +13,11 @@
   const skinName = (sk, id) => String(sk.short || sk.name || id).toUpperCase();
   // vignette d'un costume : une vraie vue 3D de la fusee, rendue une fois par l'apercu de l'ancien hangar
   const TH = {}; let thBudget = 0;
-  const thumb = (id) => { let c = TH[id]; if (c) return c; if (!CC.Hangar || thBudget <= 0) return null; thBudget--; c = document.createElement('canvas'); c.width = 256; c.height = 192; if (!CC.Hangar.preview(c.getContext('2d'), id, 0, 0, 256, 192, 0, 0.3)) return null; return (TH[id] = c); };
+  const thumb = (id) => {   // rendue en grand puis rognee au plus pres de la fusee : elle remplit sa tuile
+    let c = TH[id]; if (c) return c; if (!CC.Hangar || thBudget <= 0) return null; thBudget--; c = document.createElement('canvas'); c.width = 512; c.height = 384; const x = c.getContext('2d'); if (!CC.Hangar.preview(x, id, 0, 0, 512, 384, 0, 0.3)) return null;
+    try { const d = x.getImageData(0, 0, 512, 384).data; let x0 = 512, y0 = 384, x1 = 0, y1 = 0; for (let yy = 0; yy < 384; yy += 2) for (let xx = 0; xx < 512; xx += 2) if (d[(yy * 512 + xx) * 4 + 3] > 24) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
+      if (x1 > x0 && y1 > y0) { const t = document.createElement('canvas'); t.width = x1 - x0 + 8; t.height = y1 - y0 + 8; t.getContext('2d').drawImage(c, x0 - 4, y0 - 4, t.width, t.height, 0, 0, t.width, t.height); c = t; } } catch (e) { /* image entiere */ }
+    return (TH[id] = c); };
   E.skinThumb = (id) => { thBudget = Math.max(thBudget, 1); return thumb(id); };
 
   const edgeF = (F, W, HH) => (W > HH * 1.1 ? Object.assign({}, F, { ox: 0, cw: W }) : F);
@@ -58,7 +62,6 @@
       UI.tap(ui, bx, by, bw, bh, () => { M.tab = 'costumes'; M.page = 0; M.ask = null; }); }
     const bs = S(128), lx = eox + S(36), ly = T0 + S(330);
     UI.shopStall(ctx, lx, ly - S(6), bs, now); UI.tap(ui, lx, ly, bs, bs, () => { ui.overlay = 'evoShop'; });
-    { const y = ly + bs + S(28), nt = PRO.tickets(); ctx.save(); ctx.translate(lx + bs / 2, y + bs * 0.4); ctx.rotate(-0.2); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowOffsetY = S(4); UI.artImg(ctx, 'ticket', 0, 0, bs * 0.92); ctx.restore(); UI.outlined(ctx, String(nt), lx + bs / 2, y + bs * 0.92, bs * 0.3, UI.C.white, '#000000', { keep: true, ow: 0.22 }); }
     { const cb = bs * 1.4, rx0 = eox + ecw - S(36) - cb, y = ly, nc = api.chest ? api.chest() : 0, ready = nc >= 3;   // le coffre : une part par course terminee ; plein au bout de 3, on l'ouvre
       UI.chestFrame(ctx, rx0, y, cb, ready, true, now, ready ? undefined : nc / 3);
       if (ready) { const ow = cb * 1.3, oh = S(78), ox2 = rx0 + cb / 2 - ow / 2, oy = y + cb - S(30), f = UI.greenButton(ctx, ox2, oy, ow, oh, { cat: 'la' }); UI.outlined(ctx, 'OUVRIR', ox2 + ow / 2, f.y + f.h * 0.5, UI.fit(ctx, 'OUVRIR', ow * 0.86, f.h * 0.5), '#FFFFFF'); }
@@ -80,7 +83,7 @@
     const ids = PRO.SKIN_IDS, per = 8, pages = Math.max(1, Math.ceil(ids.length / per)); M.page = U.clamp(M.page, 0, pages - 1);
     const sel = PRO.skin() || 'stock', tw0 = (cw - S(108)) / 2, th = S(260), gx = ox + S(36), gy = Y(0.22);
     ids.slice(M.page * per, M.page * per + per).forEach((id, i) => { const x = gx + (i % 2) * (tw0 + S(36)), y = gy + Math.floor(i / 2) * (th + S(26)), open = PRO.isOwned(id), on = sel === id, sk = CC.Skins.byId[id], ask = M.ask === id, p = PRO.price(id), nm = ask ? 'ACHETER ?' : skinName(sk, id);
-      UI.panel(ctx, x, y, tw0, th, { c: S(26), border: on ? T.yellow : T.border, bw: S(on ? 6 : 3) }); ctx.save(); if (!open) ctx.globalAlpha = 0.35; { const tc = thumb(id); if (tc) ctx.drawImage(tc, x + tw0 / 2 - th * 0.5, y + th * 0.4 - th * 0.375, th, th * 0.75); else UI.icon(ctx, 'missile_ogive', x + tw0 / 2, y + th * 0.4, th * 0.55); } ctx.restore();
+      UI.panel(ctx, x, y, tw0, th, { c: S(26), border: on ? T.yellow : T.border, bw: S(on ? 6 : 3) }); ctx.save(); if (!open) ctx.globalAlpha = 0.35; { const tc = thumb(id); if (tc) { const k = Math.min(tw0 * 0.74 / tc.width, th * 0.5 / tc.height); ctx.drawImage(tc, x + tw0 / 2 - tc.width * k / 2, y + th * 0.4 - tc.height * k / 2, tc.width * k, tc.height * k); } else UI.icon(ctx, 'missile_ogive', x + tw0 / 2, y + th * 0.4, th * 0.55); } ctx.restore();
       UI.text(ctx, nm, x + tw0 / 2, y + th * 0.84, UI.fit(ctx, nm, tw0 * 0.8, S(46)), on || ask ? T.yellow : T.white, { shadow: false });
       if (!open) { const ps = p > 0 ? U.formatInt(p) : 'GRATUIT'; UI.icon(ctx, 'coin', x + tw0 - S(54), y + S(54), S(56)); UI.text(ctx, ps, x + tw0 - S(54), y + S(104), UI.fit(ctx, ps, S(100), S(30)), (SV.coins || 0) >= p ? T.white : T.dim, { shadow: false }); }
       K.hit(ui, x, y, tw0, th, () => {
