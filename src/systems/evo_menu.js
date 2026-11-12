@@ -11,12 +11,11 @@
   const TABS = [['boutique', 'BOUTIQUE', 'bag'], ['costumes', 'COSTUMES', 'rocket'], ['jouer', 'JOUER', 'play'], ['pouvoirs', 'POUVOIRS', 'bolt'], ['classement', 'CLASSEMENT', 'trophy']];
   const RARC = [['COMMUN', '#9fb0d0'], ['RARE', P.blueL], ['EPIQUE', '#c77bff']];
   const cover = (ctx, img, x, y, w, h) => { const ar = w / h; let sW = img.width, sH = img.height; if (sW / sH > ar) sW = sH * ar; else sH = sW / ar; ctx.drawImage(img, (img.width - sW) / 2, (img.height - sH) / 2, sW, sH, x, y, w, h); };
-  const photo = (ctx, S, map, x, y, w, h, rad, o) => {   // une photo de carte dans un cadre : ombre, contour d'encre, lisere blanc, degrade bas
-    o = o || {}; const ol = Math.max(2, S(o.thin ? 4 : 6));
-    ctx.save(); ctx.shadowColor = 'rgba(8,16,44,0.5)'; ctx.shadowBlur = S(24); ctx.shadowOffsetY = S(10); R.rr(ctx, x, y, w, h, rad); ctx.fillStyle = P.ink; ctx.fill(); ctx.restore();
-    R.rr(ctx, x + ol, y + ol, w - 2 * ol, h - 2 * ol, rad - ol); ctx.fillStyle = o.on ? P.yellow : P.white; ctx.fill();
-    const mp = E.mapPoster ? E.mapPoster(map) : null, i2 = ol * 2; ctx.save(); R.rr(ctx, x + i2, y + i2, w - 2 * i2, h - 2 * i2, rad - i2); ctx.clip(); if (mp) cover(ctx, mp, x + i2, y + i2, w - 2 * i2, h - 2 * i2); else { ctx.fillStyle = P.navy; ctx.fillRect(x, y, w, h); }
-    if (o.shade) { const g = ctx.createLinearGradient(0, y + h * 0.5, 0, y + h); g.addColorStop(0, 'rgba(13,26,63,0)'); g.addColorStop(1, 'rgba(13,26,63,0.9)'); ctx.fillStyle = g; ctx.fillRect(x, y + h * 0.5, w, h * 0.5); } if (o.dim) { ctx.fillStyle = 'rgba(13,26,63,' + o.dim + ')'; ctx.fillRect(x, y, w, h); } ctx.restore();
+  const photo = (ctx, S, map, x, y, w, h, rad, o) => {   // une photo de carte : coins arrondis, ombre douce ; la carte choisie a un lisere jaune
+    o = o || {}; ctx.save(); ctx.shadowColor = 'rgba(8,16,44,0.35)'; ctx.shadowBlur = S(26); ctx.shadowOffsetY = S(10); R.rr(ctx, x, y, w, h, rad); ctx.fillStyle = P.navy; ctx.fill(); ctx.restore();
+    const mp = E.mapPoster ? E.mapPoster(map) : null; ctx.save(); R.rr(ctx, x, y, w, h, rad); ctx.clip(); if (mp) cover(ctx, mp, x, y, w, h);
+    if (o.shade) { const g = ctx.createLinearGradient(0, y + h * 0.5, 0, y + h); g.addColorStop(0, 'rgba(13,26,63,0)'); g.addColorStop(1, 'rgba(13,26,63,0.85)'); ctx.fillStyle = g; ctx.fillRect(x, y + h * 0.5, w, h * 0.5); } if (o.dim) { ctx.fillStyle = 'rgba(13,26,63,' + o.dim + ')'; ctx.fillRect(x, y, w, h); } ctx.restore();
+    if (o.on) { ctx.save(); R.rr(ctx, x, y, w, h, rad); ctx.lineWidth = S(6); ctx.strokeStyle = P.yellow; ctx.stroke(); ctx.restore(); }
   };
   const cupCard = (ui, ctx, g, F, S, y) => {   // la carte de la Coupe : 3 manches (photo de chaque carte) + le paquet a gagner
     const { cw, cx } = F, RC = api.R, h = S(262), w = cw * 0.94, x = cx - w / 2; R.panel(ctx, x, y, w, h, { dark: true, r: S(34) });
@@ -24,10 +23,10 @@
     const seg = (w - S(60)) / 4;
     for (let k = 0; k < 4; k++) {
       const sx = x + S(30) + k * seg + S(6), sy = y + S(48), sw = seg - S(12), sh = S(140), isPack = k === 3, cur = k === RC.round - 1 && !isPack, done = k < RC.round - 1;
-      if (isPack) { R.rr(ctx, sx, sy, sw, sh, S(22)); ctx.fillStyle = P.ink; ctx.fill(); const gp = ctx.createLinearGradient(0, sy, 0, sy + sh); gp.addColorStop(0, P.yellowL); gp.addColorStop(1, P.yellowD); R.rr(ctx, sx + S(5), sy + S(5), sw - S(10), sh - S(10), S(17)); ctx.fillStyle = gp; ctx.fill(); if (!UI.icon(ctx, 'chest_open', sx + sw / 2, sy + sh * 0.44, sh * 0.7)) R.text(ctx, '?', sx + sw / 2, sy + sh * 0.42, S(70), P.white); R.text(ctx, 'PAQUET', sx + sw / 2, sy + sh * 0.84, S(24), '#5a3400', { plain: true }); }
+      if (isPack) { R.rr(ctx, sx, sy, sw, sh, S(22)); ctx.fillStyle = P.yellow; ctx.fill(); if (!UI.icon(ctx, 'chest_open', sx + sw / 2, sy + sh * 0.44, sh * 0.7)) R.text(ctx, '?', sx + sw / 2, sy + sh * 0.42, S(70), P.white); R.text(ctx, 'PAQUET', sx + sw / 2, sy + sh * 0.84, S(24), '#5a3400', { plain: true }); }
       else { photo(ctx, S, (RC.courses[k] && RC.courses[k].map) || 'arch', sx, sy, sw, sh, S(22), { thin: true, on: cur, dim: done ? 0.6 : cur ? 0 : 0.35, shade: true });
-        R.text(ctx, [32, 16, 8][k] + ' PILOTES', sx + sw / 2, sy + sh * 0.84, S(22), P.white, { thin: true }); const br = S(22); ctx.beginPath(); ctx.arc(sx + br + S(4), sy + br + S(4), br, 0, 6.283); ctx.fillStyle = P.ink; ctx.fill(); ctx.beginPath(); ctx.arc(sx + br + S(4), sy + br + S(4), br - S(4), 0, 6.283); ctx.fillStyle = done ? P.green : cur ? P.yellow : P.blue; ctx.fill();
-        if (done) R.icon(ctx, 'check', sx + br + S(4), sy + br + S(4), br * 1.1, { fill: P.white }); else R.text(ctx, String(k + 1), sx + br + S(4), sy + br + S(5), S(28), cur ? '#5a3400' : P.white, { plain: true }); }
+        R.text(ctx, [32, 16, 8][k] + ' PILOTES', sx + sw / 2, sy + sh * 0.84, S(22), P.white, { thin: true }); const br = S(22); ctx.beginPath(); ctx.arc(sx + br + S(8), sy + br + S(8), br - S(2), 0, 6.283); ctx.fillStyle = done ? P.green : cur ? P.yellow : P.blue; ctx.fill();
+        if (done) R.icon(ctx, 'check', sx + br + S(8), sy + br + S(8), br * 1.0, { fill: P.white }); else R.text(ctx, String(k + 1), sx + br + S(8), sy + br + S(9), S(26), cur ? '#5a3400' : P.white, { plain: true }); }
     }
     R.text(ctx, 'MANCHE ' + RC.round + ' / 3   -   ' + RC.field[RC.round - 1] + ' PILOTES   -   ' + [16, 8, 1][RC.round - 1] + (RC.round === 3 ? ' VAINQUEUR' : ' QUALIFIES'), cx, y + h - S(36), S(28), P.sky, { thin: true });
     return h;
@@ -55,7 +54,7 @@
     // compteurs (au-dessus de tout)
     { const ph = S(66), gap = S(16), w1 = S(250), w2 = S(210), w3 = S(180), x0 = cx - (w1 + w2 + w3 + gap * 2) / 2, y0 = T0 + S(18); R.pill(ctx, ui, x0, y0, w1, ph, 'coin', SV.coins || 0, { plus: () => { M.tab = 'boutique'; M.page = 0; } }); R.pill(ctx, ui, x0 + w1 + gap, y0, w2, ph, 'gem', SV.gems || 0, { plus: () => { M.tab = 'boutique'; M.page = 0; } }); R.pill(ctx, ui, x0 + w1 + w2 + gap * 2, y0, w3, ph, 'ticket', PRO.tickets()); }
     // barre du bas : fond marine a lisere clair, 5 onglets ; l'onglet actif est souleve et jaune
-    { ctx.save(); ctx.shadowColor = 'rgba(8,16,44,0.5)'; ctx.shadowBlur = S(20); ctx.shadowOffsetY = -S(4); ctx.fillStyle = P.ink; ctx.fillRect(0, navTop, W0, navH + 6); ctx.restore(); const gn = ctx.createLinearGradient(0, navTop, 0, navTop + navH); gn.addColorStop(0, P.navy2); gn.addColorStop(1, P.navy); ctx.fillStyle = gn; ctx.fillRect(0, navTop + S(5), W0, navH); ctx.fillStyle = 'rgba(255,255,255,0.16)'; ctx.fillRect(0, navTop + S(5), W0, S(3)); }
+    { ctx.save(); ctx.shadowColor = 'rgba(8,16,44,0.35)'; ctx.shadowBlur = S(24); ctx.shadowOffsetY = -S(4); ctx.fillStyle = 'rgba(16,30,74,0.96)'; ctx.fillRect(0, navTop, W0, navH + 6); ctx.restore(); }
     TABS.forEach(([id, label, ic], i) => {
       const x = cx + (i - 2) * cw * 0.2, on = M.tab === id, r = S(on ? 50 : 42), yy = navTop + S(on ? 52 : 60);
       R.round(ctx, ui, x, yy, r, ic, { role: on ? 'primary' : 'secondary', key: 'tab' + id }, () => { if (id === 'jouer' && M.tab === 'jouer') api.start(g); else { M.tab = id; M.page = 0; } });
@@ -72,11 +71,11 @@
     ids.slice(M.page * per, M.page * per + per).forEach((id, k) => {
       const x = gx + (k % 3) * (cwid + S(12)), y = gy + Math.floor(k / 3) * (chei + S(14)), own = PRO.isOwned(id), on = sel === id, sk = CC.Skins.byId[id], rc = RARC[PRO.rarity(id)];
       R.panel(ctx, x, y, cwid, chei, { dark: !own, r: S(28) });
-      if (on) { ctx.save(); R.rr(ctx, x + S(3), y + S(3), cwid - S(6), chei - S(6), S(26)); ctx.lineWidth = S(7); ctx.strokeStyle = P.yellow; ctx.stroke(); ctx.restore(); }
+      if (on) { ctx.save(); R.rr(ctx, x, y, cwid, chei, S(28)); ctx.lineWidth = S(6); ctx.strokeStyle = P.yellow; ctx.stroke(); ctx.restore(); }
       ctx.save(); R.rr(ctx, x + S(16), y + S(16), cwid - S(32), chei * 0.52, S(18)); ctx.fillStyle = own ? P.sky : 'rgba(255,255,255,0.08)'; ctx.fill(); ctx.restore();
       ctx.save(); if (!own) ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.rect(x + S(16), y + S(16), cwid - S(32), chei * 0.52); ctx.clip(); PRO.icon(ctx, x + cwid / 2, y + S(16) + chei * 0.29, cwid * 0.58, sk, -Math.PI / 4); ctx.restore();
       R.tag(ctx, x + cwid / 2, y + S(34), rc[0], { px: S(17), color: rc[1], text: P.white });
-      const nm = (sk.short || sk.name || id).toUpperCase(); R.text(ctx, nm, x + cwid / 2, y + chei * 0.7, R.fit(ctx, nm, cwid * 0.86, S(30)), own ? P.text : P.white, { plain: own, thin: true });
+      const nm = (sk.short || sk.name || id).toUpperCase(); R.text(ctx, nm, x + cwid / 2, y + chei * 0.7, R.fit(ctx, nm, cwid * 0.86, S(30)), own ? P.text : P.white, { plain: true });
       const bw = cwid - S(36), bh = S(58), bx = x + S(18), by = y + chei - bh - S(18), act = () => {
         if (own) { PRO.setSkin(id); try { g.rocket.setSkin(playerSkinNow()); } catch (e) { /* apercu */ } return; }
         const c = SV.coins || 0, p = PRO.price(id); if (c >= p) { SV.coins = c - p; PRO.own(id); PRO.setSkin(id); try { g.writeSave(); g.rocket.setSkin(playerSkinNow()); } catch (e) { /* ignore */ } toast('COSTUME OBTENU !'); } else toast('PAS ASSEZ DE PIECES'); };
@@ -86,7 +85,7 @@
     const by2 = gy + chei * 2 + S(34);
     if (pages > 1) { R.round(ctx, ui, cx - S(170), by2 + S(40), S(38), 'left', { role: 'secondary', key: 'pgl' }, () => { M.page = (M.page + pages - 1) % pages; }); R.round(ctx, ui, cx + S(170), by2 + S(40), S(38), 'right', { role: 'secondary', key: 'pgr' }, () => { M.page = (M.page + 1) % pages; }); R.text(ctx, (M.page + 1) + ' / ' + pages, cx, by2 + S(42), S(40), P.white, { thin: true }); }
     const ty2 = by2 + S(120); R.text(ctx, 'TRAINEE', cx - cw * 0.44, ty2, S(30), P.white, { align: 'left', thin: true });
-    const tr = PRO.trail(); PRO.TRAILS.forEach((c, i) => { const x = cx - cw * 0.2 + i * S(60), on = tr === c, rr0 = S(on ? 25 : 20); ctx.beginPath(); ctx.arc(x, ty2, rr0 + S(5), 0, 6.283); ctx.fillStyle = on ? P.yellow : P.ink; ctx.fill(); ctx.beginPath(); ctx.arc(x, ty2, rr0, 0, 6.283); ctx.fillStyle = c || P.greyD; ctx.fill(); if (!c) R.icon(ctx, 'close', x, ty2, rr0 * 1.1, { fill: P.white, ink: null }); UI.tap(ui, x - S(30), ty2 - S(30), S(60), S(60), () => { PRO.setTrail(c); }); });
+    const tr = PRO.trail(); PRO.TRAILS.forEach((c, i) => { const x = cx - cw * 0.2 + i * S(60), on = tr === c, rr0 = S(on ? 25 : 20); if (on) { ctx.beginPath(); ctx.arc(x, ty2, rr0 + S(6), 0, 6.283); ctx.fillStyle = P.white; ctx.fill(); } ctx.beginPath(); ctx.arc(x, ty2, rr0, 0, 6.283); ctx.fillStyle = c || P.greyD; ctx.fill(); if (!c) R.icon(ctx, 'close', x, ty2, rr0 * 1.1, { fill: P.white, ink: null }); UI.tap(ui, x - S(30), ty2 - S(30), S(60), S(60), () => { PRO.setTrail(c); }); });
   };
   const drawShop = (ui, ctx, g, F, S, SV) => {
     const { Y, cw, cx } = F; R.text(ctx, 'BOUTIQUE', cx, Y(0.145), S(84), P.white);
@@ -107,9 +106,9 @@
     const lv = PRO.pw();
     POW.forEach(([id, desc, col, ic], i) => {
       const hh = S(230), y = Y(0.235) + i * (hh + S(20)), w = cw * 0.94, x = cx - w / 2, L = lv[id], cost = 300 * L, max = L >= 5, can = (SV.coins || 0) >= cost;
-      R.panel(ctx, x, y, w, hh, { r: S(30) }); const cr = S(70), ccx = x + S(40) + cr, ccy = y + hh / 2; ctx.beginPath(); ctx.arc(ccx, ccy, cr + S(6), 0, 6.283); ctx.fillStyle = P.ink; ctx.fill(); const gc = ctx.createLinearGradient(0, ccy - cr, 0, ccy + cr); gc.addColorStop(0, '#ffffff'); gc.addColorStop(0.25, col); gc.addColorStop(1, col); ctx.beginPath(); ctx.arc(ccx, ccy, cr, 0, 6.283); ctx.fillStyle = gc; ctx.fill(); R.icon(ctx, ic, ccx, ccy, cr * 1.15, { fill: P.white });
+      R.panel(ctx, x, y, w, hh, { r: S(30) }); const cr = S(70), ccx = x + S(40) + cr, ccy = y + hh / 2; ctx.beginPath(); ctx.arc(ccx, ccy, cr, 0, 6.283); ctx.fillStyle = col; ctx.fill(); R.icon(ctx, ic, ccx, ccy, cr * 1.15, { fill: P.white });
       const tx = ccx + cr + S(30); R.text(ctx, id, tx, y + S(58), S(46), P.text, { align: 'left', plain: true }); R.text(ctx, desc, tx, y + S(104), R.fit(ctx, desc, w * 0.4, S(24)), P.dim, { align: 'left', plain: true });
-      for (let k = 0; k < 5; k++) { const sx = tx + k * S(46), sy = y + S(150); R.rr(ctx, sx, sy, S(38), S(26), S(9)); ctx.fillStyle = P.ink; ctx.fill(); R.rr(ctx, sx + S(4), sy + S(4), S(30), S(18), S(6)); ctx.fillStyle = k < L ? col : P.paperD; ctx.fill(); }
+      for (let k = 0; k < 5; k++) { const sx = tx + k * S(46), sy = y + S(150); R.rr(ctx, sx, sy, S(38), S(18), S(9)); ctx.fillStyle = k < L ? col : P.paperD; ctx.fill(); }
       R.text(ctx, 'NIVEAU ' + L, tx + S(250), y + S(164), S(24), P.dim, { align: 'left', plain: true });
       const bw = w * 0.27, bh = S(104), bx = x + w - bw - S(24), by = y + (hh - bh) / 2 - S(4), act = () => { if (max) return; if ((SV.coins || 0) >= cost) { SV.coins -= cost; lv[id] = L + 1; PRO.setPw(lv); try { g.writeSave(); } catch (e) { /* ignore */ } toast(id + ' NIVEAU ' + (L + 1)); } else toast('PAS ASSEZ DE PIECES'); };
       if (max) R.button(ctx, ui, bx, by, bw, bh, 'MAX', { role: 'confirm', icon: 'check', key: 'pw' + i }); else { const st = R.tapButton(ctx, ui, bx, by, bw, bh, '     ' + cost, { role: can ? 'primary' : 'disabled', key: 'pw' + i }, act); UI.icon(ctx, 'coin', bx + bw * 0.24, by + bh * 0.42 + st.p * bh * 0.1, bh * 0.6); if (!can) UI.tap(ui, bx, by, bw, bh, act); }
