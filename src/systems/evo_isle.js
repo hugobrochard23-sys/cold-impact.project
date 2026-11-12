@@ -171,7 +171,7 @@
     for (let k = -2; k <= 2; k++) S.glow(dc + k * 9, 0, hh - 2.2, '#ffe2a8', 16);
   };
   const sceneDef = {
-    len: [300, 300], noDoor: true, noChaos: true, gw: 46,
+    len: [300, 300], noDoor: true, noChaos: true, gw: 46, grass: false,   // plus d'herbe : elle poussait dans le vide
     gwF: (d) => { const C = E.course; return C && C.isle ? C.isle.W(d) : 46; },
     bankF: (d) => { const C = E.course; return C && C.isle ? C.isle.bank(d) : 0; },
     ground: (d, lx, c) => {
@@ -336,12 +336,12 @@
     const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(new Float32Array(3 * 3 * 30), 3)); const m = new T3.Mesh(geo, SHM); m.frustumCulled = false; m.renderOrder = 2; m.userData.noShadow = true; g.add(m); SH_DYN.push({ g, node, m, ls: null }); };
   let _dfr = 0;
   const dynUpdate = (rp) => { _dfr++; for (let i = 0; i < SH_DYN.length; i++) { if ((i + _dfr) % 2) continue; const o = SH_DYN[i]; const nd = o.node, near = !rp || o.g.position.distanceToSquared(rp) < 170 * 170; if (!near || nd.visible === false) { o.m.visible = false; continue; } o.m.visible = true; if (!o.ls) o.ls = localLS(o.g); o.g.updateMatrixWorld(true);
-      const poly = hull(meshShadowPts(o.g, nd, o.ls)), arr = []; fan(poly, arr); const pos = o.m.geometry.attributes.position, n = Math.min(arr.length, pos.array.length); for (let i = 0; i < n; i++) pos.array[i] = arr[i]; for (let i = n; i < pos.array.length; i += 3) { pos.array[i] = arr[n - 3] || 0; pos.array[i + 1] = 0.14; pos.array[i + 2] = arr[n - 1] || 0; } pos.needsUpdate = true; } };
+      let pp = meshShadowPts(o.g, nd, o.ls); { const cx = o.g.userData.clampX; if (cx) pp = pp.map((p) => [cx(p[0], p[1]), p[1]]); } const poly = hull(pp), arr = []; fan(poly, arr); const pos = o.m.geometry.attributes.position, n = Math.min(arr.length, pos.array.length); for (let i = 0; i < n; i++) pos.array[i] = arr[i]; for (let i = n; i < pos.array.length; i += 3) { pos.array[i] = arr[n - 3] || 0; pos.array[i + 1] = 0.14; pos.array[i + 2] = arr[n - 1] || 0; } pos.needsUpdate = true; } };
   const autoShadow = (g) => {   // l'ombre des pieces fixes d'un groupe, fusionnee en un seul objet
     const ls = localLS(g), out = [];
     g.traverse((o) => { if (!o.isMesh || o.userData.noShadow || o.userData.dyn || o.visible === false || !o.geometry) return; for (let a = o.parent; a && a !== g; a = a.parent) if (a.userData && a.userData.dyn) return;
       if (o.material && o.material.isMeshBasicMaterial && o.material.transparent) return; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); _bb.copy(o.geometry.boundingBox); const sz = _bb.getSize(_pv); if (Math.max(sz.x, sz.y, sz.z) < 1.1) return;
-      const pts = meshShadowPts(g, o, ls); if (pts.length < 3) return; fan(hull(pts), out); });
+      let pts = meshShadowPts(g, o, ls); if (pts.length < 3) return; const cx = g.userData.clampX; if (cx) pts = pts.map((p) => [cx(p[0], p[1]), p[1]]); fan(hull(pts), out); });
     if (!out.length) return; const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(out, 3)); const m = new T3.Mesh(geo, SHM); m.frustumCulled = false; m.renderOrder = 2; m.userData.noShadow = true; g.add(m); };
   const _v = new T3.Vector3(), RR = 0.8;   // RR : rayon de la fusee
   const segDist = (px, py, ax, ay, bx2, by2) => { const dx = bx2 - ax, dy = by2 - ay, l2 = dx * dx + dy * dy || 1, t = U.clamp(((px - ax) * dx + (py - ay) * dy) / l2, 0, 1); return Math.hypot(px - (ax + dx * t), py - (ay + dy * t)); };
@@ -356,7 +356,9 @@
     const m = new T3.Mesh(geo, new T3.MeshLambertMaterial({ vertexColors: true, side: T3.DoubleSide, transparent: op < 1, opacity: op, depthWrite: op >= 1 })); m.frustumCulled = false; m.userData.noShadow = true; return m; };
   const obstacles = (T, C, grp) => {
     const I = C.isle, ups = [], hits = [], sx = I.sx, addHit = (d, f) => { f.d = d; hits.push(f); };
-    const signs = [], groups = [], mk = (d, lx) => { const L = lx * sx, bk = I.bank(d), p = T.at(d, L, bk * L), q = T.at(d + 3, L, bk * L), g = new T3.Group(); g.position.set(p[0], p[1], p[2]); g.lookAt(q[0], p[1], q[2]); g.rotateZ(-Math.atan(bk)); grp.add(g); groups.push(g); g.updateMatrixWorld(true); return g; };
+    const signs = [], groups = [], mk = (d, lx) => { const L = lx * sx, bk = I.bank(d), p = T.at(d, L, bk * L), q = T.at(d + 3, L, bk * L), g = new T3.Group(); g.position.set(p[0], p[1], p[2]); g.lookAt(q[0], p[1], q[2]); g.rotateZ(-Math.atan(bk)); grp.add(g); groups.push(g); g.updateMatrixWorld(true);
+      { const xw = new T3.Vector3(1, 0, 0).applyQuaternion(g.quaternion), a0 = T.at(d, 0, 0), a1 = T.at(d, 1, 0), sg = ((a1[0] - a0[0]) * xw.x + (a1[2] - a0[2]) * xw.z) >= 0 ? 1 : -1; g.userData.clampX = (x, z) => { const ll = L + sg * x, mx = Math.max(0, I.W(d + z) - 0.8), c = Math.max(-mx, Math.min(mx, ll)); return (c - L) * sg; }; }   // une ombre ne depasse jamais le bord du tablier
+      return g; };
     const loc = (g, pos) => g.worldToLocal(_v.copy(pos));
     const stoneBlock = (w, h, d, i) => bx(w, h, d, STONE[i % 3]);
     const gantry = (g, span, top, wood, dd, lxx) => {

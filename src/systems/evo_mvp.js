@@ -236,7 +236,7 @@ const CUP = SHAPES.map((s) => s.name);
       contactFx(g, rk, false);
     }
     W.ghostT = Math.max(0, (W.ghostT || 0) - dt);
-    if (g.flightTime > 1.2 && W.ghostT <= 0 && W.props && W.props.hits) { const np = T.at(nd, nx, I2.bank(nd) * nx + nh); tmpN.set(np[0], np[1], np[2]); if (isleHit(g, tmpN, nd)) { P.vf *= 0.3; W.ghostT = 0.5; contactFx(g, rk, true); } }   // obstacle mobile : on perd presque toute la vitesse, puis on le traverse (0,5 s)
+    if (g.flightTime > 1.2 && W.ghostT <= 0 && W.props && W.props.hits) { const np = T.at(nd, nx, I2.bank(nd) * nx + nh); tmpN.set(np[0], np[1], np[2]); if (isleHit(g, tmpN, nd)) { P.vf = Math.min(P.vf, 2); P.d -= 1.4; W.ghostT = 0.22; contactFx(g, rk, true); } }   // obstacle mobile : on est arrete et repousse un peu, on ne le traverse jamais
     const pv = T.at(P.d, P.ox, I2.bank(P.d) * P.ox + P.h);
     if (g.flightTime > 1.2 && ((!over && P.h < -22) || pv[1] < I2.PY + 1.5 || E.isleSolid(crs, T, P.d, P.ox, pv[1]))) { R.penT = performance.now(); R.penAmt = 1.2; respawn(g); return; }   // chute : retour au debut de l'obstacle
     const dtt = Math.max(dt, 1e-3); rk.vel.set((pv[0] - rk.pos.x) / dtt, (pv[1] - rk.pos.y) / dtt, (pv[2] - rk.pos.z) / dtt);
