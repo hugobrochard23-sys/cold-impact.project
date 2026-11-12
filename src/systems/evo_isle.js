@@ -204,21 +204,27 @@
   };
   const rails = (T, C) => {
     const I = C.isle, list = [], rg = I.map === 'range', CY = rg ? ['#25262a', '#25262a', '#e8e8e8'] : I.map === 'jungle' ? ['#7a5634', '#5b3f25', '#4e9a3a'] : ['#ff3b4d', '#ff9a1f', '#ff3b4d'];
-    for (let d = S0 + 12; d < I.dEnd - 10; d += 4) { const w = I.W(d) - 1.2; if (w < 8) continue; for (const sg of [-1, 1]) list.push([d, sg * w, 1, ((d / 4) | 0) % 5 === 0 ? 1 : 0]); }
+    for (let d = S0 + 12; d < I.dEnd - 10; d += 4.6) { const w = I.W(d) - 1.2; if (w < 8) continue; for (const sg of [-1, 1]) list.push([d, sg * w, 1, ((d / 4.6) | 0) % 5 === 0 ? 1 : 0]); }
     if (I.map === 'arch') { const iv = SEC.findIndex((q) => q.n === 'divise'), dv = STARTS[iv], dl = SEC[iv].len; for (let d = dv + 30; d < dv + dl - 20; d += 3.6) list.push([d, 0, 1.15, 2]); I.boxes.push([dv + 30, dv + dl - 20, -1.4, 1.4, 0, 3.2]); }   // le muret central qui separe les deux voies
     for (let d = S0 + 12; d < I.dEnd - 10; d += 8) { const w = I.W(d) - 1.2; if (w < 8) continue; I.boxes.push([d - 4, d + 4, w - 1.3, w + 1.3, 0, 3.1], [d - 4, d + 4, -w - 1.3, -w + 1.3, 0, 3.1]); }   // les rambardes sont solides
     if (!rg) for (const d of [104, 118]) for (let lx = -50 + (d === 118 ? 8 : 0); lx <= 50; lx += 16) { list.push([d, lx, 1.6, 3]); I.boxes.push([d - 1.9, d + 1.9, lx - 1.9, lx + 1.9, 0, 3.9]); }   // les gros coussins de la ligne de depart
-    const prof = [[0.02, 0], [1.0, 0], [1.15, 0.14], [1.15, 0.66], [1.0, 0.8], [0.02, 0.8]].map((q) => new T3.Vector2(q[0], q[1] - 0.4)), geo = new T3.LatheGeometry(prof, 14), im = new T3.InstancedMesh(geo, new T3.MeshLambertMaterial({ color: '#ffffff' }), list.length * 3), dm = new T3.Object3D(), cc = new T3.Color(); let n = 0;
-    for (const [d, lx, sc, kind] of list) for (let k = 0; k < 3; k++) {
-      const p = T.at(d, lx, I.bank(d) * lx + (0.4 + k * 0.8) * sc); dm.position.set(p[0], p[1], p[2]); dm.scale.set(sc, sc, sc); dm.updateMatrix(); im.setMatrixAt(n, dm.matrix);
-      cc.set(kind === 1 ? (rg ? '#e8e8e8' : '#ffffff') : kind === 2 ? (k % 2 ? '#ffffff' : '#ff6fae') : kind === 3 ? (k % 2 ? '#ffffff' : '#ff8a1f') : CY[k]); im.setColorAt(n, cc); n++;
+    const prof = [[0.02, 0], [1.0, 0], [1.12, 0.2], [1.12, 0.6], [1.0, 0.8], [0.02, 0.8]].map((q) => new T3.Vector2(q[0], q[1] - 0.4)), geo = new T3.LatheGeometry(prof, 8), lm = new T3.MeshLambertMaterial({ color: '#ffffff' }), dm = new T3.Object3D(), cc = new T3.Color(), CH = 160, byC = new Map(), gr = new T3.Group();
+    for (const it of list) { const c = Math.floor(it[0] / CH); if (!byC.has(c)) byC.set(c, []); byC.get(c).push(it); }
+    for (const [c, arr] of byC) {
+      const im = new T3.InstancedMesh(geo, lm, arr.length * 3); let n = 0;
+      for (const [d, lx, sc, kind] of arr) for (let k = 0; k < 3; k++) {
+        const p = T.at(d, lx, I.bank(d) * lx + (0.4 + k * 0.8) * sc); dm.position.set(p[0], p[1], p[2]); dm.scale.set(sc, sc, sc); dm.updateMatrix(); im.setMatrixAt(n, dm.matrix);
+        cc.set(kind === 1 ? (rg ? '#e8e8e8' : '#ffffff') : kind === 2 ? (k % 2 ? '#ffffff' : '#ff6fae') : kind === 3 ? (k % 2 ? '#ffffff' : '#ff8a1f') : CY[k]); im.setColorAt(n, cc); n++;
+      }
+      im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; im.frustumCulled = false; const mid = T.at((c + 0.5) * CH, 0, 5); im.userData.c = new T3.Vector3(mid[0], mid[1], mid[2]); gr.add(im);
     }
-    im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; im.frustumCulled = false; return im;
+    return gr;
   };
 
   // ---- les obstacles mobiles : chacun accroche a une structure ; collision en repere de la structure (x = gauche, y = hauteur, z = devant) ----
-  const mat = (c) => new T3.MeshLambertMaterial({ color: c, flatShading: true });
-  const matS = (c) => new T3.MeshLambertMaterial({ color: c });
+  const _mcf = {}, _mcs = {};
+  const mat = (c) => _mcf[c] || (_mcf[c] = new T3.MeshLambertMaterial({ color: c, flatShading: true }));
+  const matS = (c) => _mcs[c] || (_mcs[c] = new T3.MeshLambertMaterial({ color: c }));
   const RBC = {};
   const rbGeo = (w, h, d, r) => { const k = [w, h, d, r].join('|'); if (RBC[k]) return RBC[k]; const sh = new T3.Shape(), x = (w - 2 * r) / 2, y = (h - 2 * r) / 2; sh.moveTo(-x, -y); sh.lineTo(x, -y); sh.lineTo(x, y); sh.lineTo(-x, y); sh.closePath();
     const g = new T3.ExtrudeGeometry(sh, { depth: d - 2 * r, bevelEnabled: true, bevelThickness: r, bevelSize: r, bevelSegments: 2, curveSegments: 1 }); g.center(); return (RBC[k] = g); };   // boite a bords arrondis
@@ -256,7 +262,8 @@
   const SH_DYN = []; E.isleShReset = () => { SH_DYN.length = 0; };
   const dynSh = (g, node) => {   // une piece qui bouge : son ombre est recalculee a chaque image
     const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(new Float32Array(3 * 3 * 30), 3)); const m = new T3.Mesh(geo, SHM); m.frustumCulled = false; m.renderOrder = 2; m.userData.noShadow = true; g.add(m); SH_DYN.push({ g, node, m, ls: null }); };
-  const dynUpdate = (rp) => { for (const o of SH_DYN) { const nd = o.node, near = !rp || o.g.position.distanceToSquared(rp) < 300 * 300; if (!near || nd.visible === false) { o.m.visible = false; continue; } o.m.visible = true; if (!o.ls) o.ls = localLS(o.g); o.g.updateMatrixWorld(true);
+  let _dfr = 0;
+  const dynUpdate = (rp) => { _dfr++; for (let i = 0; i < SH_DYN.length; i++) { if ((i + _dfr) % 2) continue; const o = SH_DYN[i]; const nd = o.node, near = !rp || o.g.position.distanceToSquared(rp) < 170 * 170; if (!near || nd.visible === false) { o.m.visible = false; continue; } o.m.visible = true; if (!o.ls) o.ls = localLS(o.g); o.g.updateMatrixWorld(true);
       const poly = hull(meshShadowPts(o.g, nd, o.ls)), arr = []; fan(poly, arr); const pos = o.m.geometry.attributes.position, n = Math.min(arr.length, pos.array.length); for (let i = 0; i < n; i++) pos.array[i] = arr[i]; for (let i = n; i < pos.array.length; i += 3) { pos.array[i] = arr[n - 3] || 0; pos.array[i + 1] = 0.14; pos.array[i + 2] = arr[n - 1] || 0; } pos.needsUpdate = true; } };
   const autoShadow = (g) => {   // l'ombre des pieces fixes d'un groupe, fusionnee en un seul objet
     const ls = localLS(g), out = [];
@@ -475,7 +482,7 @@
   };
   E.buildIsle = (T, C, grp) => {
     const I = C.isle, out = { isle: true, blocks: [], obst: [] }; SH_DYN.length = 0;
-    grp.add(bodyMesh(T, C)); grp.add(ocean(T, C)); grp.add(decals(T, C)); grp.add(rails(T, C));
+    const railsG = rails(T, C); grp.add(bodyMesh(T, C)); grp.add(ocean(T, C)); grp.add(decals(T, C)); grp.add(railsG);
     const bm = new T3.MeshBasicMaterial({ map: bannerTex(), side: T3.DoubleSide, fog: false });
     const place = (d, lx, objs) => { const y = T.base(d), bk = I.bank(d), p = T.at(d, lx, bk * lx), q = T.at(d + 3, lx, bk * lx), g = new T3.Group(); g.position.set(p[0], p[1], p[2]); g.lookAt(q[0], p[1], q[2]); grp.add(g); for (const o of objs) g.add(o); autoShadow(g); return g; };
     for (let d = 100; d < C.len - 40; d += 75) for (const sg of [-1, 1]) {   // poteaux de course : un drapeau « COLD IMPACT CUP » tourne vers la fusee qui arrive
@@ -506,7 +513,7 @@
     }
     const ob = obstacles(T, C, grp); out.hits = ob.hits;
     for (const [txt, dd] of ob.signs) for (const sg of [-1, 1]) { const w = I.W(dd); if (w < 16) continue; const po = pole(10, '#ffd23a'), pn = new T3.Mesh(new T3.PlaneGeometry(10, 3.5), new T3.MeshBasicMaterial({ map: signTex(txt), side: T3.DoubleSide, fog: false })); po.position.y = 5; pn.position.set(0, 9.4, 0); pn.rotation.y = Math.PI; place(dd, sg * (w - 5.5), [po, pn]); }
-    { const sky = skyDecor(T, C, grp); out.update = (t, rp) => { ob.update(t, rp); sky(t); }; }
+    { const sky = skyDecor(T, C, grp); out.update = (t, rp) => { ob.update(t, rp); sky(t); if (rp) for (const ch of railsG.children) ch.visible = ch.userData.c.distanceToSquared(rp) < 640 * 640; }; }
     return out;
   };
 })();

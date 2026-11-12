@@ -95,17 +95,15 @@ const CUP = SHAPES.map((s) => s.name);
   if (CC.CameraRig) CC.CameraRig.prototype.startHandoff = function () { this.handT = -1; };
 
   // ---------------------------------------------------------------- entrees : souris OU fleches, on bascule a tout moment
-  const I = { cx: 0, cy: 0.5, mode: 'mouse', k: {}, mx: -1, my: -1, ax: 0, ay: 0 };
+  const I = { cx: 0, cy: 0.5, mode: 'keys', k: {}, mx: -1, my: -1, ax: 0, ay: 0 };
   const ARR = { ArrowLeft: 1, ArrowRight: 1, ArrowUp: 1, ArrowDown: 1, KeyA: 1, KeyD: 1, KeyW: 1, KeyS: 1 };
   const setC = (x, y) => { I.cx = x / window.innerWidth * 2 - 1; I.cy = y / window.innerHeight; };
-  window.addEventListener('mousemove', (e) => { const mv = Math.abs(e.clientX - I.mx) + Math.abs(e.clientY - I.my); I.mx = e.clientX; I.my = e.clientY; setC(e.clientX, e.clientY); if (I.mode === 'keys') { I.trav = (I.trav || 0) + mv; if (I.trav > (performance.now() - (I.keyT || 0) < 2500 ? 260 : 60)) { I.mode = 'mouse'; I.anReset = 1; } } });   // apres une fleche, la souris ne reprend la main que si on la bouge franchement
-  window.addEventListener('mousedown', (e) => { if (e.button === 0) { setC(e.clientX, e.clientY); I.boost = 1; } });
-  window.addEventListener('mouseup', (e) => { if (e.button === 0) I.boost = 0; });
-  window.addEventListener('touchstart', (e) => { I.mode = 'mouse'; const t = e.touches[0]; if (t) { setC(t.clientX, t.clientY); I.anReset = 1; } }, { passive: true });
+  window.addEventListener('touchstart', (e) => { I.mode = 'touch'; const t = e.touches[0]; if (t) { setC(t.clientX, t.clientY); if (e.touches.length < 2) I.anReset = 1; } I.boost = e.touches.length >= 2 ? 1 : 0; }, { passive: true });
   window.addEventListener('touchmove', (e) => { const t = e.touches[0]; if (t) setC(t.clientX, t.clientY); }, { passive: true });
-  window.addEventListener('keydown', (e) => { I.k[e.code] = 1; if (e.code === 'Space') { I.boost = 1; const g0 = CC.game; if (g0 && g0.state === 'FLIGHT') e.preventDefault(); } if (ARR[e.code]) { I.mode = 'keys'; I.keyT = performance.now(); I.trav = 0; const g = CC.game; if (g && g.state === 'FLIGHT') e.preventDefault(); } });
-  window.addEventListener('keyup', (e) => { I.k[e.code] = 0; if (e.code === 'Space') I.boost = 0; });
-  E.mvpInput = I;
+  window.addEventListener('touchend', (e) => { I.boost = e.touches.length >= 2 ? 1 : 0; }, { passive: true });
+  window.addEventListener('keydown', (e) => { I.k[e.code] = 1; const g0 = CC.game, fl = g0 && g0.state === 'FLIGHT'; if (e.code === 'Space') { if (fl) e.preventDefault(); } if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') I.boost = 1; if (ARR[e.code]) { I.mode = 'keys'; if (fl) e.preventDefault(); } });
+  window.addEventListener('keyup', (e) => { I.k[e.code] = 0; if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') I.boost = 0; });
+    E.mvpInput = I;
 
   // ---------------------------------------------------------------- geometrie le long de la piste du niveau
   const tf = new V(), nn = new V(), cc = new V(), ray = new V(), org = new V(), tmp = new V(), tmp2 = new V();
@@ -128,18 +126,18 @@ const CUP = SHAPES.map((s) => s.name);
   E.mvpCam = (rig, rk, cam, dt) => {
     const g = rig.game, run = g.endlessRun; if (!run || !run.T) return;
     const T = run.T, lt = Math.max(0, g.flightTime || 0), w = U.clamp(1 - U.smooth(0.15, 2.9, lt), 0, 1);   // w : le decollage (1) -> la vue de course (0)
-    const dR = run.dist > 1 ? run.dist : Math.min(0, -rk.pos.z), d = Math.max(0, run.dist), k = Math.min(1, (dt || 0.016) * (9 - 5.2 * w));
+    const dR = run.dist > 1 ? run.dist : Math.min(0, -rk.pos.z), d = Math.max(0, run.dist), k = Math.min(1, (dt || 0.016) * ((E.course && E.course.isle ? 6.5 : 9) - 5.2 * w));
     relOf(T, Math.max(0, dR), rk.pos, rel);
-    const isl = !!(E.course && E.course.isle), kf = cur().open ? 0.85 : 0.5, dc = dR - (isl ? 6.5 : 8.5), d2 = dc + (isl ? 30 : 40), fx = rel.x * kf, fy = rel.y * (kf * 0.8);
-    const pa = T.at(dc, T.laneX(Math.max(0, dc)) + fx, T.laneY(Math.max(0, dc)) + (isl ? 2.4 : 2.2) + fy), pb = T.at(d2, T.laneX(Math.max(0, d2)) + fx, T.laneY(Math.max(0, d2)) + 0.2 + fy);
+    const isl = !!(E.course && E.course.isle), kf = isl ? 0.85 : (cur().open ? 0.85 : 0.5), dc = dR - (isl ? 13 : 8.5), d2 = dc + (isl ? 48 : 40), fx = rel.x * kf, fy = rel.y * (kf * 0.8);
+    const pa = T.at(dc, T.laneX(Math.max(0, dc)) + fx, T.laneY(Math.max(0, dc)) + (isl ? 5 : 2.2) + fy), pb = T.at(d2, T.laneX(Math.max(0, d2)) + fx, T.laneY(Math.max(0, d2)) + 0.2 + fy);
     camP.set(pa[0], Math.max(pa[1], T.base(Math.max(0, dc)) + 1.2), pa[2]); camL.set(pb[0], pb[1], pb[2]);
-    { const y0 = camP.y; camP.y = U.clamp(camP.y, rk.pos.y + 1.2, rk.pos.y + 3.8); camL.y += camP.y - y0; }   // la fusee ne sort jamais du champ (au depart, en plongee)
+    { const y0 = camP.y; camP.y = U.clamp(camP.y, rk.pos.y + (isl ? 3.2 : 1.2), rk.pos.y + (isl ? 7.5 : 3.8)); camL.y += camP.y - y0; }   // la fusee ne sort jamais du champ (au depart, en plongee)
     if (W && W.free) {   // raccourci : la camera suit la fusee derriere elle
       const dv = tmp.copy(rk.vel).normalize(); camP.copy(rk.pos).addScaledVector(dv, -10).y += 3.4; camL.copy(rk.pos).addScaledVector(dv, 24);
       if (!rig._mv) { rig._mv = new V().copy(camP); rig._ml = new V().copy(camL); }
       rig._mv.lerp(camP, Math.min(1, (dt || 0.016) * 6)); rig._ml.lerp(camL, Math.min(1, (dt || 0.016) * 8)); cam.position.copy(rig._mv); cam.up.set(0, 1, 0); cam.lookAt(rig._ml); return;
     }
-    if (isl && W && W.fc && !W.free) {   // controle libre : camera derriere la fusee, dans son axe, toujours centree sur elle
+    if (false) {   // controle libre : camera derriere la fusee, dans son axe, toujours centree sur elle
       const fc = W.fc, sdt = dt || 0.016; fc.cd.lerp(fc.dir, 1 - Math.exp(-sdt * 8)).normalize(); W.camB = (W.camB || 0) + ((W.boostT > 0 || W.bst ? 1 : 0) - (W.camB || 0)) * Math.min(1, sdt * 6);
       camP.copy(rk.pos).addScaledVector(fc.cd, -(6.6 + 1.8 * W.camB)); camP.y += 2.3 - 0.3 * W.camB; camL.copy(rk.pos).addScaledVector(fc.cd, 14); if (W.camB > 0.05) rig.punch = Math.max(rig.punch || 0, 0.6 * W.camB);
       if (!rig._mv) { rig._mv = new V().copy(camP); rig._ml = new V().copy(camL); }
@@ -154,6 +152,7 @@ const CUP = SHAPES.map((s) => s.name);
     }
     if (!rig._mv) { rig._mv = new V().copy(camP); rig._ml = new V().copy(camL); }
     rig._mv.lerp(camP, k); rig._ml.lerp(camL, k); cam.position.copy(rig._mv); cam.up.set(0, 1, 0); cam.lookAt(rig._ml);
+    if (isl && W) { const sd2 = dt || 0.016; W.camB = (W.camB || 0) + ((W.boostT > 0 || W.bst ? 1 : 0) - (W.camB || 0)) * Math.min(1, sd2 * 6); const fvT = (g.baseFov || cam.fov) * (1.02 + 0.1 * W.camB); if (Math.abs(cam.fov - fvT) > 0.02) { cam.fov = fvT; cam.updateProjectionMatrix(); } if (W.camB > 0.05) rig.punch = Math.max(rig.punch || 0, 0.5 * W.camB); }   // le champ s'elargit au boost
   };
 
   // ---------------------------------------------------------------- RACCOURCI : on sort par l'ouverture du mur et on vole librement jusqu'a l'anneau vert (on vise ou on entre dans la fenetre)
@@ -188,7 +187,7 @@ const CUP = SHAPES.map((s) => s.name);
     if (rk.pos.y < crs.isle.PY + 1.5 || E.isleSolid(crs, T, d, rel.x, rk.pos.y)) return true;
     return false;
   };
-  const isleHit = (g, rk) => { if (g.flightTime < 1.2 || !W.props || !W.props.hits) return false; for (const f of W.props.hits) if (f(rk.pos)) return true; return false; };
+  const isleHit = (g, pos, d) => { if (g.flightTime < 1.2 || !W.props || !W.props.hits) return false; for (const f of W.props.hits) { if (f.d !== undefined && Math.abs(f.d - d) > 75) continue; if (f(pos)) return true; } return false; };
   const contactFx = (g, rk, big) => { if (W.hitCd > 0) return; W.hitCd = 0.35; try { g.audio.play('shield'); g.rig.shake = big ? 0.12 : 0.05; g.effects.flash(rk.pos.clone(), '#ffd9a0', 3, 50, 0.2, '#ff9a30'); } catch (e) { /* effets */ } };   // son et etincelles d'un contact (pas de penalite de temps : on perd de la vitesse et des places)
   const hitPenalty = (g, rk, dir) => {   // un obstacle : la fusee rebondit, perd 1,5 s et de la vitesse ; elle ne meurt pas
     rk.shieldT = 1.3; W.slowT = 0.8; g.flightTime += 1.5; R.penT = performance.now(); R.penAmt = 1.5; W.kickT = (Math.random() < 0.5 ? -1 : 1) * 11; dir.y = Math.max(dir.y, 0.15); dir.normalize();
@@ -199,45 +198,46 @@ const CUP = SHAPES.map((s) => s.name);
   let _rip = null; const wallRipple = (g, pos, nrm) => {   // l'onde du mur invisible : des anneaux bleutes qui s'elargissent a l'endroit du contact
     if (!W || !W.grp) return; if (!_rip || _rip.parent !== W.grp) { const cv = document.createElement('canvas'); cv.width = cv.height = 128; const c2 = cv.getContext('2d'); for (let k = 0; k < 3; k++) { c2.strokeStyle = 'rgba(190,235,255,' + (0.9 - k * 0.25) + ')'; c2.lineWidth = 5 - k; c2.beginPath(); c2.arc(64, 64, 18 + k * 17, 0, 6.283); c2.stroke(); } const tx = new T3.CanvasTexture(cv); _rip = new T3.Mesh(new T3.PlaneGeometry(1, 1), new T3.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false, side: T3.DoubleSide, fog: false })); _rip.userData.t0 = -9; W.grp.add(_rip); }
     if (_rip.visible && performance.now() - _rip.userData.t0 < 450) return; _rip.position.copy(pos); _rip.lookAt(pos.clone().add(nrm)); _rip.userData.t0 = performance.now(); _rip.visible = true; };
-  const driveFree = (g, dt, T, crs, rk, run, F, d) => {
-    const I2 = crs.isle; let sp = SP();
-    if (!W.fc) { const v0 = rk.vel.clone(); if (v0.lengthSq() < 1) v0.set(tf.x, 0, tf.z); v0.normalize(); W.fc = { dir: v0, cd: v0.clone() }; }
-    const dir = W.fc.dir, c = F.on || F.ctrl < 1 ? F.ctrl : 1, rate = 1.7 * c;
-    if (I.mode === 'keys') { const k = I.k, yi = (k.ArrowRight || k.KeyD ? 1 : 0) - (k.ArrowLeft || k.KeyA ? 1 : 0), pi = (k.ArrowUp || k.KeyW ? 1 : 0) - (k.ArrowDown || k.KeyS ? 1 : 0); dir.applyAxisAngle(UPV, -yi * rate * dt); dir.y += pi * rate * dt * 0.8; dir.normalize(); }
-    else if (/[?&]ap=1/.test(location.search)) { const cam = g.camera; org.copy(cam.position); const q = T.at(d + 45, 0, T.laneY(d + 45) + 1); ray.set(q[0] - rk.pos.x, q[1] - rk.pos.y, q[2] - rk.pos.z).normalize(); const ang = dir.angleTo(ray); if (ang > 1e-4) { const t = Math.min(1, rate * dt / ang) * Math.min(1, ang / 0.18); dir.lerp(ray, t).normalize(); } }
-    else {   // souris / doigt : controle RELATIF ; l'ecart au point d'ancrage fait tourner la fusee et l'ancre rattrape le curseur en 0,5 s : quand la main s'arrete, le cap reste stable
+  const tmpN = new V();
+  const driveFree = (g, dt, T, crs, rk, run, F, d0) => {   // pilotage dans le plan de la piste : ESPACE avance, les fleches dirigent (gauche, droite, haut, bas), jamais de cap libre ; collisions au NEZ seulement
+    const I2 = crs.isle, k = I.k, now = performance.now(); dt = Math.min(dt, 0.05);
+    let P = W.pc; if (!P) { const dk0 = T.base(d0) + I2.bank(d0) * rel.x; P = W.pc = { d: Math.max(0, run.dist), ox: rel.x, h: Math.max(2.2, rk.pos.y - dk0), vf: Math.max(8, rk.vel.dot(tf)), vl: 0, vy: 0 }; W.aim = new V().copy(tf); W.ghostT = 0; }
+    const ap = /[?&]ap=1/.test(location.search), touch = I.mode === 'touch';
+    let ax = (k.ArrowRight || k.KeyD ? 1 : 0) - (k.ArrowLeft || k.KeyA ? 1 : 0), ay = (k.ArrowUp || k.KeyW ? 1 : 0) - (k.ArrowDown || k.KeyS ? 1 : 0);
+    if (touch) {   // tactile : le doigt oriente, l'ancre rattrape le doigt (cap stable quand on s'arrete)
       if (I.anx === undefined || I.anReset) { I.anx = I.cx; I.any = I.cy; I.anReset = 0; }
-      const ox = I.cx - I.anx, oy = I.any - I.cy, DZ = 0.022, ex = U.clamp(Math.sign(ox) * Math.max(0, Math.abs(ox) - DZ) / 0.45, -1, 1), ey = U.clamp(Math.sign(oy) * Math.max(0, Math.abs(oy) - DZ) / 0.28, -1, 1);
-      dir.applyAxisAngle(UPV, -ex * 1.9 * c * dt); dir.y += ey * 1.5 * c * dt; dir.normalize();
+      const ox2 = I.cx - I.anx, oy2 = I.any - I.cy, DZ = 0.022; ax = U.clamp(Math.sign(ox2) * Math.max(0, Math.abs(ox2) - DZ) / 0.35, -1, 1); ay = U.clamp(Math.sign(oy2) * Math.max(0, Math.abs(oy2) - DZ) / 0.22, -1, 1);
       const ka = 1 - Math.exp(-dt / 0.5); I.anx += (I.cx - I.anx) * ka; I.any += (I.cy - I.any) * ka;
     }
-    if (Math.abs(dir.y) > 0.82) { const hx = Math.hypot(dir.x, dir.z) || 1, sc = Math.sqrt(1 - 0.82 * 0.82) / hx; dir.set(dir.x * sc, Math.sign(dir.y) * 0.82, dir.z * sc); }
-    if (Math.abs(rel.x) < I2.W(d) + 6) { const hx = Math.hypot(dir.x, dir.z) || 1; if ((dir.x * tf.x + dir.z * tf.z) / hx < -0.25) { dir.x += tf.x * dt * 4; dir.z += tf.z * dt * 4; dir.normalize(); } }   // on ne fait pas demi-tour
-    if (F.on || F.ctrl < 1) { dir.y -= (1 - F.ctrl) * dt * 1.9; dir.normalize(); sp *= 1 + 0.22 * (1 - F.ctrl); }
-    const dk = T.base(d) + I2.bank(d) * rel.x, over = Math.abs(rel.x) < I2.W(d) - 0.3 && !F.on && F.ctrl >= 1;
-    if (over) { if (rk.pos.y < dk + 2.2) { rk.pos.y = dk + 2.2; if (dir.y < 0) { dir.set(dir.x, 0, dir.z).normalize(); } } if (rk.pos.y > dk + 27 && dir.y > 0) dir.set(dir.x, 0, dir.z).normalize(); }
-    const prev = W.prevPos || (W.prevPos = rk.pos.clone());
-    if (g.flightTime > 1.2) {   // VRAIES collisions : on ne traverse jamais un objet ; la fusee est repoussee, glisse ou rebondit, et perd de la vitesse
-      { const lim = I2.W(d) + 34, ax = Math.abs(rel.x), ceil = dk + 75;   // mur invisible : trop loin de la piste, on est repousse et une onde apparait
-        if (ax > lim || rk.pos.y > ceil) { const sg = Math.sign(rel.x) || 1; if (ax > lim) { rk.pos.addScaledVector(nn, -sg * (ax - lim)); const dn0 = dir.dot(nn) * sg; if (dn0 > 0) dir.addScaledVector(nn, -sg * dn0); } if (rk.pos.y > ceil) { rk.pos.y = ceil; if (dir.y > 0) { dir.y = 0; dir.normalize(); } } wallRipple(g, rk.pos, ax > lim || true ? nn : UPV); } }
-      if (isleKill(g, crs, T, d, rk)) { R.penT = performance.now(); R.penAmt = 2.5; respawn(g); return; }
-      if (I2.boxes) {
-        const yy = rk.pos.y - dk, RRc = 0.95;
-        for (const b of I2.boxes) {
-          if (d < b[0] - RRc || d > b[1] + RRc || rel.x < b[2] - RRc || rel.x > b[3] + RRc || yy < b[4] - RRc || yy > b[5] + RRc) continue;
-          const cc = [d - (b[0] - RRc), (b[1] + RRc) - d, rel.x - (b[2] - RRc), (b[3] + RRc) - rel.x, yy - (b[4] - RRc), (b[5] + RRc) - yy]; let kk = 0; for (let q = 1; q < 6; q++) if (cc[q] < cc[kk]) kk = q;
-          const sg = kk % 2 === 0 ? -1 : 1, axis = kk < 2 ? tf : kk < 4 ? nn : UPV;
-          rk.pos.addScaledVector(axis, sg * cc[kk]);   // repoussee hors de l'objet
-          const nrm = tmp.copy(axis).multiplyScalar(sg), dn = dir.dot(nrm);
-          if (dn < -0.3) W.slowT = Math.max(W.slowT || 0, 0.45);   // bloquee : on garde son cap, on est juste retenue puis ralentie un instant
-          contactFx(g, rk, dn < -0.7);
-        }
-      }
-      if (isleHit(g, rk)) { rk.pos.copy(prev); W.slowT = Math.max(W.slowT || 0, 0.7); contactFx(g, rk, true); }   // un obstacle mobile : retour a la derniere position libre, rebond
+    if (ap) { ax = U.clamp(-P.ox / 8, -1, 1); ay = U.clamp((11 - P.h) / 6, -1, 1); }
+    const gas = ap || touch || k.Space || g.flightTime < 2.6 || now < (W.grace || 0), sp = SP();
+    P.vf += U.clamp((gas ? sp : 0) - P.vf, -34 * dt, 42 * dt);   // sans ESPACE la fusee ralentit et s'arrete
+    const steerK = 0.45 + 0.55 * U.clamp(P.vf / Math.max(1, sp), 0, 1), ea = 1 - Math.exp(-dt / 0.13);
+    P.vl += (ax * 24 * steerK - P.vl) * ea; P.vy += (ay * 17 * steerK - P.vy) * ea;
+    P.d += P.vf * dt; P.ox += P.vl * dt; P.h += P.vy * dt;
+    const Wd = I2.W(P.d), over = Wd > 1 && Math.abs(P.ox) < Wd - 0.3, lim = Wd + 34;
+    if (Math.abs(P.ox) > lim) { const sg = Math.sign(P.ox); P.ox = sg * lim; if (P.vl * sg > 0) P.vl = 0; wallRipple(g, rk.pos, nn); }   // mur invisible
+    if (over && P.h < 2.2) { P.h = 2.2; if (P.vy < 0) P.vy = 0; }
+    if (P.h > 26) { P.h = 26; if (P.vy > 0) P.vy = 0; }
+    // collisions : seulement le nez (2,6 m devant le centre)
+    const NO = 2.6, RRc = 0.5, vln = Math.hypot(P.vf, P.vl, P.vy) || 1, ux = vln > 4 ? P.vf / vln : 1, uy = vln > 4 ? P.vl / vln : 0, uz = vln > 4 ? P.vy / vln : 0;
+    let nd = P.d + NO * ux, nx = P.ox + NO * uy, nh = P.h + NO * uz;
+    if (g.flightTime > 1.2 && I2.boxes) for (const b of I2.boxes) {
+      if (nd < b[0] - RRc || nd > b[1] + RRc || nx < b[2] - RRc || nx > b[3] + RRc || nh < b[4] - RRc || nh > b[5] + RRc) continue;
+      const cc2 = [nd - (b[0] - RRc), (b[1] + RRc) - nd, nx - (b[2] - RRc), (b[3] + RRc) - nx, nh - (b[4] - RRc), (b[5] + RRc) - nh]; let kq = 0; for (let q = 1; q < 6; q++) if (cc2[q] < cc2[kq]) kq = q;
+      const sg = kq % 2 === 0 ? -1 : 1, amt = Math.min(cc2[kq], 3);
+      if (kq < 2) { P.d += sg * amt; nd += sg * amt; if (sg < 0) P.vf = Math.min(P.vf, 0); else P.vf = Math.max(P.vf, 0); }   // de face : on est retenu (pas de recul)
+      else if (kq < 4) { P.ox += sg * amt; nx += sg * amt; if (P.vl * sg < 0) P.vl = 0; }   // de cote : on glisse
+      else { P.h += sg * amt; nh += sg * amt; if (P.vy * sg < 0) P.vy = 0; }
+      contactFx(g, rk, false);
     }
-    prev.copy(rk.pos);
-    rk.vel.copy(dir).multiplyScalar(sp); if (W.kick) rk.vel.addScaledVector(nn, W.kick);
-    g.input.setAim(Math.atan2(-dir.x, -dir.z), Math.asin(U.clamp(dir.y, -0.9, 0.9)));
+    W.ghostT = Math.max(0, (W.ghostT || 0) - dt);
+    if (g.flightTime > 1.2 && W.ghostT <= 0 && W.props && W.props.hits) { const np = T.at(nd, nx, I2.bank(nd) * nx + nh); tmpN.set(np[0], np[1], np[2]); if (isleHit(g, tmpN, nd)) { P.vf *= 0.3; W.ghostT = 0.5; contactFx(g, rk, true); } }   // obstacle mobile : on perd presque toute la vitesse, puis on le traverse (0,5 s)
+    const pv = T.at(P.d, P.ox, I2.bank(P.d) * P.ox + P.h);
+    if (g.flightTime > 1.2 && ((!over && P.h < -22) || pv[1] < I2.PY + 1.5 || E.isleSolid(crs, T, P.d, P.ox, pv[1]))) { R.penT = performance.now(); R.penAmt = 1.2; respawn(g); return; }   // chute : retour au debut de l'obstacle
+    const dtt = Math.max(dt, 1e-3); rk.vel.set((pv[0] - rk.pos.x) / dtt, (pv[1] - rk.pos.y) / dtt, (pv[2] - rk.pos.z) / dtt);
+    tmp.copy(rk.vel); const spd = tmp.length(); if (spd > 3) tmp.divideScalar(spd); else tmp.copy(tf); W.aim.lerp(tmp, 1 - Math.exp(-dt * 9)).normalize();
+    g.input.setAim(Math.atan2(-W.aim.x, -W.aim.z), Math.asin(U.clamp(W.aim.y, -0.9, 0.9)));
   };
 
   // ---------------------------------------------------------------- pilotage : la fusee suit la piste, le joueur la decale
@@ -449,12 +449,14 @@ const CUP = SHAPES.map((s) => s.name);
     const ring2 = new T3.Mesh(new T3.TorusGeometry(hw * 0.62 + 2.6, 0.6, 8, 44), new T3.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.7, fog: false })); ring2.position.set(0, cy, 0); fg.add(ring2);
     fg.position.set(lp[0], lp[1], lp[2]); fg.rotation.y = yaw; fg.userData.ring = ring; grp.add(fg); if (W) W.finish = fg;
   };
-  const respawn = (g) => {   // un echec = on repart juste avant l'obstacle, avec du temps perdu (pas de menu)
-    const run = g.endlessRun, rk = g.rocket, T = run.T, d = Math.max(20, run.dist - 40), p = T.at(d, T.laneX(d), T.laneY(d)), q = T.at(d + 3, T.laneX(d + 3), T.laneY(d + 3));
+  const respawn = (g) => {   // un echec : on repart au debut de l'obstacle (ou de la section), avec un peu de temps perdu
+    const run = g.endlessRun, rk = g.rocket, T = run.T; let d = Math.max(20, run.dist - 40);
+    if (E.course && E.course.isle) { const I9 = E.course.isle, c = [20]; for (const st of I9.starts) c.push(st + 16); if (W && W.props && W.props.hits) for (const f of W.props.hits) if (f.d !== undefined) c.push(f.d - 70); d = 20; for (const q of c) if (q <= run.dist - 12 && q > d) d = q; if (W) { W.pc = null; W.grace = performance.now() + 1600; } }
+    const p = T.at(d, T.laneX(d), T.laneY(d)), q = T.at(d + 3, T.laneX(d + 3), T.laneY(d + 3));
     const pos = new V(p[0], p[1], p[2]), dir = new V(q[0] - p[0], q[1] - p[1], q[2] - p[2]).normalize(), yaw = Math.atan2(-dir.x, -dir.z), pit = Math.asin(dir.y);
     g.input.setAim(yaw, pit); g.rig.setAim(yaw, pit); g.acc = 0;
     rk.launch(pos, dir, { speed: cur().speed || 44, ignited: true, freeBoost: 0.5 }); rk.shieldT = 1.4;
-    run.dist = d; if (W) { W.fall = null; W.fc = null; } if (g.rig) g.rig._mv = null; g.rig.startFlight(); g.state = 'FLIGHT'; g.stallT = 0; g.impactT = 0; g.flightTime += 2.5; R.penT = performance.now();
+    run.dist = d; if (W) { W.fall = null; W.fc = null; } if (g.rig) g.rig._mv = null; g.rig.startFlight(); g.state = 'FLIGHT'; g.stallT = 0; g.impactT = 0; g.flightTime += 1.2; R.penT = performance.now();
     try { g.audio.play('shield'); } catch (e) { /* son */ }
   };
   const tmpHud = new V();
@@ -479,7 +481,7 @@ const CUP = SHAPES.map((s) => s.name);
     const FN = E.shortFin || 470;
     if (g.world && !g.world._crsSw) { const sw = g.world.sweep; g.world._crsSw = 1; g.world.sweep = function () { return E.course ? null : sw.apply(this, arguments); }; }   // parcours en couloir : les decors du sol ne bloquent pas la fusee (le couloir a ses murs)
     { const gt = g._shortGate; if (gt && gt.grp) gt.grp.visible = false; }   // l'ancien mur a damier est remplace par la nouvelle arrivee
-    if (rk.mesh && rk.active) rk.mesh.scale.set(5.2, 5.2, 3.6);   // plus larges : on les voit mieux   // la fusee est plus grosse a l'ecran
+    if (rk.mesh && rk.active) { rk.mesh.scale.set(6.6, 6.6, 4.6); if (W && rk.mesh !== W._olFor) { W._olFor = rk.mesh; const olM = new T3.MeshBasicMaterial({ color: '#ffe066', side: T3.BackSide, fog: false }); rk.mesh.traverse((o) => { if (o.isMesh && !o.userData.ol && o.material && !o.material.transparent) { const c = new T3.Mesh(o.geometry, olM); c.userData.ol = true; c.scale.setScalar(1.1); o.add(c); } }); } }   // plus larges + un contour jaune : elle ressort du decor   // plus larges : on les voit mieux   // la fusee est plus grosse a l'ecran
     if (RACE && W && W.run === run) raceStep(g, dt);
     if (RACE && W && W.run === run && rk.active && g.state === 'FLIGHT' && !g.evoFinish) {   // le costume choisi dans le menu et la traînee de la fusee du joueur
       if (!W._sk && g.flightTime > 0.15) { W._sk = 1; const ps = playerSkin(); if (ps) { try { rk.setSkin(ps); } catch (e) { /* skin */ } } }
@@ -676,11 +678,11 @@ const CUP = SHAPES.map((s) => s.name);
         if (tmpHud.z < 1 && Math.abs(tmpHud.x) < 1.2 && Math.abs(tmpHud.y) < 1.2) { const cur2 = false, rx = cur2 ? (I.cx * 0.5 + 0.5) * W0 : (tmpHud.x * 0.5 + 0.5) * W0, ry = cur2 ? I.cy * H : (-tmpHud.y * 0.5 + 0.5) * H, rr = S(16); ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = S(3.5); ctx.beginPath(); ctx.arc(rx, ry, rr, 0, 6.283); ctx.moveTo(rx - rr * 1.7, ry); ctx.lineTo(rx - rr * 0.8, ry); ctx.moveTo(rx + rr * 0.8, ry); ctx.lineTo(rx + rr * 1.7, ry); ctx.stroke(); ctx.restore(); }
       }
       if (W.ground) UI.text(ctx, 'RASANT', cx, H * 0.8, S(40), '#7CFF6A', { outline: true });
-      if (ISL && g.state === 'FLIGHT' && g.flightTime > 0.6 && g.flightTime < 8) { const al = U.clamp(8 - g.flightTime, 0, 1) * U.clamp((g.flightTime - 0.6) / 0.5, 0, 1), hw = S(560), hh = S(70), hx = W0 / 2 - hw / 2, hy = H * 0.9 - hh / 2; ctx.save(); ctx.globalAlpha = al; ctx.fillStyle = 'rgba(14,15,22,0.78)'; UI.rrect(ctx, hx, hy, hw, hh, S(20)); ctx.fill(); ctx.lineWidth = S(4); ctx.strokeStyle = '#ff2f9a'; ctx.stroke(); ctx.restore(); ctx.save(); ctx.globalAlpha = al; UI.text(ctx, 'FLECHES OU SOURIS : PILOTER    -    ESPACE / CLIC : BOOST', W0 / 2, hy + hh / 2, S(27), '#ffffff', { outline: true }); ctx.restore(); }   // l'aide du depart : les fleches, et le boost
+      if (ISL && g.state === 'FLIGHT' && g.flightTime > 0.6 && g.flightTime < 10) { const al = U.clamp(10 - g.flightTime, 0, 1) * U.clamp((g.flightTime - 0.6) / 0.5, 0, 1), hw = S(560), hh = S(70), hx = W0 / 2 - hw / 2, hy = H * 0.9 - hh / 2; ctx.save(); ctx.globalAlpha = al; ctx.fillStyle = 'rgba(14,15,22,0.78)'; UI.rrect(ctx, hx, hy, hw, hh, S(20)); ctx.fill(); ctx.lineWidth = S(4); ctx.strokeStyle = '#ff2f9a'; ctx.stroke(); ctx.restore(); ctx.save(); ctx.globalAlpha = al; UI.text(ctx, 'ESPACE : AVANCER    -    FLECHES : DIRIGER    -    MAJ : BOOST', W0 / 2, hy + hh / 2, S(27), '#ffffff', { outline: true }); ctx.restore(); }   // l'aide du depart : les fleches, et le boost
       if (rk.active && g.state === 'FLIGHT' && !g.evoFinish) {   // une fleche au-dessus de notre fusee, et la mini-barre de boost dessous
         tmpHud.copy(rk.pos); CC.Curve.apply(tmpHud, g.camera).project(g.camera);
         if (tmpHud.z < 1 && Math.abs(tmpHud.x) < 1.1 && Math.abs(tmpHud.y) < 1.1) { const px = (tmpHud.x * 0.5 + 0.5) * W0, py = (-tmpHud.y * 0.5 + 0.5) * H, bob = Math.sin(performance.now() / 220) * S(4);
-          ctx.save(); ctx.translate(px, py - S(86) + bob); ctx.fillStyle = '#ffd23a'; ctx.strokeStyle = '#0b0d12'; ctx.lineWidth = S(4); ctx.beginPath(); ctx.moveTo(-S(15), -S(12)); ctx.lineTo(S(15), -S(12)); ctx.lineTo(0, S(14)); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+          ctx.save(); ctx.translate(px, py - S(122) + bob); ctx.fillStyle = '#ffd23a'; ctx.strokeStyle = '#0b0d12'; ctx.lineWidth = S(5); ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(0, S(22)); ctx.bezierCurveTo(-S(8), S(10), -S(25), S(4), -S(25), -S(9)); ctx.arc(0, -S(9), S(25), Math.PI, 0); ctx.bezierCurveTo(S(25), S(4), S(8), S(10), 0, S(22)); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.beginPath(); ctx.arc(-S(9), -S(15), S(6), 0, 6.283); ctx.fill(); ctx.restore();
           const en = W.en === undefined ? 1 : W.en; if (en < 0.995 || W.bst) { const bw2 = S(120), bh2 = S(13), bx2 = px - bw2 / 2, by2 = py + S(74); ctx.save(); ctx.fillStyle = 'rgba(10,12,20,0.7)'; UI.rrect(ctx, bx2 - S(3), by2 - S(3), bw2 + S(6), bh2 + S(6), S(8)); ctx.fill(); ctx.fillStyle = en > 0.25 ? '#7CFF6A' : '#ff9a30'; UI.rrect(ctx, bx2, by2, Math.max(S(4), bw2 * en), bh2, S(6)); ctx.fill(); ctx.restore(); } } }
       if (ISL && rk.active && g.state === 'FLIGHT' && !g.evoFinish) { const now2 = performance.now(), mn2 = Math.min(W0, H), bi = W.bst ? 2 : 1; ctx.save(); ctx.lineCap = 'round'; for (let q = 0; q < 26; q++) { const ph = ((q * 0.381 + now2 / (520 / bi)) % 1), a = q * 2.399 + 0.5, r0 = mn2 * (0.34 + 0.42 * ph), r1 = r0 + mn2 * (0.02 + 0.1 * ph * bi); ctx.strokeStyle = 'rgba(255,255,255,' + (0.05 + 0.2 * ph * (bi > 1 ? 1.4 : 1)) + ')'; ctx.lineWidth = S(2 + 2.2 * ph); ctx.beginPath(); ctx.moveTo(W0 / 2 + Math.cos(a) * r0 * 1.25, H * 0.52 + Math.sin(a) * r0 * 0.8); ctx.lineTo(W0 / 2 + Math.cos(a) * r1 * 1.25, H * 0.52 + Math.sin(a) * r1 * 0.8); ctx.stroke(); } ctx.restore(); }
       if (W.boostT > 0 || W.bst) { ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,' + (0.3 * (W.bst ? 1 : Math.min(1, W.boostT))) + ')'; ctx.lineWidth = S(3); const cx0 = W0 / 2, cy0 = H * 0.55, mn = Math.min(W0, H); for (let q = 0; q < 30; q++) { const a = q / 30 * 6.283, r0 = mn * (0.36 + 0.1 * ((q * 7) % 5) / 5), r1 = r0 + mn * 0.24; ctx.beginPath(); ctx.moveTo(cx0 + Math.cos(a) * r0, cy0 + Math.sin(a) * r0 * 0.8); ctx.lineTo(cx0 + Math.cos(a) * r1, cy0 + Math.sin(a) * r1 * 0.8); ctx.stroke(); } ctx.restore(); }   // lignes de vitesse du turbo

@@ -94,3 +94,9 @@ Sonnet 5.5 effort MOYEN (faible pour les retouches mecaniques, eleve seulement p
 - Mur invisible (W+34 lateral, +75 hauteur) avec onde ; mer/ciel plus clairs.
 - Cartes ~2400-2700 m (1 min 10), sections `vide` (W=0) entre iles, panneaux generes par les obstacles (`signs`), decor aerien (`skyDecor` : montgolfieres, dirigeables, ilots), arrivee : banderole ARRIVEE, pylones, fanions.
 - A faire / non verifie : UI (palette unique, police), menu, calibrage reel de la difficulte, reflets.
+
+## v386 (bloc 1 + perf rapide)
+- Pilotage : plus de souris ; ESPACE = avancer (relache = la fusee ralentit et s'arrete), fleches = diriger dans le plan de la piste (etat W.pc = {d, ox, h, vf, vl, vy}), MAJ = boost ; tactile : doigt = ancre relative, 2 doigts = boost, gaz auto. Plus de cap libre.
+- Collisions au NEZ (2,6 m devant le centre) dans le repere de la piste : de face = retenu sans recul, de cote = glisse ; obstacle mobile = vitesse x0.3 puis 0,5 s de traversee (W.ghostT). Chute (vide / sous le tablier) -> retour au debut de l'obstacle ou de la section (respawn), +1,2 s.
+- Camera 13 m derriere, plus haute, FOV 1.02-1.12 ; fusee x1.27 avec contour jaune ; marqueur arrondi plus gros et plus haut.
+- Perf : rails (595k triangles !) -> 8 facettes + troncons de 160 m visibles par distance ; materiaux partages (mat/matS) ; ombres dynamiques 170 m et 1 image sur 2.
