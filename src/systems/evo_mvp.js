@@ -623,7 +623,7 @@ const CUP = SHAPES.map((s) => s.name);
     const rk = g.rocket; if (rk) { rk.active = false; rk.mesh.visible = false; rk.light.intensity = 0; rk.rope.visible = false; }
     E.endTumble(g); g.evoReport = false; g.evoLast = null; if (g.rig) g.rig._mv = null; g.goHome({});
   };
-  const goNext = (g) => { if (RACE) { const L = R.last; if (L && L.qual && !L.final) R.round++; else newSession(); restart(g); return; } LV = LV >= NLV ? 1 : LV + 1; lsSet('cc.mvp.lv.' + M, LV); restart(g); };
+  const goNext = (g) => { if (RACE) { const L = R.last, more = !!(L && L.qual && !L.final); if (more) R.round++; else newSession(); restart(g); if (more) setTimeout(() => startRun(g), 350); return; } LV = LV >= NLV ? 1 : LV + 1; lsSet('cc.mvp.lv.' + M, LV); restart(g); };
   E.finishRun = (g) => { g.evoFinish = { t0: performance.now(), hold: true }; try { const P = g.rocket.pos.clone(); g.effects.ring(P, tf.clone(), 1, 26, 0.9, '#ffd23a', 0.9); g.effects.ring(P, tf.clone(), 1, 40, 1.2, '#ffffff', 0.7); g.effects.flash(P, '#fff2c0', 10, 70, 0.6, '#ffb030'); } catch (e) { /* effets */ } try { g.audio.play('finish'); g.flash = 0.8; g.flashColor = '#fff2c0'; g.hitStop = 0.25; g.hitScale = 0.3; g.rig.shake = 0.6; g.audio.setZone('evoDawn', false); } catch (e) { /* effets */ } };
   const _tk = E.tick;
   E.tick = (g, dt) => {
@@ -719,7 +719,42 @@ const CUP = SHAPES.map((s) => s.name);
   };
 
   // ---------------------------------------------------------------- accueil : le hangar, START au milieu, une fleche de chaque cote
-  const startRun = (g) => { if (g.state === 'MENU' && !g.evoAim && !g.evoAnim) E.start(g); };
+
+  // ---------------------------------------------------------------- affiches des cartes (une image par carte) + enchainement sans menu : roulette de cartes, puis 3-2-1-GO sur la plateforme
+  const MAP_NAMES = { arch: 'ARCHIPEL', range: "TERRAIN D'ESSAI", jungle: 'JUNGLE', ice: 'GLACE', desert: 'DESERT', factory: 'USINE' };
+  const POSTERS = {};
+  const mapPoster = (map) => POSTERS[map] || (POSTERS[map] = (() => {
+    const cv = document.createElement('canvas'); cv.width = 320; cv.height = 200; const c = cv.getContext('2d');
+    const sk = { arch: ['#62b8ff', '#ffd9f0'], range: ['#62b8ff', '#e4f5ff'], jungle: ['#62b8ff', '#d8f5c8'], ice: ['#8fd0ff', '#f4fbff'], desert: ['#ff9a5a', '#ffe6a8'], factory: ['#7ea0c8', '#dfe6ee'] }[map] || ['#62b8ff', '#e4f5ff'];
+    const gr = c.createLinearGradient(0, 0, 0, 200); gr.addColorStop(0, sk[0]); gr.addColorStop(1, sk[1]); c.fillStyle = gr; c.fillRect(0, 0, 320, 200);
+    const ell = (x, y, rx, ry, col) => { c.fillStyle = col; c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, 6.283); c.fill(); }, tri = (x, y, w, h, col) => { c.fillStyle = col; c.beginPath(); c.moveTo(x - w / 2, y); c.lineTo(x + w / 2, y); c.lineTo(x, y - h); c.closePath(); c.fill(); }, rect = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
+    for (const [x, y, r] of [[60, 40, 22], [90, 46, 16], [250, 30, 20], [280, 38, 14]]) ell(x, y, r * 1.6, r * 0.7, 'rgba(255,255,255,0.8)');
+    rect(0, 150, 320, 50, '#3fc6dc'); ell(160, 156, 150, 26, ({ arch: '#ff6fae', range: '#4b5059', jungle: '#8a6a40', ice: '#e8f6ff', desert: '#e9c47e', factory: '#8b95a3' })[map] || '#ff6fae');
+    c.fillStyle = 'rgba(255,255,255,0.35)'; c.beginPath(); c.moveTo(130, 190); c.lineTo(190, 190); c.lineTo(172, 132); c.lineTo(148, 132); c.closePath(); c.fill();
+    if (map === 'arch') { for (const [x, y, col] of [[70, 86, '#ff4f9a'], [240, 74, '#2f8cff']]) { ell(x, y, 20, 24, col); rect(x - 5, y + 24, 10, 7, '#8a6238'); } for (let k = 0; k < 6; k++) { ell(30 + k * 52, 150, 12, 6, k % 2 ? '#ffffff' : '#ff4f9a'); } }
+    else if (map === 'range') { rect(20, 104, 74, 38, '#7f8666'); rect(20, 104, 74, 6, '#d9a21b'); rect(40, 120, 34, 22, '#2f3a24'); ell(250, 70, 42, 14, '#a9b0aa'); rect(240, 82, 20, 6, '#4a5160'); }
+    else if (map === 'jungle') { for (const [x, h] of [[40, 40], [86, 30], [240, 44], [284, 32]]) { rect(x - 3, 150 - h, 7, h, '#6b4a2a'); ell(x, 150 - h - 6, 20, 16, '#3f9a44'); ell(x + 8, 150 - h - 12, 12, 10, '#58b04a'); } ell(160, 60, 26, 7, '#8a6a4a'); ell(160, 54, 26, 6, '#5f9e3c'); }
+    else if (map === 'ice') { for (const x of [36, 80, 250, 290]) { tri(x, 150, 34, 30, '#3b8fae'); tri(x, 134, 26, 24, '#2f7a96'); tri(x, 124, 14, 12, '#ffffff'); } for (const x of [100, 150, 200]) tri(x, 40, 16, -30, '#cdeeff'); }
+    else if (map === 'desert') { ell(260, 46, 22, 22, '#fff2c4'); tri(70, 150, 90, 70, '#d9a55b'); tri(70, 150, 40, 70, '#e8c27a'); rect(250, 112, 8, 38, '#3f9a5a'); rect(238, 124, 24, 6, '#3f9a5a'); rect(238, 116, 6, 12, '#3f9a5a'); }
+    else if (map === 'factory') { rect(30, 92, 22, 56, '#7c8696'); rect(30, 100, 22, 7, '#f0b429'); rect(66, 106, 20, 42, '#6f7a88'); rect(66, 112, 20, 6, '#f0b429'); for (const [x, y, r] of [[40, 80, 12], [48, 66, 16], [44, 50, 12]]) ell(x, y, r, r * 0.8, 'rgba(240,243,248,0.85)'); c.strokeStyle = '#f0b429'; c.lineWidth = 7; c.beginPath(); c.arc(250, 92, 30, 0, 6.283); c.stroke(); for (let k = 0; k < 4; k++) { const a = k * 0.785; c.beginPath(); c.moveTo(250 + Math.cos(a) * 30, 92 + Math.sin(a) * 30); c.lineTo(250 - Math.cos(a) * 30, 92 - Math.sin(a) * 30); c.stroke(); } }
+    c.lineWidth = 8; c.strokeStyle = 'rgba(255,255,255,0.0)'; return cv; })());
+  E.mapPoster = mapPoster; E.mapName = (m) => MAP_NAMES[m || 'arch'] || 'CARTE';
+  let _cd = null;
+  const beginCd = (g) => {   // roulette de cartes (image + nom), puis 3-2-1-GO ; la fusee attend sur la plateforme, pas de retour au menu
+    if (_cd) return; const target = cur().map || 'arch', order = Object.keys(MAP_NAMES).filter((m) => m !== target); for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = order[i]; order[i] = order[j]; order[j] = t; } order.push(target);
+    const el = document.createElement('div'); el.style.cssText = "position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(8,10,28,0.74);color:#fff;text-align:center;font-family:'Lilita One','Russo One',Arial,sans-serif;user-select:none";
+    el.innerHTML = '<div id="cdTop" style="font-size:5vh;color:#ffd23a;letter-spacing:2px"></div><canvas id="cdPoster" width="320" height="200" style="width:min(70vw,64vh);border:5px solid #fff;border-radius:20px;box-shadow:0 10px 40px rgba(0,0,0,.5);margin:1.5vh 0"></canvas><div id="cdName" style="font-size:8vh;text-shadow:0 4px 0 #0b0d12"></div><div id="cdNum" style="font-size:20vh;color:#ffd23a;text-shadow:0 6px 0 #0b0d12;height:1.1em;line-height:1.1"></div><div id="cdSkip" style="position:absolute;right:3vw;bottom:3vh;font-size:min(4vw,22px);opacity:.8;border:3px solid #fff;border-radius:14px;padding:6px 16px;cursor:pointer">PASSER</div>';
+    document.body.appendChild(el); const $ = (id) => el.querySelector('#' + id), cvp = $('cdPoster').getContext('2d'); let t0 = performance.now(), went = false, last = -1;
+    _cd = { el }; $('cdSkip').onclick = () => { t0 = Math.min(t0, performance.now() - 3000); };
+    $('cdTop').textContent = 'MANCHE ' + R.round + ' / 3';
+    const tick = () => { if (!_cd) return; const t = (performance.now() - t0) / 1000;
+      if (t < 2.0) { const iv = 0.09 + 0.2 * (t / 2) * (t / 2), idx = Math.min(order.length - 1, Math.floor(t / iv)) % order.length, m = t > 1.9 ? target : order[idx]; cvp.drawImage(mapPoster(m), 0, 0); $('cdName').textContent = MAP_NAMES[m]; $('cdNum').textContent = ''; }
+      else if (t < 3.0) { cvp.drawImage(mapPoster(target), 0, 0); $('cdName').textContent = MAP_NAMES[target]; $('cdName').style.color = '#ffd23a'; $('cdNum').textContent = ''; }
+      else { cvp.drawImage(mapPoster(target), 0, 0); const n = t < 4 ? 3 : t < 5 ? 2 : t < 6 ? 1 : 0, ph = (t - 3) % 1; $('cdNum').textContent = n ? String(n) : 'GO !'; $('cdNum').style.transform = 'scale(' + (1.25 - 0.25 * Math.min(1, ph * 3)) + ')'; if (n !== last) { last = n; try { g.audio.play(n ? 'padArm' : 'target'); } catch (e) { /* son */ } }
+        if (t >= 6 && !went) { went = true; g._cdGo = true; startRun(g); } }
+      if (t > 6.5) { try { el.remove(); } catch (e) { /* ignore */ } _cd = null; return; } requestAnimationFrame(tick); };
+    requestAnimationFrame(tick); };
+  const startRun = (g) => { if (!(g.state === 'MENU' && !g.evoAim && !g.evoAnim)) return; if (RACE && !g._cdGo && !/[?&](ap|nocd)=1/.test(location.search)) { beginCd(g); return; } g._cdGo = false; E.start(g); };
   Home.drawEvo = function (ui, ctx, g, W0, H) {
     const F = Home.evoK.frame(ui, ctx, W0, H), { Y, cw, cx } = F, S = UI.S;
     const bx0 = cx - cw / 2 + S(60), by0 = Y(0.07);   // niveau

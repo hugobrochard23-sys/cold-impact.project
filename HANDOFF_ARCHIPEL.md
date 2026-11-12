@@ -111,3 +111,6 @@ Sonnet 5.5 effort MOYEN (faible pour les retouches mecaniques, eleve seulement p
 - Cartes : ARCHIPEL, TERRAIN D'ESSAI, JUNGLE, GLACE, DESERT, USINE (`SEC_*`, table `MT` = identite visuelle par carte : bord, decals, barrieres, couleurs de structures, tuyaux, arrivee).
 - Obstacles propres : GLACE = murs coulissants a trou, stalactites (cercle rouge), cristaux, glissade (derapage `I.slick`) ; DESERT = marches de pyramide, pistons de temple, tempete de sable ; USINE = engrenages geants, jets de vapeur, convoyeur lateral, piles de caisses. Chaque carte a un `conduit` / tuyaux sur les vides.
 - Une coupe = 3 cartes DIFFERENTES tirees au hasard parmi les 6 (`READY` dans newSession).
+
+## v389 (bloc 5 : enchainement des manches)
+- Affiches de cartes generees (`E.mapPoster`), affichees dans la carte de coupe du menu ; roulette de cartes + compte a rebours 3-2-1-GO en DOM (`beginCd`) avant chaque manche (sauf `?ap=1`/`?nocd=1`) ; apres une manche gagnee on enchaine sans repasser par le menu (`goNext` -> startRun).
