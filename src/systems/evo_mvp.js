@@ -672,14 +672,13 @@ const CUP = SHAPES.map((s) => s.name);
     }
     if (RACE && W) {
       const rd = R.round - 1, fn = E.shortFin || 470, tNow = Math.max(0, g.flightTime);
-      { const x0 = S(24), y0 = S(22), w0 = S(440), h0 = S(104), l1 = "COURSE VERS L'ARRIVEE", l2 = 'MANCHE ' + R.round + '/3   ' + ord(R.live) + ' / ' + R.field[rd] + '   ' + Math.max(0, g.flightTime).toFixed(1) + ' S'; UI.panel(ctx, x0, y0, w0, h0, { c: S(24) }); UI.artImg(ctx, 'pin', x0 + S(54), y0 + h0 / 2, S(78));
-        UI.outlined(ctx, l1, x0 + S(104), y0 + S(36), UI.fit(ctx, l1, w0 - S(128), S(36)), '#F0EDE4', null, { align: 'left' });
-        UI.outlined(ctx, l2, x0 + S(104), y0 + S(74), UI.fit(ctx, 'MANCHE 3/3   32E / 32   199.9 S', w0 - S(128), S(30)), '#E4B84D', null, { align: 'left' }); }
+      { const pl = R.live, ps = String(pl), keepN = R.keep[rd], col = pl === 1 ? '#E4B84D' : pl <= keepN ? '#2ECC71' : (rd === 2 && pl <= 3) ? '#FF8C00' : '#FF2B2B', x0 = S(40), y0 = S(92), px = S(132), sf = (pl === 1 ? 'ER' : 'E') + '  / ' + R.field[rd];   // ta place : chiffre colore selon le rang (or, vert = qualifie, rouge = elimine), le reste en blanc, contour noir et relief
+        UI.text(ctx, ps, x0, y0, px, col, { align: 'left', outline: true }); UI.text(ctx, sf, x0 + UI.tw(ctx, ps, px) + S(10), y0 + S(26), S(60), '#FFFFFF', { align: 'left', outline: true }); }
       // qualifies : combien de pilotes ont deja franchi la ligne
       const ISL = !!(E.course && E.course.isle);
       { const qn = Math.min(R.keep[rd], W.bots.filter((b) => b.fin !== undefined && b.fin <= tNow).length), w1 = S(310), h1 = S(146), x1 = W0 - S(24) - w1, y1 = S(22), full = qn >= R.keep[rd], nseg = Math.min(8, R.keep[rd]);
-        UI.panel(ctx, x1, y1, w1, h1, { c: S(24) }); UI.outlined(ctx, rd === 2 ? 'VICTOIRE' : 'QUALIFIES', x1 + w1 / 2, y1 + S(28), S(28), '#8FA0B0'); UI.outlined(ctx, qn + ' / ' + R.keep[rd], x1 + w1 / 2, y1 + S(70), S(56), full ? '#FF2B2B' : '#F0EDE4');
-        UI.segments(ctx, x1 + S(26), y1 + h1 - S(42), w1 - S(52), S(26), Math.round(qn / R.keep[rd] * nseg), nseg, { on: full ? '#FF2B2B' : '#E4B84D' });
+        UI.panel(ctx, x1, y1, w1, h1, { c: S(24), fill: full ? '#FF2B2B' : '#2ECC71' }); UI.outlined(ctx, rd === 2 ? 'VICTOIRE' : 'QUALIFIES', x1 + w1 / 2, y1 + S(28), S(28), '#FFFFFF'); UI.outlined(ctx, qn + ' / ' + R.keep[rd], x1 + w1 / 2, y1 + S(70), S(56), '#FFFFFF');
+        UI.segments(ctx, x1 + S(26), y1 + h1 - S(42), w1 - S(52), S(26), Math.round(qn / R.keep[rd] * nseg), nseg, { on: '#FFFFFF', off: full ? '#9a1414' : '#1F9A52' });
         const nowF = performance.now(), fd = (W.feed || []).filter((q) => nowF - q.t0 < 4200).slice(-4); fd.forEach((q, i2) => { const a = U.clamp((4200 - (nowF - q.t0)) / 700, 0, 1) * U.clamp((nowF - q.t0) / 150, 0, 1); ctx.save(); ctx.globalAlpha = a; UI.text(ctx, q.name, W0 - S(30), y1 + h1 + S(40) + i2 * S(40), S(30), '#F0EDE4', { align: 'right' }); ctx.restore(); }); }
       // morts : un crane et le nombre de pilotes que tu as fait exploser ; pieces
       if (R.kills > 0) UI.text(ctx, 'K.O.  ' + R.kills, S(34), H * 0.19, S(52), '#F0EDE4', { align: 'left', outline: true });
@@ -703,10 +702,9 @@ const CUP = SHAPES.map((s) => s.name);
       for (const b of named) {
         tmpHud.copy(b.m.position); CC.Curve.apply(tmpHud, cam).project(cam); if (tmpHud.z > 1 || tmpHud.z < -1 || Math.abs(tmpHud.x) > 1.15 || Math.abs(tmpHud.y) > 1.15) continue;
         const sx = (tmpHud.x * 0.5 + 0.5) * W0, sy = (-tmpHud.y * 0.5 + 0.5) * H, k = U.clamp(46 / Math.max(10, cpos.distanceTo(b.m.position)), 0.5, 1.15);
-        UI.text(ctx, b.name, sx, sy - S(92) * k, S(34) * k, b === W.lead ? '#E4B84D' : '#F0EDE4', {});
-        if (b === W.lead) UI.text(ctx, '1ER', sx, sy - S(142) * k, S(36) * k, '#E4B84D', {});
+        UI.text(ctx, b.name, sx, sy - S(92) * k, S(34) * k, '#F0EDE4', {});
       }
-      if (W.lead && !(W.lead.m && W.lead.m.visible)) {   // le premier est loin devant : une fleche au bord de l'ecran avec l'ecart
+      if (false && W.lead) {   // le premier est loin devant : une fleche au bord de l'ecran avec l'ecart
         const T = run.T, L0 = W.lead; lanePos(T, L0.d, L0.off, L0.dy, tmpHud); CC.Curve.apply(tmpHud, cam).project(cam);
         let ex = tmpHud.x, ey = tmpHud.y; if (tmpHud.z > 1) { ex = -ex; ey = -ey; } const m = Math.max(Math.abs(ex), Math.abs(ey), 1e-3), px = U.clamp(ex / m * 0.86, -0.86, 0.86), py = U.clamp(ey / m * 0.78, -0.78, 0.78), sx = (px * 0.5 + 0.5) * W0, sy = (-py * 0.5 + 0.5) * H;
         UI.text(ctx, '1ER  ' + Math.max(1, Math.round(L0.d - run.dist)) + ' M', sx, sy + (py > 0 ? -S(52) : S(52)), S(36), '#E4B84D', {});
@@ -748,24 +746,39 @@ const CUP = SHAPES.map((s) => s.name);
   E.mapPoster = mapPoster; E.mapName = (m) => MAP_NAMES[m || 'arch'] || 'CARTE';
   let _cd = null;
   const pickCourse = (m) => { const L = COURSES.filter((c) => c.isle && (c.map || 'arch') === m); return L[Math.floor(Math.random() * L.length)] || L[0]; };
-  const beginCd = (g) => {   // avant chaque manche : roulette de cartes (photos), fleches pour choisir, ALEATOIRE, LANCER ; ensuite seulement 3-2-1-GO
-    if (_cd) return; const keys = Object.keys(MAP_NAMES), target = cur().map || 'arch'; let sel = target, busy = true, shown = null, gone = false;
-    const el = document.createElement('div'); el.style.cssText = "position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(rgba(10,11,14,.82),rgba(10,11,14,.62) 50%,rgba(10,11,14,.9));color:#F0EDE4;text-align:center;font-family:'Rajdhani','Barlow Condensed','Arial Narrow',sans-serif;font-weight:700;letter-spacing:.02em;line-height:1;user-select:none;opacity:0;transition:opacity .25s";
-    if (!document.getElementById('cdStyle')) { const st = document.createElement('style'); st.id = 'cdStyle'; st.textContent = ".cdb{cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:.7vh;padding:1.4vh 2.6vw 1.5vh;margin-bottom:.9vh;font-size:5vh;color:#fff;background:#1E90FF;box-shadow:0 .9vh 0 #1769C2}.cdb:active{transform:translateY(.5vh);box-shadow:0 .4vh 0 #1769C2}.cdg{background:#2ECC71;box-shadow:0 1.1vh 0 #1F9A52}.cdg:active{box-shadow:0 .5vh 0 #1F9A52}.cdt{text-shadow:0 .5vh 0 rgba(8,9,12,.95)}"; document.head.appendChild(st); }
-    const btn = (id, txt, css, cls) => '<div id="' + id + '" class="cdb ' + (cls || '') + '" style="' + (css || '') + '">' + txt + '</div>';
-    el.innerHTML = '<div id="cdTop" style="font-size:4vh;color:#F0EDE4;background:#26394B;border-radius:.9vh;box-shadow:0 .5vh 0 rgba(8,12,18,.32);padding:1vh 2.6vw 1.1vh;margin-bottom:2.2vh"></div><div style="display:flex;align-items:center;gap:2vw">' + btn('cdPrev', '&lt;', 'padding:2vh 1.6vw 2.2vh;font-size:6vh') + '<div id="cdView" style="position:relative;width:min(62vw,66vh);aspect-ratio:1.6;overflow:hidden;border-radius:1.4vh;box-shadow:0 .8vh 0 rgba(8,12,18,.32);background:#26394B"><canvas id="cdA" width="640" height="400" style="position:absolute;inset:0;width:100%;height:100%"></canvas><canvas id="cdB" width="640" height="400" style="position:absolute;inset:0;width:100%;height:100%;transform:translateX(105%)"></canvas><div id="cdNum" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26vh;color:#E4B84D;text-shadow:0 1.2vh 0 rgba(8,9,12,.95);background:rgba(10,11,14,.55);opacity:0;pointer-events:none"></div></div>' + btn('cdNext', '&gt;', 'padding:2vh 1.6vw 2.2vh;font-size:6vh') + '</div><div id="cdName" class="cdt" style="font-size:8.6vh;margin:2vh 0 1.8vh"></div><div id="cdBtns" style="display:flex;gap:2vw;align-items:center">' + btn('cdRand', 'ALÉATOIRE') + btn('cdGo', 'LANCER', 'font-size:7vh;padding:1.6vh 5vw 1.8vh', 'cdg') + '</div>';
-    document.body.appendChild(el); requestAnimationFrame(() => { el.style.opacity = '1'; }); const $ = (id) => el.querySelector('#' + id); let A = $('cdA'), B = $('cdB'); _cd = { el };
-    $('cdTop').textContent = 'MANCHE ' + R.round + ' / 3';
-    const paint = (cv, m) => { cv.getContext('2d').drawImage(mapPoster(m), 0, 0); };
-    const show = (m, dir, fast) => { const lbl = MAP_NAMES[m]; $('cdName').textContent = lbl; if (shown === null) { paint(A, m); shown = m; return; } if (shown === m) return; const t = fast ? 0.12 : 0.32; paint(B, m); B.style.transition = 'none'; A.style.transition = 'none'; B.style.transform = 'translateX(' + (dir * 105) + '%)'; A.style.transform = 'translateX(0)'; void B.offsetWidth; B.style.transition = 'transform ' + t + 's cubic-bezier(.2,.8,.2,1)'; A.style.transition = 'transform ' + t + 's cubic-bezier(.2,.8,.2,1)'; B.style.transform = 'translateX(0)'; A.style.transform = 'translateX(' + (-dir * 105) + '%)'; const t0 = A; A = B; B = t0; shown = m; };
-    const apply = (m) => { sel = m; R.courses[R.round - 1] = pickCourse(m); };
-    const step = (dir) => { if (busy) return; const i = keys.indexOf(sel), m = keys[(i + dir + keys.length) % keys.length]; apply(m); show(m, dir, false); try { g.audio.play('padArm'); } catch (e) { /* son */ } };
-    $('cdPrev').onclick = () => step(-1); $('cdNext').onclick = () => step(1);
-    $('cdRand').onclick = () => { if (busy) return; busy = true; const order = keys.filter((m) => m !== sel).sort(() => Math.random() - 0.5), fin = order.pop(); let k = 0; const tick = () => { const m = k < order.length ? order[k] : fin; show(m, 1, true); k++; if (k <= order.length) setTimeout(tick, 110 + k * 55); else { apply(fin); busy = false; } }; tick(); };
-    const kb = (e) => { if (!_cd || gone) return; if (e.code === 'ArrowLeft' || e.code === 'KeyA') step(-1); else if (e.code === 'ArrowRight' || e.code === 'KeyD') step(1); else if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); $('cdGo').click(); } }; window.addEventListener('keydown', kb);
-    $('cdGo').onclick = () => { if (busy || gone) return; busy = true; gone = true; $('cdBtns').style.visibility = 'hidden'; $('cdPrev').style.visibility = $('cdNext').style.visibility = 'hidden'; const num = $('cdNum'); num.style.opacity = '1'; let n = 3; const tickN = () => { if (n > 0) { num.textContent = String(n); num.style.transform = 'scale(1.3)'; num.style.transition = 'none'; void num.offsetWidth; num.style.transition = 'transform .6s'; num.style.transform = 'scale(1)'; try { g.audio.play('padArm'); } catch (e) { /* son */ } n--; setTimeout(tickN, 1000); } else { num.textContent = 'GO !'; try { g.audio.play('target'); } catch (e) { /* son */ } el.style.transition = 'opacity .3s'; setTimeout(() => { el.style.opacity = '0'; }, 250); g._cdGo = true; setTimeout(() => startRun(g), 120); setTimeout(() => { window.removeEventListener('keydown', kb); try { el.remove(); } catch (e) { /* ignore */ } _cd = null; }, 700); } }; tickN(); };
-    // roulette d'arrivee : les photos defilent de plus en plus lentement jusqu'a la carte tiree
-    { const order = keys.filter((m) => m !== target).sort(() => Math.random() - 0.5); order.push(target); show(order[0], 1, true); let k = 1; const tick = () => { if (k < order.length) { show(order[k], 1, false); k++; setTimeout(tick, 120 + k * 70); } else { busy = false; } }; setTimeout(tick, 250); }
+  const raceCount = (g) => {   // 3-2-1-GO une fois arrive sur la course : le temps du jeu est fige jusqu'au GO
+    const d = document.createElement('div'); d.style.cssText = "position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;pointer-events:none;font-family:'Rajdhani','Barlow Condensed','Arial Narrow',sans-serif;font-weight:700;font-size:32vh;line-height:1;color:#E4B84D;text-shadow:0 1.4vh 0 rgba(8,9,12,.95)"; document.body.appendChild(d);
+    let tries = 0; const snd = (n) => { try { g.audio.play(n); } catch (e) { /* son */ } };
+    const wait = () => {
+      if (g.state === 'FLIGHT' && g.endlessRun) { let n = 3; g.hitStop = 3.4; g.hitScale = 0.0005;
+        const tk = () => { if (g.state !== 'FLIGHT') { d.remove(); return; } if (n > 0) { d.textContent = String(n); try { d.animate([{ transform: 'scale(1.4)' }, { transform: 'scale(1)' }], { duration: 520, easing: 'ease-out' }); } catch (e) { /* ignore */ } snd('padArm'); g.hitStop = 1.3; g.hitScale = 0.0005; n--; setTimeout(tk, 1000); } else { d.textContent = 'GO !'; g.hitStop = 0; g.hitScale = 0; snd('target'); setTimeout(() => d.remove(), 650); } }; tk(); }
+      else if (tries++ < 240) setTimeout(wait, 50); else d.remove(); };
+    wait();
+  };
+  const beginCd = (g) => {   // avant chaque manche : la roulette des cartes (aucun choix) ; elle part vite, ralentit longuement, la carte tiree « s'enfonce », puis on arrive sur la course et le 3-2-1 demarre
+    if (_cd) return; const keys = Object.keys(MAP_NAMES), target = cur().map || 'arch', VW = window.innerWidth, VH = window.innerHeight;
+    const cw = Math.round(Math.min(VW * 0.42, VH * 0.6)), gap = Math.round(cw * 0.08), pad = Math.round(cw * 0.035), rad = Math.round(cw * 0.04), ch = Math.round((cw - pad * 2) / 1.6 + pad * 2 + cw * 0.17);
+    const seq = []; for (let c = 0; c < 5; c++) for (const m of keys.slice().sort(() => Math.random() - 0.5)) seq.push(m);
+    const iT = seq.length - 3; seq[iT] = target; for (const j of [iT - 1, iT + 1]) if (seq[j] === target) seq[j] = keys[(keys.indexOf(target) + (j < iT ? 1 : 2)) % keys.length];
+    const el = document.createElement('div'); el.style.cssText = "position:fixed;inset:0;z-index:9999;overflow:hidden;color:#F0EDE4;text-align:center;font-family:'Rajdhani','Barlow Condensed','Arial Narrow',sans-serif;font-weight:700;letter-spacing:.02em;line-height:1;user-select:none;opacity:0;transition:opacity .25s";
+    const X = (i) => Math.round(VW / 2 - (i * (cw + gap) + cw / 2));
+    el.innerHTML = '<canvas id="cdBg" width="' + VW + '" height="' + VH + '" style="position:absolute;inset:0;width:100%;height:100%"></canvas>'
+      + '<div style="position:absolute;left:0;right:0;top:5vh;display:flex;flex-direction:column;align-items:center;gap:1.6vh"><div style="font-size:4vh;background:#26394B;border-radius:.9vh;box-shadow:0 .5vh 0 rgba(8,12,18,.32);padding:1vh 2.6vw 1.1vh">MANCHE ' + R.round + ' / 3</div><div style="font-size:7vh;text-shadow:0 .55vh 0 rgba(8,9,12,.95)">TIRAGE DE LA CARTE</div></div>'
+      + '<div id="cdStrip" style="position:absolute;left:0;top:54%;display:flex;gap:' + gap + 'px;transform:translate(' + X(1) + 'px,-50%);will-change:transform">' + seq.map((m) => '<div style="flex:0 0 ' + cw + 'px;height:' + ch + 'px;box-sizing:border-box;padding:' + pad + 'px;background:#26394B;border-radius:' + rad + 'px;box-shadow:0 ' + Math.round(cw * 0.025) + 'px 0 rgba(8,12,18,.32);display:flex;flex-direction:column"><canvas width="640" height="400" data-m="' + m + '" style="width:100%;aspect-ratio:1.6;border-radius:' + Math.round(cw * 0.025) + 'px;background:#1B2A38"></canvas><div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:' + Math.round(cw * 0.105) + 'px">' + MAP_NAMES[m] + '</div></div>').join('') + '</div>'
+      + '<img src="assets/ui/pin.png" style="position:absolute;left:50%;top:calc(54% - ' + Math.round(ch / 2) + 'px);height:11vh;transform:translate(-50%,-78%);filter:drop-shadow(0 .6vh 0 rgba(8,12,18,.4))">';
+    document.body.appendChild(el); requestAnimationFrame(() => { el.style.opacity = '1'; }); _cd = { el };
+    const bg = el.querySelector('#cdBg').getContext('2d'), strip = el.querySelector('#cdStrip'), cvs = [].slice.call(strip.querySelectorAll('canvas')); let alive = true;
+    const paintAll = () => { for (const c of cvs) c.getContext('2d').drawImage(mapPoster(c.getAttribute('data-m')), 0, 0); };
+    const loop = () => { if (!alive) return; try { if (Home.movingBg) Home.movingBg(bg, { offsetY: 0, fullH: VH }, VW, VH, 0); else { bg.fillStyle = '#1F66E8'; bg.fillRect(0, 0, VW, VH); } } catch (e) { /* fond */ } requestAnimationFrame(loop); };
+    paintAll(); loop(); const rp = setInterval(() => { if (!alive) { clearInterval(rp); return; } paintAll(); }, 350);
+    const DUR = 5200, snd = (n) => { try { g.audio.play(n); } catch (e) { /* son */ } };
+    setTimeout(() => { strip.style.transition = 'transform ' + DUR + 'ms cubic-bezier(.08,.72,.1,1)'; strip.style.transform = 'translate(' + X(iT) + 'px,-50%)'; }, 380);
+    { let tt = 0, k = 0; const tick = () => { if (!alive || tt > DUR - 200) return; snd('padArm'); k++; const dl = 55 + k * k * 1.15; tt += dl; setTimeout(tick, dl); }; setTimeout(tick, 400); }
+    setTimeout(() => {   // la carte tiree : elle s'enfonce comme un bouton qu'on presse, puis tout s'efface et on arrive sur la course
+      const card = strip.children[iT]; snd('target'); try { card.style.zIndex = '2'; card.animate([{ transform: 'scale(1)', filter: 'brightness(1)' }, { transform: 'scale(.9)', filter: 'brightness(.85)', offset: 0.35 }, { transform: 'scale(1.1)', filter: 'brightness(1.25)', offset: 0.7 }, { transform: 'scale(1.06)', filter: 'brightness(1)' }], { duration: 620, easing: 'ease-out', fill: 'forwards' }); } catch (e) { /* ignore */ }
+      setTimeout(() => { g._cdGo = true; startRun(g); raceCount(g); el.style.transition = 'opacity .35s'; el.style.opacity = '0'; }, 900);
+      setTimeout(() => { alive = false; try { el.remove(); } catch (e) { /* ignore */ } _cd = null; }, 1350);
+    }, 380 + DUR + 120);
   };
   const startRun = (g) => { if (!(g.state === 'MENU' && !g.evoAim && !g.evoAnim)) return; if (RACE && !g._cdGo && !/[?&](ap|nocd)=1/.test(location.search)) { beginCd(g); return; } g._cdGo = false; E.start(g); };
   Home.drawEvo = function (ui, ctx, g, W0, H) {

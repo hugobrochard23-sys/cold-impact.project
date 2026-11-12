@@ -16,6 +16,7 @@
   const thumb = (id) => { let c = TH[id]; if (c) return c; if (!CC.Hangar || thBudget <= 0) return null; thBudget--; c = document.createElement('canvas'); c.width = 256; c.height = 192; if (!CC.Hangar.preview(c.getContext('2d'), id, 0, 0, 256, 192, 0, 0.3)) return null; return (TH[id] = c); };
   E.skinThumb = (id) => { thBudget = Math.max(thBudget, 1); return thumb(id); };
 
+  const edgeF = (F, W, HH) => (W > HH * 1.1 ? Object.assign({}, F, { ox: 0, cw: W }) : F);
   // ---------- carte d'amelioration d'un pouvoir : la carte de l'ancien menu (ardoise, illustration, pastille de niveau, segments, bouton a tranche) ----------
   const POW = [['TURBO', 'la', 'bg_la'], ['MISSILE', 'rk', 'bg_rk'], ['BOUCLIER', 'cm', null]];
   function card(ui, ctx, g, SV, def, x, y, w, h, now) {
@@ -46,24 +47,24 @@
 
   // ---------- accueil ----------
   function drawHome(ui, ctx, g, W, H, F, SV, now) {
-    const { HH, Y, T0, cw, ox, cx } = F, RC = api.R;
-    K.topBar(ui, ctx, g, F, SV, E);
+    const { HH, Y, T0, cw, ox, cx } = F, RC = api.R, FE = edgeF(F, W, HH), eox = FE.ox, ecw = FE.cw;   // sur PC (ecran large) : monnaies, reglages, boutique et coffre vont aux bords de l'ecran
+    K.topBar(ui, ctx, g, FE, SV, E);
     { const sk = skinNow(), l1 = 'COSTUME', l2 = skinName(sk, PRO.skin()), bw = S(380), bh = S(104), bx = cx - bw / 2 + S(30), by = T0 + S(172) + (CC.safePx ? CC.safePx() : 0), bd = Math.max(2, S(4)), rd = S(12);   // la plaque : le costume porte ; un toucher ouvre les costumes
       rr0(ctx, bx - bd, by - bd, bw + bd * 2, bh + bd * 2, rd + bd); ctx.fillStyle = '#05080C'; ctx.fill(); rr0(ctx, bx, by, bw, bh, rd); ctx.fillStyle = '#26394B'; ctx.fill();
       ctx.save(); rr0(ctx, bx, by, bw, bh, rd); ctx.clip(); ctx.fillStyle = '#1B2A38'; ctx.fillRect(bx, by + bh - S(9), bw, S(9)); ctx.restore();
       ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowOffsetY = S(6); ctx.shadowOffsetX = S(3); ctx.shadowBlur = 0; UI.icon(ctx, 'missile_ogive', bx + S(6), by + bh / 2 - S(4), S(128)); ctx.restore();
       UI.outlined(ctx, l1, bx + bw * 0.56, by + bh * 0.33, UI.fit(ctx, l1, bw * 0.5, S(40)), '#F0EDE4'); UI.outlined(ctx, l2, bx + bw * 0.56, by + bh * 0.64, UI.fit(ctx, l2, bw * 0.5, S(36)), '#F0EDE4');
+      { const hs = S(92), bob = Math.sin(now / 260) * S(5); ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowOffsetY = S(5); ctx.shadowBlur = 0; UI.artImg(ctx, 'hand', bx + bw - S(8) + bob, by + bh + S(14) + bob, hs); ctx.restore(); }   // la petite main : elle montre la plaque du costume
       UI.tap(ui, bx, by, bw, bh, () => { M.tab = 'costumes'; M.page = 0; M.ask = null; }); }
-    const bs = S(128), lx = ox + S(36), ly = T0 + S(330);
+    const bs = S(128), lx = eox + S(36), ly = T0 + S(330);
     UI.shopStall(ctx, lx, ly - S(6), bs, now); UI.tap(ui, lx, ly, bs, bs, () => { ui.overlay = 'evoShop'; });
     { const y = ly + bs + S(28), nt = PRO.tickets(); ctx.save(); ctx.translate(lx + bs / 2, y + bs * 0.4); ctx.rotate(-0.2); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowOffsetY = S(4); UI.artImg(ctx, 'ticket', 0, 0, bs * 0.92); ctx.restore(); UI.outlined(ctx, String(nt), lx + bs / 2, y + bs * 0.92, bs * 0.3, UI.C.white, '#000000', { keep: true, ow: 0.22 }); }
-    { const cb = bs * 1.4, rx0 = ox + cw - S(36) - cb, y = ly, pct = (RC.round - 1) / 3, lab = 'MANCHE ' + RC.round + '/3';   // le coffre de la Coupe : il se remplit a chaque manche passee
+    { const cb = bs * 1.4, rx0 = eox + ecw - S(36) - cb, y = ly, pct = (RC.round - 1) / 3, lab = 'MANCHE ' + RC.round + '/3';   // le coffre de la Coupe : il se remplit a chaque manche passee
       UI.chestFrame(ctx, rx0, y, cb, false, true, now, pct);
       UI.outlined(ctx, lab, rx0 + cb / 2, y + cb + S(36), UI.fit(ctx, lab, cb * 1.2, S(40)), '#F0EDE4');
       UI.tap(ui, rx0 - S(10), y, cb + S(20), cb + S(86), () => Home.toast(ui, 'GAGNE LA COUPE POUR OUVRIR LE COFFRE')); }
     { const k = 1 + 0.025 * Math.sin(now / 420), s = (CC.Touch && CC.Touch.active) ? 'APPUYEZ POUR LANCER' : 'CLIC POUR LANCER', yy = T0 + HH * 0.4; ctx.save(); ctx.translate(cx, yy); ctx.scale(k, k); ctx.translate(-cx, -yy);
-      { const px = UI.fit(ctx, s, cw * 0.7, S(58)); UI.outlined(ctx, s, cx, yy, px, 'rgba(0,0,0,0)', 'rgba(0,0,0,0.22)', { keep: true, ow: 0.2 }); UI.outlined(ctx, s, cx, yy, px, 'rgba(0,0,0,0)', 'rgba(0,0,0,0.4)', { keep: true, ow: 0.13 }); UI.outlined(ctx, s, cx, yy, px, '#F0EDE4', '#000000', { keep: true, ow: 0.07 }); } ctx.restore();
-      const sub = RC.field[RC.round - 1] + ' PILOTES  -  ' + [16, 8, 1][RC.round - 1] + (RC.round === 3 ? ' VAINQUEUR' : ' QUALIFIÉS'); UI.outlined(ctx, sub, cx, yy + S(66), UI.fit(ctx, sub, cw * 0.7, S(36)), '#E4B84D', '#000000', { keep: true, ow: 0.16 }); }
+      { const px = UI.fit(ctx, s, cw * 0.7, S(58)); UI.outlined(ctx, s, cx, yy, px, 'rgba(0,0,0,0)', 'rgba(0,0,0,0.22)', { keep: true, ow: 0.2 }); UI.outlined(ctx, s, cx, yy, px, 'rgba(0,0,0,0)', 'rgba(0,0,0,0.4)', { keep: true, ow: 0.13 }); UI.outlined(ctx, s, cx, yy, px, '#F0EDE4', '#000000', { keep: true, ow: 0.07 }); } ctx.restore(); }
     const gap = S(34), marg = S(40), cwd = (cw - marg * 2 - gap * 2) / 3, chh = ((cw - S(26) * 2 - S(14) * 2) / 3) / 0.703, cy0 = T0 + HH - chh - S(28);
     POW.forEach((def, i) => card(ui, ctx, g, SV, def, ox + marg + i * (cwd + gap), cy0, cwd, chh, now));
     if (Home.drawToast) Home.drawToast(ui, ctx, F.L);
@@ -73,7 +74,7 @@
   // ---------- costumes : l'ecran « apparences » de l'ancien menu (tuiles ardoise, nom en jaune quand il est porte) ----------
   function drawCostumes(ui, ctx, g, W, H, F, SV, now) {
     const { HH, Y, T0, cw, ox, cx } = F;
-    K.bgPattern(ctx, W, T0, HH); K.topBar(ui, ctx, g, F, SV, E, { close: () => { M.tab = 'jouer'; M.ask = null; } });
+    K.bgPattern(ctx, W, T0, HH); K.topBar(ui, ctx, g, edgeF(F, W, HH), SV, E, { close: () => { M.tab = 'jouer'; M.ask = null; } });
     UI.outlined(ctx, 'COSTUMES', cx, Y(0.16), S(100), T.white);
     const ids = PRO.SKIN_IDS, per = 8, pages = Math.max(1, Math.ceil(ids.length / per)); M.page = U.clamp(M.page, 0, pages - 1);
     const sel = PRO.skin() || 'stock', tw0 = (cw - S(108)) / 2, th = S(260), gx = ox + S(36), gy = Y(0.22);
