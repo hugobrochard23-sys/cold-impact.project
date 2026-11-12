@@ -85,12 +85,12 @@
     { n: 'arrivee', len: 200, turn: 0, slope: 0.05, W: 54, col: 'steel' },
   ];
   const CEIL = {   // hauteur maximale de vol au-dessus du tablier dans chaque section : on ne peut plus passer au-dessus des obstacles
-    arch: { bumpers: 14, marteaux: 11, pont: 22, ballons: 14, trampolines: 14, etages: 42, tourniquet: 22, gommes: 14, hublot: 22 },
-    range: { tir: 22, falaise: 22, montee: 22, canons: 16, base: 42, projecteurs: 22, pont: 14, grue: 22, silo: 22 },
-    ice: { patinoire: 22, stalactites: 22, glissade: 16, boule: 12, pontglace: 22, igloos: 42, lac: 18 },
-    desert: { dunes: 18, pistons: 22, chute: 22, temple: 42, canyon: 22, hypostyle: 14 },
-    factory: { engrenages: 22, presses: 22, convoyeur: 22, usine: 42, vapeur: 22, arcs: 22 },
-    jungle: { lianes: 10, rondins: 11, pont: 16, fleurs: 16, cascade: 20, canopee: 42, racines: 22, grotte: 14, totems: 22 } };
+    arch: { bumpers: 14, marteaux: 11, pont: 22, ballons: 14, trampolines: 14, etages: 62, tourniquet: 22, gommes: 14, hublot: 22 },
+    range: { tir: 22, falaise: 22, montee: 22, canons: 16, base: 62, projecteurs: 22, pont: 14, grue: 22, silo: 22 },
+    ice: { patinoire: 22, stalactites: 22, glissade: 16, boule: 12, pontglace: 22, igloos: 62, lac: 18 },
+    desert: { dunes: 18, pistons: 22, chute: 22, temple: 62, canyon: 22, hypostyle: 14 },
+    factory: { engrenages: 22, presses: 22, convoyeur: 22, usine: 62, vapeur: 22, arcs: 22 },
+    jungle: { lianes: 10, rondins: 11, pont: 16, fleurs: 16, cascade: 20, canopee: 62, racines: 22, grotte: 14, totems: 22 } };
   for (const [m, arr] of [['arch', SEC_ARCH], ['range', SEC_RANGE], ['jungle', SEC_JUNGLE], ['ice', SEC_ICE], ['desert', SEC_DESERT], ['factory', SEC_FACTORY]]) for (const q of arr) if (CEIL[m][q.n]) q.ceil = CEIL[m][q.n];
   let SEC = SEC_ARCH;
   E.jungleShape = SEC_JUNGLE.map((q, i) => [q.len, q.turn, q.slope, FLY, i === SEC_JUNGLE.length - 1 ? 24 : 17, TOP]);
@@ -309,7 +309,7 @@
   const THEME = { arch: ['#f6eaff', '#e3cffb', '#ffd8ec'], range: ['#8f959c', '#7e848b', '#a1a7ad'], jungle: ['#a8743f', '#8a5a2c', '#c08a52'] }, STONE = ['#a39a8a', '#948b7c', '#b2a999'], WOOD = '#7a5634', WOODD = '#5b3f25';
 
   // ---- OMBRES : une seule direction de lumiere dans le monde ; chaque objet projette UNE ombre (l'enveloppe de ses pieces), jamais assombrie deux fois (pochoir)
-  const LS = new T3.Vector3(0.42, 0, -0.3); E.isleLS = LS;   // decalage de l'ombre par metre de hauteur
+  const LS = new T3.Vector3(0.12, 0, -0.09); E.isleLS = LS;   // decalage de l'ombre par metre de hauteur
   const SHM = new T3.MeshBasicMaterial({ color: '#0d1b3a', transparent: true, opacity: 0.3, depthWrite: false, side: T3.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3, stencilWrite: true, stencilRef: 1, stencilFunc: T3.NotEqualStencilFunc, stencilFail: T3.KeepStencilOp, stencilZFail: T3.KeepStencilOp, stencilZPass: T3.ReplaceStencilOp });
   SHM.forceSinglePass = true;
   const hull = (pts) => { const p = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]); if (p.length < 3) return p; const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], up = [];
@@ -331,7 +331,7 @@
   const dynSh = (g, node) => {   // une piece qui bouge : son ombre est recalculee a chaque image
     const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(new Float32Array(3 * 3 * 30), 3)); const m = new T3.Mesh(geo, SHM); m.frustumCulled = false; m.renderOrder = 2; m.userData.noShadow = true; g.add(m); SH_DYN.push({ g, node, m, ls: null }); };
   let _dfr = 0;
-  const dynUpdate = (rp) => { _dfr++; for (let i = 0; i < SH_DYN.length; i++) { if ((i + _dfr) % 2) continue; const o = SH_DYN[i]; const nd = o.node, near = !rp || o.g.position.distanceToSquared(rp) < 170 * 170; if (!near || nd.visible === false) { o.m.visible = false; continue; } o.m.visible = true; if (!o.ls) o.ls = localLS(o.g); o.g.updateMatrixWorld(true);
+  const dynUpdate = (rp) => { _dfr++; for (let i = 0; i < SH_DYN.length; i++) { if ((i + _dfr) % 2) continue; const o = SH_DYN[i]; const nd = o.node, near = !rp || o.g.position.distanceToSquared(rp) < 170 * 170; if (!near || nd.visible === false || o.g.userData.noGround) { o.m.visible = false; continue; } o.m.visible = true; if (!o.ls) o.ls = localLS(o.g); o.g.updateMatrixWorld(true);
       let pp = meshShadowPts(o.g, nd, o.ls); { const cx = o.g.userData.clampX; if (cx) pp = pp.map((p) => [cx(p[0], p[1]), p[1]]); } const poly = hull(pp), arr = []; fan(poly, arr); const pos = o.m.geometry.attributes.position, n = Math.min(arr.length, pos.array.length); for (let i = 0; i < n; i++) pos.array[i] = arr[i]; for (let i = n; i < pos.array.length; i += 3) { pos.array[i] = arr[n - 3] || 0; pos.array[i + 1] = 0.14; pos.array[i + 2] = arr[n - 1] || 0; } pos.needsUpdate = true; } };
   const autoShadow = (g) => {   // l'ombre des pieces fixes d'un groupe, fusionnee en un seul objet
     const ls = localLS(g), out = [];
@@ -352,7 +352,7 @@
     const m = new T3.Mesh(geo, new T3.MeshLambertMaterial({ vertexColors: true, side: T3.DoubleSide, transparent: op < 1, opacity: op, depthWrite: op >= 1 })); m.frustumCulled = false; m.userData.noShadow = true; return m; };
   const obstacles = (T, C, grp) => {
     const I = C.isle, ups = [], hits = [], sx = I.sx, addHit = (d, f) => { f.d = d; hits.push(f); };
-    const signs = [], groups = [], mk = (d, lx) => { const L = lx * sx, bk = I.bank(d), p = T.at(d, L, bk * L), q = T.at(d + 3, L, bk * L), g = new T3.Group(); g.position.set(p[0], p[1], p[2]); g.lookAt(q[0], p[1], q[2]); g.rotateZ(-Math.atan(bk)); grp.add(g); groups.push(g); g.updateMatrixWorld(true);
+    const signs = [], groups = [], mk = (d, lx) => { const L = lx * sx, bk = I.bank(d), p = T.at(d, L, bk * L), q = T.at(d + 3, L, bk * L), g = new T3.Group(); g.position.set(p[0], p[1], p[2]); g.lookAt(q[0], p[1], q[2]); g.rotateZ(-Math.atan(bk)); grp.add(g); groups.push(g); g.userData.noGround = !(I.W(d) > 1); g.updateMatrixWorld(true);
       { const xw = new T3.Vector3(1, 0, 0).applyQuaternion(g.quaternion), a0 = T.at(d, 0, 0), a1 = T.at(d, 1, 0), sg = ((a1[0] - a0[0]) * xw.x + (a1[2] - a0[2]) * xw.z) >= 0 ? 1 : -1; g.userData.clampX = (x, z) => { const ll = L + sg * x, mx = Math.max(0, I.W(d + z) - 0.8), c = Math.max(-mx, Math.min(mx, ll)); return (c - L) * sg; }; }   // une ombre ne depasse jamais le bord du tablier
       return g; };
     const loc = (g, pos) => g.worldToLocal(_v.copy(pos));
@@ -685,10 +685,16 @@
       addHit(d, (pos) => { const l = loc(g, pos); for (const o of ks) if (Math.abs(l.z - (o.ph - 2.1) * 8) < 1.2 + RR && Math.hypot((l.x - o.x) / 3.5, (l.y - o.y) / 4.2) < 1 + RR / 3) return true; return false; });
     };
     // ---- deux etages : une dalle suspendue (le bas : sous la dalle ; le haut : au-dessus) et murs separateurs de voies doubles
-    const deckUp = (d0, len, hb, ht, colHex) => {
+    const deckUp = (d0, len, hb, ht, colHex, ramp) => {
       const pos = [], col = [], idx = [], cT = new T3.Color(colHex), cB = new T3.Color('#4a4f66'), cE = new T3.Color('#ffd23a'), P4 = (d, x, h) => T.at(d, x, I.bank(d) * x + h);
       const quad = (a, b, c, e, cc) => { const o = pos.length / 3; for (const p of [a, b, c, e]) pos.push(p[0], p[1], p[2]); for (let k = 0; k < 4; k++) col.push(cc.r, cc.g, cc.b); idx.push(o, o + 1, o + 2, o, o + 2, o + 3); };
       const sh = [];
+      if (ramp) { const dA = d0 - ramp, hA = 10, cW = new T3.Color('#ffffff'), tp = (d) => hA + (ht - hA) * (d - dA) / ramp, bt = (d) => tp(d) - (1.2 + (ht - hb - 1.2) * (d - dA) / ramp);   // la rampe : une levre basse qui monte jusqu'a l'etage, a chevrons jaunes et blancs
+        for (let d = dA; d < d0 - 0.01; d += 4) { const d1 = Math.min(d + 4, d0), w0 = I.W(d) - 1.0, w1 = I.W(d1) - 1.0; if (w0 < 6 || w1 < 6) continue; const cc = (((d - dA) / 4) | 0) % 2 ? cE : cW;
+          quad(P4(d, -w0, tp(d)), P4(d, w0, tp(d)), P4(d1, w1, tp(d1)), P4(d1, -w1, tp(d1)), cc); quad(P4(d, -w0, bt(d)), P4(d1, -w1, bt(d1)), P4(d1, w1, bt(d1)), P4(d, w0, bt(d)), cB);
+          quad(P4(d, -w0, bt(d)), P4(d1, -w1, bt(d1)), P4(d1, -w1, tp(d1)), P4(d, -w0, tp(d)), cE); quad(P4(d, w0, bt(d)), P4(d, w0, tp(d)), P4(d1, w1, tp(d1)), P4(d1, w1, bt(d1)), cE); }
+        { const w = I.W(dA) - 1.0; if (w > 6) quad(P4(dA, -w, bt(dA)), P4(dA, -w, tp(dA)), P4(dA, w, tp(dA)), P4(dA, w, bt(dA)), cE); }
+        (I.ramps || (I.ramps = [])).push({ d0: dA, d1: d0, h0: hA, h1: ht }); }
       for (let d = d0; d < d0 + len; d += 6) { const d1 = Math.min(d + 6, d0 + len), w0 = I.W(d) - 1.0, w1 = I.W(d1) - 1.0; if (w0 < 6 || w1 < 6) continue; const alt = ((d / 6) | 0) % 2 ? 0.96 : 1, ct = cT.clone().multiplyScalar(alt);
         quad(P4(d, -w0, ht), P4(d, w0, ht), P4(d1, w1, ht), P4(d1, -w1, ht), ct); quad(P4(d, -w0, hb), P4(d1, -w1, hb), P4(d1, w1, hb), P4(d, w0, hb), cB);
         quad(P4(d, -w0, hb), P4(d1, -w1, hb), P4(d1, -w1, ht), P4(d, -w0, ht), cE); quad(P4(d, w0, hb), P4(d, w0, ht), P4(d1, w1, ht), P4(d1, w1, hb), cE); I.boxes.push([d, d1, -w0, w0, hb, ht]);
@@ -698,9 +704,13 @@
       const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(col, 3)); geo.setIndex(idx); geo.computeVertexNormals(); const m = new T3.Mesh(geo, new T3.MeshLambertMaterial({ vertexColors: true, side: T3.DoubleSide })); m.frustumCulled = false; m.userData.noShadow = true; grp.add(m);
       { const sp = [], si = []; sh.forEach((qq, k) => { const o = k * 4; for (const p of qq) sp.push(p[0], p[1], p[2]); si.push(o, o + 1, o + 2, o, o + 2, o + 3); }); const sg2 = new T3.BufferGeometry(); sg2.setAttribute('position', new T3.Float32BufferAttribute(sp, 3)); sg2.setIndex(si); const sm = new T3.Mesh(sg2, SHM); sm.frustumCulled = false; sm.renderOrder = 2; sm.userData.noShadow = true; grp.add(sm); }
     };
-    const divider = (d0, d1, h, style) => {   // mur central : deux voies
-      I.boxes.push([d0, d1, -1.5, 1.5, 0, h]); const g = mk((d0 + d1) / 2, 0), c1 = style === 'wood' ? '#6b4a2a' : style === 'steel' ? '#8b95a3' : style === 'sand' ? '#e0b878' : '#ffd23a', c2 = style === 'wood' ? '#4e9a3a' : style === 'steel' ? '#f0b429' : style === 'sand' ? '#2fb8b0' : '#ff4f9a';
-      const w = bx(3, h, d1 - d0, c1); w.position.y = h / 2; g.add(w); const top = bx(3.6, 1.2, d1 - d0 + 0.4, c2); top.position.y = h + 0.3; g.add(top); for (let k = 0; k < Math.floor((d1 - d0) / 14); k++) { const st = bx(3.2, 3, 5, c2); st.position.set(0, h * 0.5, -(d1 - d0) / 2 + 8 + k * 14); g.add(st); }
+    const divider = (d0, d1, h, style) => {   // mur central : deux voies. Plinthe sombre, mur, main courante ronde, poteaux a boule ; un gros poteau annonce l'entree
+      I.boxes.push([d0, d1, -1.5, 1.5, 0, h]); const len = d1 - d0, g = mk((d0 + d1) / 2, 0), c1 = style === 'wood' ? '#6b4a2a' : style === 'steel' ? '#8b95a3' : style === 'sand' ? '#e0b878' : '#ffd23a', c2 = style === 'wood' ? '#4e9a3a' : style === 'steel' ? '#f0b429' : style === 'sand' ? '#2fb8b0' : '#ff4f9a', c3 = '#ffffff';
+      const base = bx(4.4, 1.4, len + 1, '#3a4152'); base.position.y = 0.7; g.add(base); const w = bx(2.2, h - 2.4, len, c1); w.position.y = 1.4 + (h - 2.4) / 2; g.add(w);
+      const rail = cy(1.5, 1.5, len, c2, 12); rail.rotation.x = Math.PI / 2; rail.position.y = h - 0.7; g.add(rail);
+      const n = Math.max(2, Math.round(len / 18)); for (let k = 0; k <= n; k++) { const z = -len / 2 + k * len / n, big = k === 0, r = big ? 2.7 : 1.9, hh = h + (big ? 4.5 : 1.4), ca = k % 2 ? c2 : c3, cb2 = k % 2 ? c3 : c2;
+        const po = cy(r, r * 1.08, hh, ca, 14); po.position.set(0, hh / 2, z); g.add(po); const cap = new T3.Mesh(new T3.SphereGeometry(r * 1.22, 14, 10), matS(cb2)); cap.position.set(0, hh + r * 0.45, z); g.add(cap);
+        for (let q = 0; q < (big ? 3 : 1); q++) { const rg = cy(r + 0.4, r + 0.4, 0.9, cb2, 14); rg.position.set(0, hh * (big ? 0.3 + q * 0.22 : 0.55), z); g.add(rg); } }
     };
     const onLevel = (h, fn) => {   // pose des obstacles sur l'etage du haut : groupes, collisions et boites decales de h
       const n0 = groups.length, b0 = I.boxes.length; fn(); for (let i = n0; i < groups.length; i++) { groups[i].position.y += h; groups[i].updateMatrixWorld(true); } for (let i = b0; i < I.boxes.length; i++) { I.boxes[i][4] += h; I.boxes[i][5] += h; }
@@ -925,17 +935,17 @@
       sgn('GLACE', 'glissade', -10); slick(S('glissade') + 6, LEN('glissade') - 12); divider(at('glissade', 25), at('glissade', 225), 16, 'wood'); crystals(at('glissade', 70), 0, -22); pics(at('glissade', 60), 22); jaws(at('glissade', 150), 22);
       sgn('BOULE', 'boule', -10); snowball(at('boule', 30));
       sgn('PONT DE GLACE', 'pontglace', -10); slick(S('pontglace') + 6, LEN('pontglace') - 12);
-      sgn('ETAGES', 'igloos', -25); { const e0 = S('igloos'); deckUp(e0 + 30, 230, 17, 21, '#e8f6ff'); divider(e0 + 30, e0 + 260, 17, 'wood');   // en bas : igloos | rien de plus ; en haut : foret | banquise
-        igloo(e0 + 70, -22); igloo(e0 + 140, 22); onLevel(21, () => { divider(e0 + 30, e0 + 260, 14, 'wood'); drill(e0 + 90, -22); floes(e0 + 70); }); }
+      sgn('ETAGES', 'igloos', -25); { const e0 = S('igloos'); deckUp(e0 + 40, 220, 26, 30, '#e8f6ff', 36); divider(e0 + 44, e0 + 260, 16, 'wood');   // en bas : igloos | rien de plus ; en haut : foret | banquise
+        igloo(e0 + 70, -22); igloo(e0 + 140, 22); onLevel(30, () => { divider(e0 + 46, e0 + 260, 14, 'wood'); drill(e0 + 90, -22); floes(e0 + 70); }); }
       sgn('BANQUISE', 'lac', -10); floes(at('lac', 40));
     } else if (I.map === 'desert') {   // DESERT : un seul exemplaire de chaque obstacle
       const at = (n, o) => S(n) + o;
       sgn('MARCHES', 'dunes', -10); divider(at('dunes', 25), at('dunes', 235), 16, 'sand'); stairs(at('dunes', 70), 0, -22); stairs(at('dunes', 130), 3, -22); dustDevils(at('dunes', 70), 22);
       sgn('PISTONS', 'pistons', -10); pistons(at('pistons', 70), 0); pistons(at('pistons', 140), 2);
       sgn('VAUTOURS', 'chute', -10); vultures(at('chute', 20));
-      sgn('ETAGES', 'temple', -25); { const e0 = S('temple'); deckUp(e0 + 30, 230, 11, 15, '#f0d29a'); divider(e0 + 30, e0 + 260, 11, 'sand');   // en bas : scarabees | portes de pierre ; en haut : obelisques | haches
+      sgn('ETAGES', 'temple', -25); { const e0 = S('temple'); deckUp(e0 + 40, 220, 26, 30, '#f0d29a', 36); divider(e0 + 44, e0 + 260, 16, 'sand');   // en bas : scarabees | portes de pierre ; en haut : obelisques | haches
         beetles(e0 + 50, -22); sandDoors(e0 + 90, 22, 20); sandDoors(e0 + 170, 22, 20);
-        onLevel(15, () => { divider(e0 + 30, e0 + 260, 14, 'sand'); obelisks(e0 + 60, -22); axes(e0 + 50, 22); }); }
+        onLevel(30, () => { divider(e0 + 46, e0 + 260, 14, 'sand'); obelisks(e0 + 60, -22); axes(e0 + 50, 22); }); }
       sgn('SURF', 'vide', -55); surf(S('vide') - 24);
       sgn('TEMPETE', 'canyon', -10); wind(at('canyon', 30), 110, { lat: 13, col: '#f3d9a0' }); wind(at('canyon', 150), 110, { lat: -13, col: '#f3d9a0' }); wind(at('canyon', 265), 60, { lat: 14, col: '#f3d9a0' });
       sgn('SALLE DES PILIERS', 'hypostyle', -10); hypostyle(at('hypostyle', 0));
@@ -945,9 +955,9 @@
       sgn('PRESSES', 'presses', -10); divider(at('presses', 25), at('presses', 225), 16, 'steel'); presses(at('presses', 70), -22); flames(at('presses', 60), 22, 20);
       sgn('CONVOYEURS', 'convoyeur', -10); belts(at('convoyeur', 30), 80, 1); belts(at('convoyeur', 120), 80, -1);
       sgn('TUYAU LOOPING', 'vide', -55); loopPipe(S('vide') - 24);
-      sgn('ETAGES', 'usine', -25); { const e0 = S('usine'); deckUp(e0 + 30, 230, 13, 17, '#98a2b0'); divider(e0 + 30, e0 + 260, 13, 'steel');   // en bas : wagonnets | caisses ; en haut : bras robotises | rouleaux broyeurs
+      sgn('ETAGES', 'usine', -25); { const e0 = S('usine'); deckUp(e0 + 40, 220, 26, 30, '#98a2b0', 36); divider(e0 + 44, e0 + 260, 16, 'steel');   // en bas : wagonnets | caisses ; en haut : bras robotises | rouleaux broyeurs
         carts(e0 + 50, -22, 20); crates(e0 + 70, 0, 22); crates(e0 + 130, 1, 22);
-        onLevel(17, () => { divider(e0 + 30, e0 + 260, 14, 'steel'); roboArms(e0 + 50, -22, 20); rollers(e0 + 150, 22, 20); }); }
+        onLevel(30, () => { divider(e0 + 46, e0 + 260, 14, 'steel'); roboArms(e0 + 50, -22, 20); rollers(e0 + 150, 22, 20); }); }
       sgn('VAPEUR', 'vapeur', -10); steam(at('vapeur', 60), 5, 0); steam(at('vapeur', 120), 4, 1.3);
       sgn('ARCS ELECTRIQUES', 'arcs', -10); arcs(at('arcs', 30));
     } else if (I.map === 'jungle') {   // JUNGLE : un seul exemplaire de chaque obstacle, chacun dans sa section
@@ -958,9 +968,9 @@
       sgn('LIANE', 'vide', -60); zip(S('vide') - 18);
       sgn('FLEURS', 'fleurs', -10); divider(at('fleurs', 25), at('fleurs', 225), 16, 'wood'); flowers(at('fleurs', 60), -22); spiders(at('fleurs', 60), 22);
       sgn('CASCADE', 'cascade', -10); cascade(at('cascade', 80));
-      sgn('ETAGES', 'canopee', -25); { const c0 = S('canopee'); deckUp(c0 + 30, 240, 16, 20, '#b88a52'); divider(c0 + 30, c0 + 270, 16, 'wood');   // sous la canopee : abeilles | ronces ; au-dessus : troncs abattus | singes
+      sgn('ETAGES', 'canopee', -25); { const c0 = S('canopee'); deckUp(c0 + 40, 230, 26, 30, '#b88a52', 36); divider(c0 + 44, c0 + 270, 16, 'wood');   // sous la canopee : abeilles | ronces ; au-dessus : troncs abattus | singes
         bees(at('canopee', 60), -22, 9); brambles(at('canopee', 70), 22, 20);
-        onLevel(20, () => { divider(c0 + 30, c0 + 270, 14, 'wood'); fallTrees(c0 + 60, -22, 20); monkeys(c0 + 90, 22, 1); }); }
+        onLevel(30, () => { divider(c0 + 46, c0 + 270, 14, 'wood'); fallTrees(c0 + 60, -22, 20); monkeys(c0 + 90, 22, 1); }); }
       sgn('RACINES', 'racines', -10); roots(at('racines', 40));
       sgn('GROTTE', 'grotte', -10); cave(at('grotte', 0));
       sgn('TOTEMS', 'totems', -10); totem(at('totems', 70), -16, 0, 1); totem(at('totems', 70), 16, 2.6, -1); totem(at('totems', 140), 0, 1.2, 1);
@@ -971,8 +981,8 @@
       sgn('BARRIERES', 'montee', -10); divider(at('montee', 25), at('montee', 205), 16); gateRow(at('montee', 80), -22, 2, 0.4); container(at('montee', 80), 22, 0, 8); container(at('montee', 150), 22, 2.4, 8);
       sgn('CATAPULTE', 'vide', -55); catapult(S('vide') - 22);
       sgn('CANONS', 'canons', -40); for (let k = 0; k < 6; k++) { const side = k % 2 ? 1 : -1; cannon(at('canons', 40 + k * 28), side * 38, side, k * 0.8); }
-      sgn('ETAGES', 'base', -25); { const e0 = S('base'); deckUp(e0 + 30, 230, 15, 19, '#9aa0aa'); divider(e0 + 30, e0 + 260, 15);   // en bas : mines | tourelles ; en haut : ballons de barrage | helicopteres
-        mines(e0 + 70, -22, 3, 0, 14); turrets(e0 + 70, 22, 20); onLevel(19, () => { divider(e0 + 30, e0 + 260, 14); barrage(e0 + 60, -22); heli(e0 + 60, 22); }); }
+      sgn('ETAGES', 'base', -25); { const e0 = S('base'); deckUp(e0 + 40, 220, 26, 30, '#9aa0aa', 36); divider(e0 + 44, e0 + 260, 16);   // en bas : mines | tourelles ; en haut : ballons de barrage | helicopteres
+        mines(e0 + 70, -22, 3, 0, 14); turrets(e0 + 70, 22, 20); onLevel(30, () => { divider(e0 + 46, e0 + 260, 14); barrage(e0 + 60, -22); heli(e0 + 60, 22); }); }
       sgn('PROJECTEURS', 'projecteurs', -10); spots(at('projecteurs', 40));
       sgn('MISSILES', 'pont', -20); missile(at('pont', 55));
       sgn('GRUE', 'grue', -10); crane(at('grue', 30));
@@ -985,14 +995,14 @@
       sgn('BEIGNETS', 'vide', -50); beignets(S('vide'));
       sgn('BALLONS', 'ballons', -20); balloons(at('ballons', 50), 5, 0); balloons(at('ballons', 110), 6, 2.2);
       sgn('TRAMPOLINES', 'trampolines', -10); trampolines(at('trampolines', 0));
-      sgn('ETAGES', 'etages', -25); { const e0 = S('etages'); deckUp(e0 + 30, 230, 15, 19, '#ffd8ec'); divider(e0 + 30, e0 + 260, 15);   // etage du bas : macarons | portes battantes ; etage du haut : moulins | cerfs-volants
+      sgn('ETAGES', 'etages', -25); { const e0 = S('etages'); deckUp(e0 + 40, 220, 26, 30, '#ffd8ec', 36); divider(e0 + 44, e0 + 260, 16);   // etage du bas : macarons | portes battantes ; etage du haut : moulins | cerfs-volants
         macarons(e0 + 60, -22); doors(e0 + 90, 22, 20); doors(e0 + 170, 22, 20);
-        onLevel(19, () => { divider(e0 + 30, e0 + 260, 14); windmill(e0 + 90, -22, 1); windmill(e0 + 180, -22, -1); kites(e0 + 130, 22); kites(e0 + 210, 22); }); }
+        onLevel(30, () => { divider(e0 + 46, e0 + 260, 14); windmill(e0 + 90, -22, 1); windmill(e0 + 180, -22, -1); kites(e0 + 130, 22); kites(e0 + 210, 22); }); }
       sgn('TOURNIQUET', 'tourniquet', -20); tourniquet(at('tourniquet', 70)); tourniquet(at('tourniquet', 140));
       sgn('GOMMES', 'gommes', -10); divider(at('gommes', 25), at('gommes', 220), 16); gommes(at('gommes', 70), -22); gateRow(at('gommes', 70), 22, 2, 0); gateRow(at('gommes', 140), 22, 2, 2.4);
       sgn('HUBLOT', 'hublot', -20); hublot(at('hublot', 80));
     }
-    for (const g of groups) autoShadow(g);
+    for (const g of groups) if (!g.userData.noGround) autoShadow(g);   // au-dessus du vide : pas d'ombre (une ombre est toujours posee sur une surface)
     return { update: (t, rp) => { for (const f of ups) f(t, rp); dynUpdate(rp); }, hits, signs };
   };
 

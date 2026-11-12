@@ -228,6 +228,7 @@ const CUP = SHAPES.map((s) => s.name);
     const Wd = I2.W(P.d), over = Wd > 1 && Math.abs(P.ox) < Wd - 0.3, lim = Wd + 34;
     if (Math.abs(P.ox) > lim) { const sg = Math.sign(P.ox); P.ox = sg * lim; if (P.vl * sg > 0) P.vl = 0; wallRipple(g, rk.pos, nn); }   // mur invisible
     if (over && P.h < 2.2) { P.h = 2.2; if (P.vy < 0) P.vy = 0; }
+    if (I2.ramps) for (const q of I2.ramps) if (P.d > q.d0 && P.d < q.d1 + 3 && Math.abs(P.ox) < I2.W(P.d) - 0.5) { const hr = q.h0 + (q.h1 - q.h0) * U.clamp((P.d - q.d0) / (q.d1 - q.d0), 0, 1); if (P.h < hr + 2.2 && P.h > hr - 5.5) { P.h = hr + 2.2; if (P.vy < 0) P.vy = 0; } }   // rampe d'acces a l'etage : des qu'on monte un peu, elle porte la fusee jusqu'en haut ; au ras du sol on passe dessous
     { const ceilH = I2.ceilAt ? I2.ceilAt(P.d) : 26; if (P.h > ceilH) { P.h = ceilH; if (P.vy > 0) P.vy = 0; wallRipple(g, rk.pos, UPV); } }   // plafond de la section
     // collisions : seulement le nez (2,6 m devant le centre)
     const NO = 2.6, RRc = 0.5, vln = Math.hypot(P.vf, P.vl, P.vy) || 1, ux = vln > 4 ? P.vf / vln : 1, uy = vln > 4 ? P.vl / vln : 0, uz = vln > 4 ? P.vy / vln : 0;
@@ -299,7 +300,9 @@ const CUP = SHAPES.map((s) => s.name);
   const newSession = () => {
     sSeed = ((Date.now() & 0xffffff) + 17 * (++R.session)) >>> 0; R.surv = null; const READY = ['arch', 'range', 'jungle', 'ice', 'desert', 'factory'], byMap = (m) => COURSES.filter((c) => c.isle && (c.map || 'arch') === m), maps = READY.filter((m) => byMap(m).length);   // 3 cartes differentes par coupe, dans un ordre aleatoire
     for (let i = maps.length - 1; i > 0; i--) { const j = Math.floor(sr() * (i + 1)); const t = maps[i]; maps[i] = maps[j]; maps[j] = t; }
-    R.courses = [0, 1, 2].map((q) => { const L = byMap(maps[q % maps.length]); return L[Math.floor(sr() * L.length)] || L[0]; }); R.round = 1; R.last = null; R.kills = 0; R.coins = 0; R.deaths = 0; R.roundKills = 0;
+    let q = []; try { q = JSON.parse(lsGet('cc.race.mapq', '[]')) || []; } catch (e) { q = []; } q = q.filter((m, i) => maps.indexOf(m) >= 0 && q.indexOf(m) === i);   // roulement : une coupe = 3 cartes differentes, la coupe suivante = les 3 autres, puis on rebat
+    if (q.length < 3) q = maps.slice(); const pick3 = q.slice(0, 3); lsSet('cc.race.mapq', JSON.stringify(q.slice(3)));
+    R.courses = pick3.map((m) => { const L = byMap(m); return L[Math.floor(sr() * L.length)] || L[0]; }); R.round = 1; R.last = null; R.kills = 0; R.coins = 0; R.deaths = 0; R.roundKills = 0;
     { const f = /[?&]racec=(\w+)/.exec(location.search); const one = f && COURSES.find((c) => c.name.replace(/\W/g, '') === f[1]); if (one) R.courses = [one, one, one]; }   // essai d'une course a la main
   };
   if (RACE) newSession();
@@ -478,6 +481,7 @@ const CUP = SHAPES.map((s) => s.name);
     const you = all.findIndex((x) => x.you); if (died) { all.splice(you, 1); all.splice(Math.max(0, rank - 1), 0, { name: 'TOI', time: time, you: true, dnf: true }); }
     if (qual && !(rd === 2)) R.surv = all.slice(0, keep).filter((x) => !x.you).map((x) => (W.bots.find((b) => b.name === x.name) || {}).c).filter(Boolean).slice(0, keep - 1);
     const coins = coinsFor(rank, R.roundKills, died), S0 = E.save(g); S0.coins = (S0.coins || 0) + coins; R.coins += coins;
+    if (!died) lsSet('cc.race.chest', Math.min(3, (parseInt(lsGet('cc.race.chest', '0'), 10) || 0) + 1));   // le coffre du menu : une part par course terminee
     let gems = 0, pack = null; if (rd === 2 && rank === 1 && !died) { gems = 3; S0.gems = (S0.gems || 0) + 3; PRO.setTickets(PRO.tickets() + 1); const free = PRO.SKIN_IDS.filter((id) => !PRO.isOwned(id)); if (free.length) { const id = free[Math.floor(Math.random() * free.length)]; PRO.own(id); pack = { skin: id, fresh: true, rar: PRO.rarity(id) }; } else { S0.coins = (S0.coins || 0) + 300; pack = { skin: PRO.SKIN_IDS[0], fresh: false, rar: 0 }; } } try { g.writeSave(); } catch (e) { /* ignore */ }
     if (rd === 0) { R.ease = U.clamp(R.ease + (qual ? -0.1 : 0.3), -0.3, 1.2); lsSet('cc.race.ease', R.ease.toFixed(2)); }
     return (R.last = { time, rank, field: R.field[rd], keep, qual, final: rd === 2, round: R.round, rows: all.slice(0, 5), all, you: all.findIndex((x) => x.you), elim: all.slice(keep).map((x) => x.name), kills: R.roundKills, coins, gems, pack, died, t0: performance.now() });
@@ -607,7 +611,7 @@ const CUP = SHAPES.map((s) => s.name);
   const drawPack = (ui, ctx, g, W0, H, w) => {
     const F = Home.evoK.frame(ui, ctx, W0, H), { Y, T0, cw, cx, HH } = F, S = UI.S, T = UI.THEME, t = (performance.now() - w.t0) / 1000, pk = w.info.pack;
     { const g0 = ctx.createLinearGradient(0, T0, 0, T0 + HH); g0.addColorStop(0, 'rgba(10,11,14,0.86)'); g0.addColorStop(0.5, 'rgba(10,11,14,0.7)'); g0.addColorStop(1, 'rgba(10,11,14,0.9)'); ctx.fillStyle = g0; ctx.fillRect(0, T0, W0, HH); } const cy = Y(0.44);
-    UI.text(ctx, 'COFFRE DE LA COUPE', cx, Y(0.12), UI.fit(ctx, 'COFFRE DE LA COUPE', cw * 0.92, S(104)), T.yellow, { outline: true });
+    UI.text(ctx, w.chest ? 'COFFRE' : 'COFFRE DE LA COUPE', cx, Y(0.12), UI.fit(ctx, 'COFFRE DE LA COUPE', cw * 0.92, S(104)), T.yellow, { outline: true });
     if (!w.opened) {
       const sh = Math.sin(t * 22) * S(6) * Math.min(1, t / 1.2), sc = 1 + 0.04 * Math.sin(t * 5);
       ctx.save(); ctx.translate(cx + sh, cy); ctx.scale(sc, sc); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowOffsetY = S(12); ctx.shadowBlur = 0; UI.artImg(ctx, 'chest', 0, 0, S(480)); ctx.restore();
@@ -619,8 +623,8 @@ const CUP = SHAPES.map((s) => s.name);
       { const tc = sk && E.skinThumb ? E.skinThumb(pk.skin) : null; if (tc) ctx.drawImage(tc, -S(250), -S(250), S(500), S(375)); else UI.artImg(ctx, 'chest_open', 0, -S(70), S(400)); }
       if (sk) { const nm = (sk.short || sk.name || pk.skin).toUpperCase(); UI.text(ctx, nm, 0, S(170), UI.fit(ctx, nm, pw * 0.84, S(60)), T.white, { shadow: false }); UI.text(ctx, PRO.rarName[pk.rar || 0], 0, S(236), S(38), T.dim, { shadow: false }); }
       ctx.restore();
-      if (sk) UI.text(ctx, pk.fresh ? 'NOUVEAU COSTUME !' : 'DEJA POSSEDE : +300 PIECES', cx, Y(0.76), UI.fit(ctx, 'DEJA POSSEDE : +300 PIECES', cw * 0.9, S(56)), T.yellow, { outline: true });
-      const bw = cw * 0.6, bh = S(130), bx = cx - bw / 2, by = Y(0.89) - bh / 2; UI.btnPrimary(ctx, bx, by, bw, bh, 'SUPER !'); UI.tap(ui, bx, by, bw, bh, () => { goNext(g); });
+      { const msg = sk ? (pk.fresh ? 'NOUVEAU COSTUME !' : 'DEJA POSSEDE : +300 PIECES') : '+' + (pk.coins || 300) + ' PIECES' + (pk.gems ? '   +' + pk.gems + ' GEMME' : ''); UI.text(ctx, msg, cx, Y(0.76), UI.fit(ctx, 'DEJA POSSEDE : +300 PIECES', cw * 0.9, S(56)), T.yellow, { outline: true }); }
+      const bw = cw * 0.6, bh = S(130), bx = cx - bw / 2, by = Y(0.89) - bh / 2; UI.btnPrimary(ctx, bx, by, bw, bh, 'SUPER !'); UI.tap(ui, bx, by, bw, bh, () => { if (w.chest) { g.evoWin = null; g.ui.overlay = 'evo'; } else goNext(g); });
     }
   };
   const restart = (g) => {
@@ -648,6 +652,11 @@ const CUP = SHAPES.map((s) => s.name);
   E.mvpState = () => ({ ended, LV });
   E.raceState = () => ({ R, W });
   E.raceApi = { revive: (g) => doRevive(g), giveUp: (g) => giveUp(g), fake: (g, time, rank, died) => { ended = mkResult(g, time, rank, died); return ended; }, next: (g) => goNext(g) };
+  E.raceApi.chest = () => Math.min(3, parseInt(lsGet('cc.race.chest', '0'), 10) || 0);
+  E.raceApi.openChest = (g) => {   // coffre plein (3 courses terminees) : un costume (6 fois sur 10 s'il en reste) ou des pieces et une gemme
+    if (E.raceApi.chest() < 3) return false; lsSet('cc.race.chest', 0); const S0 = E.save(g), free = PRO.SKIN_IDS.filter((id) => !PRO.isOwned(id)), low = free.filter((id) => PRO.rarity(id) < 2), pool = low.length ? low : free; let pack;
+    if (pool.length && Math.random() < 0.6) { const id = pool[Math.floor(Math.random() * pool.length)]; PRO.own(id); pack = { skin: id, fresh: true, rar: PRO.rarity(id) }; } else { S0.coins = (S0.coins || 0) + 250; S0.gems = (S0.gems || 0) + 1; pack = { coins: 250, gems: 1 }; }
+    try { g.writeSave(); } catch (e) { /* ignore */ } g.evoWin = { mv: true, race: true, chest: true, stage: 'pack', t0: performance.now(), lv: 1, info: { pack } }; g.ui.overlay = 'evoWin'; return true; };
 
   // ---------------------------------------------------------------- HUD de vol : l'ancienne barre de progression, couchee et plus petite, + le chrono
   Home.evoUI.hud = function (ctx, g, W0, H) {

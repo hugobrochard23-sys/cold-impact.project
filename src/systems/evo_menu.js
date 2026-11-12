@@ -59,10 +59,11 @@
     const bs = S(128), lx = eox + S(36), ly = T0 + S(330);
     UI.shopStall(ctx, lx, ly - S(6), bs, now); UI.tap(ui, lx, ly, bs, bs, () => { ui.overlay = 'evoShop'; });
     { const y = ly + bs + S(28), nt = PRO.tickets(); ctx.save(); ctx.translate(lx + bs / 2, y + bs * 0.4); ctx.rotate(-0.2); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowOffsetY = S(4); UI.artImg(ctx, 'ticket', 0, 0, bs * 0.92); ctx.restore(); UI.outlined(ctx, String(nt), lx + bs / 2, y + bs * 0.92, bs * 0.3, UI.C.white, '#000000', { keep: true, ow: 0.22 }); }
-    { const cb = bs * 1.4, rx0 = eox + ecw - S(36) - cb, y = ly, pct = (RC.round - 1) / 3, lab = 'MANCHE ' + RC.round + '/3';   // le coffre de la Coupe : il se remplit a chaque manche passee
-      UI.chestFrame(ctx, rx0, y, cb, false, true, now, pct);
-      UI.outlined(ctx, lab, rx0 + cb / 2, y + cb + S(36), UI.fit(ctx, lab, cb * 1.2, S(40)), '#F0EDE4');
-      UI.tap(ui, rx0 - S(10), y, cb + S(20), cb + S(86), () => Home.toast(ui, 'GAGNE LA COUPE POUR OUVRIR LE COFFRE')); }
+    { const cb = bs * 1.4, rx0 = eox + ecw - S(36) - cb, y = ly, nc = api.chest ? api.chest() : 0, ready = nc >= 3;   // le coffre : une part par course terminee ; plein au bout de 3, on l'ouvre
+      UI.chestFrame(ctx, rx0, y, cb, ready, true, now, ready ? undefined : nc / 3);
+      if (ready) { const ow = cb * 1.3, oh = S(78), ox2 = rx0 + cb / 2 - ow / 2, oy = y + cb - S(30), f = UI.greenButton(ctx, ox2, oy, ow, oh, { cat: 'la' }); UI.outlined(ctx, 'OUVRIR', ox2 + ow / 2, f.y + f.h * 0.5, UI.fit(ctx, 'OUVRIR', ow * 0.86, f.h * 0.5), '#FFFFFF'); }
+      else { const lab = nc + ' / 3'; UI.outlined(ctx, lab, rx0 + cb / 2, y + cb + S(36), UI.fit(ctx, lab, cb * 1.2, S(48)), '#F0EDE4'); }
+      UI.tap(ui, rx0 - S(10), y, cb + S(20), cb + S(86), () => { if (ready) { snd(g, 'coinPing'); api.openChest(g); } else Home.toast(ui, 'TERMINE 3 COURSES POUR OUVRIR LE COFFRE'); }); }
     { const k = 1 + 0.025 * Math.sin(now / 420), s = (CC.Touch && CC.Touch.active) ? 'APPUYEZ POUR LANCER' : 'CLIC POUR LANCER', yy = T0 + HH * 0.4; ctx.save(); ctx.translate(cx, yy); ctx.scale(k, k); ctx.translate(-cx, -yy);
       { const px = UI.fit(ctx, s, cw * 0.7, S(58)); UI.outlined(ctx, s, cx, yy, px, 'rgba(0,0,0,0)', 'rgba(0,0,0,0.22)', { keep: true, ow: 0.2 }); UI.outlined(ctx, s, cx, yy, px, 'rgba(0,0,0,0)', 'rgba(0,0,0,0.4)', { keep: true, ow: 0.13 }); UI.outlined(ctx, s, cx, yy, px, '#F0EDE4', '#000000', { keep: true, ow: 0.07 }); } ctx.restore(); }
     const gap = S(34), marg = S(40), cwd = (cw - marg * 2 - gap * 2) / 3, chh = ((cw - S(26) * 2 - S(14) * 2) / 3) / 0.703, cy0 = T0 + HH - chh - S(28);
