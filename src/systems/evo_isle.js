@@ -8,20 +8,18 @@
   const FLY = 11, TOP = 9, S0 = -125;
   const PAL = { blue: '#3aa6f0', pink: '#ff6fae', teal: '#42d6a4', yellow: '#ffc24a', purple: '#a77bff', asph: '#4b5059', asph2: '#585d67', sand: '#a99c7c', conc: '#8d9096', ice: '#cdeeff', ice2: '#a9dcf8', snow: '#f1faff', dune: '#e9c47e', dune2: '#d9a55b', brick: '#c98b4a', steel: '#8b95a3', steel2: '#6f7a88', hazard: '#d9a21b', moss: '#5f9e3c', mud: '#8a6a40', wood: '#a67c48', clay: '#c08550' };
   // les sections : nom, longueur, virage (+ droite), pente (descente ; negatif = on remonte), demi-largeur de l'ile, couleur du sol, inclinaison laterale
-  const SEC_ARCH = [   // ARCHIPEL : 14 obstacles differents, un seul exemplaire chacun ; montees, chutes, deux voies, vides
+  const SEC_ARCH = [   // ARCHIPEL : 15 obstacles differents, un seul exemplaire chacun ; voies doubles, DEUX ETAGES, vides
     { n: 'depart', len: 170, turn: 0, slope: 0, W: 56, col: 'blue' },
     { n: 'bumpers', len: 230, turn: 30, slope: -0.14, W: 56, col: 'yellow' },
-    { n: 'marteaux', len: 200, turn: 60, slope: 0.2, W: 56, col: 'pink' },
+    { n: 'marteaux', len: 240, turn: 60, slope: 0.2, W: 44, col: 'pink' },
     { n: 'pont', len: 200, turn: -50, slope: 0.1, W: 24, col: 'teal' },
     { n: 'vide', len: 100, turn: 0, slope: 0, W: 0, col: 'blue' },
     { n: 'ballons', len: 200, turn: 90, slope: -0.16, W: 46, col: 'purple' },
     { n: 'trampolines', len: 250, turn: -40, slope: 0.22, W: 54, col: 'teal' },
-    { n: 'divise', len: 250, turn: -80, slope: -0.12, W: 54, col: 'split' },
+    { n: 'etages', len: 290, turn: -80, slope: -0.12, W: 46, col: 'yellow' },
     { n: 'tourniquet', len: 210, turn: 70, slope: 0.22, W: 52, col: 'pink', bank: 0.14 },
-    { n: 'sucettes', len: 200, turn: -60, slope: -0.15, W: 48, col: 'blue' },
-    { n: 'gommes', len: 230, turn: 30, slope: 0.2, W: 50, col: 'yellow' },
+    { n: 'gommes', len: 240, turn: 30, slope: 0.2, W: 44, col: 'blue' },
     { n: 'hublot', len: 210, turn: -40, slope: -0.12, W: 52, col: 'purple' },
-    { n: 'guillotines', len: 210, turn: 40, slope: 0.18, W: 50, col: 'pink' },
     { n: 'arrivee', len: 190, turn: 0, slope: 0.06, W: 58, col: 'blue' },
   ];
   const SEC_RANGE = [   // la 2e carte : le terrain d'essai de fusees (beton, asphalte, hangar), un seul obstacle principal par section
@@ -37,19 +35,16 @@
     { n: 'sprint', len: 260, turn: 40, slope: -0.1, W: 46, col: 'conc' },
     { n: 'arrivee', len: 190, turn: -20, slope: 0.05, W: 52, col: 'asph' },
   ];
-  const SEC_JUNGLE = [   // JUNGLE : 13 obstacles differents, un seul exemplaire chacun ; trois etages (racines, ponts de corde, canopee), cascade, grotte
+  const SEC_JUNGLE = [   // JUNGLE : 14 obstacles differents, un seul exemplaire chacun ; voies doubles, DEUX ETAGES (sous la canopee / au-dessus), cascade, grotte
     { n: 'depart', len: 170, turn: 0, slope: 0, W: 54, col: 'moss' },
     { n: 'lianes', len: 200, turn: 40, slope: 0.08, W: 46, col: 'mud' },
     { n: 'rondins', len: 200, turn: -50, slope: -0.14, W: 46, col: 'wood' },
     { n: 'pont', len: 190, turn: 0, slope: 0.1, W: 26, col: 'clay' },
     { n: 'vide', len: 120, turn: 0, slope: 0.02, W: 0, col: 'moss' },
-    { n: 'fleurs', len: 200, turn: 50, slope: 0.22, W: 46, col: 'moss' },
+    { n: 'fleurs', len: 240, turn: 50, slope: 0.22, W: 44, col: 'moss' },
     { n: 'cascade', len: 210, turn: -30, slope: 0.26, W: 46, col: 'mud' },
-    { n: 'racines', len: 220, turn: 40, slope: -0.16, W: 46, col: 'wood' },
-    { n: 'singes', len: 210, turn: -50, slope: 0.12, W: 48, col: 'moss' },
-    { n: 'abeilles', len: 190, turn: 30, slope: 0.1, W: 46, col: 'clay' },
-    { n: 'troncs', len: 220, turn: -40, slope: -0.12, W: 48, col: 'mud' },
-    { n: 'araignees', len: 200, turn: 50, slope: 0.18, W: 46, col: 'wood' },
+    { n: 'canopee', len: 290, turn: -40, slope: -0.16, W: 46, col: 'wood' },
+    { n: 'racines', len: 220, turn: 40, slope: 0.14, W: 46, col: 'moss' },
     { n: 'grotte', len: 200, turn: 0, slope: 0.05, W: 30, col: 'clay' },
     { n: 'totems', len: 220, turn: 40, slope: -0.1, W: 48, col: 'moss' },
     { n: 'arrivee', len: 200, turn: -30, slope: 0.06, W: 52, col: 'mud' },
@@ -94,12 +89,12 @@
     { n: 'arrivee', len: 200, turn: 0, slope: 0.05, W: 54, col: 'steel' },
   ];
   const CEIL = {   // hauteur maximale de vol au-dessus du tablier dans chaque section : on ne peut plus passer au-dessus des obstacles
-    arch: { bumpers: 14, marteaux: 11, pont: 22, ballons: 14, trampolines: 14, divise: 12, tourniquet: 22, sucettes: 10.5, gommes: 14, hublot: 22, guillotines: 22 },
+    arch: { bumpers: 14, marteaux: 11, pont: 22, ballons: 14, trampolines: 14, etages: 42, tourniquet: 22, gommes: 14, hublot: 22 },
     range: { montee: 22, canons: 16, incline: 12, pont: 11, sprint: 12 },
     ice: { patinoire: 22, stalactites: 22, glissade: 18, patinoire2: 22, stalactites2: 22, glissade2: 18 },
     desert: { dunes2: 18, dunes: 18, temple: 22, canyon: 22, temple2: 22, marches: 18 },
     factory: { vapeur2: 22, engrenages: 22, vapeur: 22, convoyeur: 22, engrenages2: 22, caisses: 17 },
-    jungle: { lianes: 10, rondins: 11, pont: 16, fleurs: 16, cascade: 20, racines: 22, singes: 22, abeilles: 20, troncs: 22, araignees: 22, grotte: 14, totems: 22 } };
+    jungle: { lianes: 10, rondins: 11, pont: 16, fleurs: 16, cascade: 20, canopee: 42, racines: 22, grotte: 14, totems: 22 } };
   for (const [m, arr] of [['arch', SEC_ARCH], ['range', SEC_RANGE], ['jungle', SEC_JUNGLE], ['ice', SEC_ICE], ['desert', SEC_DESERT], ['factory', SEC_FACTORY]]) for (const q of arr) if (CEIL[m][q.n]) q.ceil = CEIL[m][q.n];
   let SEC = SEC_ARCH;
   E.jungleShape = SEC_JUNGLE.map((q, i) => [q.len, q.turn, q.slope, FLY, i === SEC_JUNGLE.length - 1 ? 24 : 17, TOP]);
@@ -276,7 +271,6 @@
   const rails = (T, C) => {
     const I = C.isle, list = [], rg = I.map === 'range', CY = rg ? ['#25262a', '#25262a', '#e8e8e8'] : I.map === 'jungle' ? ['#7a5634', '#5b3f25', '#4e9a3a'] : ['#ff3b4d', '#ff9a1f', '#ff3b4d'];
     for (let d = S0 + 12; d < I.dEnd - 10; d += 4.6) { const w = I.W(d) - 1.2; if (w < 8) continue; for (const sg of [-1, 1]) list.push([d, sg * w, 1, ((d / 4.6) | 0) % 5 === 0 ? 1 : 0]); }
-    if (I.map === 'arch') { const iv = SEC.findIndex((q) => q.n === 'divise'), dv = STARTS[iv], dl = SEC[iv].len; for (let d = dv + 30; d < dv + dl - 20; d += 3.6) list.push([d, 0, 1.15, 2]); I.boxes.push([dv + 30, dv + dl - 20, -1.4, 1.4, 0, 3.2]); }   // le muret central qui separe les deux voies
     for (let d = S0 + 12; d < I.dEnd - 10; d += 8) { const w = I.W(d) - 1.2; if (w < 8) continue; I.boxes.push([d - 4, d + 4, w - 1.3, w + 1.3, 0, 3.1], [d - 4, d + 4, -w - 1.3, -w + 1.3, 0, 3.1]); }   // les rambardes sont solides
     if (!rg) for (const d of [104, 118]) for (let lx = -50 + (d === 118 ? 8 : 0); lx <= 50; lx += 16) { list.push([d, lx, 1.6, 3]); I.boxes.push([d - 1.9, d + 1.9, lx - 1.9, lx + 1.9, 0, 3.9]); }   // les gros coussins de la ligne de depart
     const prof = [[0.02, 0], [1.0, 0], [1.12, 0.2], [1.12, 0.6], [1.0, 0.8], [0.02, 0.8]].map((q) => new T3.Vector2(q[0], q[1] - 0.4)), geo = new T3.LatheGeometry(prof, 8), lm = new T3.MeshLambertMaterial({ color: '#ffffff' }), dm = new T3.Object3D(), cc = new T3.Color(), CH = 160, byC = new Map(), gr = new T3.Group();
@@ -319,7 +313,7 @@
 
   // ---- OMBRES : une seule direction de lumiere dans le monde ; chaque objet projette UNE ombre (l'enveloppe de ses pieces), jamais assombrie deux fois (pochoir)
   const LS = new T3.Vector3(0.42, 0, -0.3); E.isleLS = LS;   // decalage de l'ombre par metre de hauteur
-  const SHM = new T3.MeshBasicMaterial({ color: '#0d1b3a', transparent: true, opacity: 0.3, depthWrite: false, side: T3.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+  const SHM = new T3.MeshBasicMaterial({ color: '#0d1b3a', transparent: true, opacity: 0.3, depthWrite: false, side: T3.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3, stencilWrite: true, stencilRef: 1, stencilFunc: T3.NotEqualStencilFunc, stencilFail: T3.KeepStencilOp, stencilZFail: T3.KeepStencilOp, stencilZPass: T3.ReplaceStencilOp });
   SHM.forceSinglePass = true;
   const hull = (pts) => { const p = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]); if (p.length < 3) return p; const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], up = [];
     for (const q of p) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
@@ -569,7 +563,7 @@
     // ---- trajets guides (lianes, trampolines) : la fusee est emportee le long d'une courbe a grande vitesse, sans pilotage ----
     const guide = (pts, o) => {
       const cr = new T3.CatmullRomCurve3(pts.map((p) => new T3.Vector3(p[0], p[1], p[2])), false, 'catmullrom', 0.5), L = cr.getLength(), n = Math.max(10, Math.round(L / 1.5)), samp = cr.getSpacedPoints(n).map((v) => [v.x, v.y, v.z]);
-      I.paths.push({ d: o.trig[0], ox: o.trig[1], h: o.trig[2], r: o.r || 5, rh: o.rh || 5, samp, step: L / n, sp: o.sp || 55 });
+      I.paths.push({ d: o.trig[0], ox: o.trig[1], h: o.trig[2], r: o.r || 5, rh: o.rh || 5, samp, step: L / n, sp: o.sp || 55, label: o.label });
       const wp = samp.map((q) => { const p = T.at(q[0], q[1], I.bank(q[0]) * q[1] + q[2]); return new T3.Vector3(p[0], p[1], p[2]); });
       const tb = new T3.Mesh(new T3.TubeGeometry(new T3.CatmullRomCurve3(wp), Math.min(220, n), o.rad || 0.45, 6, false), o.glow ? new T3.MeshBasicMaterial({ color: o.col, transparent: true, opacity: 0.5, depthWrite: false }) : matS(o.col)); tb.frustumCulled = false; tb.userData.noShadow = true; grp.add(tb);
     };
@@ -585,8 +579,8 @@
       ups.push((t) => { rot.rotation.x = t * 0.85; g.updateMatrixWorld(true); });
       addHit(d, (pos) => { const l = loc(g, pos); if (Math.abs(l.x) > Wb + 1) return false; const dy = l.y - cy0, dz = l.z; if (Math.hypot(dy, dz) < 2.2 + RR) return true; for (let q = 0; q < 3; q++) { const a = rot.rotation.x + q * 2.094, along = dy * Math.cos(a) + dz * Math.sin(a), perp = -dy * Math.sin(a) + dz * Math.cos(a); if (along > 0 && along < R0 + 1.2 && Math.abs(perp) < 0.9 + RR) return true; } return false; });
     };
-    const gommes = (d) => {   // boules de gomme rebondissantes qui foncent sur toi
-      const g = mk(d, 0), cols = ['#ff4f9a', '#ffd23a', '#43d6a0', '#7a3cf0', '#2f8cff'], xs = [-20, -8, 6, 18], balls = []; I.evD.push(d + 20);
+    const gommes = (d, lx0) => {   // boules de gomme rebondissantes qui foncent sur toi
+      const g = mk(d, lx0), cols = ['#ff4f9a', '#ffd23a', '#43d6a0', '#7a3cf0', '#2f8cff'], xs = [-14, -5, 5, 14], balls = []; I.evD.push(d + 20);
       xs.forEach((x, i) => { const m = new T3.Mesh(new T3.SphereGeometry(2.7, 16, 12), matS(cols[i])); const hl = new T3.Mesh(new T3.SphereGeometry(0.7, 8, 6), new T3.MeshBasicMaterial({ color: '#ffffff' })); hl.position.set(-1.1, 1.2, 1.7); m.add(hl); g.add(m); m.userData.dyn = true; dynSh(g, m); balls.push({ m, x, off: i * 0.31, y: 3, z: 60 }); });
       ups.push((t) => { for (const b of balls) { const u = (t * 0.16 + b.off) % 1; b.z = 60 - 130 * u; b.y = 3 + 9 * Math.abs(Math.sin(Math.PI * u * 7)); b.m.position.set(b.x, b.y, b.z); b.m.rotation.x = t * 3; } g.updateMatrixWorld(true); });
       addHit(d, (pos) => { const l = loc(g, pos); for (const b of balls) if (Math.hypot(l.x - b.x, l.y - b.y, l.z - b.z) < 2.7 + RR) return true; return false; });
@@ -615,7 +609,8 @@
     const trampolines = (d) => {   // trois trampolines : ils lancent par-dessus un mur de gelee (ou on passe par le portillon)
       I.evD.push(d + 60); const wd = I.W(d) + 3, g0 = 28 * sx;
       for (const lx of [-22, 0, 22]) { const g = mk(d + 60, lx), L = lx * sx; const base = cy(4.8, 5.2, 1.4, '#43d6a0', 22); base.position.y = 0.7; g.add(base); const pad = cy(4.4, 4.4, 0.9, '#ff4f9a', 22); pad.position.y = 1.85; g.add(pad); const ring = new T3.Mesh(new T3.TorusGeometry(4.5, 0.35, 8, 28), matS('#ffd23a')); ring.rotation.x = Math.PI / 2; ring.position.y = 2.4; g.add(ring);
-        guide([[d + 60, L, 3], [d + 76, L * 0.5, 22], [d + 100, 0, 39], [d + 130, 0, 36], [d + 156, 0, 22], [d + 178, 0, 11]], { trig: [d + 60, L, 3.2], r: 5.2, rh: 4.5, sp: 52, col: '#ffe066', rad: 0.3, glow: true }); }
+        const beam = new T3.Mesh(new T3.CylinderGeometry(6, 6, 12, 20, 1, true), new T3.MeshBasicMaterial({ color: '#ffe066', transparent: true, opacity: 0.2, side: T3.DoubleSide, depthWrite: false, fog: false })); beam.position.y = 8; beam.userData.noShadow = true; g.add(beam); const top = new T3.Mesh(new T3.TorusGeometry(6, 0.5, 8, 28), new T3.MeshBasicMaterial({ color: '#ffe066', fog: false })); top.rotation.x = Math.PI / 2; top.position.y = 14; top.userData.noShadow = true; g.add(top);
+        guide([[d + 60, L, 3], [d + 76, L * 0.5, 22], [d + 100, 0, 39], [d + 130, 0, 36], [d + 156, 0, 22], [d + 178, 0, 11]], { trig: [d + 60, L, 4], r: 9, rh: 8, sp: 52, col: '#ffe066', rad: 0.3, glow: true, label: 'TRAMPOLINE : FONCE DESSUS !' }); }
       I.boxes.push([d + 108, d + 112, -wd, g0 - 4.5, 0, 32], [d + 108, d + 112, g0 + 4.5, wd, 0, 32]);
       for (const [a, b] of [[-wd, g0 - 4.5], [g0 + 4.5, wd]]) { const g = mk(d + 110, (a + b) / 2 * sx), w = bx(b - a, 32, 4.4, '#ff7ab8'); w.position.y = 16; g.add(w); for (let q = 0; q < 14; q++) { const sp = bx(0.7, 0.7, 4.6, ['#ffffff', '#ffd23a', '#2f8cff'][q % 3]); sp.position.set(((q * 37) % 100 / 100 - 0.5) * (b - a - 2), 4 + (q * 53) % 26, 0); g.add(sp); } const flag = bx(b - a, 1.6, 4.8, '#ffd23a'); flag.position.y = 32.4; g.add(flag); }
     };
@@ -626,9 +621,9 @@
       addHit(d, (pos) => { const l = loc(g, pos), a = piv.rotation.z, hx = L * Math.sin(a), hy = top - 0.6 - L * Math.cos(a); if (Math.abs(l.z) > 2 + RR) return false; return Math.hypot(l.x - hx, l.y - hy) < 3.1 + RR || segDist(l.x, l.y, 0, top - 0.6, hx, hy) < 0.4 + RR; });
     };
     // ================= JUNGLE =================
-    const flowers = (d) => {   // fleurs carnivores : leurs petales s'ouvrent et se referment
+    const flowers = (d, lx0) => {   // fleurs carnivores : leurs petales s'ouvrent et se referment
       I.evD.push(d + 20);
-      [-18, 0, 18].forEach((lx, i) => { const g = mk(d + i * 24, lx), ps = []; let ang = 0.06; const ph = i * 2.1;
+      [-9, 9].forEach((o, i) => { const g = mk(d + i * 24, lx0 + o), ps = []; let ang = 0.06; const ph = i * 2.1;
         for (const sg of [-1, 1]) { const piv = new T3.Group(); piv.position.set(sg * 1.2, 2, 0); g.add(piv); piv.userData.dyn = true; const pet = bx(1.8, 21, 8, '#3f9a44'); pet.position.y = 10.5; piv.add(pet); const inn = bx(0.4, 19, 7, '#ff5fa8'); inn.position.set(-sg * 1.0, 10.5, 0); piv.add(inn); for (let k = 0; k < 4; k++) { const tooth = new T3.Mesh(new T3.ConeGeometry(0.7, 2.4, 5), matS('#ffffff')); tooth.position.set(-sg * 1.3, 4 + k * 4.6, 0); tooth.rotation.z = sg * 1.57; piv.add(tooth); } dynSh(g, pet); ps.push({ piv, sg }); }
         const stem = cy(1.0, 1.4, 3, '#2f7a36', 8); stem.position.y = 1.5; g.add(stem);
         ups.push((t) => { ang = 0.06 + 0.72 * (0.5 + 0.5 * Math.sin(t * 0.95 + ph + 1)); for (const p of ps) p.piv.rotation.z = -p.sg * ang; g.updateMatrixWorld(true); });
@@ -647,33 +642,70 @@
         if (low) { I.boxes.push([dd - 2.6, dd + 2.6, -Wb, Wb, 9, 30]); const slab = bx(2 * Wb, 21, 5, '#6b4a2a'); slab.position.y = 19.5; g.add(slab); for (let k = -4; k <= 4; k++) { const rt = new T3.Mesh(new T3.ConeGeometry(1.2 + (k & 1) * 0.5, 6 + ((k * 7) & 3), 6), matS('#7a5634')); rt.rotation.x = Math.PI; rt.position.set(k * Wb / 4.4, 6.5, 0); g.add(rt); } const moss = bx(2 * Wb, 1.4, 5.4, '#4e9a3a'); moss.position.y = 30; g.add(moss); }
         else { I.boxes.push([dd - 2.6, dd + 2.6, -Wb, Wb, 0, 8.5]); const slab = bx(2 * Wb, 8.5, 5, '#6b4a2a'); slab.position.y = 4.25; g.add(slab); for (let k = -4; k <= 4; k++) { const rt = new T3.Mesh(new T3.ConeGeometry(1.2 + (k & 1) * 0.5, 5 + ((k * 5) & 3), 6), matS('#7a5634')); rt.position.set(k * Wb / 4.4, 10.5, 0); g.add(rt); } const moss = bx(2 * Wb, 1.2, 5.4, '#58b04a'); moss.position.y = 9; g.add(moss); } }
     };
-    const monkeys = (d) => {   // des singes lancent des noix de coco : un cercle rouge au sol previent
-      for (const sg of [-1, 1]) { const dd = d + (sg > 0 ? 0 : 26), g = mk(dd, sg * 38), Lc = sg * 38 * sx, TL = -Math.sign(Lc) * 9, wp = T.at(dd + 24, TL, I.bank(dd + 24) * TL), tr = cy(1.6, 2.1, 17, '#6b4a2a', 10); tr.position.y = 8.5; g.add(tr); const pl = bx(7, 1.2, 7, '#8a5a2c'); pl.position.y = 17; g.add(pl);
-        const mo = new T3.Group(); mo.position.y = 19; g.add(mo); const bd = new T3.Mesh(new T3.SphereGeometry(1.4, 12, 9), matS('#8a5a2c')); mo.add(bd); const hd = new T3.Mesh(new T3.SphereGeometry(0.95, 10, 8), matS('#a8743f')); hd.position.set(0, 1.9, 0.3); mo.add(hd); const tail = new T3.Mesh(new T3.TorusGeometry(1.1, 0.25, 6, 14, 4.4), matS('#8a5a2c')); tail.position.set(0, 0.2, -1.4); mo.add(tail); I.boxes.push([dd - 1.8, dd + 1.8, Lc - 1.8, Lc + 1.8, 0, 17.8]);
-        const nut = new T3.Mesh(new T3.SphereGeometry(1.7, 12, 9), matS('#5a3a1a')), mark = new T3.Mesh(new T3.RingGeometry(2.6, 4, 24), new T3.MeshBasicMaterial({ color: '#ff3b3b', transparent: true, opacity: 0.75, side: T3.DoubleSide, depthWrite: false })); mark.rotation.x = -Math.PI / 2; mark.position.set(wp[0], wp[1] + 0.25, wp[2]); grp.add(nut, mark); nut.visible = mark.visible = false; mark.userData.noShadow = nut.userData.noShadow = true;
-        const P = 3.6, off = sg > 0 ? 0 : 1.8, FL = 1.4, st0 = new T3.Vector3(); let live = null; I.evD.push(dd);
-        ups.push((t) => { const k = (t + off) % P; if (k < 0.05 || (k >= 1.5 && k < 1.55 && !nut.userData.f)) { /* debut de cycle */ } const fly = k >= 1.5 && k < 1.5 + FL; mark.visible = k < 1.5 + FL; mo.rotation.z = k > 1.2 && k < 1.7 ? -sg * 0.5 : 0;
-          if (fly) { if (!nut.userData.f) { nut.userData.f = 1; g.updateMatrixWorld(true); st0.set(0, 19, 0); g.localToWorld(st0); } const u = (k - 1.5) / FL; nut.position.set(st0.x + (wp[0] - st0.x) * u, st0.y + (wp[1] + 1.7 - st0.y) * u + 9 * 4 * u * (1 - u) * 0.6, st0.z + (wp[2] - st0.z) * u); nut.rotation.x = t * 6; nut.visible = true; live = nut.position; } else { nut.visible = false; nut.userData.f = 0; live = null; } });
-        addHit(dd, (pos) => !!live && pos.distanceTo(live) < 1.7 + RR + 0.4); }
+    const monkeys = (d, lx0, outer) => {   // un singe lance des noix de coco vers la voie : un cercle rouge au sol previent
+      const hwl = 20, g = mk(d, lx0 + outer * hwl), Lc = (lx0 + outer * hwl) * sx, TL = (lx0 - outer * 4) * sx, wp = T.at(d + 24, TL, I.bank(d + 24) * TL), tr = cy(1.6, 2.1, 17, '#6b4a2a', 10); tr.position.y = 8.5; g.add(tr); const pl = bx(7, 1.2, 7, '#8a5a2c'); pl.position.y = 17; g.add(pl);
+      const mo = new T3.Group(); mo.position.y = 19; g.add(mo); const bd = new T3.Mesh(new T3.SphereGeometry(1.4, 12, 9), matS('#8a5a2c')); mo.add(bd); const hd = new T3.Mesh(new T3.SphereGeometry(0.95, 10, 8), matS('#a8743f')); hd.position.set(0, 1.9, 0.3); mo.add(hd); const tail = new T3.Mesh(new T3.TorusGeometry(1.1, 0.25, 6, 14, 4.4), matS('#8a5a2c')); tail.position.set(0, 0.2, -1.4); mo.add(tail); I.boxes.push([d - 1.8, d + 1.8, Lc - 1.8, Lc + 1.8, 0, 17.8]);
+      const nut = new T3.Mesh(new T3.SphereGeometry(1.7, 12, 9), matS('#5a3a1a')), mark = new T3.Mesh(new T3.RingGeometry(2.6, 4, 24), new T3.MeshBasicMaterial({ color: '#ff3b3b', transparent: true, opacity: 0.75, side: T3.DoubleSide, depthWrite: false })); mark.rotation.x = -Math.PI / 2; mark.position.set(wp[0], wp[1] + 0.25, wp[2]); grp.add(nut, mark); nut.visible = mark.visible = false; mark.userData.noShadow = nut.userData.noShadow = true;
+      const P = 3.0, FL = 1.4, st0 = new T3.Vector3(); let live = null; I.evD.push(d);
+      ups.push((t) => { const k = t % P, fly = k >= 1.5 && k < 1.5 + FL; mark.visible = k < 1.5 + FL; mo.rotation.z = k > 1.2 && k < 1.7 ? -outer * 0.5 : 0;
+        if (fly) { if (!nut.userData.f) { nut.userData.f = 1; g.updateMatrixWorld(true); st0.set(0, 19, 0); g.localToWorld(st0); } const u = (k - 1.5) / FL; nut.position.set(st0.x + (wp[0] - st0.x) * u, st0.y + (wp[1] + 1.7 - st0.y) * u + 5.4 * 4 * u * (1 - u), st0.z + (wp[2] - st0.z) * u); nut.rotation.x = t * 6; nut.visible = true; live = nut.position; } else { nut.visible = false; nut.userData.f = 0; live = null; } });
+      addHit(d, (pos) => !!live && pos.distanceTo(live) < 1.7 + RR + 0.4);
     };
-    const bees = (d) => {   // un essaim d'abeilles qui balaie la piste
-      const g = mk(d + 60, 0), n = 12, bs = [], seed = []; I.evD.push(d + 60);
-      for (let i = 0; i < n; i++) { const m = new T3.Mesh(new T3.SphereGeometry(0.9, 8, 6), new T3.MeshBasicMaterial({ color: i % 2 ? '#ffd23a' : '#2a2d33' })); g.add(m); m.userData.noShadow = true; bs.push(m); seed.push([i * 2.399, i * 0.83 + 0.4, 4.2 + (i % 3) * 0.9]); }
-      const hive = new T3.Mesh(new T3.SphereGeometry(3.2, 12, 9), matS('#d9a21b')); hive.scale.y = 1.35; hive.position.set(-I.W(d) + 3, 14, 0); g.add(hive); let cx = 0, cz = 0, cyy = 11, pts = [];
-      ups.push((t) => { cx = 20 * Math.sin(t * 0.6); cz = 30 * Math.sin(t * 0.45 + 1); cyy = 11 + 5 * Math.sin(t * 0.5); pts.length = 0; for (let i = 0; i < n; i++) { const a = seed[i][0] + t * 1.7, b = seed[i][1] + t * 1.1, r = seed[i][2]; const x = cx + r * Math.cos(a) * Math.sin(b), y = cyy + r * 0.7 * Math.cos(b), z = cz + r * Math.sin(a) * Math.sin(b); bs[i].position.set(x, y, z); pts.push([x, y, z]); } g.updateMatrixWorld(true); });
+    const bees = (d, lx0, amp) => {   // un essaim d'abeilles qui balaie sa voie
+      const g = mk(d + 60, lx0), n = 14, bs = [], seed = []; I.evD.push(d + 60);
+      for (let i = 0; i < n; i++) { const m = new T3.Mesh(new T3.SphereGeometry(0.9, 8, 6), new T3.MeshBasicMaterial({ color: i % 2 ? '#ffd23a' : '#2a2d33' })); g.add(m); m.userData.noShadow = true; bs.push(m); seed.push([i * 2.399, i * 0.83 + 0.4, 4.4 + (i % 3) * 0.9]); }
+      const hive = new T3.Mesh(new T3.SphereGeometry(3.2, 12, 9), matS('#d9a21b')); hive.scale.y = 1.35; hive.position.set(-amp - 8, 14, 0); g.add(hive); let pts = [];
+      ups.push((t) => { const cx = amp * Math.sin(t * 0.6), cz = 30 * Math.sin(t * 0.45 + 1), cyy = 11 + 5 * Math.sin(t * 0.5); pts.length = 0; for (let i = 0; i < n; i++) { const a = seed[i][0] + t * 1.7, b = seed[i][1] + t * 1.1, r = seed[i][2]; const x = cx + r * Math.cos(a) * Math.sin(b), y = cyy + r * 0.7 * Math.cos(b), z = cz + r * Math.sin(a) * Math.sin(b); bs[i].position.set(x, y, z); pts.push([x, y, z]); } g.updateMatrixWorld(true); });
       addHit(d + 60, (pos) => { const l = loc(g, pos); for (const p of pts) if (Math.hypot(l.x - p[0], l.y - p[1], l.z - p[2]) < 1.0 + RR + 0.5) return true; return false; });
     };
-    const fallTrees = (d) => {   // troncs abattus : ils tremblent, puis tombent en travers de la piste
-      for (let i = 0; i < 4; i++) { const dd = d + i * 42, sg = i % 2 ? 1 : -1, Wb = I.W(dd) - 3, g = mk(dd, 0), piv = new T3.Group(); piv.position.set(sg * Wb, 0, 0); g.add(piv); piv.userData.dyn = true; const L = Math.min(40, Wb * 1.8), tr = cy(2.2, 2.7, L, '#7a5634', 10); tr.position.y = L / 2; piv.add(tr); const crown = new T3.Mesh(new T3.SphereGeometry(5, 12, 9), matS('#3f9a44')); crown.position.y = L; crown.scale.y = 0.8; piv.add(crown); dynSh(g, tr); I.evD.push(dd);
+    const fallTrees = (d, lx0, hw) => {   // troncs abattus : ils tremblent, puis tombent en travers de la voie
+      for (let i = 0; i < 4; i++) { const dd = d + i * 42, sg = i % 2 ? 1 : -1, g = mk(dd, lx0), piv = new T3.Group(); piv.position.set(sg * hw, 0, 0); g.add(piv); piv.userData.dyn = true; const L = Math.min(40, hw * 1.7), tr = cy(2.2, 2.7, L, '#7a5634', 10); tr.position.y = L / 2; piv.add(tr); const crown = new T3.Mesh(new T3.SphereGeometry(5, 12, 9), matS('#3f9a44')); crown.position.y = L; crown.scale.y = 0.8; piv.add(crown); dynSh(g, tr); I.evD.push(dd);
         let ang = 0; const off = i * 1.3; ups.push((t) => { const k = (t + off) % 5.2; ang = k < 2.4 ? (k > 1.5 ? 0.04 * Math.sin(t * 25) : 0) : k < 2.9 ? 1.5 * Math.pow((k - 2.4) / 0.5, 2) : k < 3.9 ? 1.5 : 1.5 * (1 - (k - 3.9) / 1.3); piv.rotation.z = sg * ang; g.updateMatrixWorld(true); });
-        addHit(dd, (pos) => { const l = loc(g, pos); if (Math.abs(l.z) > 2.7 + RR) return false; const hx = sg * Wb, tx = hx - sg * L * Math.sin(ang), ty = L * Math.cos(ang); return segDist(l.x, l.y, hx, 0, tx, ty) < 2.5 + RR; }); }
+        addHit(dd, (pos) => { const l = loc(g, pos); if (Math.abs(l.z) > 2.7 + RR) return false; const hx = sg * hw, tx = hx - sg * L * Math.sin(ang), ty = L * Math.cos(ang); return segDist(l.x, l.y, hx, 0, tx, ty) < 2.5 + RR; }); }
     };
-    const spiders = (d) => {   // araignees qui descendent et remontent sur leur fil
-      [-14, 0, 14].forEach((x0, i) => { const g = mk(d + 30 + i * 22, 0), body = new T3.Group(); g.add(body); body.userData.dyn = true; const bd = new T3.Mesh(new T3.SphereGeometry(2.2, 12, 9), matS('#2a2d33')); bd.scale.set(1, 0.85, 1.2); body.add(bd); const hd = new T3.Mesh(new T3.SphereGeometry(1.3, 10, 8), matS('#3a3d44')); hd.position.z = 2.2; body.add(hd);
+    const spiders = (d, lx0) => {   // araignees qui descendent et remontent sur leur fil
+      [-8, 8].forEach((x0, i) => { const g = mk(d + 30 + i * 22, lx0), body = new T3.Group(); g.add(body); body.userData.dyn = true; const bd = new T3.Mesh(new T3.SphereGeometry(2.2, 12, 9), matS('#2a2d33')); bd.scale.set(1, 0.85, 1.2); body.add(bd); const hd = new T3.Mesh(new T3.SphereGeometry(1.3, 10, 8), matS('#3a3d44')); hd.position.z = 2.2; body.add(hd);
         for (let k = 0; k < 8; k++) { const leg = cy(0.2, 0.2, 3.4, '#2a2d33', 5); leg.position.set((k < 4 ? 1 : -1) * 2.4, -0.4, (k % 4 - 1.5) * 1.1); leg.rotation.z = (k < 4 ? 1 : -1) * 0.9; body.add(leg); } for (const ex of [-0.5, 0.5]) { const eye = new T3.Mesh(new T3.SphereGeometry(0.3, 6, 5), new T3.MeshBasicMaterial({ color: '#ff3b3b' })); eye.position.set(ex, 0.5, 3.2); body.add(eye); }
         const thread = cy(0.08, 0.08, 1, '#e8eaee', 4); g.add(thread); thread.userData.noShadow = true; dynSh(g, bd); let sx2 = x0, sy = 14; I.evD.push(d + 30 + i * 22);
         ups.push((t) => { sy = 14 + 10 * Math.sin(t * 0.8 + i * 1.9); sx2 = x0 + 3 * Math.sin(t * 0.5 + i); body.position.set(sx2, sy, 0); thread.scale.y = 30 - sy; thread.position.set(sx2, (30 + sy) / 2, 0); g.updateMatrixWorld(true); });
         addHit(d + 30 + i * 22, (pos) => { const l = loc(g, pos); return Math.hypot(l.x - sx2, l.y - sy, l.z) < 2.6 + RR + 0.3; }); });
+    };
+    const brambles = (d, lx0, hw) => {   // ronces : trois murs epineux a trous decales (solides)
+      [[0, -8], [30, 9], [60, -2]].forEach(([o, gap], i) => { const dd = d + o, w1 = hw + gap - 5, w2 = hw - gap - 5; I.evD.push(dd);
+        for (const [a, b] of [[-hw, gap - 5], [gap + 5, hw]]) { if (b - a < 1) continue; const g = mk(dd, lx0 + (a + b) / 2), w = bx(b - a, 14, 3, '#5a4a2a'); w.position.y = 7; g.add(w); for (let k = 0; k < 9; k++) { const th = new T3.Mesh(new T3.ConeGeometry(0.5, 2.2, 5), matS('#7a8a3a')); th.position.set(((k * 37) % 100 / 100 - 0.5) * (b - a - 2), 2 + (k * 53) % 11, 1.8); th.rotation.x = 1.57; g.add(th); } const top = bx(b - a, 1.6, 3.4, '#3f9a44'); top.position.y = 14.4; g.add(top); I.boxes.push([dd - 1.5, dd + 1.5, Math.min((lx0 + a) * sx, (lx0 + b) * sx), Math.max((lx0 + a) * sx, (lx0 + b) * sx), 0, 15]); } });
+    };
+    const doors = (d, lx0, hw) => {   // portes battantes : deux battants qui s'ouvrent et se ferment
+      const g = mk(d, lx0), L = hw, H = 14, leaves = []; I.evD.push(d);
+      for (const sg of [-1, 1]) { const piv = new T3.Group(); piv.position.set(sg * hw, 0, 0); g.add(piv); piv.userData.dyn = true; const lf = bx(L, H, 1.4, sg > 0 ? '#ff4f9a' : '#ffffff'); lf.position.set(-sg * L / 2, H / 2, 0); piv.add(lf); for (let k = 0; k < 3; k++) { const st = bx(L - 1, 1, 1.5, '#ffd23a'); st.position.set(-sg * L / 2, 2.5 + k * 4.5, 0); piv.add(st); } const post = cy(1.0, 1.0, H + 1, '#ffd23a', 10); post.position.set(sg * hw, (H + 1) / 2, 0); g.add(post); dynSh(g, lf); leaves.push({ piv, sg }); }
+      let ang = 0; ups.push((t) => { ang = 0.95 * (0.5 + 0.5 * Math.sin(t * 0.9 + d)); for (const l of leaves) l.piv.rotation.y = l.sg * ang; g.updateMatrixWorld(true); });
+      addHit(d, (pos) => { const l = loc(g, pos); if (l.y > H + RR) return false; for (const sg of [-1, 1]) { const hx = sg * hw, tx = hx - sg * L * Math.cos(ang), tz = L * Math.sin(ang); if (segDist(l.x, l.z, hx, 0, tx, tz) < 1.0 + RR) return true; } return false; });
+    };
+    const kites = (d, lx0) => {   // cerfs-volants : des losanges qui balaient la voie en haut
+      const g = mk(d, lx0), ks = []; I.evD.push(d);
+      for (let i = 0; i < 3; i++) { const k = new T3.Group(); g.add(k); k.userData.dyn = true; const body = new T3.Mesh(new T3.OctahedronGeometry(3.3, 0), matS(['#ff4f9a', '#ffd23a', '#2f8cff'][i])); body.scale.set(1, 1.3, 0.25); k.add(body); const tail = cy(0.1, 0.1, 6, '#ffffff', 4); tail.position.y = -6; k.add(tail); dynSh(g, body); const str = cy(0.05, 0.05, 1, '#e8eaee', 4); g.add(str); str.userData.noShadow = true; ks.push({ k, str, x: 0, y: 12, ph: i * 2.1 }); }
+      ups.push((t) => { for (const o of ks) { o.x = 11 * Math.sin(t * 0.7 + o.ph); o.y = 12 + 5 * Math.sin(t * 0.9 + o.ph * 1.7); o.k.position.set(o.x, o.y, (o.ph - 2.1) * 8); o.k.rotation.z = Math.cos(t * 0.7 + o.ph) * 0.4; o.str.scale.y = o.y; o.str.position.set(o.x, o.y / 2, (o.ph - 2.1) * 8); } g.updateMatrixWorld(true); });
+      addHit(d, (pos) => { const l = loc(g, pos); for (const o of ks) if (Math.abs(l.z - (o.ph - 2.1) * 8) < 1.2 + RR && Math.hypot((l.x - o.x) / 3.5, (l.y - o.y) / 4.2) < 1 + RR / 3) return true; return false; });
+    };
+    // ---- deux etages : une dalle suspendue (le bas : sous la dalle ; le haut : au-dessus) et murs separateurs de voies doubles
+    const deckUp = (d0, len, hb, ht, colHex) => {
+      const pos = [], col = [], idx = [], cT = new T3.Color(colHex), cB = new T3.Color('#4a4f66'), cE = new T3.Color('#ffd23a'), P4 = (d, x, h) => T.at(d, x, I.bank(d) * x + h);
+      const quad = (a, b, c, e, cc) => { const o = pos.length / 3; for (const p of [a, b, c, e]) pos.push(p[0], p[1], p[2]); for (let k = 0; k < 4; k++) col.push(cc.r, cc.g, cc.b); idx.push(o, o + 1, o + 2, o, o + 2, o + 3); };
+      const sh = [];
+      for (let d = d0; d < d0 + len; d += 6) { const d1 = Math.min(d + 6, d0 + len), w0 = I.W(d) - 1.0, w1 = I.W(d1) - 1.0; if (w0 < 6 || w1 < 6) continue; const alt = ((d / 6) | 0) % 2 ? 0.96 : 1, ct = cT.clone().multiplyScalar(alt);
+        quad(P4(d, -w0, ht), P4(d, w0, ht), P4(d1, w1, ht), P4(d1, -w1, ht), ct); quad(P4(d, -w0, hb), P4(d1, -w1, hb), P4(d1, w1, hb), P4(d, w0, hb), cB);
+        quad(P4(d, -w0, hb), P4(d1, -w1, hb), P4(d1, -w1, ht), P4(d, -w0, ht), cE); quad(P4(d, w0, hb), P4(d, w0, ht), P4(d1, w1, ht), P4(d1, w1, hb), cE); I.boxes.push([d, d1, -w0, w0, hb, ht]);
+        const q4 = (dd, x) => { const p = T.at(dd, x, I.bank(dd) * x + 0.16); return [p[0] + LS.x * ht, p[1], p[2] + LS.z * ht]; }; sh.push([q4(d, -w0), q4(d, w0), q4(d1, w1), q4(d1, -w1)]); }
+      { const w = I.W(d0) - 1.0, w2 = I.W(d0 + len) - 1.0; if (w > 6) quad(P4(d0, -w, hb), P4(d0, -w, ht), P4(d0, w, ht), P4(d0, w, hb), cE); if (w2 > 6) quad(P4(d0 + len, -w2, hb), P4(d0 + len, w2, hb), P4(d0 + len, w2, ht), P4(d0 + len, -w2, ht), cE); }
+      for (let d = d0 + 18; d < d0 + len - 10; d += 36) { const w = I.W(d) - 3.4; if (w < 6) continue; for (const sg of [-1, 1]) { const p = T.at(d, sg * w, I.bank(d) * sg * w), pc = cy(1.7, 2.1, hb, '#6f7388', 10); pc.position.set(p[0], p[1] + hb / 2, p[2]); grp.add(pc); I.boxes.push([d - 1.7, d + 1.7, sg * w - 1.7, sg * w + 1.7, 0, hb]); } }
+      const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.Float32BufferAttribute(col, 3)); geo.setIndex(idx); geo.computeVertexNormals(); const m = new T3.Mesh(geo, new T3.MeshLambertMaterial({ vertexColors: true, side: T3.DoubleSide })); m.frustumCulled = false; m.userData.noShadow = true; grp.add(m);
+      { const sp = [], si = []; sh.forEach((qq, k) => { const o = k * 4; for (const p of qq) sp.push(p[0], p[1], p[2]); si.push(o, o + 1, o + 2, o, o + 2, o + 3); }); const sg2 = new T3.BufferGeometry(); sg2.setAttribute('position', new T3.Float32BufferAttribute(sp, 3)); sg2.setIndex(si); const sm = new T3.Mesh(sg2, SHM); sm.frustumCulled = false; sm.renderOrder = 2; sm.userData.noShadow = true; grp.add(sm); }
+    };
+    const divider = (d0, d1, h, style) => {   // mur central : deux voies
+      I.boxes.push([d0, d1, -1.5, 1.5, 0, h]); const g = mk((d0 + d1) / 2, 0), c1 = style === 'wood' ? '#6b4a2a' : '#ffd23a', c2 = style === 'wood' ? '#4e9a3a' : '#ff4f9a';
+      const w = bx(3, h, d1 - d0, c1); w.position.y = h / 2; g.add(w); const top = bx(3.6, 1.2, d1 - d0 + 0.4, c2); top.position.y = h + 0.3; g.add(top); for (let k = 0; k < Math.floor((d1 - d0) / 14); k++) { const st = bx(3.2, 3, 5, c2); st.position.set(0, h * 0.5, -(d1 - d0) / 2 + 8 + k * 14); g.add(st); }
+    };
+    const onLevel = (h, fn) => {   // pose des obstacles sur l'etage du haut : groupes, collisions et boites decales de h
+      const n0 = groups.length, b0 = I.boxes.length; fn(); for (let i = n0; i < groups.length; i++) { groups[i].position.y += h; groups[i].updateMatrixWorld(true); } for (let i = b0; i < I.boxes.length; i++) { I.boxes[i][4] += h; I.boxes[i][5] += h; }
     };
     const cave = (d) => {   // grotte : un plafond de roche bas avec des stalactites et des lueurs bleues
       const a = d + 20, b = d + 180, g = mk((a + b) / 2, 0), Wb = I.W(d) + 3; I.boxes.push([a, b, -Wb, Wb, 14.2, 32]); I.evD.push(d + 100);
@@ -681,7 +713,9 @@
     };
     const zip = (d) => {   // liane-tyrolienne : on attrape l'anneau et on traverse le vide a toute vitesse
       I.evD.push(d); const g = mk(d, 0), post = cy(1.6, 2.2, 22, '#6b4a2a', 10); post.position.set(0, 11, 0); g.add(post); const rg = new T3.Mesh(new T3.TorusGeometry(5.5, 0.55, 10, 28), new T3.MeshBasicMaterial({ color: '#7cff6a' })); rg.position.set(0, 14, 5); g.add(rg); rg.userData.noShadow = true;
-      guide([[d + 5, 0, 14], [d + 40, 6, 24], [d + 80, -6, 30], [d + 120, 5, 22], [d + 160, 0, 12], [d + 180, 0, 6]], { trig: [d + 5, 0, 14], r: 6.5, rh: 6, sp: 56, col: '#58b04a', rad: 0.5 });
+      const pts = [[d + 5, 0, 14], [d + 40, 6, 24], [d + 80, -6, 30], [d + 120, 5, 22], [d + 160, 0, 12], [d + 180, 0, 6]]; guide(pts, { trig: [d + 5, 0, 14], r: 10, rh: 9, sp: 56, col: '#58b04a', rad: 0.5, label: "ATTRAPE L'ANNEAU VERT !" });
+      rg.scale.setScalar(1.5); const bm = new T3.Mesh(new T3.CylinderGeometry(0.6, 0.6, 14, 8), new T3.MeshBasicMaterial({ color: '#7cff6a', transparent: true, opacity: 0.4, fog: false })); bm.position.set(0, 7, 5); bm.userData.noShadow = true; g.add(bm);
+      for (let q = 1; q <= 4; q++) { const cr = new T3.CatmullRomCurve3(pts.map((p) => new T3.Vector3(p[0], p[1], p[2]))), v = cr.getPoint(q * 0.045), p3 = T.at(v.x, v.y, I.bank(v.x) * v.y + v.z), tg = cr.getTangent(q * 0.045), r2 = new T3.Mesh(new T3.TorusGeometry(7 - q * 0.8, 0.35, 8, 24), new T3.MeshBasicMaterial({ color: '#7cff6a', transparent: true, opacity: 0.8, fog: false })); r2.position.set(p3[0], p3[1], p3[2]); const pa3 = T.at(v.x + tg.x, v.y + tg.y, I.bank(v.x) * v.y + v.z + tg.z); r2.lookAt(pa3[0], pa3[1], pa3[2]); r2.userData.noShadow = true; grp.add(r2); }
     };
     const windSlot = [];
     const wind = (d0, len, o) => {   // rafale VISIBLE : des filets d'air filent dans le sens du vent (lateral, de face ou ascendant) et poussent vraiment la fusee
@@ -695,7 +729,8 @@
         for (let i = 0; i < n; i++) { const q = st[i], tr = t * q.sp, x = wr(q.x + dir.x * tr, -hwid, hwid), y = wr(q.y + dir.y * tr, 2, 22), z = wr(q.z + dir.z * tr, -len / 2, len / 2); pa[i * 6] = x; pa[i * 6 + 1] = y; pa[i * 6 + 2] = z; pa[i * 6 + 3] = x - dir.x * q.L; pa[i * 6 + 4] = y - dir.y * q.L; pa[i * 6 + 5] = z - dir.z * q.L; } geo.attributes.position.needsUpdate = true; });
     };
     const S = (name) => STARTS[SEC.findIndex((s) => s.n === name)];
-    const LEN = (n) => SEC[SEC.findIndex((q) => q.n === n)].len, rowsAt = (n, a, b, step, fn) => { const s0 = S(n), L = LEN(n); let k = 0; for (let d = s0 + a; d <= s0 + L - b; d += step, k++) fn(d, k); }, sgn = (txt, n, off) => signs.push([txt, S(n) + (off === undefined ? -15 : off)]);
+    const LEN = (n) => SEC[SEC.findIndex((q) => q.n === n)].len, rowsAt = (n, a, b, step, fn) => { const s0 = S(n), L = LEN(n); let k = 0; for (let d = s0 + a; d <= s0 + L - b; d += step, k++) fn(d, k); }, HINT = { TRAMPOLINES: 'FONCE SUR UN TRAMPOLINE', LIANE: "ENTRE DANS L'ANNEAU VERT", CASCADE: 'MONTE POUR RESISTER', TOURNIQUET: 'ENTRE DEUX PALES', HUBLOT: 'VISE LE TROU', BEIGNETS: 'PASSE DANS LE TROU', FLEURS: "ATTENDS L'OUVERTURE", RACINES: 'HAUT PUIS BAS', SINGES: 'CERCLE ROUGE = IMPACT', ABEILLES: "EVITE L'ESSAIM", TRONCS: 'ILS TOMBENT', ARAIGNEES: 'PASSE ENTRE', GROTTE: 'PLAFOND BAS', 'DEUX VOIES': 'CHOISIS TON COTE', MARTEAUX: 'PASSE ENTRE LES COUPS', PALES: 'PASSE ENTRE LES PALES', BUMPERS: 'ZIGZAGUE', BALLONS: 'ENTRE LES BALLONS', SUCETTES: 'ATTENDS LE BALANCIER', GOMMES: 'ELLES REBONDISSENT', GUILLOTINES: 'PASSE QUAND ELLE MONTE', ETAGES: 'BAS OU HAUT', LIANES: 'ATTENDS LE BALANCIER', ROULEAUX: 'AU-DESSUS OU ENTRE', RIDEAUX: 'ENTRE LES LIANES', TOTEMS: 'PASSE ENTRE LES PLANCHES' },
+    sgn = (txt, n, off) => signs.push([HINT[txt] ? txt + '\n' + HINT[txt] : txt, S(n) + (off === undefined ? -15 : off)]);
     const tubeCols = (MT[I.map] || MT.arch).tube;
     if (I.map !== 'arch' && I.map !== 'jungle') for (const n of ['vide', 'vide2']) if (SEC.some((q) => q.n === n)) { tube(S(n) - 22, LEN(n) + 44, tubeCols); sgn('TUYAU', n, -62); }
     if (I.map === 'range') { wind(S('tir') + 110, 100, { lat: 12 }); wind(S('tir') + 215, 70, { lat: -12 }); sgn('VENT', 'tir', 70); }
@@ -725,13 +760,12 @@
       sgn('ROULEAUX', 'rondins', -10); rollLog(at('rondins', 60), 0, 0, 26); rollLog(at('rondins', 115), 0, 2.2, 26);
       sgn('RIDEAUX', 'pont', -10); curtain(at('pont', 55), 4, 0); curtain(at('pont', 100), 4, 2.1);
       sgn('LIANE', 'vide', -60); zip(S('vide') - 18);
-      sgn('FLEURS', 'fleurs', -10); flowers(at('fleurs', 50));
+      sgn('FLEURS', 'fleurs', -10); divider(at('fleurs', 25), at('fleurs', 225), 16, 'wood'); flowers(at('fleurs', 60), -22); spiders(at('fleurs', 60), 22);
       sgn('CASCADE', 'cascade', -10); cascade(at('cascade', 80));
+      sgn('ETAGES', 'canopee', -25); { const c0 = S('canopee'); deckUp(c0 + 30, 240, 16, 20, '#b88a52'); divider(c0 + 30, c0 + 270, 16, 'wood');   // sous la canopee : abeilles | ronces ; au-dessus : troncs abattus | singes
+        bees(at('canopee', 60), -22, 9); brambles(at('canopee', 70), 22, 20);
+        onLevel(20, () => { divider(c0 + 30, c0 + 270, 14, 'wood'); fallTrees(c0 + 60, -22, 20); monkeys(c0 + 90, 22, 1); }); }
       sgn('RACINES', 'racines', -10); roots(at('racines', 40));
-      sgn('SINGES', 'singes', -10); monkeys(at('singes', 40));
-      sgn('ABEILLES', 'abeilles', -10); bees(at('abeilles', 20));
-      sgn('TRONCS', 'troncs', -10); fallTrees(at('troncs', 50));
-      sgn('ARAIGNEES', 'araignees', -10); spiders(at('araignees', 20));
       sgn('GROTTE', 'grotte', -10); cave(at('grotte', 0));
       sgn('TOTEMS', 'totems', -10); totem(at('totems', 70), -16, 0, 1); totem(at('totems', 70), 16, 2.6, -1); totem(at('totems', 140), 0, 1.2, 1);
     } else if (I.map === 'range') {   // un seul obstacle par section (le champ de tir : les ennemis ; la falaise : le hangar)
@@ -744,17 +778,17 @@
     } else {   // ARCHIPEL : un seul exemplaire de chaque obstacle, chacun dans sa section
       const at = (n, o) => S(n) + o;
       sgn('BUMPERS', 'bumpers', -20); bumpers(at('bumpers', 60));
-      sgn('MARTEAUX', 'marteaux', -10); for (const [dd, xs] of [[60, [-30, 0, 30]], [112, [-15, 15]]]) xs.forEach((lx, q) => hammer(at('marteaux', dd), lx, q * 1.6 + dd * 0.03));
+      sgn('MARTEAUX', 'marteaux', -10); divider(at('marteaux', 25), at('marteaux', 215), 16); hammer(at('marteaux', 70), -22, 0); hammer(at('marteaux', 135), -22, 1.9); lolly(at('marteaux', 70), 22, 0.7); lolly(at('marteaux', 135), 22, 2.6);
       sgn('PALES', 'pont', -30); sweeper(at('pont', 55), 0, 0, 1); sweeper(at('pont', 120), 0, 1.6, -1);
       sgn('BEIGNETS', 'vide', -50); beignets(S('vide'));
       sgn('BALLONS', 'ballons', -20); balloons(at('ballons', 50), 5, 0); balloons(at('ballons', 110), 6, 2.2);
       sgn('TRAMPOLINES', 'trampolines', -10); trampolines(at('trampolines', 0));
-      sgn('DEUX VOIES', 'divise', -18); windmill(at('divise', 70), -24, 1); windmill(at('divise', 150), -24, -1); macarons(at('divise', 50), 24);
+      sgn('ETAGES', 'etages', -25); { const e0 = S('etages'); deckUp(e0 + 30, 230, 15, 19, '#ffd8ec'); divider(e0 + 30, e0 + 260, 15);   // etage du bas : macarons | portes battantes ; etage du haut : moulins | cerfs-volants
+        macarons(e0 + 60, -22); doors(e0 + 90, 22, 20); doors(e0 + 170, 22, 20);
+        onLevel(19, () => { divider(e0 + 30, e0 + 260, 14); windmill(e0 + 90, -22, 1); windmill(e0 + 180, -22, -1); kites(e0 + 130, 22); kites(e0 + 210, 22); }); }
       sgn('TOURNIQUET', 'tourniquet', -20); tourniquet(at('tourniquet', 70)); tourniquet(at('tourniquet', 140));
-      sgn('SUCETTES', 'sucettes', -20); lolly(at('sucettes', 60), -30, 0); lolly(at('sucettes', 60), 0, 1.4); lolly(at('sucettes', 60), 30, 2.8); lolly(at('sucettes', 120), -15, 0.7); lolly(at('sucettes', 120), 15, 2.1);
-      sgn('GOMMES', 'gommes', -20); gommes(at('gommes', 70));
+      sgn('GOMMES', 'gommes', -10); divider(at('gommes', 25), at('gommes', 220), 16); gommes(at('gommes', 70), -22); gateRow(at('gommes', 70), 22, 2, 0); gateRow(at('gommes', 140), 22, 2, 2.4);
       sgn('HUBLOT', 'hublot', -20); hublot(at('hublot', 80));
-      sgn('GUILLOTINES', 'guillotines', -20); gateRow(at('guillotines', 60), 0, 5, 0); gateRow(at('guillotines', 130), 0, 5, 2.4);
     }
     for (const g of groups) autoShadow(g);
     return { update: (t, rp) => { for (const f of ups) f(t, rp); dynUpdate(rp); }, hits, signs };
@@ -769,9 +803,11 @@
   })());
   const pole = (h, col) => new T3.Mesh(new T3.CylinderGeometry(0.28, 0.4, h, 8), new T3.MeshLambertMaterial({ color: col }));
   const _stex = {};
-  const signTex = (text) => _stex[text] || (_stex[text] = (() => { const cv = document.createElement('canvas'); cv.width = 320; cv.height = 112; const g = cv.getContext('2d'); g.fillStyle = '#f2c230'; g.fillRect(0, 0, 320, 112); g.fillStyle = '#1d1e22'; for (let k = -2; k < 12; k++) { g.beginPath(); g.moveTo(k * 32, 0); g.lineTo(k * 32 + 16, 0); g.lineTo(k * 32 + 16 - 24, 14); g.lineTo(k * 32 - 24, 14); g.fill(); g.beginPath(); g.moveTo(k * 32, 112); g.lineTo(k * 32 + 16, 112); g.lineTo(k * 32 + 16 - 24, 98); g.lineTo(k * 32 - 24, 98); g.fill(); }
-    g.fillStyle = '#111114'; g.fillRect(10, 20, 300, 72); g.fillStyle = '#ffd23a'; g.textAlign = 'center'; g.textBaseline = 'middle'; let px = 58; g.font = '800 ' + px + 'px Arial, sans-serif'; while (g.measureText(text).width > 280 && px > 20) { px -= 4; g.font = '800 ' + px + 'px Arial, sans-serif'; } g.fillText(text, 160, 57);
-    const t = new T3.CanvasTexture(cv); t.anisotropy = 4; return t; })());
+  const signTex = (text0) => { const text = text0; return _stex[text] || (_stex[text] = (() => { const cv = document.createElement('canvas'); cv.width = 320; cv.height = 112; const g = cv.getContext('2d'); g.fillStyle = '#f2c230'; g.fillRect(0, 0, 320, 112); g.fillStyle = '#1d1e22'; for (let k = -2; k < 12; k++) { g.beginPath(); g.moveTo(k * 32, 0); g.lineTo(k * 32 + 16, 0); g.lineTo(k * 32 + 16 - 24, 14); g.lineTo(k * 32 - 24, 14); g.fill(); g.beginPath(); g.moveTo(k * 32, 112); g.lineTo(k * 32 + 16, 112); g.lineTo(k * 32 + 16 - 24, 98); g.lineTo(k * 32 - 24, 98); g.fill(); }
+    g.fillStyle = '#111114'; g.fillRect(10, 20, 300, 72); g.textAlign = 'center'; g.textBaseline = 'middle';
+    const lines = text.split('\n'); const fit = (str, max, w) => { let px = max; g.font = '800 ' + px + 'px Arial, sans-serif'; while (g.measureText(str).width > w && px > 14) { px -= 2; g.font = '800 ' + px + 'px Arial, sans-serif'; } return px; };
+    if (lines.length === 1) { g.fillStyle = '#ffd23a'; fit(lines[0], 58, 280); g.fillText(lines[0], 160, 57); } else { g.fillStyle = '#ffd23a'; fit(lines[0], 36, 284); g.fillText(lines[0], 160, 40); g.fillStyle = '#ffffff'; fit(lines[1], 24, 284); g.fillText(lines[1], 160, 72); }
+    const t = new T3.CanvasTexture(cv); t.anisotropy = 4; return t; })()); };
 
   const skyDecor = (T, C, grp) => {   // des elements dans les airs, de chaque cote : ils donnent du volume et de la vie ; hors de portee de la fusee (au-dela du mur invisible)
     const I = C.isle, map = I.map, items = []; let sd = 12345; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
@@ -805,7 +841,7 @@
   };
   E.buildIsle = (T, C, grp) => {
     const I = C.isle, out = { isle: true, blocks: [], obst: [] }; SH_DYN.length = 0; { const th = (MT[I.map] || MT.arch).stone; for (let q = 0; q < 3; q++) STONE[q] = th[q]; }
-    const railsG = rails(T, C); grp.add(ceilings(T, C)); grp.add(bodyMesh(T, C)); grp.add(ocean(T, C)); grp.add(decals(T, C)); grp.add(railsG);
+    const railsG = rails(T, C); grp.add(bodyMesh(T, C)); grp.add(ocean(T, C)); grp.add(decals(T, C)); grp.add(railsG);
     const bm = new T3.MeshBasicMaterial({ map: bannerTex(), side: T3.DoubleSide, fog: false });
     const place = (d, lx, objs) => { const y = T.base(d), bk = I.bank(d), p = T.at(d, lx, bk * lx), q = T.at(d + 3, lx, bk * lx), g = new T3.Group(); g.position.set(p[0], p[1], p[2]); g.lookAt(q[0], p[1], q[2]); grp.add(g); for (const o of objs) g.add(o); autoShadow(g); return g; };
     for (let d = 100; d < C.len - 40; d += 75) for (const sg of [-1, 1]) {   // poteaux de course : un drapeau « COLD IMPACT CUP » tourne vers la fusee qui arrive
@@ -832,11 +868,18 @@
       place(FNd, 0, objs); I.boxes.push([FNd, FNd + DEP, -hwB - 3, -hwB, 0, HB + 3], [FNd, FNd + DEP, hwB, hwB + 3, 0, HB + 3], [FNd, FNd + DEP, -hwB - 3, hwB + 3, HB, HB + 3]); }
     if (I.map === 'jungle') {   // arbres de jungle sur les bords : baobab a racines, palmier courbe, canopee en grappe de boules, lianes qui pendent
       const greens = ['#2f8a3c', '#3f9a44', '#58b04a', '#7cc65a'];
-      const baobab = (h, k) => { const o = [], tr = cy(1.2, 2.4, h, '#7a5634', 12); tr.position.y = h / 2; o.push(tr); for (let q = 0; q < 4; q++) { const a = q * 1.57 + 0.4, rt = new T3.Mesh(new T3.ConeGeometry(1.1, 4, 6), mat('#6b4a2a')); rt.position.set(Math.cos(a) * 2.2, 1.6, Math.sin(a) * 2.2); rt.rotation.z = Math.cos(a) * 0.5; rt.rotation.x = -Math.sin(a) * 0.5; o.push(rt); }
-        for (const [x, y, z, r] of [[0, h + 3, 0, 6.2], [4.2, h, 1.2, 4.4], [-4, h + 0.5, -1.5, 4.8], [1.2, h + 6, -1, 3.8], [-1.5, h - 0.5, 4, 4]]) { const c3 = new T3.Mesh(new T3.SphereGeometry(r, 14, 10), matS(greens[(k + Math.round(x)) & 3])); c3.position.set(x, y, z); c3.scale.y = 0.78; o.push(c3); }
-        for (let q = 0; q < 3; q++) { const vn = cy(0.14, 0.14, 7, '#3f8a3a', 5); vn.position.set(Math.cos(q * 2.1) * 4.6, h - 2.5, Math.sin(q * 2.1) * 4.6); o.push(vn); } return o; };
-      const palm = (h, k) => { const o = []; for (let q = 0; q < 4; q++) { const sg = cy(0.8 - q * 0.1, 0.9 - q * 0.1, h / 4 + 0.4, q % 2 ? '#8a6238' : '#7a5634', 8); sg.position.set(q * 0.7, h / 8 + q * (h / 4), 0); sg.rotation.z = -0.13 * q; o.push(sg); }
-        for (let q = 0; q < 7; q++) { const a = q * 0.898, fr = new T3.Mesh(new T3.ConeGeometry(0.9, 7, 4), mat(q % 2 ? '#3f9a44' : '#58b04a')); fr.scale.set(1, 1, 0.25); fr.position.set(2.7 + Math.cos(a) * 3, h + 0.2 - 1, Math.sin(a) * 3); fr.rotation.z = Math.cos(a) * 1.25 - 1.57 * 0 + 1.3; fr.rotation.y = a; o.push(fr); } const cc3 = new T3.Mesh(new T3.SphereGeometry(0.9, 8, 6), matS('#6b4a2a')); cc3.position.set(2.1, h - 0.6, 0.4); o.push(cc3); return o; };
+      const baobab = (h, k) => { const o = [], bark = ['#7a5634', '#6b4a2a', '#8a6238'];   // tronc en trois blocs qui s'affinent, deux branches, grosse canopee a plusieurs etages de feuillage, fleurs et lianes
+        for (let q = 0; q < 3; q++) { const sg2 = cy(2.5 - q * 0.45, 2.9 - q * 0.45, h / 3 + 0.3, bark[q % 3], 12); sg2.position.y = h / 6 + q * (h / 3); o.push(sg2); }
+        for (let q = 0; q < 5; q++) { const a = q * 1.257 + 0.4, rt = new T3.Mesh(new T3.ConeGeometry(1.0, 4.4, 6), mat('#6b4a2a')); rt.position.set(Math.cos(a) * 2.5, 1.6, Math.sin(a) * 2.5); rt.rotation.z = Math.cos(a) * 0.55; rt.rotation.x = -Math.sin(a) * 0.55; o.push(rt); }
+        for (const s3 of [-1, 1]) { const br = cy(0.7, 1.0, 7, '#7a5634', 8); br.position.set(s3 * 2.6, h * 0.72, 0); br.rotation.z = -s3 * 0.9; o.push(br); }
+        const lv = [[0, h + 2.5, 0, 6.8, 0], [5.2, h + 0.2, 1.8, 4.9, 1], [-5, h + 0.8, -2, 5.2, 2], [1.5, h + 6.8, -1.2, 4.4, 3], [-1.8, h - 1.2, 5, 4.2, 1], [3.2, h + 4.4, 3.5, 3.6, 3]];
+        for (const [x, y, z, r, c] of lv) { const c3 = new T3.Mesh(new T3.IcosahedronGeometry(r, 1), mat(greens[(c + k) & 3])); c3.position.set(x, y, z); c3.scale.y = 0.82; o.push(c3); }
+        for (let q = 0; q < 6; q++) { const a = q * 1.05 + k, fl = new T3.Mesh(new T3.SphereGeometry(0.5, 6, 5), new T3.MeshBasicMaterial({ color: q % 2 ? '#ff5fa8' : '#ffd23a' })); fl.position.set(Math.cos(a) * 6.4, h + 1 + (q % 3) * 1.6, Math.sin(a) * 6.4); fl.userData.noShadow = true; o.push(fl); }
+        for (let q = 0; q < 4; q++) { const vn = cy(0.12, 0.12, 6 + q, '#3f8a3a', 5); vn.position.set(Math.cos(q * 1.6) * 5.6, h - 3, Math.sin(q * 1.6) * 5.6); o.push(vn); }
+        for (let q = 0; q < 3; q++) { const mu = new T3.Mesh(new T3.SphereGeometry(0.8, 8, 5, 0, 6.2832, 0, 1.57), matS(q % 2 ? '#ff5a4a' : '#ffd23a')); mu.position.set(3.4 + q * 0.9, 0.2, 2.2 - q * 1.3); o.push(mu); } return o; };
+      const palm = (h, k) => { const o = []; for (let q = 0; q < 5; q++) { const sg = cy(0.8 - q * 0.09, 0.9 - q * 0.09, h / 5 + 0.4, q % 2 ? '#8a6238' : '#7a5634', 8); sg.position.set(q * 0.55, h / 10 + q * (h / 5), 0); sg.rotation.z = -0.1 * q; o.push(sg); }
+        for (let q = 0; q < 9; q++) { const a = q * 0.698, fr = new T3.Mesh(new T3.ConeGeometry(0.95, 8, 4), mat(q % 3 === 0 ? '#2f8a3c' : q % 3 === 1 ? '#58b04a' : '#7cc65a')); fr.scale.set(1, 1, 0.22); fr.position.set(2.6 + Math.cos(a) * 3.4, h - 0.6 - (q % 2) * 0.8, Math.sin(a) * 3.4); fr.rotation.z = Math.cos(a) * 1.15 + 1.35; fr.rotation.y = a; o.push(fr); }
+        for (let q = 0; q < 3; q++) { const cc3 = new T3.Mesh(new T3.SphereGeometry(0.75, 8, 6), matS('#6b4a2a')); cc3.position.set(2.0 + q * 0.5, h - 1.4 - q * 0.2, 0.5 - q * 0.6); o.push(cc3); } return o; };
       for (let d = 60, k = 0; d < C.len + 40; d += 30, k++) for (const sg of [-1, 1]) { if (((d / 30) | 0) % 2 === (sg > 0 ? 0 : 1)) continue; const w = I.W(d); if (w < 22) continue; const lx = sg * (w - 6.5), h = 15 + ((d * 7) % 9), objs = (k % 3 === 2) ? palm(h, k) : baobab(h, k);
         place(d, lx, objs); I.boxes.push([d - 1.6, d + 1.6, lx - 1.6, lx + 1.6, 0, h + 8]); }
     }
