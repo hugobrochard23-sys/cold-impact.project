@@ -605,21 +605,21 @@ const CUP = SHAPES.map((s) => s.name);
   };
   // ---------------------------------------------------------------- le paquet de la Coupe gagnee : un costume
   const drawPack = (ui, ctx, g, W0, H, w) => {
-    const F = Home.evoK.frame(ui, ctx, W0, H), { Y, T0, cw, cx, HH } = F, S = UI.S, t = (performance.now() - w.t0) / 1000, pk = w.info.pack;
-    ctx.fillStyle = 'rgba(10,14,40,0.9)'; ctx.fillRect(0, T0, W0, HH); const cy = Y(0.42);
-    UI.text(ctx, 'PAQUET DE COUPE', cx, Y(0.1), S(80), '#FFD23A', { outline: true });
+    const F = Home.evoK.frame(ui, ctx, W0, H), { Y, T0, cw, cx, HH } = F, S = UI.S, T = UI.THEME, t = (performance.now() - w.t0) / 1000, pk = w.info.pack;
+    { const g0 = ctx.createLinearGradient(0, T0, 0, T0 + HH); g0.addColorStop(0, 'rgba(10,11,14,0.86)'); g0.addColorStop(0.5, 'rgba(10,11,14,0.7)'); g0.addColorStop(1, 'rgba(10,11,14,0.9)'); ctx.fillStyle = g0; ctx.fillRect(0, T0, W0, HH); } const cy = Y(0.44);
+    UI.text(ctx, 'COFFRE DE LA COUPE', cx, Y(0.12), UI.fit(ctx, 'COFFRE DE LA COUPE', cw * 0.92, S(104)), T.yellow, { outline: true });
     if (!w.opened) {
       const sh = Math.sin(t * 22) * S(6) * Math.min(1, t / 1.2), sc = 1 + 0.04 * Math.sin(t * 5);
-      ctx.save(); ctx.translate(cx + sh, cy); ctx.scale(sc, sc); ctx.fillStyle = '#7a3cf0'; UI.rrect(ctx, -S(150), -S(200), S(300), S(400), S(40)); ctx.fill(); ctx.lineWidth = S(10); ctx.strokeStyle = '#ffffff'; ctx.stroke();
-      ctx.fillStyle = '#ffd23a'; ctx.fillRect(-S(150), -S(30), S(300), S(60)); UI.text(ctx, '?', 0, -S(100), S(150), '#ffffff', { outline: true }); ctx.restore();
-      UI.text(ctx, 'TOUCHE POUR OUVRIR', cx, Y(0.8), S(46), '#ffffff', { outline: true });
-      UI.tap(ui, cx - S(160), cy - S(210), S(320), S(420), () => { w.opened = true; w.t1 = performance.now(); try { g.audio.play('victory'); g.flash = 0.8; g.flashColor = '#ffffff'; } catch (e) { /* effets */ } });
+      ctx.save(); ctx.translate(cx + sh, cy); ctx.scale(sc, sc); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowOffsetY = S(12); ctx.shadowBlur = 0; UI.artImg(ctx, 'chest', 0, 0, S(480)); ctx.restore();
+      UI.text(ctx, 'TOUCHE POUR OUVRIR', cx, Y(0.8), S(52), T.white, { outline: true });
+      UI.tap(ui, cx - S(260), cy - S(260), S(520), S(520), () => { w.opened = true; w.t1 = performance.now(); try { g.audio.play('victory'); g.flash = 0.8; g.flashColor = '#ffffff'; } catch (e) { /* effets */ } });
     } else {
-      const k = U.clamp((performance.now() - w.t1) / 500, 0, 1), sk = pk.skin ? CC.Skins.byId[pk.skin] : null, col = ['#8a96a6', '#3a8cff', '#c04cf0'][pk.rar || 0];
-      ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.beginPath(); ctx.arc(0, 0, S(330) * (0.8 + 0.2 * Math.sin(t * 3)), 0, 6.283); ctx.fill();
-      ctx.fillStyle = '#1b2236'; UI.rrect(ctx, -S(190), -S(240), S(380), S(480), S(36)); ctx.fill(); ctx.lineWidth = S(10); ctx.strokeStyle = col; ctx.stroke();
-      if (sk) drawRocketIcon(ctx, 0, -S(30), S(260), sk); ctx.restore();
-      if (sk) { UI.text(ctx, pk.fresh ? 'NOUVEAU COSTUME !' : 'DEJA POSSEDE : +300 PIECES', cx, Y(0.69), S(52), '#FFD23A', { outline: true }); UI.text(ctx, (sk.short || sk.name || pk.skin).toUpperCase() + '  -  ' + PRO.rarName[pk.rar || 0], cx, Y(0.75), S(38), '#ffffff', { outline: true }); }
+      const k = U.clamp((performance.now() - w.t1) / 500, 0, 1), sk = pk.skin ? CC.Skins.byId[pk.skin] : null, pw = S(560), ph = S(600);
+      ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); UI.panel(ctx, -pw / 2, -ph / 2, pw, ph, { c: S(36), border: T.border2, bw: S(4) });
+      { const tc = sk && E.skinThumb ? E.skinThumb(pk.skin) : null; if (tc) ctx.drawImage(tc, -S(250), -S(250), S(500), S(375)); else UI.artImg(ctx, 'chest_open', 0, -S(70), S(400)); }
+      if (sk) { const nm = (sk.short || sk.name || pk.skin).toUpperCase(); UI.text(ctx, nm, 0, S(170), UI.fit(ctx, nm, pw * 0.84, S(60)), T.white, { shadow: false }); UI.text(ctx, PRO.rarName[pk.rar || 0], 0, S(236), S(38), T.dim, { shadow: false }); }
+      ctx.restore();
+      if (sk) UI.text(ctx, pk.fresh ? 'NOUVEAU COSTUME !' : 'DEJA POSSEDE : +300 PIECES', cx, Y(0.76), UI.fit(ctx, 'DEJA POSSEDE : +300 PIECES', cw * 0.9, S(56)), T.yellow, { outline: true });
       const bw = cw * 0.6, bh = S(130), bx = cx - bw / 2, by = Y(0.89) - bh / 2; UI.btnPrimary(ctx, bx, by, bw, bh, 'SUPER !'); UI.tap(ui, bx, by, bw, bh, () => { goNext(g); });
     }
   };
@@ -652,7 +652,7 @@ const CUP = SHAPES.map((s) => s.name);
   // ---------------------------------------------------------------- HUD de vol : l'ancienne barre de progression, couchee et plus petite, + le chrono
   Home.evoUI.hud = function (ctx, g, W0, H) {
     const run = g.endlessRun, rk = g.rocket; if (!run || !rk || g.ui.overlay) return;
-    const u = H > W0 ? W0 : Math.min(W0, H * (RACE ? 0.9 : 0.62)); UI.begin(u, g.hudPr || 1); const S = UI.S, FN = E.shortFin || 470; if (CC.RUI) CC.RUI.begin();
+    const u = H > W0 ? W0 : Math.min(W0, H * (RACE ? 0.9 : 0.62)); UI.begin(u, g.hudPr || 1); const S = UI.S, FN = E.shortFin || 470;
     const pct = U.clamp(run.dist / FN, 0, 1), len = Math.min(W0 * 0.3, H * 0.6), bw = len * 0.13, cx = W0 / 2, cy = H * 0.016 + bw / 2 + S(4);
     if (!RACE) {
     ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.PI / 2);   // la barre verticale devient horizontale : depart a gauche, drapeau a droite
@@ -672,28 +672,28 @@ const CUP = SHAPES.map((s) => s.name);
     }
     if (RACE && W) {
       const rd = R.round - 1, fn = E.shortFin || 470, tNow = Math.max(0, g.flightTime);
-      { const RU = CC.RUI, P = RU.PAL, x0 = S(24), y0 = S(22), w0 = S(440), h0 = S(104); RU.panel(ctx, x0, y0, w0, h0, { dark: true, r: S(30) }); RU.icon(ctx, 'flag', x0 + S(56), y0 + h0 / 2, S(56), { fill: P.yellow });
-        RU.text(ctx, "COURSE VERS L'ARRIVEE", x0 + S(100), y0 + S(36), RU.fit(ctx, "COURSE VERS L'ARRIVEE", w0 - S(124), S(30)), P.white, { align: 'left', thin: true });
-        RU.text(ctx, 'MANCHE ' + R.round + '/3   ' + ord(R.live) + ' / ' + R.field[rd] + '   ' + Math.max(0, g.flightTime).toFixed(1) + ' S', x0 + S(100), y0 + S(72), RU.fit(ctx, 'MANCHE 3/3   32E / 32   199.9 S', w0 - S(124), S(26)), P.sky, { align: 'left', thin: true }); }
+      { const x0 = S(24), y0 = S(22), w0 = S(440), h0 = S(104), l1 = "COURSE VERS L'ARRIVEE", l2 = 'MANCHE ' + R.round + '/3   ' + ord(R.live) + ' / ' + R.field[rd] + '   ' + Math.max(0, g.flightTime).toFixed(1) + ' S'; UI.panel(ctx, x0, y0, w0, h0, { c: S(24) }); UI.artImg(ctx, 'pin', x0 + S(54), y0 + h0 / 2, S(78));
+        UI.outlined(ctx, l1, x0 + S(104), y0 + S(36), UI.fit(ctx, l1, w0 - S(128), S(36)), '#F0EDE4', null, { align: 'left' });
+        UI.outlined(ctx, l2, x0 + S(104), y0 + S(74), UI.fit(ctx, 'MANCHE 3/3   32E / 32   199.9 S', w0 - S(128), S(30)), '#E4B84D', null, { align: 'left' }); }
       // qualifies : combien de pilotes ont deja franchi la ligne
       const ISL = !!(E.course && E.course.isle);
-      { const RU = CC.RUI, P = RU.PAL, qn = Math.min(R.keep[rd], W.bots.filter((b) => b.fin !== undefined && b.fin <= tNow).length), w1 = S(310), h1 = S(132), x1 = W0 - S(24) - w1, y1 = S(22), full = qn >= R.keep[rd];
-        RU.panel(ctx, x1, y1, w1, h1, { dark: true, r: S(30) }); RU.text(ctx, rd === 2 ? 'VICTOIRE' : 'QUALIFIES', x1 + w1 / 2, y1 + S(30), S(26), P.sky, { thin: true }); RU.text(ctx, qn + ' / ' + R.keep[rd], x1 + w1 / 2, y1 + S(72), S(54), full ? P.red : P.greenL);
-        RU.bar(ctx, x1 + S(26), y1 + h1 - S(34), w1 - S(52), S(20), qn / R.keep[rd], full ? { c0: P.redL, c1: P.red } : null);
-        const nowF = performance.now(), fd = (W.feed || []).filter((q) => nowF - q.t0 < 4200).slice(-4); fd.forEach((q, i2) => { const a = U.clamp((4200 - (nowF - q.t0)) / 700, 0, 1) * U.clamp((nowF - q.t0) / 150, 0, 1); ctx.save(); ctx.globalAlpha = a; RU.icon(ctx, 'check', W0 - S(44), y1 + h1 + S(40) + i2 * S(40), S(26), { fill: P.greenL }); RU.text(ctx, q.name, W0 - S(70), y1 + h1 + S(40) + i2 * S(40), S(28), P.white, { align: 'right', thin: true }); ctx.restore(); }); }
+      { const qn = Math.min(R.keep[rd], W.bots.filter((b) => b.fin !== undefined && b.fin <= tNow).length), w1 = S(310), h1 = S(146), x1 = W0 - S(24) - w1, y1 = S(22), full = qn >= R.keep[rd], nseg = Math.min(8, R.keep[rd]);
+        UI.panel(ctx, x1, y1, w1, h1, { c: S(24) }); UI.outlined(ctx, rd === 2 ? 'VICTOIRE' : 'QUALIFIES', x1 + w1 / 2, y1 + S(28), S(28), '#8FA0B0'); UI.outlined(ctx, qn + ' / ' + R.keep[rd], x1 + w1 / 2, y1 + S(70), S(56), full ? '#FF2B2B' : '#F0EDE4');
+        UI.segments(ctx, x1 + S(26), y1 + h1 - S(42), w1 - S(52), S(26), Math.round(qn / R.keep[rd] * nseg), nseg, { on: full ? '#FF2B2B' : '#E4B84D' });
+        const nowF = performance.now(), fd = (W.feed || []).filter((q) => nowF - q.t0 < 4200).slice(-4); fd.forEach((q, i2) => { const a = U.clamp((4200 - (nowF - q.t0)) / 700, 0, 1) * U.clamp((nowF - q.t0) / 150, 0, 1); ctx.save(); ctx.globalAlpha = a; UI.text(ctx, q.name, W0 - S(30), y1 + h1 + S(40) + i2 * S(40), S(30), '#F0EDE4', { align: 'right' }); ctx.restore(); }); }
       // morts : un crane et le nombre de pilotes que tu as fait exploser ; pieces
-      if (R.kills > 0) { const kx = S(86), ky = H * 0.19; ctx.save(); ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#0b0d12'; ctx.lineWidth = S(5); ctx.beginPath(); ctx.arc(kx, ky - S(6), S(26), 0, 6.283); ctx.fill(); ctx.stroke(); ctx.fillRect(kx - S(13), ky + S(10), S(26), S(15)); ctx.strokeRect(kx - S(13), ky + S(10), S(26), S(15)); ctx.fillStyle = '#0b0d12'; ctx.beginPath(); ctx.arc(kx - S(10), ky - S(8), S(6.5), 0, 6.283); ctx.arc(kx + S(10), ky - S(8), S(6.5), 0, 6.283); ctx.fill(); ctx.restore(); UI.text(ctx, String(R.kills), kx + S(76), ky, S(56), '#ffffff', { outline: true }); }
+      if (R.kills > 0) UI.text(ctx, 'K.O.  ' + R.kills, S(34), H * 0.19, S(52), '#F0EDE4', { align: 'left', outline: true });
       if (rk.active && g.state === 'FLIGHT' && !g.evoFinish && rk.vel.lengthSq() > 4) {   // reticule : ou la fusee va, 40 m devant
         tmpHud.copy(rk.pos).addScaledVector(tmp.copy(rk.vel).normalize(), 40); CC.Curve.apply(tmpHud, g.camera).project(g.camera);
         if (tmpHud.z < 1 && Math.abs(tmpHud.x) < 1.2 && Math.abs(tmpHud.y) < 1.2) { const cur2 = false, rx = cur2 ? (I.cx * 0.5 + 0.5) * W0 : (tmpHud.x * 0.5 + 0.5) * W0, ry = cur2 ? I.cy * H : (-tmpHud.y * 0.5 + 0.5) * H, rr = S(16); ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = S(3.5); ctx.beginPath(); ctx.arc(rx, ry, rr, 0, 6.283); ctx.moveTo(rx - rr * 1.7, ry); ctx.lineTo(rx - rr * 0.8, ry); ctx.moveTo(rx + rr * 0.8, ry); ctx.lineTo(rx + rr * 1.7, ry); ctx.stroke(); ctx.restore(); }
       }
       if (W.ground) UI.text(ctx, 'RASANT', cx, H * 0.8, S(40), '#7CFF6A', { outline: true });
       if (ISL && W.pc && !W.path && E.course.isle.paths) for (const pth of E.course.isle.paths) { const dd = pth.d - W.pc.d; if (dd > -3 && dd < 120 && pth.label) { const bl = 0.7 + 0.3 * Math.sin(performance.now() / 160); ctx.save(); ctx.globalAlpha = bl; UI.text(ctx, pth.label, cx, H * 0.26, S(40), '#7CFF6A', { outline: true }); ctx.restore(); break; } }   // guide : ou se placer pour prendre un trampoline ou une liane
-      if (ISL && g.state === 'FLIGHT' && g.flightTime > 0.6 && g.flightTime < 10) { const RU = CC.RUI, al = U.clamp(10 - g.flightTime, 0, 1) * U.clamp((g.flightTime - 0.6) / 0.5, 0, 1), hw = S(820), hh = S(84), hx = W0 / 2 - hw / 2, hy = H * 0.9 - hh / 2, lab = 'ESPACE : AVANCER      FLECHES : DIRIGER      MAJ : BOOST'; ctx.save(); ctx.globalAlpha = al; RU.panel(ctx, hx, hy, hw, hh, { dark: true, r: S(40) }); RU.text(ctx, lab, W0 / 2, hy + hh / 2 + S(2), RU.fit(ctx, lab, hw * 0.9, S(30)), RU.PAL.white, { thin: true }); ctx.restore(); }   // l'aide du depart : les fleches, et le boost
+      if (ISL && g.state === 'FLIGHT' && g.flightTime > 0.6 && g.flightTime < 10) { const al = U.clamp(10 - g.flightTime, 0, 1) * U.clamp((g.flightTime - 0.6) / 0.5, 0, 1), hw = S(860), hh = S(88), hx = W0 / 2 - hw / 2, hy = H * 0.9 - hh / 2, lab = 'ESPACE : AVANCER      FLECHES : DIRIGER      MAJ : BOOST'; ctx.save(); ctx.globalAlpha = al; UI.panel(ctx, hx, hy, hw, hh, { c: S(24) }); UI.outlined(ctx, lab, W0 / 2, hy + hh / 2, UI.fit(ctx, lab, hw * 0.9, S(36)), '#F0EDE4'); ctx.restore(); }   // l'aide du depart : les fleches, et le boost
       if (rk.active && g.state === 'FLIGHT' && !g.evoFinish) {   // une fleche au-dessus de notre fusee, et la mini-barre de boost dessous
         tmpHud.copy(rk.pos); CC.Curve.apply(tmpHud, g.camera).project(g.camera);
         if (tmpHud.z < 1 && Math.abs(tmpHud.x) < 1.1 && Math.abs(tmpHud.y) < 1.1) { const px = (tmpHud.x * 0.5 + 0.5) * W0, py = (-tmpHud.y * 0.5 + 0.5) * H, bob = Math.sin(performance.now() / 220) * S(4);
-          ctx.save(); ctx.translate(px, py - S(122) + bob); ctx.fillStyle = '#ffd23a'; ctx.shadowColor = 'rgba(8,16,44,0.4)'; ctx.shadowBlur = S(10); ctx.shadowOffsetY = S(3); ctx.beginPath(); ctx.moveTo(0, S(22)); ctx.bezierCurveTo(-S(8), S(10), -S(25), S(4), -S(25), -S(9)); ctx.arc(0, -S(9), S(25), Math.PI, 0); ctx.bezierCurveTo(S(25), S(4), S(8), S(10), 0, S(22)); ctx.closePath(); ctx.fill(); ctx.restore();
+          ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowOffsetY = S(5); ctx.shadowBlur = 0; UI.artImg(ctx, 'pin', px, py - S(132) + bob, S(88)); ctx.restore();   // le repere du joueur : l'epingle du jeu
           const en = W.en === undefined ? 1 : W.en; if (en < 0.995 || W.bst) { const bw2 = S(120), bh2 = S(13), bx2 = px - bw2 / 2, by2 = py + S(74); ctx.save(); ctx.fillStyle = 'rgba(10,12,20,0.7)'; UI.rrect(ctx, bx2 - S(3), by2 - S(3), bw2 + S(6), bh2 + S(6), S(8)); ctx.fill(); ctx.fillStyle = en > 0.25 ? '#7CFF6A' : '#ff9a30'; UI.rrect(ctx, bx2, by2, Math.max(S(4), bw2 * en), bh2, S(6)); ctx.fill(); ctx.restore(); } } }
       if (ISL && rk.active && g.state === 'FLIGHT' && !g.evoFinish) { const now2 = performance.now(), mn2 = Math.min(W0, H), bi = W.bst ? 2 : 1; ctx.save(); ctx.lineCap = 'round'; for (let q = 0; q < 26; q++) { const ph = ((q * 0.381 + now2 / (520 / bi)) % 1), a = q * 2.399 + 0.5, r0 = mn2 * (0.34 + 0.42 * ph), r1 = r0 + mn2 * (0.02 + 0.1 * ph * bi); ctx.strokeStyle = 'rgba(255,255,255,' + (0.05 + 0.2 * ph * (bi > 1 ? 1.4 : 1)) + ')'; ctx.lineWidth = S(2 + 2.2 * ph); ctx.beginPath(); ctx.moveTo(W0 / 2 + Math.cos(a) * r0 * 1.25, H * 0.52 + Math.sin(a) * r0 * 0.8); ctx.lineTo(W0 / 2 + Math.cos(a) * r1 * 1.25, H * 0.52 + Math.sin(a) * r1 * 0.8); ctx.stroke(); } ctx.restore(); }
       if (W.boostT > 0 || W.bst) { ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,' + (0.3 * (W.bst ? 1 : Math.min(1, W.boostT))) + ')'; ctx.lineWidth = S(3); const cx0 = W0 / 2, cy0 = H * 0.55, mn = Math.min(W0, H); for (let q = 0; q < 30; q++) { const a = q / 30 * 6.283, r0 = mn * (0.36 + 0.1 * ((q * 7) % 5) / 5), r1 = r0 + mn * 0.24; ctx.beginPath(); ctx.moveTo(cx0 + Math.cos(a) * r0, cy0 + Math.sin(a) * r0 * 0.8); ctx.lineTo(cx0 + Math.cos(a) * r1, cy0 + Math.sin(a) * r1 * 0.8); ctx.stroke(); } ctx.restore(); }   // lignes de vitesse du turbo
@@ -703,14 +703,13 @@ const CUP = SHAPES.map((s) => s.name);
       for (const b of named) {
         tmpHud.copy(b.m.position); CC.Curve.apply(tmpHud, cam).project(cam); if (tmpHud.z > 1 || tmpHud.z < -1 || Math.abs(tmpHud.x) > 1.15 || Math.abs(tmpHud.y) > 1.15) continue;
         const sx = (tmpHud.x * 0.5 + 0.5) * W0, sy = (-tmpHud.y * 0.5 + 0.5) * H, k = U.clamp(46 / Math.max(10, cpos.distanceTo(b.m.position)), 0.5, 1.15);
-        CC.RUI.text(ctx, b.name, sx, sy - S(92) * k, S(34) * k, b === W.lead ? '#FFD23A' : '#ffffff', {});
-        if (b === W.lead) CC.RUI.text(ctx, '1ER', sx, sy - S(142) * k, S(36) * k, '#FFD23A', {});
+        UI.text(ctx, b.name, sx, sy - S(92) * k, S(34) * k, b === W.lead ? '#E4B84D' : '#F0EDE4', {});
+        if (b === W.lead) UI.text(ctx, '1ER', sx, sy - S(142) * k, S(36) * k, '#E4B84D', {});
       }
       if (W.lead && !(W.lead.m && W.lead.m.visible)) {   // le premier est loin devant : une fleche au bord de l'ecran avec l'ecart
         const T = run.T, L0 = W.lead; lanePos(T, L0.d, L0.off, L0.dy, tmpHud); CC.Curve.apply(tmpHud, cam).project(cam);
         let ex = tmpHud.x, ey = tmpHud.y; if (tmpHud.z > 1) { ex = -ex; ey = -ey; } const m = Math.max(Math.abs(ex), Math.abs(ey), 1e-3), px = U.clamp(ex / m * 0.86, -0.86, 0.86), py = U.clamp(ey / m * 0.78, -0.78, 0.78), sx = (px * 0.5 + 0.5) * W0, sy = (-py * 0.5 + 0.5) * H;
-        ctx.save(); ctx.translate(sx, sy); ctx.rotate(Math.atan2(-ey, ex) + Math.PI / 2); ctx.fillStyle = '#FFD23A'; ctx.beginPath(); ctx.moveTo(0, -S(26)); ctx.lineTo(S(22), S(18)); ctx.lineTo(-S(22), S(18)); ctx.closePath(); ctx.fill(); ctx.restore();
-        CC.RUI.text(ctx, '1ER  ' + Math.max(1, Math.round(L0.d - run.dist)) + ' M', sx, sy + (py > 0 ? -S(52) : S(52)), S(34), '#FFD23A', {});
+        UI.text(ctx, '1ER  ' + Math.max(1, Math.round(L0.d - run.dist)) + ' M', sx, sy + (py > 0 ? -S(52) : S(52)), S(36), '#E4B84D', {});
       }
       if (W.wheel) {   // la roue des pouvoirs
         const tw = (performance.now() - W.wheel.t0) / 1000;
@@ -751,10 +750,10 @@ const CUP = SHAPES.map((s) => s.name);
   const pickCourse = (m) => { const L = COURSES.filter((c) => c.isle && (c.map || 'arch') === m); return L[Math.floor(Math.random() * L.length)] || L[0]; };
   const beginCd = (g) => {   // avant chaque manche : roulette de cartes (photos), fleches pour choisir, ALEATOIRE, LANCER ; ensuite seulement 3-2-1-GO
     if (_cd) return; const keys = Object.keys(MAP_NAMES), target = cur().map || 'arch'; let sel = target, busy = true, shown = null, gone = false;
-    const el = document.createElement('div'); el.style.cssText = "position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(47,123,255,0.9),rgba(13,26,63,0.96));color:#fff;text-align:center;font-family:'Lilita One','Russo One',Arial,sans-serif;user-select:none;opacity:0;transition:opacity .25s";
-    if (!document.getElementById('cdStyle')) { const st = document.createElement('style'); st.id = 'cdStyle'; st.textContent = ".cdb{cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:2.2vh;padding:.9vh 2.6vw 1.6vh;font-size:4.4vh;color:#fff;background:#2f7bff;box-shadow:inset 0 -.8vh 0 #1b4fc4,0 1.2vh 2.4vh rgba(8,16,44,.3);transition:transform .08s,filter .08s}.cdb:hover{filter:brightness(1.08);transform:scale(1.03)}.cdb:active{transform:translateY(.5vh);box-shadow:inset 0 -.3vh 0 #1b4fc4,0 .5vh 1vh rgba(8,16,44,.3)}.cdy{background:#ffd23a;color:#5a3400;box-shadow:inset 0 -.8vh 0 #e39a00,0 1.2vh 2.4vh rgba(8,16,44,.3)}.cdy:active{box-shadow:inset 0 -.3vh 0 #e39a00,0 .5vh 1vh rgba(8,16,44,.3)}.cdg{background:#5fd63c;box-shadow:inset 0 -.9vh 0 #3aa81e,0 1.2vh 2.4vh rgba(8,16,44,.3)}.cdg:active{box-shadow:inset 0 -.3vh 0 #3aa81e,0 .5vh 1vh rgba(8,16,44,.3)}.cdt{text-shadow:0 .5vh 1.4vh rgba(8,16,44,.5)}"; document.head.appendChild(st); }
+    const el = document.createElement('div'); el.style.cssText = "position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(rgba(10,11,14,.82),rgba(10,11,14,.62) 50%,rgba(10,11,14,.9));color:#F0EDE4;text-align:center;font-family:'Rajdhani','Barlow Condensed','Arial Narrow',sans-serif;font-weight:700;letter-spacing:.02em;line-height:1;user-select:none;opacity:0;transition:opacity .25s";
+    if (!document.getElementById('cdStyle')) { const st = document.createElement('style'); st.id = 'cdStyle'; st.textContent = ".cdb{cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:.7vh;padding:1.4vh 2.6vw 1.5vh;margin-bottom:.9vh;font-size:5vh;color:#fff;background:#1E90FF;box-shadow:0 .9vh 0 #1769C2}.cdb:active{transform:translateY(.5vh);box-shadow:0 .4vh 0 #1769C2}.cdg{background:#2ECC71;box-shadow:0 1.1vh 0 #1F9A52}.cdg:active{box-shadow:0 .5vh 0 #1F9A52}.cdt{text-shadow:0 .5vh 0 rgba(8,9,12,.95)}"; document.head.appendChild(st); }
     const btn = (id, txt, css, cls) => '<div id="' + id + '" class="cdb ' + (cls || '') + '" style="' + (css || '') + '">' + txt + '</div>';
-    el.innerHTML = '<div id="cdTop" style="font-size:3.4vh;color:#5a3400;background:#ffd23a;border-radius:3vh;padding:.4vh 2.4vw .6vh;margin-bottom:1.8vh"></div><div style="display:flex;align-items:center;gap:2vw">' + btn('cdPrev', '&#9664;', 'padding:1.6vh 1.5vw 2.2vh;border-radius:50%', 'cdy') + '<div id="cdView" style="position:relative;width:min(62vw,66vh);aspect-ratio:1.6;overflow:hidden;border-radius:3vh;box-shadow:0 1.6vh 4vh rgba(8,16,44,.45);background:#14275c"><canvas id="cdA" width="640" height="400" style="position:absolute;inset:0;width:100%;height:100%"></canvas><canvas id="cdB" width="640" height="400" style="position:absolute;inset:0;width:100%;height:100%;transform:translateX(105%)"></canvas><div id="cdNum" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24vh;color:#ffd23a;text-shadow:0 1vh 3vh rgba(8,16,44,.6);background:rgba(13,26,63,.55);opacity:0;pointer-events:none"></div></div>' + btn('cdNext', '&#9654;', 'padding:1.6vh 1.5vw 2.2vh;border-radius:50%', 'cdy') + '</div><div id="cdName" class="cdt" style="font-size:8vh;margin:1.6vh 0 1.2vh"></div><div id="cdBtns" style="display:flex;gap:2vw;align-items:center">' + btn('cdRand', 'ALEATOIRE') + btn('cdGo', 'LANCER', 'font-size:6.6vh;padding:1vh 4.6vw 1.9vh', 'cdg') + '</div>';
+    el.innerHTML = '<div id="cdTop" style="font-size:4vh;color:#F0EDE4;background:#26394B;border-radius:.9vh;box-shadow:0 .5vh 0 rgba(8,12,18,.32);padding:1vh 2.6vw 1.1vh;margin-bottom:2.2vh"></div><div style="display:flex;align-items:center;gap:2vw">' + btn('cdPrev', '&lt;', 'padding:2vh 1.6vw 2.2vh;font-size:6vh') + '<div id="cdView" style="position:relative;width:min(62vw,66vh);aspect-ratio:1.6;overflow:hidden;border-radius:1.4vh;box-shadow:0 .8vh 0 rgba(8,12,18,.32);background:#26394B"><canvas id="cdA" width="640" height="400" style="position:absolute;inset:0;width:100%;height:100%"></canvas><canvas id="cdB" width="640" height="400" style="position:absolute;inset:0;width:100%;height:100%;transform:translateX(105%)"></canvas><div id="cdNum" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26vh;color:#E4B84D;text-shadow:0 1.2vh 0 rgba(8,9,12,.95);background:rgba(10,11,14,.55);opacity:0;pointer-events:none"></div></div>' + btn('cdNext', '&gt;', 'padding:2vh 1.6vw 2.2vh;font-size:6vh') + '</div><div id="cdName" class="cdt" style="font-size:8.6vh;margin:2vh 0 1.8vh"></div><div id="cdBtns" style="display:flex;gap:2vw;align-items:center">' + btn('cdRand', 'ALÉATOIRE') + btn('cdGo', 'LANCER', 'font-size:7vh;padding:1.6vh 5vw 1.8vh', 'cdg') + '</div>';
     document.body.appendChild(el); requestAnimationFrame(() => { el.style.opacity = '1'; }); const $ = (id) => el.querySelector('#' + id); let A = $('cdA'), B = $('cdB'); _cd = { el };
     $('cdTop').textContent = 'MANCHE ' + R.round + ' / 3';
     const paint = (cv, m) => { cv.getContext('2d').drawImage(mapPoster(m), 0, 0); };
@@ -792,18 +791,21 @@ const CUP = SHAPES.map((s) => s.name);
 
   // ---------------------------------------------------------------- carte de fin (style MISSION ACCOMPLIE)
   const drawRevive = (ui, ctx, g, W0, H, w) => {
-    const F = Home.evoK.frame(ui, ctx, W0, H), { Y, T0, cw, cx } = F, S = UI.S, t = (performance.now() - w.t0) / 1000, TT = 4.5;
+    const F = Home.evoK.frame(ui, ctx, W0, H), { Y, T0, cw, cx } = F, S = UI.S, T = UI.THEME, t = (performance.now() - w.t0) / 1000, TT = 4.5;
     if (t > TT) { giveUp(g); return; }
-    ctx.fillStyle = 'rgba(8,12,24,0.5)'; ctx.fillRect(0, T0, W0, F.HH);
-    const cy = Y(0.42), r = S(165), pulse = 1 + 0.025 * Math.sin(t * 7);
-    ctx.save(); ctx.translate(cx, cy); ctx.scale(pulse, pulse); const gr = ctx.createRadialGradient(0, 0, r * 0.2, 0, 0, r * 1.6); gr.addColorStop(0, 'rgba(120,200,255,0.55)'); gr.addColorStop(1, 'rgba(120,200,255,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(0, 0, r * 1.6, 0, 6.283); ctx.fill();
-    ctx.fillStyle = '#FF9A1F'; ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.fill(); ctx.lineWidth = S(10); ctx.strokeStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, 0, r + S(8), -Math.PI / 2, -Math.PI / 2 + 6.283 * (1 - t / TT)); ctx.stroke(); ctx.restore();
-    const gems = (E.save(g).gems || 0), useGems = R.deaths >= 2 && gems >= 3;
-    UI.text(ctx, 'RELANCER ?', cx, cy - S(52), S(58), '#ffffff', { outline: true });
-    UI.text(ctx, useGems ? '3 GEMMES' : 'REGARDER UNE PUB', cx, cy + S(40), S(useGems ? 56 : 36), '#ffffff', { outline: true });
-    UI.tap(ui, cx - r, cy - r, r * 2, r * 2, () => doRevive(g));
+    { const g0 = ctx.createLinearGradient(0, T0, 0, T0 + F.HH); g0.addColorStop(0, 'rgba(10,11,14,0.7)'); g0.addColorStop(0.5, 'rgba(10,11,14,0.4)'); g0.addColorStop(1, 'rgba(10,11,14,0.8)'); ctx.fillStyle = g0; ctx.fillRect(0, T0, W0, F.HH); }
+    UI.text(ctx, 'RELANCER ?', cx, Y(0.3), UI.fit(ctx, 'RELANCER ?', cw * 0.9, S(120)), T.yellow, { outline: true });
+    const gems = (E.save(g).gems || 0), useGems = R.deaths >= 2 && gems >= 3, bw0 = cw * 0.78, bh0 = S(190), bx0 = cx - bw0 / 2, by0 = Y(0.4), pulse = 1 + 0.025 * Math.sin(t * 7);
+    ctx.save(); ctx.translate(cx, by0 + bh0 / 2); ctx.scale(pulse, pulse); ctx.translate(-cx, -(by0 + bh0 / 2));
+    { const f = UI.greenButton(ctx, bx0, by0, bw0, bh0, { cat: useGems ? 'gem' : 'ad' }), lab = useGems ? 'RELANCER   3' : 'RELANCER';
+      if (useGems) { const tp = UI.fit(ctx, lab, bw0 * 0.6, f.h * 0.42), tw1 = UI.tw(ctx, lab, tp); UI.outlined(ctx, lab, cx - f.h * 0.2, f.y + f.h * 0.5, tp, '#FFFFFF'); UI.icon(ctx, 'gem', cx - f.h * 0.2 + tw1 / 2 + f.h * 0.34, f.y + f.h * 0.5, f.h * 0.52); }
+      else { ctx.save(); ctx.translate(bx0 + f.h * 0.7, f.y + f.h * 0.5); ctx.rotate(-0.2); UI.artImg(ctx, 'ticket', 0, 0, f.h * 0.78); ctx.restore(); UI.outlined(ctx, lab, bx0 + bw0 * 0.58, f.y + f.h * 0.5, UI.fit(ctx, lab, bw0 * 0.6, f.h * 0.42), '#FFFFFF'); }
+      Home.evoK.shimmer(ctx, f.x, f.y, f.w, f.h, f.h * 0.07, ((t % 2) + 2) % 2 / 0.6); }
+    ctx.restore();
+    UI.segments(ctx, bx0, by0 + bh0 + S(34), bw0, S(34), Math.ceil((1 - t / TT) * 9), 9, { on: '#E4B84D' });
+    UI.tap(ui, bx0, by0, bw0, bh0, () => doRevive(g));
     const bw = cw * 0.56, bh = S(130), bx = cx - bw / 2, by = Y(0.8) - bh / 2, loss = 10 + 10 * (R.roundKills || 0);
-    UI.btnPrimary(ctx, bx, by, bw, bh, 'NON, MERCI', { sub: 'Perds ' + loss + ' pieces' }); UI.tap(ui, bx, by, bw, bh, () => giveUp(g));
+    UI.btnSecondary(ctx, bx, by, bw, bh, 'NON, MERCI', { sub: 'Perds ' + loss + ' pieces' }); UI.tap(ui, bx, by, bw, bh, () => giveUp(g));
   };
   const drawArena = (ui, ctx, g, W0, H, w) => {   // les eliminés : tous ceux qui n'ont pas passe la manche
     const F = Home.evoK.frame(ui, ctx, W0, H), { Y, T0, cw, cx } = F, S = UI.S, t = (performance.now() - w.t0) / 1000, L = w.info;
@@ -826,26 +828,32 @@ const CUP = SHAPES.map((s) => s.name);
     if (w.stage === 'lineup') return drawLineup(ui, ctx, g, W0, H, w);
     if (w.stage === 'pack') return drawPack(ui, ctx, g, W0, H, w);
     if (w.stage === 'arena') return drawArena(ui, ctx, g, W0, H, w);
-    const F = Home.evoK.frame(ui, ctx, W0, H), { HH: HH2, Y, T0, cx } = F, RU = CC.RUI, P = RU.PAL; if (W0 > H * 1.1) { const u2 = Math.min(W0, HH2 * 0.74); UI.begin(u2, ui.pixelRatio ? ui.pixelRatio() : 1); F.cw = u2; } const cw = F.cw, S = UI.S, t = (performance.now() - w.t0) / 1000, L = w.info; RU.begin();
-    { const g0 = ctx.createLinearGradient(0, T0, 0, T0 + HH2); g0.addColorStop(0, 'rgba(20,39,92,0.86)'); g0.addColorStop(1, 'rgba(13,26,63,0.94)'); ctx.fillStyle = g0; ctx.fillRect(0, T0, W0, HH2); }
+    const F = Home.evoK.frame(ui, ctx, W0, H), { HH: HH2, Y, T0, cx, cw, ox } = F, S = UI.S, T = UI.THEME, t = (performance.now() - w.t0) / 1000, L = w.info;
+    { const g0 = ctx.createLinearGradient(0, T0, 0, T0 + HH2); g0.addColorStop(0, 'rgba(10,11,14,0.7)'); g0.addColorStop(0.5, 'rgba(10,11,14,0.4)'); g0.addColorStop(1, 'rgba(10,11,14,0.8)'); ctx.fillStyle = g0; ctx.fillRect(0, T0, W0, HH2); }
+    Home.evoK.topBar(ui, ctx, g, F, E.save(g), E, { noGear: true });
     const win = L.final && L.rank === 1, good = L.final ? L.rank <= 3 : L.qual;
     const title = L.died ? 'ELIMINE' : L.final ? (win ? 'VICTOIRE !' : L.rank <= 3 ? 'PODIUM !' : 'FINALE TERMINEE') : (L.qual ? 'QUALIFIE !' : 'ELIMINE');
-    { const a = Math.min(1, t / 0.35), e = a < 1 ? 0.7 + 0.3 * a : 1; ctx.save(); ctx.globalAlpha = a; RU.text(ctx, title, cx, Y(0.105), RU.fit(ctx, title, cw * 0.92, S(118)) * e, good ? P.yellow : P.red); ctx.restore(); }
-    { const k = Math.min(1, Math.max(0, (t - 0.15) / 0.3)), e = k < 1 ? 1 + 0.4 * Math.sin(k * 3.1416) : 1, pw0 = cw * 0.6, ph0 = S(190), py0 = Y(0.185); RU.panel(ctx, cx - pw0 / 2, py0, pw0, ph0, { dark: true, r: S(40) }); RU.text(ctx, ord(L.rank), cx - pw0 * 0.14, py0 + ph0 * 0.5, S(120) * e, good ? P.greenL : P.white); RU.text(ctx, '/ ' + L.field, cx + pw0 * 0.24, py0 + ph0 * 0.42, S(54), P.sky, { thin: true }); RU.text(ctx, L.died ? 'ABANDON' : L.time.toFixed(1) + ' S', cx + pw0 * 0.24, py0 + ph0 * 0.72, S(36), P.white, { thin: true }); }
-    const pw = cw * 0.84, px = cx - pw / 2, ry0 = Y(0.36), rh = S(62), rows = L.rows.slice();
-    if (L.you >= rows.length) rows.push({ name: 'TOI', time: L.time, you: true, rank: L.you + 1, dnf: L.died });
-    RU.panel(ctx, px, ry0, pw, rh * rows.length + S(92), { title: 'CLASSEMENT DE LA MANCHE', th: S(62), r: S(30) });
+    { const a = Math.min(1, t / 0.3); ctx.save(); ctx.globalAlpha = a; UI.text(ctx, title, cx, Y(0.17), UI.fit(ctx, title, cw * 0.92, S(104)), good ? T.yellow : T.red, { outline: true }); ctx.restore(); }
+    const rows = L.rows.slice(); if (L.you >= rows.length) rows.push({ name: 'TOI', time: L.time, you: true, rank: L.you + 1, dnf: L.died });
+    const px0 = ox + cw * 0.05, pw = cw * 0.9, py0 = Y(0.225), rowH = S(84), gp = S(10), headH = S(112), totH = S(180), ph = S(26) + headH + gp + rows.length * (rowH + gp) + S(14) + totH + S(30);
+    UI.panel(ctx, px0, py0, pw, ph, { c: S(36), border: T.border2, bw: S(4) });
+    { const y = py0 + S(26), rs = ord(L.rank) + ' / ' + L.field; UI.panel(ctx, px0 + S(24), y, pw - S(48), headH, { c: S(22), fill: T.bg2, border: T.border, bw: S(2) }); UI.text(ctx, rs, px0 + S(60), y + headH / 2, S(64), good ? T.yellow : T.white, { align: 'left', shadow: false }); UI.text(ctx, L.died ? 'ABANDON' : L.time.toFixed(1) + ' S', px0 + pw - S(60), y + headH / 2, S(52), T.white, { align: 'right', shadow: false }); }
     rows.forEach((r, i) => {
-      const y = ry0 + S(74) + i * rh + rh / 2, rk = r.rank || (i + 1);
-      if (r.you) { RU.rr(ctx, px + S(14), y - rh / 2 + S(4), pw - S(28), rh - S(8), S(16)); ctx.fillStyle = P.yellow; ctx.fill(); } else if (i % 2) { RU.rr(ctx, px + S(14), y - rh / 2 + S(4), pw - S(28), rh - S(8), S(16)); ctx.fillStyle = 'rgba(47,123,255,0.1)'; ctx.fill(); }
-      const br = S(21); ctx.beginPath(); ctx.arc(px + S(52), y, br, 0, 6.283); ctx.fillStyle = rk === 1 ? P.yellowD : rk <= 3 ? P.blue : P.dim; ctx.fill(); RU.text(ctx, String(rk), px + S(52), y + S(1), S(26), P.white, { plain: true });
-      RU.text(ctx, r.name, px + S(92), y + S(2), RU.fit(ctx, r.name, pw * 0.52, S(36)), r.you ? '#5a3400' : P.text, { align: 'left', plain: true });
-      RU.text(ctx, r.dnf ? '--' : r.time.toFixed(1) + ' S', px + pw - S(34), y + S(2), S(34), r.you ? '#5a3400' : P.dim, { align: 'right', plain: true });
-    });
-    { const yb = ry0 + rh * rows.length + S(92) + S(46), txt = '+' + L.coins, w1 = S(250); RU.pill(ctx, ui, cx - (L.gems ? w1 + S(10) : w1 / 2), yb - S(34), w1, S(68), 'coin', txt); if (L.gems) RU.pill(ctx, ui, cx + S(10), yb - S(34), S(210), S(68), 'gem', '+' + L.gems); }
+      const y = py0 + S(26) + headH + gp + i * (rowH + gp), rk = r.rank || (i + 1), a = U.clamp((t - 0.2 - i * 0.07) / 0.26, 0, 1); if (a <= 0) return;
+      ctx.save(); ctx.globalAlpha = a; ctx.translate(0, (1 - a) * S(24));
+      UI.panel(ctx, px0 + S(24), y, pw - S(48), rowH, { c: S(22), fill: r.you ? 'rgba(255,230,0,0.3)' : T.bg2, border: T.border, bw: S(2) });
+      UI.text(ctx, String(rk), px0 + S(76), y + rowH / 2, S(44), r.you ? T.yellow : T.dim, { shadow: false });
+      UI.text(ctx, r.name, px0 + S(136), y + rowH / 2, UI.fit(ctx, r.name, pw * 0.5, S(44)), T.white, { align: 'left', shadow: false });
+      UI.text(ctx, r.dnf ? '--' : r.time.toFixed(1) + ' S', px0 + pw - S(60), y + rowH / 2, S(44), T.yellow, { align: 'right', shadow: false });
+      ctx.restore(); });
+    { const y = py0 + ph - totH - S(30), vs = '+' + U.formatInt(L.coins), vp = UI.fit(ctx, vs, pw * 0.34, S(104)), x1 = L.gems ? cx - pw * 0.2 : cx;
+      UI.panel(ctx, px0 + S(24), y, pw - S(48), totH, { c: S(28), fill: 'rgba(255,230,0,0.06)', border: T.white, bw: S(5) }); UI.text(ctx, 'GAINS', cx, y + totH * 0.22, S(46), T.white, { shadow: false });
+      UI.text(ctx, vs, x1, y + totH * 0.64, vp, T.yellow, { outline: true, ow: 0.18 }); UI.icon(ctx, 'coin', x1 + UI.tw(ctx, vs, vp) / 2 + S(52), y + totH * 0.62, S(76));
+      if (L.gems) { const gs = '+' + L.gems, x2 = cx + pw * 0.22; UI.text(ctx, gs, x2, y + totH * 0.64, vp, T.white, { outline: true, ow: 0.18 }); UI.icon(ctx, 'gem', x2 + UI.tw(ctx, gs, vp) / 2 + S(52), y + totH * 0.62, S(76)); } }
     if (t > 0.8) {
-      const bw = cw * 0.62, bh = S(140), bx = cx - bw / 2, by = Math.min(T0 + HH2 - bh - S(40), ry0 + rh * rows.length + S(92) + S(110));
-      RU.tapButton(ctx, ui, bx, by, bw, bh, L.qual && !L.final ? 'MANCHE SUIVANTE' : 'CONTINUER', { role: good ? 'confirm' : 'primary', key: 'endgo' }, () => { if (L.pack) { w.stage = 'pack'; w.t0 = performance.now(); } else goNext(g); });
+      const bw = cw * 0.6, bh = S(150), bx = cx - bw / 2, by = Math.min(T0 + HH2 - bh - S(30), py0 + ph + S(50)), lab = L.qual && !L.final ? 'MANCHE SUIVANTE' : 'SUIVANT', f2 = UI.greenButton(ctx, bx, by, bw, bh, { cat: 'mx' });
+      UI.outlined(ctx, lab, cx, f2.y + f2.h * 0.5, UI.fit(ctx, lab, bw * 0.84, f2.h * 0.4), '#FFFFFF');
+      UI.tap(ui, bx, by, bw, bh, () => { if (L.pack) { w.stage = 'pack'; w.t0 = performance.now(); } else goNext(g); });
     }
   };
   const _win = Home.drawEvoWin;
@@ -873,7 +881,7 @@ const CUP = SHAPES.map((s) => s.name);
     const g = CC.game; if (!g || !g.padMode || !g.ui) return;
     try { const S = E.save(g); if (S && !S.tutPC) { S.tutPC = 1; } } catch (e) { /* ignore */ }
     const ov = g.ui.overlay;
-    if (g.state === 'MENU' && !g.evoAim && !g.evoAnim && (!ov || ov === 'terms' || ov === 'evoIntro' || ov === 'evoCine' || ov === 'evoShop' || ov === 'evoChest' || ov === 'evoReport' || ov === 'evoSkins') && !ended) g.ui.overlay = 'evo';
+    if (g.state === 'MENU' && !g.evoAim && !g.evoAnim && (!ov || ov === 'terms' || ov === 'evoIntro' || ov === 'evoCine' || (ov === 'evoShop' && !RACE) || ov === 'evoChest' || ov === 'evoReport' || ov === 'evoSkins') && !ended) g.ui.overlay = 'evo';
     if (g.state === 'LAUNCH' && g.evoAim && !g.evoAim.lock && g.evoAim.t > 0.12) E.lock(g);   // START : la fusee part tout de suite
   }, 40);
 })();

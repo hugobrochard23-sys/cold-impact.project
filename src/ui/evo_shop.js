@@ -51,7 +51,7 @@
 
   // ---------- boutique ----------
   Home.drawEvoShop = function (ui, ctx, game, W, H) {
-    const F = K.frame(ui, ctx, W, H), { HH, T0, cw, ox } = F, E = CC.EVO, S0 = E.save(game), now = performance.now(), PO = !!(CC.Portal && CC.Portal.on);   // v339 : PO = mode portail : aucun achat en argent reel, seulement les offres gratuites contre une video
+    const F = K.frame(ui, ctx, W, H), { HH, T0, cw, ox } = F, E = CC.EVO, S0 = E.save(game), now = performance.now(), PO = !!(CC.Portal && CC.Portal.on) || !!(E.mvp && E.mvp() === 'r');   // v339 : PO = mode portail : aucun achat en argent reel, seulement les offres gratuites contre une video
     if (!SC.drag) { SC.y = cl(SC.y + SC.v, 0, SC.max); SC.v *= 0.93; if (Math.abs(SC.v) < 0.3) SC.v = 0; }
     Home.movingBg(ctx, ui, W, H, SC.y);
     const mx = ox + S(36), mw = cw - S(72), top = T0 + S(150), viewH = HH - S(150), sy = SC.y;

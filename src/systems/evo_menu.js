@@ -1,117 +1,100 @@
-/* v398 : LE MENU DE LA COURSE (?mvp=r), entierement redessine avec le systeme d'interface CC.RUI (palette bleue, jaune d'action, boutons calcules) :
- * compteurs en haut, accueil = grande photo de la carte + carte de la Coupe + gros bouton JOUER, barre de 5 onglets en bas (boutique, costumes, JOUER, pouvoirs, classement),
- * costumes par rarete avec couleur de trainee, boutique (gemmes <-> pieces, jamais d'argent reel), pouvoirs a ameliorer. Tout est sauvegarde en local. Aucun faux classement. */
+/* v400 : LE MENU DE LA COURSE (?mvp=r) refait avec l'ANCIEN kit d'interface, sans rien d'autre : CC.UI2 (ui_kit.js + ui_cartoon.js) et les outils de evo_ui.js (Home.evoK).
+ * Meme police (Rajdhani Bold), memes couleurs, memes boutons a tranche, memes cartes ardoise, memes pastilles de monnaie, memes images (assets/ui). AUCUNE icone dessinee ici :
+ * tout ce qui est une icone est une image existante ; les costumes sont de vraies vues 3D de la fusee (CC.Hangar.preview).
+ * Agencement repris de l'ancien menu : barre du haut, plaque du costume, boutique a gauche, coffre de la Coupe a droite, « CLIC POUR LANCER », trois cartes d'amelioration en bas (les pouvoirs). */
 (function () {
-  const E = CC.EVO; if (!E || !E.on || !E.mvp || E.mvp() !== 'r' || !E.race || !E.raceApi || !CC.RUI) return;
-  const Home = CC.Home, UI = CC.UI2, U = CC.U, PRO = E.race, api = E.raceApi, R = CC.RUI, P = R.PAL;
-  const M = { tab: 'jouer', rar: 0, page: 0, sess: -1, toast: null };
-  const toast = (t) => { M.toast = { t, t0: performance.now() }; };
-  E.menuTab = (t) => { M.tab = t; M.page = 0; };
-  const POW = [['TURBO', 'VITESSE EN PLUS', P.green, 'bolt'], ['BOUCLIER', 'TRAVERSE LES OBSTACLES', P.blueL, 'check'], ['MISSILE', 'FAIT EXPLOSER LE PILOTE DEVANT', '#ff8a3a', 'rocket']];
-  const TABS = [['boutique', 'BOUTIQUE', 'bag'], ['costumes', 'COSTUMES', 'rocket'], ['jouer', 'JOUER', 'play'], ['pouvoirs', 'POUVOIRS', 'bolt'], ['classement', 'CLASSEMENT', 'trophy']];
-  const RARC = [['COMMUN', '#9fb0d0'], ['RARE', P.blueL], ['EPIQUE', '#c77bff']];
-  const cover = (ctx, img, x, y, w, h) => { const ar = w / h; let sW = img.width, sH = img.height; if (sW / sH > ar) sW = sH * ar; else sH = sW / ar; ctx.drawImage(img, (img.width - sW) / 2, (img.height - sH) / 2, sW, sH, x, y, w, h); };
-  const photo = (ctx, S, map, x, y, w, h, rad, o) => {   // une photo de carte : coins arrondis, ombre douce ; la carte choisie a un lisere jaune
-    o = o || {}; ctx.save(); ctx.shadowColor = 'rgba(8,16,44,0.35)'; ctx.shadowBlur = S(26); ctx.shadowOffsetY = S(10); R.rr(ctx, x, y, w, h, rad); ctx.fillStyle = P.navy; ctx.fill(); ctx.restore();
-    const mp = E.mapPoster ? E.mapPoster(map) : null; ctx.save(); R.rr(ctx, x, y, w, h, rad); ctx.clip(); if (mp) cover(ctx, mp, x, y, w, h);
-    if (o.shade) { const g = ctx.createLinearGradient(0, y + h * 0.5, 0, y + h); g.addColorStop(0, 'rgba(13,26,63,0)'); g.addColorStop(1, 'rgba(13,26,63,0.85)'); ctx.fillStyle = g; ctx.fillRect(x, y + h * 0.5, w, h * 0.5); } if (o.dim) { ctx.fillStyle = 'rgba(13,26,63,' + o.dim + ')'; ctx.fillRect(x, y, w, h); } ctx.restore();
-    if (o.on) { ctx.save(); R.rr(ctx, x, y, w, h, rad); ctx.lineWidth = S(6); ctx.strokeStyle = P.yellow; ctx.stroke(); ctx.restore(); }
-  };
-  const cupCard = (ui, ctx, g, F, S, y) => {   // la carte de la Coupe : 3 manches (photo de chaque carte) + le paquet a gagner
-    const { cw, cx } = F, RC = api.R, h = S(262), w = cw * 0.94, x = cx - w / 2; R.panel(ctx, x, y, w, h, { dark: true, r: S(34) });
-    R.tag(ctx, cx, y + S(2), 'COUPE COLD IMPACT', { px: S(30) });
-    const seg = (w - S(60)) / 4;
-    for (let k = 0; k < 4; k++) {
-      const sx = x + S(30) + k * seg + S(6), sy = y + S(48), sw = seg - S(12), sh = S(140), isPack = k === 3, cur = k === RC.round - 1 && !isPack, done = k < RC.round - 1;
-      if (isPack) { R.rr(ctx, sx, sy, sw, sh, S(22)); ctx.fillStyle = P.yellow; ctx.fill(); if (!UI.icon(ctx, 'chest_open', sx + sw / 2, sy + sh * 0.44, sh * 0.7)) R.text(ctx, '?', sx + sw / 2, sy + sh * 0.42, S(70), P.white); R.text(ctx, 'PAQUET', sx + sw / 2, sy + sh * 0.84, S(24), '#5a3400', { plain: true }); }
-      else { photo(ctx, S, (RC.courses[k] && RC.courses[k].map) || 'arch', sx, sy, sw, sh, S(22), { thin: true, on: cur, dim: done ? 0.6 : cur ? 0 : 0.35, shade: true });
-        R.text(ctx, [32, 16, 8][k] + ' PILOTES', sx + sw / 2, sy + sh * 0.84, S(22), P.white, { thin: true }); const br = S(22); ctx.beginPath(); ctx.arc(sx + br + S(8), sy + br + S(8), br - S(2), 0, 6.283); ctx.fillStyle = done ? P.green : cur ? P.yellow : P.blue; ctx.fill();
-        if (done) R.icon(ctx, 'check', sx + br + S(8), sy + br + S(8), br * 1.0, { fill: P.white }); else R.text(ctx, String(k + 1), sx + br + S(8), sy + br + S(9), S(26), cur ? '#5a3400' : P.white, { plain: true }); }
-    }
-    R.text(ctx, 'MANCHE ' + RC.round + ' / 3   -   ' + RC.field[RC.round - 1] + ' PILOTES   -   ' + [16, 8, 1][RC.round - 1] + (RC.round === 3 ? ' VAINQUEUR' : ' QUALIFIES'), cx, y + h - S(36), S(28), P.sky, { thin: true });
-    return h;
-  };
-  Home.drawEvo = function (ui, ctx, g, W0, H) {
-    const F = Home.evoK.frame(ui, ctx, W0, H), { Y, T0, cx, HH } = F, S = UI.S, now = performance.now(), RC = api.R, SV = E.save(g);
-    if (W0 > H * 1.1) { const u2 = Math.min(W0, HH * 0.74); UI.begin(u2, ui.pixelRatio ? ui.pixelRatio() : 1); F.cw = u2; }   // sur un ecran large, l'interface est plus grande (elle n'etait qu'une etroite colonne)
-    const cw = F.cw; R.begin(); if (/[?&]uikit=1/.test(location.search)) { UI.begin(Math.min(W0, H * 1.78) * 0.56, g.hudPr || 1); R.sheet(ctx, ui, W0, H); return; }
-    const navH = S(150), navTop = T0 + HH - navH;
-    // contenu de l'onglet
-    if (M.tab === 'jouer') {
-      const keys = api.mapKeys(), cm = api.curMap(), pw = Math.min(cw * 0.84, (HH * 0.36) * 1.6), ph = pw / 1.6, px = cx - pw / 2, py = Y(0.1);   // la carte : une grande photo, son nom, des fleches rondes pour en changer
-      photo(ctx, S, cm, px, py, pw, ph, S(34), { shade: true });
-      R.tag(ctx, px + S(120), py + S(6), 'CARTE ' + RC.round + ' / 3', { px: S(24) });
-      const nmm = E.mapName ? E.mapName(cm) : cm.toUpperCase(); R.text(ctx, nmm, cx, py + ph - S(52), R.fit(ctx, nmm, pw * 0.8, S(78)), P.white);
-      for (const sg of [-1, 1]) R.round(ctx, ui, sg < 0 ? px - S(6) : px + pw + S(6), py + ph / 2, S(42), sg < 0 ? 'left' : 'right', { role: 'primary' }, () => { const i = keys.indexOf(cm); api.setMap(keys[(i + sg + keys.length) % keys.length]); });
-      const ch = cupCard(ui, ctx, g, F, S, py + ph + S(34));
-      const bw = cw * 0.62, bh = S(150), bx = cx - bw / 2, by = Math.min(navTop - bh - S(34), py + ph + S(34) + ch + S(30));
-      R.tapButton(ctx, ui, bx, by, bw, bh, 'JOUER', { role: 'primary', icon: 'play', key: 'play' }, () => api.start(g));
-    } else {
-      R.backdrop(ctx, 0, T0, W0, HH);
-      if (M.tab === 'costumes') drawCostumes(ui, ctx, g, F, S, SV); else if (M.tab === 'boutique') drawShop(ui, ctx, g, F, S, SV); else if (M.tab === 'pouvoirs') drawPowers(ui, ctx, g, F, S, SV);
-      else { R.text(ctx, 'CLASSEMENT', cx, Y(0.16), S(84), P.white); R.panel(ctx, cx - cw * 0.42, Y(0.26), cw * 0.84, S(520), { title: 'BIENTOT' }); R.icon(ctx, 'trophy', cx, Y(0.26) + S(250), S(190), { fill: P.yellow }); R.text(ctx, 'LE CLASSEMENT DES VRAIS JOUEURS ARRIVE', cx, Y(0.26) + S(420), R.fit(ctx, 'LE CLASSEMENT DES VRAIS JOUEURS ARRIVE', cw * 0.74, S(34)), P.text, { plain: true }); }
-    }
-    // compteurs (au-dessus de tout)
-    { const ph = S(66), gap = S(16), w1 = S(250), w2 = S(210), w3 = S(180), x0 = cx - (w1 + w2 + w3 + gap * 2) / 2, y0 = T0 + S(18); R.pill(ctx, ui, x0, y0, w1, ph, 'coin', SV.coins || 0, { plus: () => { M.tab = 'boutique'; M.page = 0; } }); R.pill(ctx, ui, x0 + w1 + gap, y0, w2, ph, 'gem', SV.gems || 0, { plus: () => { M.tab = 'boutique'; M.page = 0; } }); R.pill(ctx, ui, x0 + w1 + w2 + gap * 2, y0, w3, ph, 'ticket', PRO.tickets()); }
-    // barre du bas : fond marine a lisere clair, 5 onglets ; l'onglet actif est souleve et jaune
-    { ctx.save(); ctx.shadowColor = 'rgba(8,16,44,0.35)'; ctx.shadowBlur = S(24); ctx.shadowOffsetY = -S(4); ctx.fillStyle = 'rgba(16,30,74,0.96)'; ctx.fillRect(0, navTop, W0, navH + 6); ctx.restore(); }
-    TABS.forEach(([id, label, ic], i) => {
-      const x = cx + (i - 2) * cw * 0.2, on = M.tab === id, r = S(on ? 50 : 42), yy = navTop + S(on ? 52 : 60);
-      R.round(ctx, ui, x, yy, r, ic, { role: on ? 'primary' : 'secondary', key: 'tab' + id }, () => { if (id === 'jouer' && M.tab === 'jouer') api.start(g); else { M.tab = id; M.page = 0; } });
-      R.text(ctx, label, x, navTop + navH - S(24), S(22), on ? P.yellow : P.sky, { thin: true });
-    });
-    if (M.toast && now - M.toast.t0 < 1700) { const a = U.clamp((1700 - (now - M.toast.t0)) / 300, 0, 1), tw = R.tw(ctx, M.toast.t, S(44)) + S(90); ctx.save(); ctx.globalAlpha = a; R.panel(ctx, cx - tw / 2, Y(0.46), tw, S(110), { dark: true, r: S(40) }); R.text(ctx, M.toast.t, cx, Y(0.46) + S(57), S(44), P.yellow, { thin: true }); ctx.restore(); }
-  };
-  const playerSkinNow = () => { const b = CC.Skins.byId[PRO.skin()]; return b || CC.Skins.byId.stock; };
-  const drawCostumes = (ui, ctx, g, F, S, SV) => {
-    const { Y, cw, cx } = F, rars = ['TOUS', 'COMMUN', 'RARE', 'EPIQUE'], tw = cw * 0.225, ty = Y(0.11), th = S(72);
-    rars.forEach((nm, i) => { const x = cx + (i - 1.5) * (tw + S(8)) - tw / 2, on = M.rar === i; R.tapButton(ctx, ui, x, ty, tw, th, nm, { role: on ? 'primary' : 'secondary', key: 'rar' + i }, () => { M.rar = i; M.page = 0; }); });
-    const ids = PRO.SKIN_IDS.filter((id) => M.rar === 0 || PRO.rarity(id) === M.rar - 1), per = 6, pages = Math.max(1, Math.ceil(ids.length / per)); M.page = U.clamp(M.page, 0, pages - 1);
-    const cwid = cw * 0.295, chei = S(316), gx = cx - (cwid * 3 + S(24)) / 2, gy = ty + th + S(26), sel = PRO.skin();
-    ids.slice(M.page * per, M.page * per + per).forEach((id, k) => {
-      const x = gx + (k % 3) * (cwid + S(12)), y = gy + Math.floor(k / 3) * (chei + S(14)), own = PRO.isOwned(id), on = sel === id, sk = CC.Skins.byId[id], rc = RARC[PRO.rarity(id)];
-      R.panel(ctx, x, y, cwid, chei, { dark: !own, r: S(28) });
-      if (on) { ctx.save(); R.rr(ctx, x, y, cwid, chei, S(28)); ctx.lineWidth = S(6); ctx.strokeStyle = P.yellow; ctx.stroke(); ctx.restore(); }
-      ctx.save(); R.rr(ctx, x + S(16), y + S(16), cwid - S(32), chei * 0.52, S(18)); ctx.fillStyle = own ? P.sky : 'rgba(255,255,255,0.08)'; ctx.fill(); ctx.restore();
-      ctx.save(); if (!own) ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.rect(x + S(16), y + S(16), cwid - S(32), chei * 0.52); ctx.clip(); PRO.icon(ctx, x + cwid / 2, y + S(16) + chei * 0.29, cwid * 0.58, sk, -Math.PI / 4); ctx.restore();
-      R.tag(ctx, x + cwid / 2, y + S(34), rc[0], { px: S(17), color: rc[1], text: P.white });
-      const nm = (sk.short || sk.name || id).toUpperCase(); R.text(ctx, nm, x + cwid / 2, y + chei * 0.7, R.fit(ctx, nm, cwid * 0.86, S(30)), own ? P.text : P.white, { plain: true });
-      const bw = cwid - S(36), bh = S(58), bx = x + S(18), by = y + chei - bh - S(18), act = () => {
-        if (own) { PRO.setSkin(id); try { g.rocket.setSkin(playerSkinNow()); } catch (e) { /* apercu */ } return; }
-        const c = SV.coins || 0, p = PRO.price(id); if (c >= p) { SV.coins = c - p; PRO.own(id); PRO.setSkin(id); try { g.writeSave(); g.rocket.setSkin(playerSkinNow()); } catch (e) { /* ignore */ } toast('COSTUME OBTENU !'); } else toast('PAS ASSEZ DE PIECES'); };
-      if (own) R.tapButton(ctx, ui, bx, by, bw, bh, on ? 'CHOISI' : 'CHOISIR', { role: on ? 'confirm' : 'secondary', icon: on ? 'check' : null, key: 'sk' + id }, act);
-      else { const st = R.tapButton(ctx, ui, bx, by, bw, bh, '      ' + PRO.price(id), { role: (SV.coins || 0) >= PRO.price(id) ? 'primary' : 'disabled', key: 'sk' + id }, act); UI.icon(ctx, 'coin', bx + bw * 0.26, by + bh * 0.42 + st.p * bh * 0.1, bh * 0.74); if ((SV.coins || 0) < PRO.price(id)) UI.tap(ui, bx, by, bw, bh, act); }
-    });
-    const by2 = gy + chei * 2 + S(34);
-    if (pages > 1) { R.round(ctx, ui, cx - S(170), by2 + S(40), S(38), 'left', { role: 'secondary', key: 'pgl' }, () => { M.page = (M.page + pages - 1) % pages; }); R.round(ctx, ui, cx + S(170), by2 + S(40), S(38), 'right', { role: 'secondary', key: 'pgr' }, () => { M.page = (M.page + 1) % pages; }); R.text(ctx, (M.page + 1) + ' / ' + pages, cx, by2 + S(42), S(40), P.white, { thin: true }); }
-    const ty2 = by2 + S(120); R.text(ctx, 'TRAINEE', cx - cw * 0.44, ty2, S(30), P.white, { align: 'left', thin: true });
-    const tr = PRO.trail(); PRO.TRAILS.forEach((c, i) => { const x = cx - cw * 0.2 + i * S(60), on = tr === c, rr0 = S(on ? 25 : 20); if (on) { ctx.beginPath(); ctx.arc(x, ty2, rr0 + S(6), 0, 6.283); ctx.fillStyle = P.white; ctx.fill(); } ctx.beginPath(); ctx.arc(x, ty2, rr0, 0, 6.283); ctx.fillStyle = c || P.greyD; ctx.fill(); if (!c) R.icon(ctx, 'close', x, ty2, rr0 * 1.1, { fill: P.white, ink: null }); UI.tap(ui, x - S(30), ty2 - S(30), S(60), S(60), () => { PRO.setTrail(c); }); });
-  };
-  const drawShop = (ui, ctx, g, F, S, SV) => {
-    const { Y, cw, cx } = F; R.text(ctx, 'BOUTIQUE', cx, Y(0.145), S(84), P.white);
-    const rows = [
-      ['2 GEMMES GRATUITES', 'REGARDE UNE PUB', 'REGARDER', 'video', 'gem', () => { const ok = () => { SV.gems = (SV.gems || 0) + 2; try { g.writeSave(); } catch (e) { /* ignore */ } toast('+2 GEMMES'); }; if (g.ads && g.ads.rewarded) g.ads.rewarded(ok, null, 'shop', 'GEMMES'); else ok(); }, false, 'confirm'],
-      ['400 PIECES', 'CONTRE 5 GEMMES', 'ECHANGER', null, 'coin', () => { if ((SV.gems || 0) >= 5) { SV.gems -= 5; SV.coins = (SV.coins || 0) + 400; try { g.writeSave(); } catch (e) { /* ignore */ } toast('+400 PIECES'); } else toast('PAS ASSEZ DE GEMMES'); }, (SV.gems || 0) < 5, 'primary'],
-      ['2000 PIECES', 'CONTRE 20 GEMMES', 'ECHANGER', null, 'coins_stack', () => { if ((SV.gems || 0) >= 20) { SV.gems -= 20; SV.coins = (SV.coins || 0) + 2000; try { g.writeSave(); } catch (e) { /* ignore */ } toast('+2000 PIECES'); } else toast('PAS ASSEZ DE GEMMES'); }, (SV.gems || 0) < 20, 'primary'],
-      ['5 GEMMES', 'CONTRE 1500 PIECES', 'ECHANGER', null, 'gems_rope', () => { if ((SV.coins || 0) >= 1500) { SV.coins -= 1500; SV.gems = (SV.gems || 0) + 5; try { g.writeSave(); } catch (e) { /* ignore */ } toast('+5 GEMMES'); } else toast('PAS ASSEZ DE PIECES'); }, (SV.coins || 0) < 1500, 'primary'],
-    ];
-    rows.forEach((r, i) => { const hh = S(176), y = Y(0.21) + i * (hh + S(18)), w = cw * 0.94, x = cx - w / 2; R.panel(ctx, x, y, w, hh, { r: S(30) });
-      ctx.save(); R.rr(ctx, x + S(18), y + S(18), hh - S(36), hh - S(36), S(20)); ctx.fillStyle = P.sky; ctx.fill(); ctx.restore(); if (!UI.icon(ctx, r[4], x + hh / 2, y + hh / 2, hh * 0.66)) R.icon(ctx, 'coin', x + hh / 2, y + hh / 2, hh * 0.5, { fill: P.yellow });
-      R.text(ctx, r[0], x + hh + S(10), y + hh * 0.36, R.fit(ctx, r[0], w * 0.42, S(42)), P.text, { align: 'left', plain: true }); R.text(ctx, r[1], x + hh + S(10), y + hh * 0.66, R.fit(ctx, r[1], w * 0.42, S(26)), P.dim, { align: 'left', plain: true });
-      const bw = w * 0.32, bh = S(100), bx = x + w - bw - S(24); R.tapButton(ctx, ui, bx, y + (hh - bh) / 2 - S(4), bw, bh, r[2], { role: r[7], icon: r[3], disabled: r[6], key: 'shop' + i }, r[5]); if (r[6]) UI.tap(ui, bx, y + (hh - bh) / 2, bw, bh, r[5]); });
-    R.text(ctx, 'AUCUN ACHAT EN ARGENT REEL', cx, Y(0.21) + 4 * S(194) + S(26), S(26), P.sky, { thin: true });
-  };
-  const drawPowers = (ui, ctx, g, F, S, SV) => {
-    const { Y, cw, cx } = F; R.text(ctx, 'POUVOIRS', cx, Y(0.145), S(84), P.white); R.text(ctx, 'RAMASSE LES BLOCS CHANCE EN COURSE', cx, Y(0.195), S(28), P.sky, { thin: true });
-    const lv = PRO.pw();
-    POW.forEach(([id, desc, col, ic], i) => {
-      const hh = S(230), y = Y(0.235) + i * (hh + S(20)), w = cw * 0.94, x = cx - w / 2, L = lv[id], cost = 300 * L, max = L >= 5, can = (SV.coins || 0) >= cost;
-      R.panel(ctx, x, y, w, hh, { r: S(30) }); const cr = S(70), ccx = x + S(40) + cr, ccy = y + hh / 2; ctx.beginPath(); ctx.arc(ccx, ccy, cr, 0, 6.283); ctx.fillStyle = col; ctx.fill(); R.icon(ctx, ic, ccx, ccy, cr * 1.15, { fill: P.white });
-      const tx = ccx + cr + S(30); R.text(ctx, id, tx, y + S(58), S(46), P.text, { align: 'left', plain: true }); R.text(ctx, desc, tx, y + S(104), R.fit(ctx, desc, w * 0.4, S(24)), P.dim, { align: 'left', plain: true });
-      for (let k = 0; k < 5; k++) { const sx = tx + k * S(46), sy = y + S(150); R.rr(ctx, sx, sy, S(38), S(18), S(9)); ctx.fillStyle = k < L ? col : P.paperD; ctx.fill(); }
-      R.text(ctx, 'NIVEAU ' + L, tx + S(250), y + S(164), S(24), P.dim, { align: 'left', plain: true });
-      const bw = w * 0.27, bh = S(104), bx = x + w - bw - S(24), by = y + (hh - bh) / 2 - S(4), act = () => { if (max) return; if ((SV.coins || 0) >= cost) { SV.coins -= cost; lv[id] = L + 1; PRO.setPw(lv); try { g.writeSave(); } catch (e) { /* ignore */ } toast(id + ' NIVEAU ' + (L + 1)); } else toast('PAS ASSEZ DE PIECES'); };
-      if (max) R.button(ctx, ui, bx, by, bw, bh, 'MAX', { role: 'confirm', icon: 'check', key: 'pw' + i }); else { const st = R.tapButton(ctx, ui, bx, by, bw, bh, '     ' + cost, { role: can ? 'primary' : 'disabled', key: 'pw' + i }, act); UI.icon(ctx, 'coin', bx + bw * 0.24, by + bh * 0.42 + st.p * bh * 0.1, bh * 0.6); if (!can) UI.tap(ui, bx, by, bw, bh, act); }
-    });
+  const E = CC.EVO; if (!E || !E.on || !E.mvp || E.mvp() !== 'r' || !E.race || !E.raceApi) return;
+  const Home = CC.Home, UI = CC.UI2, U = CC.U, PRO = E.race, api = E.raceApi, K = Home.evoK, T = UI.THEME, S = UI.S, rr0 = UI.rrect;
+  const M = { tab: 'jouer', page: 0, ask: null, bought: null, shake: null };
+  E.menuTab = (t) => { M.page = 0; M.ask = null; if (t === 'boutique') { M.tab = 'jouer'; if (CC.game) CC.game.ui.overlay = 'evoShop'; return; } M.tab = t === 'costumes' ? 'costumes' : 'jouer'; };
+  const save = (g) => { try { g.writeSave(); } catch (e) { /* ignore */ } };
+  const snd = (g, n) => { try { g.audio.play(n); } catch (e) { /* son */ } };
+  const skinNow = () => CC.Skins.byId[PRO.skin()] || CC.Skins.byId.stock;
+  const skinName = (sk, id) => String(sk.short || sk.name || id).toUpperCase();
+  // vignette d'un costume : une vraie vue 3D de la fusee, rendue une fois par l'apercu de l'ancien hangar
+  const TH = {}; let thBudget = 0;
+  const thumb = (id) => { let c = TH[id]; if (c) return c; if (!CC.Hangar || thBudget <= 0) return null; thBudget--; c = document.createElement('canvas'); c.width = 256; c.height = 192; if (!CC.Hangar.preview(c.getContext('2d'), id, 0, 0, 256, 192, 0, 0.3)) return null; return (TH[id] = c); };
+  E.skinThumb = (id) => { thBudget = Math.max(thBudget, 1); return thumb(id); };
+
+  // ---------- carte d'amelioration d'un pouvoir : la carte de l'ancien menu (ardoise, illustration, pastille de niveau, segments, bouton a tranche) ----------
+  const POW = [['TURBO', 'la', 'bg_la'], ['MISSILE', 'rk', 'bg_rk'], ['BOUCLIER', 'cm', null]];
+  function card(ui, ctx, g, SV, def, x, y, w, h, now) {
+    const id = def[0], cat = def[1], lv = PRO.pw(), n = lv[id], max = n >= 5, cost = 300 * n, can = !max && (SV.coins || 0) >= cost;
+    const shk = M.shake && M.shake.id === id && now - M.shake.t0 < 350 ? Math.sin((now - M.shake.t0) / 25) * S(10) : 0, bt = M.bought, bk = bt && bt.id === id ? U.clamp(1 - (now - bt.t0) / 520, 0, 1) : 0, k2 = 1 + 0.05 * Math.sin(bk * 3.1416);
+    const rx = x + shk, ccx = rx + w / 2, ccy = y + h / 2;
+    ctx.save(); ctx.translate(ccx, ccy); ctx.scale(k2, k2); ctx.translate(-ccx, -ccy);
+    const ink = '#F0EDE4', col = UI.CARDCOL[cat], R = w * 0.04, pd = w * 0.035;
+    rr0(ctx, rx, y, w, h, R); ctx.fillStyle = '#26394B'; ctx.fill();
+    const ix = rx + pd, iy = y + h * 0.125, iw = w - pd * 2, ih = h * 0.405;
+    UI.outlined(ctx, id, ix, y + h * 0.068, UI.fit(ctx, id, w * 0.6, h * 0.066), ink, null, { align: 'left' });
+    { const im = def[2] ? UI.art(def[2]) : null; ctx.save(); rr0(ctx, ix, iy, iw, ih, w * 0.025); ctx.clip();
+      if (im) { const k = Math.max(iw / im.naturalWidth, ih / im.naturalHeight), dw = im.naturalWidth * k, dh = im.naturalHeight * k; ctx.drawImage(im, ix + (iw - dw) / 2, iy + (ih - dh) / 2, dw, dh); } else { const bg = UI.CARDBG[cat], gr = ctx.createLinearGradient(0, iy, 0, iy + ih); gr.addColorStop(0, bg[0]); gr.addColorStop(1, bg[1]); ctx.fillStyle = gr; ctx.fillRect(ix, iy, iw, ih); UI.artImg(ctx, 'badge_best', ix + iw / 2, iy + ih * 0.5, ih * 0.86); }
+      ctx.restore(); }
+    { const br = w * 0.125, bcx = rx + w - br * 0.8, bcy = y + br * 0.8, ro = Math.max(2, S(4)); ctx.beginPath(); ctx.arc(bcx, bcy, br + ro, 0, 6.2832); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.beginPath(); ctx.arc(bcx, bcy, br, 0, 6.2832); ctx.fillStyle = '#3A5873'; ctx.fill(); UI.outlined(ctx, String(n), bcx, bcy + br * 0.04, UI.fit(ctx, String(n), br * 1.4, br * 1.05), T.white); }
+    UI.segments(ctx, ix, y + h * 0.555, iw, h * 0.088, Math.min(5, n), 5, { off: 'rgba(14,24,34,0.45)', on: col });
+    const bx = rx + pd, bw = w - pd * 2, bh = h * 0.285, by = y + h - pd - h * 0.285, cs = U.formatInt(cost), dim = !can && !max;
+    if (dim) { rr0(ctx, bx, by, bw, bh, bh * 0.07); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.save(); ctx.globalAlpha = 0.65; }
+    const face = UI.greenButton(ctx, bx, by, bw, bh, { disabled: false, cat, flat: dim });
+    if (max) UI.outlined(ctx, 'MAX', bx + bw / 2, face.y + face.h * 0.5, UI.fit(ctx, 'MAX', bw * 0.8, face.h * 0.46), '#FFFFFF');
+    else { UI.outlined(ctx, 'AMÉLIORER', bx + bw / 2, face.y + face.h * 0.3, UI.fit(ctx, 'AMÉLIORER', bw * 0.94, face.h * 0.4), '#FFFFFF');
+      const ps = face.h * 0.37, pw = UI.tw(ctx, cs, ps) + ps * 1.3; ctx.save(); UI.icon(ctx, 'coin', bx + bw / 2 - pw / 2 + ps * 0.5, face.y + face.h * 0.73, ps * 1.15); ctx.restore(); UI.outlined(ctx, cs, bx + bw / 2 - pw / 2 + ps * 1.25, face.y + face.h * 0.73, UI.fit(ctx, cs, bw * 0.55, ps), '#FFFFFF', null, { align: 'left' }); }
+    if (dim) ctx.restore();
+    if (bk > 0) { ctx.fillStyle = 'rgba(255,255,255,' + bk * 0.35 + ')'; UI.cham(ctx, rx, y, w, h, S(26)); ctx.fill(); }
+    ctx.restore();
+    K.hit(ui, rx, y, w, h, () => { if (max) return; if (can) { SV.coins -= cost; lv[id] = n + 1; PRO.setPw(lv); save(g); M.bought = { id, t0: performance.now() }; snd(g, 'coinPing'); } else { M.shake = { id, t0: performance.now() }; snd(g, 'uiTick'); } });
+  }
+
+  // ---------- accueil ----------
+  function drawHome(ui, ctx, g, W, H, F, SV, now) {
+    const { HH, Y, T0, cw, ox, cx } = F, RC = api.R;
+    K.topBar(ui, ctx, g, F, SV, E);
+    { const sk = skinNow(), l1 = 'COSTUME', l2 = skinName(sk, PRO.skin()), bw = S(380), bh = S(104), bx = cx - bw / 2 + S(30), by = T0 + S(172) + (CC.safePx ? CC.safePx() : 0), bd = Math.max(2, S(4)), rd = S(12);   // la plaque : le costume porte ; un toucher ouvre les costumes
+      rr0(ctx, bx - bd, by - bd, bw + bd * 2, bh + bd * 2, rd + bd); ctx.fillStyle = '#05080C'; ctx.fill(); rr0(ctx, bx, by, bw, bh, rd); ctx.fillStyle = '#26394B'; ctx.fill();
+      ctx.save(); rr0(ctx, bx, by, bw, bh, rd); ctx.clip(); ctx.fillStyle = '#1B2A38'; ctx.fillRect(bx, by + bh - S(9), bw, S(9)); ctx.restore();
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowOffsetY = S(6); ctx.shadowOffsetX = S(3); ctx.shadowBlur = 0; UI.icon(ctx, 'missile_ogive', bx + S(6), by + bh / 2 - S(4), S(128)); ctx.restore();
+      UI.outlined(ctx, l1, bx + bw * 0.56, by + bh * 0.33, UI.fit(ctx, l1, bw * 0.5, S(40)), '#F0EDE4'); UI.outlined(ctx, l2, bx + bw * 0.56, by + bh * 0.64, UI.fit(ctx, l2, bw * 0.5, S(36)), '#F0EDE4');
+      UI.tap(ui, bx, by, bw, bh, () => { M.tab = 'costumes'; M.page = 0; M.ask = null; }); }
+    const bs = S(128), lx = ox + S(36), ly = T0 + S(330);
+    UI.shopStall(ctx, lx, ly - S(6), bs, now); UI.tap(ui, lx, ly, bs, bs, () => { ui.overlay = 'evoShop'; });
+    { const y = ly + bs + S(28), nt = PRO.tickets(); ctx.save(); ctx.translate(lx + bs / 2, y + bs * 0.4); ctx.rotate(-0.2); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowOffsetY = S(4); UI.artImg(ctx, 'ticket', 0, 0, bs * 0.92); ctx.restore(); UI.outlined(ctx, String(nt), lx + bs / 2, y + bs * 0.92, bs * 0.3, UI.C.white, '#000000', { keep: true, ow: 0.22 }); }
+    { const cb = bs * 1.4, rx0 = ox + cw - S(36) - cb, y = ly, pct = (RC.round - 1) / 3, lab = 'MANCHE ' + RC.round + '/3';   // le coffre de la Coupe : il se remplit a chaque manche passee
+      UI.chestFrame(ctx, rx0, y, cb, false, true, now, pct);
+      UI.outlined(ctx, lab, rx0 + cb / 2, y + cb + S(36), UI.fit(ctx, lab, cb * 1.2, S(40)), '#F0EDE4');
+      UI.tap(ui, rx0 - S(10), y, cb + S(20), cb + S(86), () => Home.toast(ui, 'GAGNE LA COUPE POUR OUVRIR LE COFFRE')); }
+    { const k = 1 + 0.025 * Math.sin(now / 420), s = (CC.Touch && CC.Touch.active) ? 'APPUYEZ POUR LANCER' : 'CLIC POUR LANCER', yy = T0 + HH * 0.4; ctx.save(); ctx.translate(cx, yy); ctx.scale(k, k); ctx.translate(-cx, -yy);
+      { const px = UI.fit(ctx, s, cw * 0.7, S(58)); UI.outlined(ctx, s, cx, yy, px, 'rgba(0,0,0,0)', 'rgba(0,0,0,0.22)', { keep: true, ow: 0.2 }); UI.outlined(ctx, s, cx, yy, px, 'rgba(0,0,0,0)', 'rgba(0,0,0,0.4)', { keep: true, ow: 0.13 }); UI.outlined(ctx, s, cx, yy, px, '#F0EDE4', '#000000', { keep: true, ow: 0.07 }); } ctx.restore();
+      const sub = RC.field[RC.round - 1] + ' PILOTES  -  ' + [16, 8, 1][RC.round - 1] + (RC.round === 3 ? ' VAINQUEUR' : ' QUALIFIÉS'); UI.outlined(ctx, sub, cx, yy + S(66), UI.fit(ctx, sub, cw * 0.7, S(36)), '#E4B84D', '#000000', { keep: true, ow: 0.16 }); }
+    const gap = S(34), marg = S(40), cwd = (cw - marg * 2 - gap * 2) / 3, chh = ((cw - S(26) * 2 - S(14) * 2) / 3) / 0.703, cy0 = T0 + HH - chh - S(28);
+    POW.forEach((def, i) => card(ui, ctx, g, SV, def, ox + marg + i * (cwd + gap), cy0, cwd, chh, now));
+    if (Home.drawToast) Home.drawToast(ui, ctx, F.L);
+    K.hit(ui, 0, T0 + S(160), W, Y(0.68) - T0 - S(160), () => api.start(g), true);
+  }
+
+  // ---------- costumes : l'ecran « apparences » de l'ancien menu (tuiles ardoise, nom en jaune quand il est porte) ----------
+  function drawCostumes(ui, ctx, g, W, H, F, SV, now) {
+    const { HH, Y, T0, cw, ox, cx } = F;
+    K.bgPattern(ctx, W, T0, HH); K.topBar(ui, ctx, g, F, SV, E, { close: () => { M.tab = 'jouer'; M.ask = null; } });
+    UI.outlined(ctx, 'COSTUMES', cx, Y(0.16), S(100), T.white);
+    const ids = PRO.SKIN_IDS, per = 8, pages = Math.max(1, Math.ceil(ids.length / per)); M.page = U.clamp(M.page, 0, pages - 1);
+    const sel = PRO.skin() || 'stock', tw0 = (cw - S(108)) / 2, th = S(260), gx = ox + S(36), gy = Y(0.22);
+    ids.slice(M.page * per, M.page * per + per).forEach((id, i) => { const x = gx + (i % 2) * (tw0 + S(36)), y = gy + Math.floor(i / 2) * (th + S(26)), open = PRO.isOwned(id), on = sel === id, sk = CC.Skins.byId[id], ask = M.ask === id, p = PRO.price(id), nm = ask ? 'ACHETER ?' : skinName(sk, id);
+      UI.panel(ctx, x, y, tw0, th, { c: S(26), border: on ? T.yellow : T.border, bw: S(on ? 6 : 3) }); ctx.save(); if (!open) ctx.globalAlpha = 0.35; { const tc = thumb(id); if (tc) ctx.drawImage(tc, x + tw0 / 2 - th * 0.5, y + th * 0.4 - th * 0.375, th, th * 0.75); else UI.icon(ctx, 'missile_ogive', x + tw0 / 2, y + th * 0.4, th * 0.55); } ctx.restore();
+      UI.text(ctx, nm, x + tw0 / 2, y + th * 0.84, UI.fit(ctx, nm, tw0 * 0.8, S(46)), on || ask ? T.yellow : T.white, { shadow: false });
+      if (!open) { const ps = p > 0 ? U.formatInt(p) : 'GRATUIT'; UI.icon(ctx, 'coin', x + tw0 - S(54), y + S(54), S(56)); UI.text(ctx, ps, x + tw0 - S(54), y + S(104), UI.fit(ctx, ps, S(100), S(30)), (SV.coins || 0) >= p ? T.white : T.dim, { shadow: false }); }
+      K.hit(ui, x, y, tw0, th, () => {
+        if (open) { PRO.setSkin(id); M.ask = null; try { g.rocket.setSkin(skinNow()); } catch (e) { /* apercu */ } snd(g, 'uiTick'); return; }
+        if ((SV.coins || 0) < p) { M.ask = null; Home.toast(ui, 'PAS ASSEZ DE PIÈCES'); return; }
+        if (p > 0 && !ask) { M.ask = id; snd(g, 'uiTick'); return; }
+        SV.coins = (SV.coins || 0) - p; PRO.own(id); PRO.setSkin(id); M.ask = null; save(g); try { g.rocket.setSkin(skinNow()); } catch (e) { /* apercu */ } snd(g, 'coinPing'); Home.toast(ui, 'COSTUME OBTENU !'); }); });
+    const py = gy + 4 * (th + S(26)) + S(4), pbw = S(150), pbh = S(96);
+    if (pages > 1) { const ps = (M.page + 1) + ' / ' + pages; UI.btnSecondary(ctx, cx - S(270), py, pbw, pbh, '<'); UI.tap(ui, cx - S(270), py, pbw, pbh, () => { M.page = (M.page + pages - 1) % pages; M.ask = null; }); UI.btnSecondary(ctx, cx + S(120), py, pbw, pbh, '>'); UI.tap(ui, cx + S(120), py, pbw, pbh, () => { M.page = (M.page + 1) % pages; M.ask = null; }); UI.outlined(ctx, ps, cx, py + pbh * 0.46, S(52), T.white); }
+    { const ty = py + pbh + S(66), tr = PRO.trail(), cs = S(44); UI.outlined(ctx, 'TRAÎNÉE', gx, ty, S(40), T.white, null, { align: 'left' });   // la couleur de la trainee : les memes pastilles de couleur que les anciennes apparences
+      PRO.TRAILS.forEach((c, i) => { const x = gx + S(230) + i * S(72), on = tr === c; ctx.fillStyle = c || T.bg2; UI.cham(ctx, x, ty - cs / 2, cs, cs, S(10)); ctx.fill(); ctx.lineWidth = S(on ? 6 : 2); ctx.strokeStyle = on ? T.white : T.border2; ctx.stroke(); UI.tap(ui, x - S(8), ty - cs / 2 - S(8), cs + S(16), cs + S(16), () => { PRO.setTrail(c); snd(g, 'uiTick'); }); }); }
+    if (Home.drawToast) Home.drawToast(ui, ctx, F.L);
+  }
+
+  Home.drawEvo = function (ui, ctx, g, W, H) {
+    const F = K.frame(ui, ctx, W, H), SV = E.save(g), now = performance.now(); thBudget = 2; if (!M.pre && E.mapPoster) { M.pre = 1; api.mapKeys().forEach((k) => E.mapPoster(k)); }
+    if (M.tab === 'costumes') drawCostumes(ui, ctx, g, W, H, F, SV, now); else drawHome(ui, ctx, g, W, H, F, SV, now);
   };
 })();

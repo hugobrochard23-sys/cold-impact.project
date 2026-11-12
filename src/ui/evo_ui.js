@@ -523,7 +523,7 @@
     Home.evoUI.hud = function (ctx, g) {
       const k = (g.state === 'CRASHED' || g.state === 'IMPACT') ? 1 - U.clamp((g.impactT || 0) / 0.45, 0, 1) : 1; if (k <= 0) return;
       ctx.save(); ctx.globalAlpha *= k; try { return _hud.apply(this, arguments); } finally { ctx.restore(); } }; }
-  Home.evoK = { frame, topBar, shimmer, flyDraw, adsBadge, hit };
+  Home.evoK = { frame, topBar, shimmer, flyDraw, adsBadge, hit, bgPattern, sectionHead };
   if (CC.L1 && CC.L1.msg) { const _m = CC.L1.msg; CC.L1.msg = function (g) { if (g && g.evo) return; return _m.apply(this, arguments); }; }
   if (CC.EVO) { const _br = CC.EVO.beginRun; CC.EVO.beginRun = (g) => { g.evoReport = false; g.evoLvPop = false; return _br(g); }; }
 })();
