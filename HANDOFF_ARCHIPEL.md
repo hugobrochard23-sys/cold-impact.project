@@ -124,3 +124,8 @@ Sonnet 5.5 effort MOYEN (faible pour les retouches mecaniques, eleve seulement p
 - ARCHIPEL (14 sections, ~2850 m, 13 obstacles) : bumpers, marteaux, pales, beignets (vide), ballons, trampolines + mur de gelee, deux voies (moulins | macarons), tourniquet, sucettes, gommes rebondissantes, hublot tournant, guillotines.
 - JUNGLE (15 sections, ~2950 m, 13 obstacles) : lianes, rondins, rideaux, liane-tyrolienne (vide), fleurs carnivores, cascade (plaque vers le bas), racines (haut/bas), singes lanceurs, abeilles, troncs abattus, araignees, grotte, totems.
 - Corrections : obstacle mobile = blocage reel, ombres decoupees au bord du tablier, plus d'herbe (`sceneDef.grass = false`).
+
+## v393-v394 (retours + version B)
+- Ombres : pochoir (stencilWrite + forceSinglePass) -> chaque pixel n'est assombri qu'une fois (une seule forme par objet). Plafonds invisibles. Panneaux a 2 lignes (nom + consigne, `HINT`). Trampolines/lianes/catapulte/silo/tremplin lisibles (anneaux guides, faisceaux, zone large, texte HUD `label`).
+- Etages : `deckUp` (dalle suspendue, bas/haut) + `onLevel(h, fn)` (decale groupes et boites) + `divider` (voies doubles). Archipel/jungle/range/glace ont une section 'etages' (`ceil` 42).
+- B : TERRAIN D'ESSAI (cibles, chicane, herses|conteneurs, catapulte, canons, mines|tourelles, ballons de barrage|helicopteres, projecteurs, missiles, grue, silo) et GLACE (murs, tremplin, stalactites, cristaux|pics|machoires, boule de neige, pont de glace, igloos|foret, banquise). Vent et tuyaux retires de ces cartes (vent -> desert, tuyaux -> usine).
