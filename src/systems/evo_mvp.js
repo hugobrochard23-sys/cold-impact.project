@@ -786,7 +786,7 @@ const CUP = SHAPES.map((s) => s.name);
     const pulse = 1 + 0.03 * Math.sin(t * 5); ctx.save(); ctx.translate(cx, by + bh / 2); ctx.scale(pulse, pulse); ctx.translate(-cx, -(by + bh / 2)); UI.btnPrimary(ctx, bx, by, bw, bh, 'START'); ctx.restore();
     UI.tap(ui, bx, by, bw, bh, () => startRun(g));
   };
-  if (E.raceApi) Object.assign(E.raceApi, { R, start: startRun, cur });
+  if (E.raceApi) Object.assign(E.raceApi, { R, start: startRun, cur, mapKeys: () => Object.keys(MAP_NAMES), curMap: () => cur().map || 'arch', setMap: (m) => { R.courses[R.round - 1] = pickCourse(m); } });
   Home.drawEvoAim = function () { };   // plus de barre de lancement : START part tout de suite
 
   // ---------------------------------------------------------------- carte de fin (style MISSION ACCOMPLIE)

@@ -16,11 +16,11 @@
   };
   const navIcon = (ctx, id, x, y, r, on, S, g) => {
     ctx.save(); ctx.translate(x, y); ctx.fillStyle = on ? '#ffffff' : '#e8dcff'; ctx.strokeStyle = '#5a2cc8'; ctx.lineWidth = S(3);
-    if (id === 'boutique') { ctx.fillRect(-r * 0.5, -r * 0.1, r, r * 0.6); ctx.fillStyle = '#ff4a4a'; ctx.beginPath(); ctx.moveTo(-r * 0.62, -r * 0.1); ctx.lineTo(-r * 0.4, -r * 0.55); ctx.lineTo(r * 0.4, -r * 0.55); ctx.lineTo(r * 0.62, -r * 0.1); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#5a2cc8'; ctx.fillRect(-r * 0.12, r * 0.12, r * 0.24, r * 0.38); }
+    if (id === 'boutique') { if (!UI.artImg(ctx, 'shop', 0, 0, r * 2.1)) { ctx.fillStyle = '#ffffff'; ctx.fillRect(-r * 0.5, -r * 0.1, r, r * 0.6); } }
     else if (id === 'costumes') { PRO.icon(ctx, 0, 0, r * 2.2, CC.Skins.byId[PRO.skin()] || CC.Skins.byId.stock, -Math.PI / 4); }
     else if (id === 'jouer') { ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(-r * 0.3, -r * 0.5); ctx.lineTo(r * 0.55, 0); ctx.lineTo(-r * 0.3, r * 0.5); ctx.closePath(); ctx.fill(); }
     else if (id === 'pouvoirs') { ctx.fillStyle = '#ffd23a'; ctx.beginPath(); ctx.moveTo(r * 0.1, -r * 0.6); ctx.lineTo(-r * 0.4, r * 0.1); ctx.lineTo(-r * 0.02, r * 0.1); ctx.lineTo(-r * 0.15, r * 0.6); ctx.lineTo(r * 0.4, -r * 0.15); ctx.lineTo(r * 0.02, -r * 0.15); ctx.closePath(); ctx.fill(); ctx.stroke(); }
-    else { ctx.fillStyle = '#c9c9d6'; UI.rrect(ctx, -r * 0.4, -r * 0.1, r * 0.8, r * 0.6, r * 0.1); ctx.fill(); ctx.lineWidth = S(6); ctx.strokeStyle = '#c9c9d6'; ctx.beginPath(); ctx.arc(0, -r * 0.1, r * 0.25, Math.PI, 0); ctx.stroke(); }
+    else { ctx.fillStyle = '#ffd23a'; ctx.strokeStyle = '#7a4a00'; ctx.lineWidth = S(3); ctx.beginPath(); ctx.moveTo(-r * 0.42, -r * 0.5); ctx.lineTo(r * 0.42, -r * 0.5); ctx.quadraticCurveTo(r * 0.4, r * 0.18, 0, r * 0.2); ctx.quadraticCurveTo(-r * 0.4, r * 0.18, -r * 0.42, -r * 0.5); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.lineWidth = S(4); for (const sg of [-1, 1]) { ctx.beginPath(); ctx.arc(sg * r * 0.5, -r * 0.3, r * 0.2, sg > 0 ? -1.2 : 1.2 + Math.PI, sg > 0 ? 1.2 : -1.2 + Math.PI, sg < 0); ctx.stroke(); } ctx.fillRect(-r * 0.08, r * 0.2, r * 0.16, r * 0.22); ctx.fillRect(-r * 0.3, r * 0.42, r * 0.6, r * 0.14); ctx.strokeRect(-r * 0.3, r * 0.42, r * 0.6, r * 0.14); }
     ctx.restore();
   };
   const panelBg = (ctx, W0, y0, y1) => {   // le fond violet a damier des ecrans de menu
@@ -30,7 +30,7 @@
     ctx.restore();
   };
   const cupCard = (ctx, g, F, S) => {   // la carte de la Coupe : 3 manches + le paquet
-    const { Y, cw, cx } = F, R = api.R, y = Y(0.60), h = S(250), w = cw * 0.92, x = cx - w / 2;
+    const { Y, cw, cx } = F, R = api.R, y = Y(0.575), h = S(236), w = cw * 0.92, x = cx - w / 2;
     UI.rrect(ctx, x, y, w, h, S(34)); ctx.fillStyle = 'rgba(24,18,70,0.86)'; ctx.fill(); ctx.lineWidth = S(5); ctx.strokeStyle = '#ffd23a'; ctx.stroke();
     UI.text(ctx, 'COUPE COLD IMPACT', cx, y + S(38), S(50), '#FFD23A', { outline: true });
     const names = R.courses.map((c) => c.name), seg = (w - S(60)) / 4;
@@ -51,8 +51,13 @@
     const navY = Y(0.935), navH = HH * 0.13;
     // contenu de l'onglet
     if (M.tab === 'jouer') {
-      const spinning = now - M.spin0 < 1500, nm = spinning ? R.courses[Math.floor((now - M.spin0) / 90) % R.courses.length].name : R.courses[R.round - 1].name;
-      UI.text(ctx, 'MAP', cx, Y(0.115), S(34), '#ffffff', { outline: true }); UI.text(ctx, nm, cx, Y(0.17), UI.fit(ctx, nm, cw * 0.8, S(96)), spinning ? '#ffffff' : '#FFD23A', { outline: true });
+      const keys = api.mapKeys(), cm = api.curMap(), pw = cw * 0.8, ph = pw / 1.6, px = cx - pw / 2, py = Y(0.095), mp = E.mapPoster ? E.mapPoster(cm) : null;   // la carte : une grande photo, son nom, des fleches pour en changer
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = S(26); ctx.shadowOffsetY = S(10); UI.rrect(ctx, px, py, pw, ph, S(30)); ctx.fillStyle = '#0b0d1c'; ctx.fill(); ctx.restore();
+      if (mp) { ctx.save(); UI.rrect(ctx, px, py, pw, ph, S(30)); ctx.clip(); ctx.drawImage(mp, 0, 0, mp.width, mp.height, px, py, pw, ph); const gr0 = ctx.createLinearGradient(0, py + ph * 0.55, 0, py + ph); gr0.addColorStop(0, 'rgba(8,10,28,0)'); gr0.addColorStop(1, 'rgba(8,10,28,0.86)'); ctx.fillStyle = gr0; ctx.fillRect(px, py + ph * 0.55, pw, ph * 0.45); ctx.restore(); }
+      UI.rrect(ctx, px, py, pw, ph, S(30)); ctx.lineWidth = S(7); ctx.strokeStyle = '#ffffff'; ctx.stroke();
+      const nmm = E.mapName ? E.mapName(cm) : cm.toUpperCase(); UI.text(ctx, 'CARTE ' + (R.round) + ' / 3', px + S(26), py + S(30), S(26), '#FFD23A', { align: 'left', outline: true }); UI.text(ctx, nmm, cx, py + ph - S(46), UI.fit(ctx, nmm, pw * 0.8, S(76)), '#ffffff', { outline: true });
+      for (const sgn of [-1, 1]) { const ax = sgn < 0 ? px - S(8) : px + pw + S(8), ay = py + ph / 2, rr = S(44); ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = S(10); ctx.beginPath(); ctx.arc(ax, ay, rr, 0, 6.283); ctx.fillStyle = '#ffd23a'; ctx.fill(); ctx.restore(); ctx.lineWidth = S(5); ctx.strokeStyle = '#7a4a00'; ctx.beginPath(); ctx.arc(ax, ay, rr, 0, 6.283); ctx.stroke(); ctx.fillStyle = '#5a3400'; ctx.beginPath(); ctx.moveTo(ax - sgn * S(14), ay - S(22)); ctx.lineTo(ax + sgn * S(12), ay); ctx.lineTo(ax - sgn * S(14), ay + S(22)); ctx.closePath(); ctx.fill();
+        UI.tap(ui, ax - rr, ay - rr, rr * 2, rr * 2, () => { const i = keys.indexOf(cm); api.setMap(keys[(i + sgn + keys.length) % keys.length]); }); }
       cupCard(ctx, g, F, S);
       const bw = cw * 0.56, bh = S(130), bx = cx - bw / 2, by = Y(0.80), pulse = 1 + 0.03 * Math.sin(now / 200);
       ctx.save(); ctx.translate(cx, by + bh / 2); ctx.scale(pulse, pulse); ctx.translate(-cx, -(by + bh / 2)); UI.btnPrimary(ctx, bx, by, bw, bh, 'JOUER'); ctx.restore(); UI.tap(ui, bx, by, bw, bh, () => api.start(g));
@@ -62,7 +67,7 @@
       else { UI.text(ctx, 'CLASSEMENT', cx, Y(0.2), S(80), '#ffffff', { outline: true }); ctx.save(); ctx.translate(cx, Y(0.42)); ctx.fillStyle = '#d6d6e6'; UI.rrect(ctx, -S(90), -S(30), S(180), S(150), S(24)); ctx.fill(); ctx.lineWidth = S(26); ctx.strokeStyle = '#d6d6e6'; ctx.beginPath(); ctx.arc(0, -S(30), S(60), Math.PI, 0); ctx.stroke(); ctx.restore(); UI.text(ctx, 'BIENTOT', cx, Y(0.6), S(70), '#FFD23A', { outline: true }); UI.text(ctx, 'LE VRAI CLASSEMENT DES JOUEURS', cx, Y(0.67), UI.fit(ctx, 'LE VRAI CLASSEMENT DES JOUEURS', cw * 0.9, S(36)), '#ffffff', { shadow: false }); UI.text(ctx, 'ARRIVERA AVEC LA PLATEFORME', cx, Y(0.715), UI.fit(ctx, 'ARRIVERA AVEC LA PLATEFORME', cw * 0.9, S(36)), '#ffffff', { shadow: false }); }
     }
     // barre du bas
-    ctx.fillStyle = '#7a3cf0'; ctx.fillRect(0, navY - navH * 0.55, W0, HH + T0 - (navY - navH * 0.55) + 4); ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.fillRect(0, navY - navH * 0.55, W0, S(5));
+    { const gn = ctx.createLinearGradient(0, navY - navH * 0.55, 0, HH + T0 + 4); gn.addColorStop(0, '#8a4ff0'); gn.addColorStop(1, '#5a2cc8'); ctx.fillStyle = gn; ctx.fillRect(0, navY - navH * 0.55, W0, HH + T0 - (navY - navH * 0.55) + 4); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(0, navY - navH * 0.55, W0, S(4)); }
     TABS.forEach(([id, label], i) => {
       const x = cx + (i - 2) * cw * 0.2, on = M.tab === id, big = id === 'jouer', r = S(big ? 62 : 46);
       if (on && !big) { ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(x - cw * 0.1, navY - navH * 0.55, cw * 0.2, navH * 1.4); }

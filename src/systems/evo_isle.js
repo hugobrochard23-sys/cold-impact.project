@@ -173,7 +173,8 @@
     ground: (d, lx, c) => {
       const C = E.course, I = C && C.isle; if (!I) return; const s = SEC[secAt(d)], a = Math.abs(lx), w = I.W(d);
       const base = s.col === 'split' ? (lx < 0 ? COLS.teal : COLS.pink) : COLS[s.col]; c.copy(base);
-      if (((Math.floor(d / 18) + Math.floor((lx + 300) / 18)) & 1)) c.multiplyScalar(0.94);   // damier tres doux
+      { const pt = secAt(d) % 4;   // un motif different par section : damier, diagonales, bandes, grand damier
+        if (pt === 0 ? ((Math.floor(d / 18) + Math.floor((lx + 300) / 18)) & 1) : pt === 1 ? (Math.floor((d + lx + 400) / 14) & 1) : pt === 2 ? (Math.floor((lx + 300) / 16) & 1) : ((Math.floor(d / 34) + Math.floor((lx + 300) / 34)) & 1)) c.multiplyScalar(pt === 3 ? 0.95 : 0.93); }
       if (a > w - 2) c.copy(RIM);
     },
     build(S) {

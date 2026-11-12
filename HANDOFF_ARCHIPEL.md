@@ -132,3 +132,8 @@ Sonnet 5.5 effort MOYEN (faible pour les retouches mecaniques, eleve seulement p
 
 ## v395 (choix de la carte)
 - Avant chaque manche (y compris depuis JOUER) : overlay DOM `beginCd` = roulette de photos reelles (assets/maps/*.jpg, captees par `cctest/photos.js`) puis fleches / touches gauche-droite pour choisir la carte, ALEATOIRE, bouton LANCER ; le 3-2-1-GO ne demarre qu'apres LANCER ; l'overlay disparait au GO avant le decollage. La carte choisie remplace `R.courses[R.round-1]`.
+
+## v396-v397 (version C + menu + lisibilite)
+- C : DESERT (marches|tourbillons, pistons, vautours, etages scarabees|portes / obelisques|haches, surf de dune, tempete, salle des piliers) et USINE (engrenages, presses|lance-flammes, convoyeurs, tuyau-looping, etages wagonnets|caisses / bras|rouleaux broyeurs, vapeur, arcs). Tuyaux = usine seulement (`loopPipe`), vent = desert seulement.
+- Portiques de zone (`ZONE n` + nom) a chaque nouvelle section ; sols avec un motif different par section.
+- Menu : grande photo de la carte avec fleches (`raceApi.setMap`), icones du bas (boutique en image, trophee dessine), barre en degrade. Les scripts de test doivent utiliser `CC.EVO.raceApi.start(CC.game)` (le bouton [0] est maintenant une fleche de carte).
