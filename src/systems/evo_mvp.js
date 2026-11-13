@@ -813,11 +813,11 @@ const CUP = SHAPES.map((s) => s.name);
   const pickCourse = (m) => { const L = COURSES.filter((c) => c.isle && (c.map || 'arch') === m); return L[Math.floor(Math.random() * L.length)] || L[0]; };
   const raceCount = (g) => {   // 3-2-1-GO une fois arrive sur la course : le temps du jeu est fige jusqu'au GO
     const d = document.createElement('div'); d.style.cssText = "position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;pointer-events:none;font-family:'Rajdhani','Barlow Condensed','Arial Narrow',sans-serif;font-weight:700;font-size:32vh;line-height:1;color:#E4B84D;text-shadow:0 1.4vh 0 rgba(8,9,12,.95)"; document.body.appendChild(d);
-    let tries = 0; const snd = (n) => { try { g.audio.play(n); } catch (e) { /* son */ } };
+    let tries = 0; const snd = (n) => { try { g.audio.play(n); } catch (e) { /* son */ } }, sfxOn = () => { try { g.audio.sfx.gain.value = g.audio.cfg.sfx; } catch (e) { /* son */ } };   // v406 : bruitages coupes entre la roulette et le 3-2-1 (plus de bruit de depart avant la presentation)
     const wait = () => {
       if (g.state === 'FLIGHT' && g.endlessRun) { let n = 3; const INTRO = (W && E.course && E.course.isle && !/[?&]nointro=1/.test(location.search)) ? 4500 : 0; g.hitStop = 3.4 + INTRO / 1000; g.hitScale = 0.0005; if (INTRO) W.intro = { t0: performance.now(), dur: INTRO };
-        const tk = () => { if (g.state !== 'FLIGHT') { d.remove(); return; } if (n > 0) { d.textContent = String(n); try { d.animate([{ transform: 'scale(1.4)' }, { transform: 'scale(1)' }], { duration: 520, easing: 'ease-out' }); } catch (e) { /* ignore */ } snd('padArm'); g.hitStop = 1.3; g.hitScale = 0.0005; n--; setTimeout(tk, 1000); } else { d.textContent = 'GO !'; g.hitStop = 0; g.hitScale = 0; snd('target'); setTimeout(() => d.remove(), 650); } }; setTimeout(() => { if (W) W.intro = null; if (g.rig) g.rig._mv = null; tk(); }, INTRO); }
-      else if (tries++ < 240) setTimeout(wait, 50); else d.remove(); };
+        const tk = () => { if (g.state !== 'FLIGHT') { sfxOn(); d.remove(); return; } if (n > 0) { d.textContent = String(n); try { d.animate([{ transform: 'scale(1.4)' }, { transform: 'scale(1)' }], { duration: 520, easing: 'ease-out' }); } catch (e) { /* ignore */ } snd('padArm'); g.hitStop = 1.3; g.hitScale = 0.0005; n--; setTimeout(tk, 1000); } else { d.textContent = 'GO !'; g.hitStop = 0; g.hitScale = 0; snd('target'); setTimeout(() => d.remove(), 650); } }; setTimeout(() => { if (W) W.intro = null; if (g.rig) g.rig._mv = null; sfxOn(); tk(); }, INTRO); }
+      else if (tries++ < 240) setTimeout(wait, 50); else { sfxOn(); d.remove(); } };
     wait();
   };
   const beginCd = (g) => {   // avant chaque manche : la roulette des cartes (aucun choix) ; elle part vite, ralentit longuement, la carte tiree « s'enfonce », puis on arrive sur la course et le 3-2-1 demarre
@@ -841,7 +841,7 @@ const CUP = SHAPES.map((s) => s.name);
     { let tt = 0, k = 0; const tick = () => { if (!alive || tt > DUR - 200) return; snd('padArm'); k++; const dl = 55 + k * k * 1.15; tt += dl; setTimeout(tick, dl); }; setTimeout(tick, 400); }
     setTimeout(() => {   // la carte tiree : elle s'enfonce comme un bouton qu'on presse, puis tout s'efface et on arrive sur la course
       const card = strip.children[iT]; snd('target'); try { card.style.zIndex = '2'; card.animate([{ transform: 'scale(1)', filter: 'brightness(1)' }, { transform: 'scale(.9)', filter: 'brightness(.85)', offset: 0.35 }, { transform: 'scale(1.1)', filter: 'brightness(1.25)', offset: 0.7 }, { transform: 'scale(1.06)', filter: 'brightness(1)' }], { duration: 620, easing: 'ease-out', fill: 'forwards' }); } catch (e) { /* ignore */ }
-      setTimeout(() => { g._cdGo = true; startRun(g); raceCount(g); el.style.transition = 'opacity .35s'; el.style.opacity = '0'; }, 900);
+      setTimeout(() => { g._cdGo = true; try { g.audio.sfx.gain.value = 0; } catch (e) { /* son */ } startRun(g); raceCount(g); el.style.transition = 'opacity .35s'; el.style.opacity = '0'; }, 900);
       setTimeout(() => { alive = false; try { el.remove(); } catch (e) { /* ignore */ } _cd = null; }, 1350);
     }, 380 + DUR + 120);
   };
