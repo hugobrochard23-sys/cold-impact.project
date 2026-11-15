@@ -355,14 +355,27 @@
   }
   // jets d'eau qui jaillissent en travers du passage (en rythme, colonne de 45 m) ; la base (bouche, anneau d'ecume) est toujours visible
   const JM = () => MT.jet || (MT.jet = new T3.MeshLambertMaterial({ color: '#d8f4ff', emissive: '#4ab8e8', emissiveIntensity: 0.35, transparent: true, opacity: 0.78 }));
+  const JS = () => MT.jetS || (MT.jetS = new T3.MeshLambertMaterial({ color: '#bfe8ff', emissive: '#3a9ad8', emissiveIntensity: 0.25, transparent: true, opacity: 0.32, depthWrite: false, side: T3.DoubleSide }));
+  const JF = () => MT.jetF || (MT.jetF = new T3.MeshLambertMaterial({ color: '#ffffff', emissive: '#9ad8f0', emissiveIntensity: 0.3, transparent: true, opacity: 0.8 }));
+  const JD = () => MT.jetD || (MT.jetD = new T3.MeshLambertMaterial({ color: '#e8f8ff', emissive: '#6ac0e8', emissiveIntensity: 0.4, transparent: true, opacity: 0.85 }));
   function jets(S, dc, xs, ph0, per) {
     S.item(dc, () => {
       const Lc = S.lane(dc).lx;
       xs.forEach((x, i) => {
         S.cyl(dc, Lc + x, 0, 3.4, 0.7, 'col:' + C.stone, undefined, 14, 3.4, true); S.cyl(dc, Lc + x, 0.7, 2.6, 0.12, 'col:#7ac8e8', undefined, 14, 2.6, false); S.cyl(dc, Lc + x, 0.7, 0.9, 0.5, 'col:#5a6470', undefined, 8, 0.9, false);
-        const grp = new T3.Group(), col = new T3.Mesh(CY(1.7, 2.3, 1, 12), JM()); col.position.y = 0.5; grp.add(col); const top = new T3.Mesh(SP(3.2, 10, 8), JM()); grp.add(top);
-        const cb = EVO.colBox(grp, 3.4, 1, 3.4, 0, 0.5, 0); EVO.placeGroup(S, grp, dc, Lc + x, 0.8, 0); const ph = ph0 + i * (per / xs.length);
-        EVO.addDyn(grp, (t) => { const u = ((t + ph) % per) / per, h = u < 0.12 ? ss(0, 0.12, u) : u < 0.5 ? 1 : u < 0.62 ? 1 - ss(0.5, 0.62, u) : 0, H = 46 * h + 0.01; grp.visible = h > 0.02; col.scale.y = H; col.position.y = H / 2; top.position.y = H; top.scale.setScalar(0.5 + h * 0.6 + Math.sin(t * 9) * 0.05); cb.scale.y = H; cb.position.y = H / 2; }, [cb], { near: 9999, span: 60 });
+        // v413 : un vrai jet d'eau : un coeur clair, une gaine translucide qui ondule, une couronne de gouttes qui retombent en parasol, de l'ecume au pied.
+        // Il ne tue plus : il PROJETTE la fusee vers le haut (comme un vrai jet).
+        const grp = new T3.Group(), col = new T3.Mesh(CY(0.9, 1.5, 1, 10, true), JM()), sh = new T3.Mesh(CY(1.9, 2.6, 1, 12, true), JS()), foam = new T3.Mesh(SP(3.6, 12, 6), JF()); foam.scale.set(1, 0.32, 1); grp.add(col, sh, foam);
+        const ND = 70, dr = new T3.InstancedMesh(SP(0.55, 5, 4), JD(), ND); dr.frustumCulled = false; grp.add(dr); const da = Array.from({ length: ND }, (_, k) => [k / ND * 6.283 + Math.random() * 0.4, 0.7 + Math.random() * 0.6, Math.random(), k % 3 === 0]);
+        const cb = EVO.colBox(grp, 7, 1, 7, 0, 0.5, 0); EVO.placeGroup(S, grp, dc, Lc + x, 0.8, 0); const ph = ph0 + i * (per / xs.length), m4 = new T3.Matrix4(), qq = new T3.Quaternion(), pv = new T3.Vector3(), sv = new T3.Vector3();
+        EVO.addDyn(grp, (t) => { const u = ((t + ph) % per) / per, h = u < 0.12 ? ss(0, 0.12, u) : u < 0.5 ? 1 : u < 0.62 ? 1 - ss(0.5, 0.62, u) : 0, H = 46 * h + 0.01; grp.visible = h > 0.02 || u > 0.6 && u < 0.78; if (!grp.visible) return;
+          const wob = 1 + Math.sin(t * 13 + i) * 0.08; col.scale.set(wob, H, wob); col.position.y = H / 2; sh.scale.set(1 + Math.sin(t * 7 + i) * 0.12, H * 0.92, 1 + Math.cos(t * 8 + i) * 0.12); sh.position.y = H * 0.46; foam.scale.set(0.8 + h * 0.5 + Math.sin(t * 6) * 0.05, 0.25 + h * 0.15, 0.8 + h * 0.5);
+          const top = Math.max(H, 0.1), fall = u >= 0.5 ? (u - 0.5) * per : 0;   // quand le jet s'arrete, la derniere couronne retombe
+          for (let k = 0; k < ND; k++) { const D = da[k], s = (t * D[1] + D[2]) % 1; let y, r;
+            if (D[3]) { y = s * top; r = 1.4 + Math.sin(s * 9 + k) * 0.5; }   // gouttes qui montent le long du jet
+            else { const tt = s * 1.6; r = 1.5 + (5 + 4 * D[1]) * tt; y = top + 6 * tt - 11 * tt * tt - fall * 14; }   // la couronne : elles s'ecartent et retombent
+            pv.set(Math.cos(D[0]) * r, Math.max(0.3, y), Math.sin(D[0]) * r); m4.compose(pv, qq, sv.setScalar((y < 0.4 ? 0.4 : 1) * (0.6 + (1 - s) * 0.7) * Math.max(0.2, h))); dr.setMatrixAt(k, m4); }
+          dr.instanceMatrix.needsUpdate = true; cb.scale.y = Math.max(0.01, H * h > 2 ? H : 0.01); cb.position.y = H / 2; }, [cb], { near: 9999, span: 60, hit: (g) => { const rk = g.rocket; if (!rk || !rk.active) return true; if (rk.vel.y < 26) rk.vel.y = 26; const now = performance.now(); if (!g._jetT || now - g._jetT > 700) { g._jetT = now; try { g.audio.play('splash'); g.rig.shake = Math.max(g.rig.shake || 0, 0.25); if (g.effects.splash) g.effects.splash(rk.pos.clone()); } catch (e) { /* effets */ } } return true; } });
       });
     });
   }
@@ -485,7 +498,7 @@
     add('feerieCouchant', { top: '#4a5ac8', hor: '#ff8a5a', fog: '#e89a88', near: 160, far: 460, hemiS: '#ffd8c8', hemiG: '#8a6058', hemiI: 0.74, amb: 0.18, sunC: '#ff9a50', sunI: 0.95, night: 0.08 }, [1.1, 1.08, '#dcd8ff', '#ffe0c4']);
     add('foireNuit', { top: '#0c1440', hor: '#5a3a8a', fog: '#2a2050', near: 120, far: 420, hemiS: '#a8a0ff', hemiG: '#3a2a50', hemiI: 0.8, amb: 0.34, sunC: '#c8a0ff', sunI: 0.45, night: 0.62 }, [1.05, 1.1, '#d0d0ff', '#ffe8d0']);
     for (const k of ['fdepart', 'fportes', 'fplace']) EVO.SCENE_MOOD[k] = 'feerie'; EVO.SCENE_MOOD.fparc = 'feerieMenthe'; EVO.SCENE_MOOD.fmarteaux = 'feerieOr'; EVO.SCENE_MOOD.froue = 'feerieLilas'; EVO.SCENE_MOOD.fcoaster = 'feerieCouchant'; EVO.SCENE_MOOD.fnuit = 'foireNuit'; EVO.SCENE_MOOD.fchoix = 'feerieSoir'; EVO.SCENE_MOOD.fsous = 'foireSous';
-    if (EVO.SCENE_AUDIO) for (const k of ['fdepart', 'fportes', 'fplace', 'fparc', 'fmarteaux', 'froue', 'fcoaster']) EVO.SCENE_AUDIO[k] = 'evoDay'; if (EVO.SCENE_AUDIO) { EVO.SCENE_AUDIO.fchoix = 'evoDusk'; EVO.SCENE_AUDIO.fsous = 'evoMine'; EVO.SCENE_AUDIO.fnuit = 'evoNight'; }
+    if (EVO.SCENE_AUDIO) for (const k of ['fdepart', 'fportes', 'fplace', 'fparc', 'fmarteaux', 'froue', 'fcoaster']) EVO.SCENE_AUDIO[k] = 'foire'; if (EVO.SCENE_AUDIO) { EVO.SCENE_AUDIO.fchoix = 'foire'; EVO.SCENE_AUDIO.fsous = 'foireSous'; EVO.SCENE_AUDIO.fnuit = 'foireNuit'; }   // v413 : orgue de foire, sous-sol, marche de cirque de nuit
   }
 
   // ---------- SCENE 1 : LE PARKING ----------

@@ -60,6 +60,7 @@
     foret: ['CENTRE : FORET DENSE. RESTE BAS, ILS TE GUETTENT.', 3.2], carriere: ['CENTRE : LA CARRIERE. DESCENDS EN SPIRALE.', 3.2], descente: ['CENTRE : LA CARRIERE. DESCENDS EN SPIRALE.', 3.2], puits: ['CENTRE : PUITS DE MINE. PLONGE ! PLONGE !', 3.0],
     tunnel: ['CENTRE : TUNNEL. ATTENTION AUX TRAINS.', 3.0], ville: ['CENTRE : VILLE ENNEMIE. LA CITADELLE EST DEVANT TOI.', 3.6], approche: ['CENTRE : DEFENSES ANTIAERIENNES. RESTE BAS.', 3.2],
     porte: ['CENTRE : TOUCHE LE TITAN TROIS FOIS !', 3.4], noyau: ['CENTRE : TU Y ES. DETRUIS LE REACTEUR AU FOND DU HALL !', 3.6], fuite: ['CENTRE : SORS DE LA ! VITE !', 2.4], arene: ['CENTRE : TU Y ES. DETRUIS LE REACTEUR !', 3.4],
+    fdepart: ['CENTRE : LE PARC EST AUX MAINS DE L ENNEMI. FONCE !', 3.2], fchoix: ['CENTRE : DEUX PORTES. CHOISIS TON TUNNEL !', 3.0], fnuit: ['CENTRE : LE BOSS EST SUR LA PLACE ! FONCE DANS LA CIBLE ROUGE !', 3.6],   // v413 : niveau 3
   };
   EVO.onChapter = (g, c) => {
     const L = LINES[c.key]; if (L && (EVO.save(g).runs < 40 || c.i > 3)) EVO.radio(g, L[0], L[1]);

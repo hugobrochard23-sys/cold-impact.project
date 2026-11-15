@@ -4,7 +4,7 @@
   const U = CC.U, EVO = CC.EVO;
   if (!EVO || !EVO.on) return;
   EVO.stage = (g) => { const m = /[?&]lv=(\d)/.exec(location.search); return m ? +m[1] : (EVO.saveBase(g).stage || 1); };
-  EVO.setStage = (g, n) => { const S = EVO.save(g), old = S.stage || 1; if (old === n) return; S['best' + old] = S.best || 0; S.best = S['best' + n] || 0; S.stage = n; g.writeSave(); };
+  EVO.setStage = (g, n) => { const S = EVO.save(g), old = S.stage || 1; if (old === n) return; if (n === 3 || old === 3) { EVO.saveBase(g).stage = n; g.writeSave(); return; }   /* v413 : le niveau 3 garde son record dans sa propre sauvegarde (s3) */ S['best' + old] = S.best || 0; S.best = S['best' + n] || 0; S.stage = n; g.writeSave(); };
   // --- écran d'accueil : cinématique d'intro la toute première fois, ou la suite programmée (victoire, niveau suivant)
   EVO.showHome = (g) => {
     if (g.evoNext) { const f = g.evoNext; g.evoNext = null; f(); return; }
@@ -36,6 +36,9 @@
     g.evoNext = () => EVO.dropIn(g);   // v282 : le niveau 2 demarre comme le niveau 1 : zoom de camera, puis la visee (plus de cinematique)
     g.goHome({});
   };
+  // v413 : apres le niveau 2, le niveau 3 (la fete foraine) ; apres le niveau 3, on reste au niveau 3
+  EVO.goStage3 = (g) => { const B = EVO.saveBase(g); B.stage = 3; g.writeSave(); g.evoWin = null; g.evoNext = () => EVO.dropIn(g); g.goHome({}); };
+  EVO.nextStage = (g, st) => { if (st === 1) EVO.goStage2(g); else if (st === 2) EVO.goStage3(g); else EVO.backStage1(g); };
   EVO.backStage1 = (g) => { g.evoWin = null; g.ui.overlay = 'evo'; g.goHome({}); };   // après le niveau 2 : on reste sur le niveau 2 (rejouer, améliorer)
   EVO.switchStage = (g, n) => { if (EVO.stage(g) === n) return; EVO.setStage(g, n); g.ui.overlay = null; g.goHome({}); };
   // --- le niveau 2 : lancement automatique, sans la barre (le missile sort du tube)
@@ -63,7 +66,7 @@
     if (W_.stage === 1) { const a = Math.min(1, Math.max(0, (t - 3) / 0.6)), y = H * 0.66, s = u * 0.06; ctx.globalAlpha = a; EVO.iconSub(ctx, cx - u * 0.3, y, s, '#aee8ff'); EVO.iconArrow(ctx, cx - u * 0.15, y, s * 0.4, 'rgba(255,255,255,0.8)', 0); EVO.iconShip(ctx, cx, y, s * 0.9, '#ff9a6a'); EVO.iconArrow(ctx, cx + u * 0.15, y, s * 0.4, 'rgba(255,255,255,0.8)', 0); EVO.iconMissile(ctx, cx + u * 0.3, y, s, '#ff6a4a'); ctx.globalAlpha = 1; }
     // bouton : une grande flèche verte qui pulse
     if (t > 3.2) { const bw = Math.min(W * 0.6, u * 0.6), bh = u * 0.2, bx = cx - bw / 2, by = H * 0.8, pulse = 1 + 0.04 * Math.sin(t * 5); ctx.save(); ctx.translate(cx, by + bh / 2); ctx.scale(pulse, pulse); ctx.translate(-cx, -(by + bh / 2)); UI.btn(ctx, bx, by, bw, bh, bh * 0.22, UI.K.green); UI.txt(ctx, 'SUIVANT', cx - bw * 0.1, by + bh * 0.45, UI.fit(ctx, 'SUIVANT', bw * 0.5, bh * 0.4), '#ffffff', { stroke: UI.K.green[3], sw: 0.2 }); EVO.iconArrow(ctx, cx + bw * 0.32, by + bh / 2, bh * 0.24, '#ffffff', 0); ctx.restore();
-      ui.buttons.push({ x: bx, y: L.T + by, w: bw, h: bh, action: () => { if (W_.stage === 1) EVO.goStage2(g); else EVO.backStage1(g); } }); }
+      ui.buttons.push({ x: bx, y: L.T + by, w: bw, h: bh, action: () => EVO.nextStage(g, W_.stage) }); }
     ctx.restore();
   };
 })();

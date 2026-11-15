@@ -24,6 +24,8 @@
     tour:   { wind: 0.16, windF: 800, low: 0.04, lowF: 110, hum: 0.012, humF: 70 },
     eau:    { wind: 0.0, low: 0.2, lowF: 240, hum: 0.03, humF: 46, pulse: 0.01, pulseF: 0.22, hiss: 0.012, hissF: 4200 },
     usine:  { wind: 0.02, windF: 300, low: 0.1, lowF: 130, hum: 0.06, humF: 50, pulse: 0.03, pulseF: 1.1, hiss: 0.008, hissF: 3800 },
+    // v413 : niveau 3, la fete foraine
+    foire: { wind: 0.05, windF: 620, low: 0.025, lowF: 120, hiss: 0.004, hissF: 5200 }, foireSous: { wind: 0.02, windF: 280, low: 0.11, lowF: 90, hum: 0.04, humF: 52, hiss: 0.003, hissF: 3600 }, foireNuit: { wind: 0.03, windF: 380, low: 0.06, lowF: 110, hum: 0.02, humF: 82, hiss: 0.006, hissF: 6200 },
   };
   // événements lointains : intervalle (s) entre deux sons, liste (jour) et liste de nuit
   const AMBIENT_EVENTS = {
@@ -40,6 +42,8 @@
     tour:   { gap: [8, 15], list: ['jetPass', 'clank'] },
     eau:    { gap: [5, 10], list: ['whale', 'bubble', 'bubble', 'clank'] },
     usine:  { gap: [3, 6], list: ['press', 'clank', 'alarm', 'press'] },
+    foire: { gap: [2.5, 5], list: ['fairBell', 'fairWhistle', 'fairPop', 'fairRide', 'fairChime', 'fairBell', 'jetPass'] }, foireSous: { gap: [3, 6], list: ['press', 'fairChime', 'drip', 'clank', 'trainFar'] },
+    foireNuit: { gap: [2, 4], list: ['fairPop', 'fwBurst', 'fairBell', 'fwBurst', 'siren', 'fairRide'] },
   };
 
   class Audio {
@@ -423,6 +427,13 @@
         case 'tick': this.noiseHit(3500, 'highpass', 2, 0.07, 0.02); this.noiseHit(2500, 'highpass', 2, 0.05, 0.02); break;
         case 'musicBox': { const sc = [0, 2, 4, 7, 9, 12, 14, 16], f0 = 880; for (let k = 0; k < 4; k++) { const f = f0 * Math.pow(2, sc[Math.floor(Math.random() * sc.length)] / 12); this.tone('triangle', f, f, 0.05, 0.6, k * 0.22); this.tone('sine', f * 2, f * 2, 0.02, 0.4, k * 0.22); } break; }
         case 'drip': this.tone('sine', 1500, 650, 0.06, 0.14); break;
+        // v413 : bruits de fete foraine (crees par le code) : cloche du stand, sifflet a coulisse, ballon qui eclate, manege qui passe, carillon, feu d'artifice
+        case 'fairBell': for (let k = 0; k < 3; k++) { this.tone('sine', 1760, 1740, 0.07, 0.5, k * 0.16); this.tone('sine', 2637, 2600, 0.035, 0.35, k * 0.16); this.tone('triangle', 4400, 4300, 0.015, 0.15, k * 0.16); } break;
+        case 'fairWhistle': { const up = Math.random() < 0.5; this.tone('sine', up ? 600 : 1800, up ? 1900 : 520, 0.05, 0.55); this.tone('sine', up ? 1900 : 520, up ? 900 : 1500, 0.04, 0.35, 0.55); break; }
+        case 'fairPop': this.noiseHit(3000, 'highpass', 0.8, 0.22, 0.05); this.tone('square', 900, 200, 0.05, 0.05); break;
+        case 'fairRide': this.noiseHit(260, 'lowpass', 0.7, 0.12, 1.2, 0.5); for (let k = 0; k < 6; k++) this.noiseHit(1800, 'bandpass', 4, 0.05, 0.05, 1 + k * 0.05); this.sweep(400, 1400, 'bandpass', 2, 0.06, 1.0); break;
+        case 'fairChime': { const sc = [0, 4, 7, 12, 16]; for (let k = 0; k < 5; k++) { const f = 1046 * Math.pow(2, sc[k] / 12); this.tone('triangle', f, f, 0.04, 0.5, k * 0.11); } break; }
+        case 'fwBurst': this.tone('sine', 900, 2400, 0.03, 0.7); this.noiseHit(1400, 'lowpass', 0.7, 0.3, 0.6, 0.6); for (let k = 0; k < 8; k++) setTimeout(() => { if (this.ctx) this.noiseHit(4000 + Math.random() * 3000, 'highpass', 1, 0.06, 0.04); }, 700 + k * 60 + Math.random() * 50); break;
         case 'alarm': for (let i = 0; i < 3; i++) this.tone('square', 880, 880, 0.03, 0.18, i * 0.4); break;
         case 'whoosh': this.sweep(300, 1800, 'bandpass', 1, 0.3, 0.5); break;
         case 'ring': [784, 1175, 1568].forEach((f, i) => this.tone('sine', f, f, 0.09, 0.22, i * 0.07)); break;
@@ -511,6 +522,16 @@
     usine:   { bpm: 128, root: 37, scale: [0, 1, 5, 7, 10], prog: [0, 0, 0, -2], kick: P16([0, 4, 8, 12]), snare: P16([4, 12]), hat: P16([2, 6, 10, 14]), clank: P16([3, 7, 11, 15]),
                bass: { type: 'square', steps: P16([0, 3, 6, 8, 11, 14]), oct: -12, len: 1.2, vol: 0.11, cut: 380 }, arp: { type: 'square', steps: P16([2, 10]), oct: 3, len: 0.6, vol: 0.035, cut: 2000 } },
   };
+  // v413 : niveau 3 : un air d'orgue de foire original (do majeur, I-IV-V-I) et une marche de cirque sombre pour la place de nuit et le boss (la mineur)
+  { const M = (bars) => bars.flatMap((b) => b.flatMap((n) => [n, null])), _ = null;
+    STYLES.foire = { bpm: 136, root: 48, scale: [0, 2, 4, 5, 7, 9, 11], prog: [0, 5, 7, 0], kick: P16([0, 8]), snare: [], hat: P16([4, 12]),
+      bass: { type: 'triangle', steps: P16([0, 8]), oct: -12, len: 2.2, vol: 0.17, cut: 700 }, pah: { steps: P16([4, 6, 12, 14]), iv: [4, 7, 12], vol: 0.022, len: 0.9, cut: 2200 },
+      mel: M([[4, 7, 12, 7, 4, 7, 12, _], [5, 9, 12, 9, 5, 9, 14, 12], [11, 14, 7, 11, 14, 17, 16, 14], [12, 7, 4, 7, 0, _, 12, _]]), melOct: 1, melVol: 0.045 };
+    STYLES.foireSous = Object.assign({}, STYLES.evoMine, { mel: M([[0, _, 3, _, 7, _, 6, _], [_, _, _, _, _, _, _, _], [-2, _, 2, _, 5, _, 4, _], [_, _, _, _, _, _, _, _]]), root: 45, melOct: 1, melVol: 0.035 });
+    STYLES.foireNuit = { bpm: 150, root: 45, scale: [0, 2, 3, 5, 7, 8, 11], prog: [0, -2, -4, -5], kick: P16([0, 4, 8, 12]), snare: P16([4, 12]), hat: P16([2, 6, 10, 14]),
+      bass: { type: 'sawtooth', steps: P16([0, 2, 4, 6, 8, 10, 12, 14]), oct: -12, len: 1.2, vol: 0.13, cut: 520 }, pah: { steps: P16([4, 12]), iv: [3, 7, 12], vol: 0.02, len: 1.2, cut: 1800 },
+      mel: M([[0, 3, 7, 12, 11, 7, 3, _], [-2, 2, 5, 10, 9, 5, 2, _], [-4, 0, 3, 8, 7, 3, 0, 2], [-5, -1, 2, 7, 8, 7, 2, -1]]), melOct: 1, melVol: 0.045,
+      pad: { type: 'sawtooth', vol: 0.03, cut: 900, attack: 0.5, iv: [0, 7, 12] } }; }
   class Music {
     constructor(ctx, out) {
       this.ctx = ctx; this.out = out; this.playing = false; this.step = 0; this.next = 0; this.timer = null;
@@ -562,6 +583,8 @@
           this.voice(a.type, this.note(nn), t, sp * a.len, a.vol, a.cut);
           if (a.echo) this.voice(a.type, this.note(nn), t + sp * a.echo, sp * a.len * 1.4, a.vol * 0.45, (a.cut || 2000) * 0.7);
         }
+        if (st.pah && st.pah.steps[p]) for (const iv of st.pah.iv) this.voice(st.pah.type || 'square', this.note(root + iv), t, sp * (st.pah.len || 0.9), st.pah.vol, st.pah.cut || 2400);   // v413 : accords courts (« pah ») de l'orgue de foire
+        if (st.mel && st.mel[s] !== null && st.mel[s] !== undefined) { const nn = st.root + 12 * (st.melOct || 1) + st.mel[s]; this.voice('square', this.note(nn), t, sp * 1.7, st.melVol || 0.05, 3000); this.voice('triangle', this.note(nn + 12), t, sp * 1.4, (st.melVol || 0.05) * 0.6, 4200); }   // v413 : la melodie de l'orgue (64 pas, independante des accords)
         if (st.pad && p === 0 && (bar % 2) === 0) for (const iv of st.pad.iv) this.voice(st.pad.type, this.note(root + 12 + iv), t, sp * 30, st.pad.vol, st.pad.cut, st.pad.attack);
         if (st.ping && Math.random() < st.ping.p) this.voice('triangle', this.note(root + 12 * st.ping.oct + st.scale[Math.floor(Math.random() * st.scale.length)]), t, sp * 6, 0.05, 4200);
         this.step++; this.next += sp;

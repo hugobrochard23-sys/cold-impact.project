@@ -49,7 +49,7 @@
     if (EVO.fast() && !S.wingsInit && !S.runs && !(S.rk > 0) && !S.stage) { S.wingsInit = 1; S.rk = 5; }
     if (!EVO._cheat) {
       EVO._cheat = 1; const q = (k) => { const m = new RegExp('[?&]' + k + '=(\\d+)').exec(location.search); return m ? parseInt(m[1], 10) : null; };
-      const T = (/[?&]lv=2/.test(location.search) || S.stage === 2) ? EVO.stage2(S) : S;   // les triches de test visent le niveau en cours
+      const T = (/[?&]lv=3/.test(location.search) || (S.stage === 3 && !/[?&]lv=\d/.test(location.search))) ? EVO.stage3(S) : (/[?&]lv=2/.test(location.search) || S.stage === 2) ? EVO.stage2(S) : S;   // les triches de test visent le niveau en cours
       const a = q('evocoins'); if (a !== null) T.coins = a; const b = q('evork'); if (b !== null) T.rk = b; const c = q('evola'); if (c !== null) T.la = c; const d = q('evocm'); if (d !== null) T.cm = d;
     }
     return S;
@@ -57,10 +57,11 @@
   // v239 : NIVEAU 2 : progression separee. EVO.save(g) renvoie la sauvegarde de base au niveau 1 et une VUE au niveau 2 : ces champs vont dans save.evo.s2, le reste (gemmes, coffre, apparences, reglages) reste commun.
   const S2K = { rk: 1, la: 1, cm: 1, best: 1, runs: 1, kills: 1, cleared: 1, t0: 1, marks: 1, seen: 1 };
   EVO.stage2 = (B) => (B.s2 = B.s2 || { coins: 0, rk: 0, la: 0, cm: 0, best: 0, runs: 0, kills: 0, cleared: 0, t0: 0, marks: {}, seen: {} });
+  EVO.stage3 = (B) => (B.s3 = B.s3 || { coins: 0, rk: 0, la: 0, cm: 0, best: 0, runs: 0, kills: 0, cleared: 0, t0: 0, marks: {}, seen: {} });   // v413 : le niveau 3 a aussi sa progression (fusee clown, lancement, revenu, record)
   EVO.save = (g) => {
     const B = EVO.saveBase(g), m = /[?&]lv=(\d)/.exec(location.search), st = m ? +m[1] : (B.stage || 1);
-    if (st !== 2) return B;
-    const s2 = EVO.stage2(B); if (s2.coins) { B.coins += s2.coins; s2.coins = 0; }   // v286 : une seule bourse pour les deux niveaux (anciennes pieces du niveau 2 reversees)
+    if (st !== 2 && st !== 3) return B;
+    const s2 = st === 3 ? EVO.stage3(B) : EVO.stage2(B); if (s2.coins) { B.coins += s2.coins; s2.coins = 0; }   // v286 : une seule bourse pour les deux niveaux (anciennes pieces du niveau 2 reversees)
     if (EVO._px && EVO._px.B === B && EVO._px.s2 === s2) return EVO._px.p;
     const p = new Proxy({}, { get: (t, k) => (S2K[k] ? s2[k] : B[k]), set: (t, k, v) => { if (S2K[k]) s2[k] = v; else B[k] = v; return true; }, has: (t, k) => (S2K[k] ? k in s2 : k in B) });
     EVO._px = { B, s2, p }; return p;

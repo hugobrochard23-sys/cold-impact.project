@@ -8,8 +8,8 @@
 (function () {
   const EVO = CC.EVO, U = CC.U, T3 = THREE, V = T3.Vector3;
   if (!EVO || !EVO.on || !EVO.addDyn) return;
-  const NOBOSS = /[?&]noboss=1/.test(location.search), SEE = 1400, HP = 3, WAKE = 650;
-  const _a = new V(), _b = new V(), _c = new V();
+  const NOBOSS = /[?&]noboss=1/.test(location.search), SEE = 1400, HP = 3, WAKE = 950;
+  const _a = new V(), _b = new V(), _c = new V(), _q = new T3.Quaternion();
   const rr = (a, b) => a + Math.random() * (b - a);
   const on3 = (g) => !!(EVO.stage && EVO.stage(g) === 3);
   const FWC = ['#ff5ad8', '#ffd23a', '#5af0ff', '#ff6a3a', '#9aff6a', '#ffffff'];
@@ -57,7 +57,17 @@
       weapons.push({ w, turret, k, base: 6 + (k % 3) * 4, muz: turret ? [new V(-1.7, 5.5, 18.6), new V(1.7, 5.5, 18.6)] : [new V(0, 9, 9)] });
     }
     const glows = []; if (EVO.boss2Kit) for (let k = 0; k < 3; k++) { const s = EVO.boss2Kit.glow(70, '#ffd36a'); s.position.set(0, 4 + k * 8, 0); s.visible = false; roof.add(s); glows.push(s); }
-    return { W, base: baseM, deck, deckM, roof, beams, weapons, glows };
+    // v413 : ON DOIT COMPRENDRE QUE C'EST LE BOSS : une grande CIBLE rouge toujours face au joueur, le nom au-dessus, un faisceau rouge dans le ciel visible de tres loin
+    const add = (o) => new T3.MeshBasicMaterial({ color: o, transparent: true, opacity: 0.9, blending: T3.AdditiveBlending, depthWrite: false, depthTest: false, fog: false });
+    const tgt = new T3.Group(); tgt.position.y = 42; tgt.renderOrder = 10; W.add(tgt);
+    { const RM = add('#ff3a2a'), r1 = new T3.Mesh(new T3.TorusGeometry(62, 1.4, 6, 64), RM), r2 = new T3.Mesh(new T3.TorusGeometry(54, 0.6, 4, 64), add('#ff8a6a')); tgt.add(r1, r2);
+      const ticks = new T3.Group(); tgt.add(ticks); for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2, c = new T3.Mesh(new T3.ConeGeometry(4.5, 12, 3), RM); c.position.set(Math.cos(a) * 72, Math.sin(a) * 72, 0); c.rotation.z = a + Math.PI / 2; ticks.add(c); const b = new T3.Mesh(new T3.BoxGeometry(14, 1.6, 0.5), RM); b.position.set(Math.cos(a) * 46, Math.sin(a) * 46, 0); b.rotation.z = a; ticks.add(b); }
+      for (const o of [r1, r2, ...ticks.children]) o.renderOrder = 10; tgt.userData = { r1, r2, ticks }; }
+    const tag = (() => { const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 256; const x = cv.getContext('2d'); x.fillStyle = 'rgba(120,10,10,0.85)'; x.fillRect(40, 40, 944, 176); x.strokeStyle = '#ffd23a'; x.lineWidth = 10; x.strokeRect(40, 40, 944, 176);
+      x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#ffd23a'; x.font = '900 64px Rajdhani, Arial Black, Arial, sans-serif'; x.fillText('BOSS', 512, 84); x.fillStyle = '#ffffff'; x.font = '900 88px Rajdhani, Arial Black, Arial, sans-serif'; x.fillText('MANEGE DE GUERRE', 512, 160);
+      const t = new T3.CanvasTexture(cv); if (T3.SRGBColorSpace) t.colorSpace = T3.SRGBColorSpace; const s = new T3.Sprite(new T3.SpriteMaterial({ map: t, transparent: true, depthTest: false, depthWrite: false, fog: false })); s.scale.set(120, 30, 1); s.position.y = 122; s.renderOrder = 11; W.add(s); return s; })();
+    const beacon = new T3.Mesh(new T3.CylinderGeometry(7, 7, 900, 12, 1, true), new T3.MeshBasicMaterial({ color: '#ff2a2a', transparent: true, opacity: 0.22, blending: T3.AdditiveBlending, depthWrite: false, side: T3.DoubleSide, fog: false })); beacon.position.y = 470; W.add(beacon);
+    return { W, base: baseM, deck, deckM, roof, beams, weapons, glows, tgt, tag, beacon };
   }
 
   // ---------------- etat ----------------
@@ -68,7 +78,7 @@
 
   function create(g, T, P) {
     const F = EVO.F3, dB = P.d0 + F.bossU * P.len, M = model();
-    B = EVO.boss3 = { M, d: dB, d0: dB, dMax: dB + 2 * F.step, dFin: P.d0 + F.finU * P.len, lx: T.laneX(dB), hp: HP, mode: 'sleep', cool: 0, t: 0, wt: 0, spin: 0, fireT: 1, podT: 4, fwT: 2, dash: null, dying: 0, debris: [], smokeT: 0, disp: 1, far0: 0, lights: 0 };
+    B = EVO.boss3 = { M, dWake: Math.max(dB - WAKE, P.d0 + 10), dShow: P.d0 - 30, d: dB, d0: dB, dMax: dB + 2 * F.step, dFin: P.d0 + F.finU * P.len, lx: T.laneX(dB), hp: HP, mode: 'sleep', cool: 0, t: 0, wt: 0, spin: 0, fireT: 1, podT: 4, fwT: 2, dash: null, dying: 0, debris: [], smokeT: 0, disp: 1, far0: 0, lights: 0 };
     g.scene.add(M.W); M.W.visible = false;
     const col = EVO.colBox(M.W, 96, 80, 96, 0, 40, 0);
     EVO.addDyn(M.W, (t, dt, gg) => { if (B && B.M === M) upd(gg, dt); }, [col], { near: 1e7, span: 1e7, hit: (gg) => hit(gg) });
@@ -104,7 +114,8 @@
   function wake(g, quiet) {
     if (B.mode !== 'sleep') return; B.mode = 'wake'; B.wt = 0;
     if (quiet) return; g.audio.play('robotRoar', B.M.W.position); g.audio.play('robotAlarm'); g.audio.play('levelUp'); g.rig.shake = Math.max(g.rig.shake, 0.8); g.flash = 0.25; g.flashColor = '#ffd0f0';
-    if (CC.L1) CC.L1.msg(g, 'LE MANEGE DE GUERRE !', 2.2, '#ff6a50'); if (EVO.radio) EVO.radio(g, 'CENTRE : LE MANEGE EST BLINDE ! FONCE DEDANS, PARTOUT !', 3.2);
+    for (let k = 0; k < 2; k++) setTimeout(() => { if (B && g.rocket.active && g.state === 'FLIGHT') fireTurret(g); }, 900 + k * 450);   // il tire tout de suite : on comprend qu'il est l'ennemi
+    if (CC.L1) CC.L1.msg(g, 'BOSS : LE MANEGE DE GUERRE !', 2.4, '#ff6a50'); if (EVO.radio) EVO.radio(g, 'CENTRE : LE MANEGE EST BLINDE ! FONCE DEDANS, PARTOUT !', 3.2);
   }
   function hit(g) {
     if (!B || B.mode === 'dying' || B.mode === 'dead') return true;
@@ -147,7 +158,7 @@
     if (!near && B.mode !== 'dash') return;
     place(g, T);
     if (live && B.hp > 0 && EVO.holdAt) EVO.holdAt(g, B.d + 54, 'DETRUIS LE MANEGE !');   // impossible de le depasser vivant
-    if (live && B.mode === 'sleep' && rd > B.d0 - WAKE) wake(g);
+    if (live && B.mode === 'sleep' && rd > B.dWake) wake(g);   // il se reveille quand on sort du souterrain sur la place
     // ----- reveil : vague de lumieres, les armes sortent, il se met a tourner -----
     let want = 0;
     if (B.mode === 'wake') { B.wt += dt; B.lights = Math.min(1, B.wt / 1.2); for (const q of M.weapons) q.rise = U.clamp((B.wt - 0.5 - q.k * 0.12) / 0.9, 0, 1); want = 0.5; if (B.wt > 2.4) { B.mode = 'live'; B.fireT = 0.8; } }
@@ -155,6 +166,9 @@
     else if (B.mode === 'dying') want = 6;
     B.spin += (want - B.spin) * Math.min(1, dt * (B.mode === 'dying' ? 2 : 0.8)); M.deck.rotation.y += B.spin * dt;
     for (const q of M.weapons) { if (q.w.parent !== M.deck) continue; q.kick = Math.max(0, (q.kick || 0) - dt * 4); q.w.position.y = -16 + ((q.rise || 0) * (16 + q.base + Math.sin(B.t * 2.2 + q.k * 0.8) * 3.5)); q.w.children[0].position.z = -q.kick * 2; }
+    { const alive = B.mode !== 'dying' && B.mode !== 'dead' && rd > B.dShow, cam = g.camera; M.tgt.visible = M.tag.visible = M.beacon.visible = alive;
+      if (alive) { M.W.updateWorldMatrix(true, false); M.W.getWorldQuaternion(_q).invert(); M.tgt.quaternion.copy(_q).multiply(cam.quaternion); const U2 = M.tgt.userData, pz = 1 + 0.05 * Math.sin(B.t * 5); U2.r1.scale.setScalar(pz); U2.ticks.rotation.z = B.t * 0.6; U2.ticks.scale.setScalar(1 + 0.08 * Math.sin(B.t * 5));
+        const dd = M.W.position.distanceTo(cam.position), k = U.clamp(dd / 500, 0.6, 2.2); M.tag.scale.set(120 * k, 30 * k, 1); M.tag.position.y = 100 + 22 * k; M.beacon.material.opacity = 0.14 + 0.1 * Math.sin(B.t * 4); } }   // la cible et le nom grossissent avec la distance : on les lit de tres loin
     for (const b of M.beams) { b.visible = B.lights > 0.5 && B.mode !== 'dying' && B.mode !== 'dead'; b.rotation.x = Math.sin(B.t * 0.7 + b.position.x) * 0.3; }
     // ampoules : chenillard ; la couleur dit la phase (doree, orange, rouge qui clignote)
     { const ms = mats(), ph = PH[U.clamp(HP - B.hp, 0, 2)], sp = B.hp <= 1 ? 9 : B.hp === 2 ? 5 : 3, on = Math.sin(B.t * sp) > 0, L = (B.mode === 'dying' || B.mode === 'dead') ? 0 : B.lights;
@@ -162,7 +176,7 @@
     // ----- attaques -----
     if (live && B.mode === 'live') {
       const dist = M.W.position.distanceTo(rk.pos);
-      if (dist > 100 && dist < 820) {
+      if (dist > 100 && dist < 1150) {
         B.fireT -= dt; if (B.fireT <= 0) { B.fireT = [1.5, 1.9, 2.4][Math.max(0, B.hp - 1)]; fireTurret(g); }
         if (B.hp <= 2) { B.podT -= dt; if (B.podT <= 0) { B.podT = B.hp <= 1 ? 3.8 : 4.6; firePods(g); } }
         if (B.hp <= 1) { B.fwT -= dt; if (B.fwT <= 0) { B.fwT = 3.2; salvo(g); } }
@@ -207,7 +221,9 @@
   EVO.titanHud = (ctx, g, ox, u, H, UI, S) => {
     if (B && B.mode !== 'sleep' && g.endlessRun && !(B.mode === 'dead' && B.disp < 0.01)) {
       const w = u * 0.5, h = S(24), x = ox + (u - w) / 2, y = H * 0.1, f = B.hp / HP; B.disp += (f - B.disp) * 0.12;
-      ctx.save(); ctx.globalAlpha = B.mode === 'dead' || B.mode === 'dying' ? U.clamp(B.disp * 10, 0, 1) : 1; rrect(ctx, x, y, w, h, h / 2); ctx.clip(); ctx.fillStyle = 'rgba(8,12,18,0.5)'; ctx.fillRect(x, y, w, h); ctx.fillStyle = '#E8433A'; ctx.fillRect(x, y, w * Math.max(0, B.disp), h); ctx.restore(); return;
+      ctx.save(); ctx.globalAlpha = B.mode === 'dead' || B.mode === 'dying' ? U.clamp(B.disp * 10, 0, 1) : 1; rrect(ctx, x, y, w, h, h / 2); ctx.clip(); ctx.fillStyle = 'rgba(8,12,18,0.5)'; ctx.fillRect(x, y, w, h); ctx.fillStyle = '#E8433A'; ctx.fillRect(x, y, w * Math.max(0, B.disp), h); ctx.restore();
+      if (B.mode !== 'dead' && B.mode !== 'dying') { ctx.save(); ctx.font = '700 ' + Math.round(S(26)) + 'px Rajdhani, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.lineWidth = S(5); ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.strokeText('BOSS · MANEGE DE GUERRE', ox + u / 2, y - S(6)); ctx.fillStyle = '#ffe9a0'; ctx.fillText('BOSS · MANEGE DE GUERRE', ox + u / 2, y - S(6)); ctx.restore(); }   // v413 : le nom au-dessus de la jauge
+      return;
     }
     if (_th) _th(ctx, g, ox, u, H, UI, S);
   };
