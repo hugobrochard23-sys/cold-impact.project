@@ -694,12 +694,14 @@
       EVO.addDyn(grp, (t) => { const A = a0 + t * sp; rot.rotation.z = A; for (let i = 0; i < NG; i++) { const b = i / NG * 6.283, px = Math.sin(b) * (R + 1), py = Math.cos(b) * (R + 1); pv.set(px * Math.cos(A) - py * Math.sin(A), px * Math.sin(A) + py * Math.cos(A) - 4.5, 0); m4.compose(pv, q0, sv); gm.setMatrixAt(i, m4); pv.y += 3.6; m4.compose(pv, q0, sv); gr.setMatrixAt(i, m4); } gm.instanceMatrix.needsUpdate = true; gr.instanceMatrix.needsUpdate = true; }, body.children.slice(), { near: 9999, span: 200 });
     });
   }
+  const frPave = (dd, x, dW) => { const ro = rosace(dd, x, dW, 0, 64, C.terra, C.rose, C.gold); if (ro) return ro; const ax = Math.abs(x), rr = Math.hypot(dd - dW, x); if (ax < 12) return ['#e8dcc0', 'foireDalles']; if (Math.abs(rr - 92) < 6) return ['#e8dcc0', 'foireDalles']; if (Math.abs(x - 60) < 4 || Math.abs(x + 60) < 4) return ['#e0d4b8', 'foireDalles']; return null; };
   D.scenes.froue = { len: [600, 600], noDoor: true, noChaos: true, noDress: true, turns: [[0.72, 0.92, 28]],
     pin: (T, sc) => ({ lx: 0, y: 40, from: 20, to: sc.d1 - sc.d0 - 10 }),
     ground: (d, lx, c) => { c.lerp(new T3.Color('#5aa84a'), 0.55); },
+    wet: (dd, lx, sc) => { const dW = sc.d0 + 0.42 * (sc.d1 - sc.d0); for (const [a, b] of [[0, 0], [3, 0], [-3, 0], [0, 3], [0, -3]]) if (frPave(dd + a, lx + b, dW)) return true; return false; },   // v414 : pas d'herbe sur les allees ni sur la rosace (elle depassait des paves)
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L, dW = d(0.42);
-      paveScene(S, (dd, x) => { const ro = rosace(dd, x, dW, 0, 64, C.terra, C.rose, C.gold); if (ro) return ro; const ax = Math.abs(x), rr = Math.hypot(dd - dW, x); if (ax < 12) return ['#e8dcc0', 'foireDalles']; if (Math.abs(rr - 92) < 6) return ['#e8dcc0', 'foireDalles']; if (Math.abs(x - 60) < 4 || Math.abs(x + 60) < 4) return ['#e0d4b8', 'foireDalles']; return null; });
+      paveScene(S, (dd, x) => frPave(dd, x, dW));
       giantWheel(S, dW);
       for (const [u, s, k, x] of [[0.12, -1, 'car', 70], [0.18, 1, 'vil', 72], [0.3, -1, 'food', 110], [0.62, 1, 'top', 110], [0.68, -1, 'vil', 70], [0.82, 1, 'drop', 66], [0.9, -1, 'swing', 80]]) { S.reserve(d(u), s * x, 56, 56); S.item(d(u), (r) => { const lx = S.lane(d(u)).lx + s * x; if (k === 'car') carousel(S, d(u), lx, r, 1.6); else if (k === 'swing') swingRide(S, d(u), lx, r, 1.6); else if (k === 'drop') dropTower(S, d(u), lx, r, 110); else if (k === 'food') foodCourt(S, d(u), lx, r); else if (k === 'top') bigTop(S, d(u), lx, r, 1.3); else village(S, d(u), lx, r); }); }
       fillers(S, 30, 70, 20);
@@ -841,7 +843,7 @@
         S.bx(dc, x, H - 3, 70, 1.6, 1.6, 'col:#d8d8e0', undefined, true); S.bx(dc, x, H - 1.8, 70, 0.6, 2, 'col:' + C.pink, undefined, false); });
       // v412 : des obstacles SIMPLES qui MONTENT du sol : a l'approche, une moitie du tunnel se leve (bloc de bonbon geant / pierre tombale geante), l'autre reste libre.
       // Une bande lumineuse au sol annonce de loin la moitie qui va se lever. Ils alternent gauche / droite.
-      const riser = (dc, x, factory) => S.item(dc, () => { const W2 = 36, H2 = 34, g = new T3.Group(), parts = [];
+      const riser = (dc, x, factory) => S.item(dc, () => { const W2 = 30, H2 = 24, /* v414 : plus bas (24 m) : on peut aussi passer PAR-DESSUS (plafond a 54 m) */ g = new T3.Group(), parts = [];
         if (factory) { parts.push({ g: BX(W2, H2, 10), c: C.white, p: [0, H2 / 2, 0] }); for (let k = 0; k < 6; k++) parts.push({ g: BX(W2 + 0.4, 2.4, 10.4), c: C.pink, p: [0, 3 + k * 5.6, 0] }); parts.push({ g: CY(5, 5, W2 * 0.7, 16), c: '#ff5ad8', p: [0, H2 + 4, 0], r: [0, 0, Math.PI / 2] }); for (const s2 of [-1, 1]) parts.push({ g: CO(5, 5, 12), c: C.yellow, p: [s2 * (W2 * 0.35 + 2.4), H2 + 4, 0], r: [0, 0, -s2 * Math.PI / 2] }); }
         else { parts.push({ g: BX(W2, H2 - 8, 9), c: '#5a5070', p: [0, (H2 - 8) / 2, 0] }, { g: CY(W2 / 2, W2 / 2, 9, 20, false), c: '#5a5070', p: [0, H2 - 8, 0], r: [Math.PI / 2, 0, 0], s: [1, 1, 0.45] }, { g: BX(W2 + 2, 3, 11), c: '#3a3048', p: [0, 1.5, 0] }, { g: BX(4, 14, 9.6), c: '#7aff9a', p: [0, 18, 0] }, { g: BX(12, 4, 9.6), c: '#7aff9a', p: [0, 21, 0] }); }
         const body = bake(parts); g.add(body); EVO.colBox(body, W2, H2 + (factory ? 9 : 0), 10, 0, (H2 + (factory ? 9 : 0)) / 2, 0);
@@ -850,7 +852,7 @@
         g.position.y = y0 - H2 - 12;
         EVO.addDyn(g, (t, dt, game) => { const run = game.endlessRun; if (!run) return; const want = run.dist > dc - 170 ? 1 : 0; if (run.dist < dc - 240) st.k = 0; if (want && st.k === 0 && game.state === 'FLIGHT') { try { game.audio.play('hydraulic'); game.rig.shake = Math.max(game.rig.shake || 0, 0.25); } catch (e) { /* son */ } }
           st.k = want ? Math.min(1, st.k + dt / 0.9) : st.k; g.position.y = y0 - (H2 + 12) * (1 - ss(0, 1, st.k)); }, body.children.slice(), { near: 9999, span: 60 }); });
-      for (const [u, s2] of [[0.13, -1], [0.21, 1], [0.29, -1]]) { riser(d(u), -DOOR.x + s2 * 19, true); riser(d(u + 0.035), DOOR.x - s2 * 19, false); }
+      for (const [u, s2] of [[0.11, -1], [0.28, 1]]) { riser(d(u), -DOOR.x + s2 * 25, true); riser(d(u + 0.02), DOOR.x - s2 * 25, false); }   // ils laissent un couloir libre de 20 m au milieu du tunnel   // v414 : deux obstacles par tunnel, ~150 m d'ecart (avant : trois a 70 m, zigzag impossible a cette vitesse)
       // ===== cote MANOIR / TRAIN FANTOME : rails, wagons fantomes qui arrivent, draps de fantomes qui flottent, cercueils, toiles =====
       for (let dc = S.d0 + 10; dc < d(uSplit) - 6; dc += 3) S.item(dc, () => { const Lc = 0, x = Lc + DOOR.x + 28, fl = T.rel(dc), fl1 = T.rel(dc + 3); beam(S, dc, x - 1, fl + 0.4, dc + 3, x - 1, fl1 + 0.4, 0.3, 0.3, '#888888', false); beam(S, dc, x + 1, fl + 0.4, dc + 3, x + 1, fl1 + 0.4, 0.3, 0.3, '#888888', false); });
       for (let dc = S.d0 + 30; dc < d(uSplit) - 10; dc += 34) S.item(dc, (r) => { const Lc = 0, x = Lc + DOOR.x; for (let k = 0; k < 2; k++) { const xx = x - 30 + k * 18, zz = dc + r.between([-6, 6]); S.bx(zz, xx, 0.8, 2.6, 1.6, 6, 'col:#2a1a10', undefined, true); S.bx(zz, xx, 1.7, 2.8, 0.3, 6.2, 'col:#4a2a18', undefined, false); } for (let k = 0; k < 4; k++) S.bx(dc + k * 2, x + 15, 20 + k * 3, 0.05, 10, 0.05, 'col:#dddddd', undefined, false, { shadow: false }); });
