@@ -57,6 +57,15 @@
       for (let j = 0; j < h / s; j++) for (let i = 0; i < w / s; i++) { const v = 205 + Math.floor(r() * 32), x = i * s, y = j * s; g.fillStyle = 'rgb(' + v + ',' + (v - 2) + ',' + (v - 6) + ')'; g.fillRect(x + 2, y + 2, s - 4, s - 4); g.fillStyle = 'rgba(255,255,255,0.16)'; g.fillRect(x + 3, y + 3, s - 6, 2); g.fillStyle = 'rgba(0,0,0,0.1)'; g.fillRect(x + 3, y + s - 5, s - 6, 2);
         if (r() < 0.12) { g.strokeStyle = 'rgba(0,0,0,0.25)'; g.lineWidth = 1; g.beginPath(); g.moveTo(x + 6 + r() * 20, y + 3); g.lineTo(x + 20 + r() * 20, y + 30); g.lineTo(x + 10 + r() * 40, y + s - 3); g.stroke(); } }
       speck(g, w, h, r, 1200); }, [4, 4], [256, 256], true);
+    // planches de bois (promenade) : lattes de 0,25 m dans le sens de la marche, joints decales, veines
+    CC.Textures.def('foirePlanches', (g, w, h, r) => { g.fillStyle = '#5a4a3a'; g.fillRect(0, 0, w, h); const lw = 16;
+      for (let i = 0; i < w / lw; i++) { let y = -Math.floor(r() * 120); while (y < h) { const len = 70 + Math.floor(r() * 110), v = 178 + Math.floor(r() * 50); g.fillStyle = 'rgb(' + v + ',' + (v - 6) + ',' + (v - 16) + ')'; g.fillRect(i * lw + 1, y + 1, lw - 2, len - 2); g.fillStyle = 'rgba(80,50,20,0.18)'; for (let k = 0; k < 3; k++) g.fillRect(i * lw + 3 + Math.floor(r() * (lw - 6)), y + 3, 1, len - 6); g.fillStyle = 'rgba(40,30,20,0.5)'; g.fillRect(i * lw + 4, y + 4, 2, 2); g.fillRect(i * lw + lw - 6, y + len - 6, 2, 2); y += len; } }
+      speck(g, w, h, r, 500); }, [4, 4], [256, 256], true);
+    // beton coule (grandes plaques de 4 m, joints, taches)
+    CC.Textures.def('foireBeton', (g, w, h, r) => { g.fillStyle = '#d8d6d0'; g.fillRect(0, 0, w, h); for (let k = 0; k < 40; k++) { const v = 190 + Math.floor(r() * 50); g.fillStyle = 'rgba(' + v + ',' + v + ',' + (v - 4) + ',0.35)'; g.beginPath(); g.arc(r() * w, r() * h, 6 + r() * 30, 0, 6.3); g.fill(); }
+      g.fillStyle = '#8a8882'; g.fillRect(0, 0, w, 3); g.fillRect(0, 0, 3, h); g.fillStyle = 'rgba(0,0,0,0.12)'; g.fillRect(w / 2, 0, 1, h); g.fillRect(0, h / 2, w, 1); speck(g, w, h, r, 2200); }, [4, 4], [256, 256], true);
+    // asphalte colore (grain fin, ou la couleur vient du sommet)
+    CC.Textures.def('foireAsphalte', (g, w, h, r) => { g.fillStyle = '#d4d2ce'; g.fillRect(0, 0, w, h); for (let k = 0; k < 5000; k++) { const v = 120 + Math.floor(r() * 120); g.fillStyle = 'rgba(' + v + ',' + v + ',' + v + ',0.5)'; g.fillRect(Math.floor(r() * w), Math.floor(r() * h), 1 + Math.floor(r() * 2), 1 + Math.floor(r() * 2)); } }, [4, 4], [256, 256], true);
     // ecailles (paves en eventail) pour les places
     CC.Textures.def('foireEventail', (g, w, h, r) => { g.fillStyle = '#6e6862'; g.fillRect(0, 0, w, h); const R = 64;
       for (let j = -1; j <= h / (R / 2) + 1; j++) for (let i = -1; i <= w / R + 1; i++) { const cx = i * R + (j % 2 ? R / 2 : 0), cy = j * R / 2;
@@ -471,8 +480,12 @@
     add('feerieOr', { top: '#6a6ad0', hor: '#ffb48c', fog: '#f0b8a8', near: 160, far: 460, hemiS: '#ffe6d8', hemiG: '#9a7a6a', hemiI: 0.74, amb: 0.17, sunC: '#ffc890', sunI: 0.95, night: 0.05 }, [1.1, 1.06, '#e0dcff', '#ffe8d4']);
     add('feerieSoir', { top: '#3c3c9a', hor: '#ff9a7a', fog: '#c8889a', near: 140, far: 430, hemiS: '#ffd8e0', hemiG: '#6a5068', hemiI: 0.72, amb: 0.2, sunC: '#ffa070', sunI: 0.8, night: 0.18 }, [1.08, 1.08, '#d8d4ff', '#ffe0cc']);
     add('foireSous', { top: '#1a1030', hor: '#3a2050', fog: '#2a1a3a', near: 40, far: 260, hemiS: '#d0b8ff', hemiG: '#3a2a48', hemiI: 0.95, amb: 0.42, sunC: '#ffc0e8', sunI: 0.45, night: 0.35 }, [1.0, 1.08, '#d8d0ff', '#ffe8f4']);
-    for (const k of ['fdepart', 'fportes', 'fplace']) EVO.SCENE_MOOD[k] = 'feerie'; EVO.SCENE_MOOD.fparc = 'feerieOr'; EVO.SCENE_MOOD.fmarteaux = 'feerieOr'; EVO.SCENE_MOOD.froue = 'feerieOr'; EVO.SCENE_MOOD.fcoaster = 'feerieOr'; EVO.SCENE_MOOD.fchoix = 'feerieSoir'; EVO.SCENE_MOOD.fsous = 'foireSous';
-    if (EVO.SCENE_AUDIO) for (const k of ['fdepart', 'fportes', 'fplace', 'fparc', 'fmarteaux', 'froue', 'fcoaster']) EVO.SCENE_AUDIO[k] = 'evoDay'; if (EVO.SCENE_AUDIO) { EVO.SCENE_AUDIO.fchoix = 'evoDusk'; EVO.SCENE_AUDIO.fsous = 'evoMine'; }
+    add('feerieMenthe', { top: '#3aa0e8', hor: '#c8f4ec', fog: '#c0ece4', near: 170, far: 470, hemiS: '#f0fffa', hemiG: '#7a9a88', hemiI: 0.74, amb: 0.16, sunC: '#fff4dc', sunI: 0.92, night: 0 }, [1.12, 1.05, '#e0ecff', '#fffaf0']);
+    add('feerieLilas', { top: '#7a6ae0', hor: '#f4c8f4', fog: '#e8c4ec', near: 170, far: 470, hemiS: '#fff0ff', hemiG: '#8a7a98', hemiI: 0.74, amb: 0.16, sunC: '#ffe8f4', sunI: 0.9, night: 0 }, [1.1, 1.05, '#e8e0ff', '#fff2fa']);
+    add('feerieCouchant', { top: '#4a5ac8', hor: '#ff8a5a', fog: '#e89a88', near: 160, far: 460, hemiS: '#ffd8c8', hemiG: '#8a6058', hemiI: 0.74, amb: 0.18, sunC: '#ff9a50', sunI: 0.95, night: 0.08 }, [1.1, 1.08, '#dcd8ff', '#ffe0c4']);
+    add('foireNuit', { top: '#0c1440', hor: '#5a3a8a', fog: '#2a2050', near: 120, far: 420, hemiS: '#a8a0ff', hemiG: '#3a2a50', hemiI: 0.8, amb: 0.34, sunC: '#c8a0ff', sunI: 0.45, night: 0.62 }, [1.05, 1.1, '#d0d0ff', '#ffe8d0']);
+    for (const k of ['fdepart', 'fportes', 'fplace']) EVO.SCENE_MOOD[k] = 'feerie'; EVO.SCENE_MOOD.fparc = 'feerieMenthe'; EVO.SCENE_MOOD.fmarteaux = 'feerieOr'; EVO.SCENE_MOOD.froue = 'feerieLilas'; EVO.SCENE_MOOD.fcoaster = 'feerieCouchant'; EVO.SCENE_MOOD.fnuit = 'foireNuit'; EVO.SCENE_MOOD.fchoix = 'feerieSoir'; EVO.SCENE_MOOD.fsous = 'foireSous';
+    if (EVO.SCENE_AUDIO) for (const k of ['fdepart', 'fportes', 'fplace', 'fparc', 'fmarteaux', 'froue', 'fcoaster']) EVO.SCENE_AUDIO[k] = 'evoDay'; if (EVO.SCENE_AUDIO) { EVO.SCENE_AUDIO.fchoix = 'evoDusk'; EVO.SCENE_AUDIO.fsous = 'evoMine'; EVO.SCENE_AUDIO.fnuit = 'evoNight'; }
   }
 
   // ---------- SCENE 1 : LE PARKING ----------
@@ -567,10 +580,11 @@
       const SPOTS = []; for (const [u, sg, k, x] of PL) if (/car|swing|drop/.test(k)) SPOTS.push([d(u), sg * x, k === 'drop' ? 20 : 36, sg > 0 ? C.terra : '#9ab8d8', C.rose]);
       // pavage : chemin central en petits paves, ilots en dalles, mosaique sous chaque manege
       paveScene(S, (dd, x) => { const Lc = 0, i = Math.floor((dd - S.d0) / 4), j = Math.floor((x + 400) / 4), ax = Math.abs(x - Lc);
-        for (const q of SPOTS) { const ro = rosace(dd, x, q[0], q[1], q[2], q[3], q[4], C.white); if (ro) return ro; }
-        if (ax < 14) return [ax < 4 ? (i % 2 ? C.rose : C.cream) : (i % 5 === 0 ? C.terra : C.cream), 'foirePaves'];
-        if (ax < 18) return [C.terra, 'foirePaves'];
-        return [(i % 12 === 0 || j % 12 === 0) ? C.terra : (hsh(i, j) < 0.5 ? C.sand : C.grey), 'foireDalles']; });
+        for (const q of SPOTS) { const rr0 = Math.hypot(dd - q[0], x - q[1]); if (rr0 < q[2]) return [Math.floor(rr0 / 4) % 2 ? '#ffd23a' : '#ffffff', 'foireAsphalte']; }
+        if (ax < 2) return ['#ffffff', 'foireAsphalte'];
+        if (ax < 16) return ['#4ab8c4', 'foireAsphalte'];
+        if (ax < 19) return ['#ffffff', 'foireAsphalte'];
+        const zz = Math.floor((dd - S.d0) / 60) + (x > 0 ? 1 : 0); return [(i % 15 === 0 || j % 15 === 0) ? '#ffd23a' : ['#f08ab8', '#9ad86a', '#b89af0', '#ffb06a'][zz % 4], 'foireAsphalte']; });
       for (const [u, s, k, x] of PL) S.reserve(d(u), s * x, k === 'vil' ? 50 : k === 'top' ? 90 : k === 'food' ? 64 : 56, k === 'vil' ? 70 : k === 'top' ? 90 : 56);
       fillers(S, 24, 60, 18); coasterOver(S, d(0.16), S.sr); coasterOver(S, d(0.6), S.sr); cableCar(S, d(0.42), S.sr);
       for (const [u, s, k, x] of PL) { S.item(d(u), (r) => { const lx = S.lane(d(u)).lx + s * x;
@@ -625,7 +639,7 @@
     ground: groundJ(W0),
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L;
-      paveScene(S, (dd, x) => { const i = Math.floor((dd - S.d0) / 4), j = Math.floor((x + 400) / 4), ax = Math.abs(x); if (ax < 46) return [ax < 4 ? C.white : (i % 4 < 2 ? C.cream : C.sand), 'foirePaves']; if (ax < 50) return [C.terra, 'foirePaves']; return [(i % 12 === 0 || j % 12 === 0) ? C.terra : (hsh(i, j) < 0.5 ? C.sand : C.grey), 'foireDalles']; });
+      paveScene(S, (dd, x) => { const i = Math.floor((dd - S.d0) / 4), j = Math.floor((x + 400) / 4), ax = Math.abs(x); if (ax < 46) return [ax < 6 ? '#c8905a' : (Math.floor(ax / 8) % 2 ? '#e0b886' : '#d4a874'), 'foirePlanches']; if (ax < 50) return ['#8a5a34', 'foirePlanches']; return [(i % 6 === 0) ? '#a87a50' : (hsh(i, j) < 0.5 ? '#d8b48a' : '#c8a07a'), 'foirePlanches']; });
       const HM = [0.16, 0.26, 0.36, 0.48, 0.58, 0.68, 0.8];
       HM.forEach((u, i) => { S.reserve(d(u), (i % 2 ? 1 : -1) * 36, 20, 20); hammer(S, d(u), i % 2 ? 1 : -1, i * 1.3, 4.2); });
       // l'entree : un portique « LES MARTEAUX », guirlandes, puis grands stands de foire derriere les tours
@@ -667,12 +681,12 @@
       EVO.addDyn(grp, (t) => { const A = a0 + t * sp; rot.rotation.z = A; for (let i = 0; i < NG; i++) { const b = i / NG * 6.283, px = Math.sin(b) * (R + 1), py = Math.cos(b) * (R + 1); pv.set(px * Math.cos(A) - py * Math.sin(A), px * Math.sin(A) + py * Math.cos(A) - 4.5, 0); m4.compose(pv, q0, sv); gm.setMatrixAt(i, m4); pv.y += 3.6; m4.compose(pv, q0, sv); gr.setMatrixAt(i, m4); } gm.instanceMatrix.needsUpdate = true; gr.instanceMatrix.needsUpdate = true; }, body.children.slice(), { near: 9999, span: 200 });
     });
   }
-  D.scenes.froue = { len: [600, 600], noDoor: true, noChaos: true, noDress: true, grass: false, turns: [[0.72, 0.92, 28]],
+  D.scenes.froue = { len: [600, 600], noDoor: true, noChaos: true, noDress: true, turns: [[0.72, 0.92, 28]],
     pin: (T, sc) => ({ lx: 0, y: 40, from: 20, to: sc.d1 - sc.d0 - 10 }),
-    ground: groundJ(W0),
+    ground: (d, lx, c) => { c.lerp(new T3.Color('#5aa84a'), 0.55); },
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L, dW = d(0.42);
-      paveScene(S, (dd, x) => { const ro = rosace(dd, x, dW, 0, 72, C.terra, C.rose, C.gold); if (ro) return ro; const i = Math.floor((dd - S.d0) / 4), j = Math.floor((x + 400) / 4), ax = Math.abs(x); if (ax < 10) return [i % 2 ? C.rose : C.cream, 'foirePaves']; return [(i % 12 === 0 || j % 12 === 0) ? C.terra : (hsh(i, j) < 0.5 ? C.sand : C.grey), 'foireDalles']; });
+      paveScene(S, (dd, x) => { const ro = rosace(dd, x, dW, 0, 64, C.terra, C.rose, C.gold); if (ro) return ro; const ax = Math.abs(x), rr = Math.hypot(dd - dW, x); if (ax < 12) return ['#e8dcc0', 'foireDalles']; if (Math.abs(rr - 92) < 6) return ['#e8dcc0', 'foireDalles']; if (Math.abs(x - 60) < 4 || Math.abs(x + 60) < 4) return ['#e0d4b8', 'foireDalles']; return null; });
       giantWheel(S, dW);
       for (const [u, s, k, x] of [[0.12, -1, 'car', 70], [0.18, 1, 'vil', 72], [0.3, -1, 'food', 110], [0.62, 1, 'top', 110], [0.68, -1, 'vil', 70], [0.82, 1, 'drop', 66], [0.9, -1, 'swing', 80]]) { S.reserve(d(u), s * x, 56, 56); S.item(d(u), (r) => { const lx = S.lane(d(u)).lx + s * x; if (k === 'car') carousel(S, d(u), lx, r, 1.6); else if (k === 'swing') swingRide(S, d(u), lx, r, 1.6); else if (k === 'drop') dropTower(S, d(u), lx, r, 110); else if (k === 'food') foodCourt(S, d(u), lx, r); else if (k === 'top') bigTop(S, d(u), lx, r, 1.3); else village(S, d(u), lx, r); }); }
       fillers(S, 30, 70, 20);
@@ -691,76 +705,90 @@
     S.b.box({ p: [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, (p0[2] + p1[2]) / 2], s: [w, h, Ln], r: [-Math.atan2(dy, hz) * 180 / Math.PI, Math.atan2(dx, dz) * 180 / Math.PI, 0], mat: 'col:' + col, collide: !!collide, shadow: true });
   }
 
-  // ---------- SCENE 7 : LES MONTAGNES RUSSES : on suit le grand huit (montee de 110 m, descente a pic, bosse, virage), un train arrive en face ----------
-  const CL = 760;
-  const coastY = (u) => u < 0.08 ? 12 : u < 0.32 ? 12 + 98 * ss(0.08, 0.32, u) : u < 0.36 ? 110 : u < 0.47 ? 110 - 96 * ss(0.36, 0.47, u) : u < 0.56 ? 14 + 40 * ss(0.47, 0.56, u) : u < 0.65 ? 54 - 34 * ss(0.56, 0.65, u) : u < 0.9 ? 20 + 6 * Math.sin((u - 0.65) * 25) : 20 - 8 * ss(0.9, 1, u);
-  D.scenes.fcoaster = { len: [CL, CL], noDoor: true, noChaos: true, noDress: true, grass: false, turns: [[0.66, 0.88, 70]],
-    pin: (T, sc) => ({ lx: 0, y: 24, from: 20, to: sc.d1 - sc.d0 - 10 }),
+  // ---------- SCENE 7 : LES MONTAGNES RUSSES : montee de 110 m et descente a cote du chemin, puis le rail passe AU-DESSUS du chemin
+  // et s'enroule autour de lui : LE TIRE-BOUCHON GEANT (3 tours, 28 m de rayon) qu'on traverse par l'interieur, un train y tourne autour de la fusee ----------
+  const CL = 840, CX = -14, HR = 28, HYC = 10 + HR, HN = 3;
+  const coastY = (u) => u < 0.08 ? 12 : u < 0.32 ? 12 + 98 * ss(0.08, 0.32, u) : u < 0.36 ? 110 : u < 0.47 ? 110 - 96 * ss(0.36, 0.47, u) : 14;
+  function coastPts(S) {   // la ligne du rail [d, travers, hauteur absolue, type]
+    const L = S.len, d = (u) => S.d0 + u * L, P = [];
+    for (let m = d(0.02); m < d(0.46); m += 3) P.push([m, CX, coastY((m - S.d0) / L), 0]);
+    const a0 = d(0.46), a1 = d(0.5), y0 = coastY(0.46); for (let k = 0; k <= 10; k++) { const t = k / 10; P.push([a0 + (a1 - a0) * t, CX * (1 - ss(0, 1, t)), y0 + (10 - y0) * t, 0]); }
+    const h0 = d(0.5), h1 = d(0.78), NS = HN * 44; for (let k = 1; k <= NS; k++) { const t = k / NS, th = t * HN * 6.2832; P.push([h0 + (h1 - h0) * t, HR * Math.sin(th), HYC - HR * Math.cos(th), Math.cos(th) > 0.93 ? 2 : 1]); }
+    const b0 = d(0.78), b1 = d(0.84); for (let k = 1; k <= 10; k++) { const t = k / 10; P.push([b0 + (b1 - b0) * t, CX * ss(0, 1, t), 10 + 12 * t, 0]); }
+    for (let m = b1 + 3; m < d(0.99); m += 3) P.push([m, CX, 22 + 7 * Math.sin((m - b1) * 0.04), 0]);
+    return P;
+  }
+  D.scenes.fcoaster = { len: [CL, CL], noDoor: true, noChaos: true, noDress: true, grass: false, turns: [[0.88, 0.98, 36]],
+    pin: (T, sc) => ({ lx: 0, y: HYC, from: 20, to: sc.d1 - sc.d0 - 10 }),
     ground: groundJ(W0),
     build(S) {
-      const L = S.len, d = (u) => S.d0 + u * L, yA = (m) => coastY((m - S.d0) / L), CX = -14;
-      paveScene(S, (dd, x) => { const i = Math.floor((dd - S.d0) / 4), j = Math.floor((x + 400) / 4), ax = Math.abs(x); if (ax < 8) return [C.navy === '' ? C.grey : '#b8b0c8', 'foireDalles']; if (ax < 12) return [C.terra, 'foirePaves']; return [(i % 12 === 0 || j % 12 === 0) ? C.terra : (hsh(i, j) < 0.5 ? C.sand : C.grey), 'foireDalles']; });
-      // le rail : deux rails rouges, une poutre jaune, des traverses ; pylones blancs tous les 9 m ; la chaine de la montee
-      for (let m = S.d0 + 2; m < S.d1 - 2; m += 3) S.item(m, () => { const m1 = Math.min(S.d1 - 1, m + 3), Lc0 = S.lane(m).lx + CX, Lc1 = S.lane(m1).lx + CX, y0 = yA(m), y1 = yA(m1);
-        for (const o of [-1.5, 1.5]) beam(S, m, Lc0 + o, y0 + 1.1, m1, Lc1 + o, y1 + 1.1, 0.7, 0.7, C.red, true);
-        beam(S, m, Lc0, y0, m1, Lc1, y1, 1.2, 1.2, C.yellow, true); beam(S, m, Lc0, y0 + 0.6, m + 0.5, Lc0, y0 + 0.6, 4, 0.35, '#3a3a40', false);
-        const u = (m - S.d0) / L; if (u > 0.08 && u < 0.32) beam(S, m + 1, Lc0, y0 + 1.25, m + 2, Lc0, yA(m + 2) + 1.25, 0.5, 0.3, '#222222', false);
-        if (Math.round((m - S.d0) / 3) % 3 === 0 && y0 > 6) { for (const o of [-2.4, 2.4]) S.bx(m, Lc0 + o, (y0 - 0.6) / 2, 0.9, y0 - 0.6, 0.9, 'col:' + C.white, undefined, true); if (y0 > 20) for (let y = 12; y < y0 - 4; y += 14) S.bx(m, Lc0, y, 5.6, 0.6, 0.6, 'col:' + C.white, undefined, false); }
-        if (y0 > 30 && Math.round((m - S.d0) / 3) % 6 === 0) for (const o of [-6, 6]) S.bx(m, Lc0 + o, (y0 - 6) / 2, 0.7, y0 - 6, 0.7, 'col:#e0e4ea', undefined, true); });
-      // la gare de depart (toit raye), l'arche lumineuse que traverse le rail, des fanions sur la montee
+      const L = S.len, d = (u) => S.d0 + u * L, T = S.T, P = coastPts(S), Lx = (m) => S.lane(m).lx;
+      // sol de la zone : BETON industriel (dalles grises, bandes jaunes sous le rail, cercles peints bleus sous les maneges)
+      paveScene(S, (dd, x) => { const u = (dd - S.d0) / L, i = Math.floor((dd - S.d0) / 4), j = Math.floor((x + 400) / 4), ax = Math.abs(x);
+        if (u < 0.47 || u > 0.83) { if (Math.abs(x - CX) < 4) return ['#e8c040', 'foireBeton']; if (Math.abs(x - CX) < 8) return ['#3a3a40', 'foireBeton']; }
+        else if (ax < HR + 4) return [Math.floor(Math.hypot(ax, 0) / 4) % 2 ? '#5a8ad8' : '#d8d4c8', 'foireBeton'];
+        return [(i % 10 === 0 || j % 10 === 0) ? '#a8a49a' : (hsh(i, j) < 0.5 ? '#d2cec4' : '#c4c0b6'), 'foireBeton']; });
+      // le rail : caisson rouge + poutre jaune ; pylones blancs sous le rail lateral, poteaux sous les points bas du tire-bouchon
+      for (let i = 0; i < P.length - 1; i++) { const a = P[i], b = P[i + 1]; S.item(a[0], () => {
+        beam(S, a[0], Lx(a[0]) + a[1], a[2] + 1, b[0], Lx(b[0]) + b[1], b[2] + 1, 2.8, 1.0, C.red, true);
+        beam(S, a[0], Lx(a[0]) + a[1], a[2], b[0], Lx(b[0]) + b[1], b[2], 1.1, 1.1, C.yellow, false);
+        if (a[3] === 0 && i % 3 === 0 && a[2] > 6) { for (const o of [-2.4, 2.4]) S.bx(a[0], Lx(a[0]) + a[1] + o, (a[2] - 0.6) / 2, 0.9, a[2] - 0.6, 0.9, 'col:' + C.white, undefined, true); if (a[2] > 30 && i % 6 === 0) for (const o of [-7, 7]) S.bx(a[0], Lx(a[0]) + a[1] + o, (a[2] - 6) / 2, 0.8, a[2] - 6, 0.8, 'col:#e0e4ea', undefined, true); }
+        if (a[3] === 2 && i % 2 === 0) S.bx(a[0], Lx(a[0]) + a[1], (a[2] - 0.5) / 2, 1.4, a[2] - 0.5, 1.4, 'col:' + C.white, undefined, true);
+        if (a[3] && i % 4 === 0) { const ox = a[1] * 0.06, oy = (a[2] - HYC) * 0.06; S.ball(a[0], Lx(a[0]) + a[1] + ox, a[2] + oy + 1, 0.7, 'emis:' + (i % 8 ? '#fff0b8' : '#ff8ad8'), undefined, false); }
+        if (a[3] === 0 && (a[0] - S.d0) / L > 0.08 && (a[0] - S.d0) / L < 0.32) beam(S, a[0], Lx(a[0]) + a[1], a[2] + 1.6, b[0], Lx(b[0]) + b[1], b[2] + 1.6, 0.5, 0.3, '#222222', false); }); }
+      // la gare (toit raye), les fanions de la montee, un portique lumineux a l'entree du tire-bouchon
       S.item(d(0.04), () => { const dc = d(0.04); S.bx(dc, CX, 2, 22, 4, 40, 'col:' + C.stone, undefined, true); for (const s of [-1, 1]) for (const z of [-16, 0, 16]) S.bx(dc + z, CX + s * 10, 10, 1, 16, 1, 'col:' + C.gold, undefined, true); for (let k = 0; k < 8; k++) for (const s of [-1, 1]) S.bxr(dc - 17.5 + k * 5, CX + s * 6, 19.6, 13, 0.4, 5.02, 'col:' + (k % 2 ? C.white : C.red), undefined, s * 18, 0, false); });
-      for (const u of [0.5, 0.75]) S.item(d(u), () => { const dc = d(u), Lc = S.lane(dc).lx + CX, y = yA(dc); for (let k = 0; k < 24; k++) { const a = k / 24 * 6.283; S.ball(dc, Lc + Math.cos(a) * 12, y + 2 + Math.sin(a) * 12, 0.9, 'emis:' + (k % 2 ? '#fff0b8' : '#ff8ad8'), undefined, false); } S.bx(dc, Lc, y + 2 + 12.5, 8, 2.4, 0.4, 'col:' + C.navy, undefined, false); });
-      for (let u = 0.12; u < 0.32; u += 0.04) S.item(d(u), (r) => { const dc = d(u), Lc = S.lane(dc).lx + CX, y = yA(dc); for (const s of [-1, 1]) { S.cyl(dc, Lc + s * 6, y - S.T.rel(dc) + 1.5, 0.12, 6, 'col:#dddddd', undefined, 6, 0.12, false); S.bx(dc, Lc + s * 6 + s * 1.2, y + 6.2, 2.4, 1.6, 0.08, 'col:' + pk(r, BAL), undefined, false); } });
-      // le train qui arrive en face sur le rail
-      S.item(d(0.62), () => {
-        const g = new T3.Group(), parts = []; for (let i = 0; i < 5; i++) { const z = -i * 5.4, c = BAL[i % 7]; parts.push({ g: BX(3.8, 2.2, 4.8), c, p: [0, 1.9, z] }, { g: BX(3.9, 0.5, 5), c: C.white, p: [0, 3.0, z] }, { g: BX(3.4, 1.4, 0.4), c: '#222222', p: [0, 3.1, z + 1.2] }, { g: BX(4, 0.6, 5), c: '#333333', p: [0, 0.6, z] }); }
-        parts.push({ g: SP(1.6, 10, 8), c: C.red, p: [0, 2.2, 2.6] }); const body = bake(parts); g.add(body); EVO.colBox(body, 4.4, 4, 5 * 5.4 + 2, 0, 2, -10.8);
-        S.b.root.add(g); const st = { on: false, t0: 0 }, dA = d(0.4), dB = d(0.97);
-        EVO.addDyn(g, (t, dt, game) => { const run = game.endlessRun; if (!run) return; if (!st.on && game.state === 'FLIGHT' && run.dist > dA - 120) { st.on = true; st.t0 = t; } if (run.dist < dA - 200) st.on = false;
-          if (!st.on) { g.visible = false; return; } const dd = dB - 38 * (t - st.t0); g.visible = dd > d(0.1); if (!g.visible) return;
-          const Lc = S.lane(dd).lx + CX, p = S.T.at(dd, Lc, yA(dd) + 0.6 - S.T.rel(dd)), q = S.T.at(dd - 4, S.lane(dd - 4).lx + CX, yA(dd - 4) + 0.6 - S.T.rel(dd - 4)); g.position.set(p[0], p[1], p[2]); g.lookAt(q[0], q[1], q[2]); }, [body], { near: 99999, span: 9999 });
-        const dd0 = EVO.dyn[EVO.dyn.length - 1]; dd0.cols = body.children.slice();
+      for (let u = 0.12; u < 0.32; u += 0.04) S.item(d(u), (r) => { const dc = d(u), Lc = Lx(dc) + CX, y = coastY(u); for (const s of [-1, 1]) { S.cyl(dc, Lc + s * 6, y - T.rel(dc) + 1.5, 0.12, 6, 'col:#dddddd', undefined, 6, 0.12, false); S.bx(dc, Lc + s * 7.2, y + 6.2, 2.4, 1.6, 0.08, 'col:' + pk(r, BAL), undefined, false); } });
+      S.item(d(0.49), () => { const dc = d(0.49), Lc = Lx(dc); for (const s of [-1, 1]) { S.bx(dc, Lc + s * (HR + 8), 36, 4, 72, 4, 'col:' + C.navy, undefined, true); S.ball(dc, Lc + s * (HR + 8), 74, 3, 'col:' + C.gold, undefined, false); } S.bx(dc, Lc, 72, 2 * HR + 20, 4, 4, 'col:' + C.navy, undefined, true); S.bx(dc - 2.1, Lc, 72, 2 * HR, 2.4, 0.2, 'col:' + C.yellow, undefined, false); for (let k = 0; k < 30; k++) S.bx(dc - 2.2, Lc - HR + k * (2 * HR / 29), 74.4, 0.5, 0.5, 0.2, 'emis:#fff0b8', undefined, false, { shadow: false }); });
+      // le train : 4 wagons qui parcourent tout le rail en boucle (dans le tire-bouchon, il tourne autour de la fusee)
+      S.item(d(0.5), () => {
+        const W = P.map((q) => S.at(q[0], Lx(q[0]) + q[1], q[2] + 1.6 - T.rel(q[0]))), cum = [0]; for (let i = 1; i < W.length; i++) cum.push(cum[i - 1] + Math.hypot(W[i][0] - W[i - 1][0], W[i][1] - W[i - 1][1], W[i][2] - W[i - 1][2]));
+        const tot = cum[cum.length - 1], at = (s, out) => { s = ((s % tot) + tot) % tot; let lo = 0, hi = cum.length - 1; while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (cum[mid] <= s) lo = mid; else hi = mid; } const t = (s - cum[lo]) / Math.max(0.001, cum[hi] - cum[lo]); out.set(W[lo][0] + (W[hi][0] - W[lo][0]) * t, W[lo][1] + (W[hi][1] - W[lo][1]) * t, W[lo][2] + (W[hi][2] - W[lo][2]) * t); return out; };
+        const grp = new T3.Group(), cars = [], cols = []; for (let i = 0; i < 4; i++) { const c = new T3.Group(), m = bake([{ g: BX(3.6, 2.2, 4.6), c: BAL[i], p: [0, 1.3, 0] }, { g: BX(3.7, 0.5, 4.8), c: C.white, p: [0, 2.5, 0] }, { g: BX(3.2, 1.2, 0.4), c: '#222222', p: [0, 2.6, -1.2] }, { g: BX(3.8, 0.6, 4.8), c: '#333333', p: [0, 0.2, 0] }].concat(i === 0 ? [{ g: SP(1.4, 8, 6), c: C.red, p: [0, 1.6, 2.6] }] : [])); c.add(m); cols.push(EVO.colBox(c, 4, 3.4, 5, 0, 1.2, 0)); grp.add(c); cars.push(c); }
+        S.b.root.add(grp); const pa = new T3.Vector3(), pb = new T3.Vector3(), up = new T3.Vector3();
+        EVO.addDyn(grp, (t) => { const s0 = t * 34; for (let i = 0; i < cars.length; i++) { const c = cars[i], s = s0 - i * 5.4; at(s, pa); at(s + 2, pb); c.position.copy(pa); c.lookAt(pb); } }, cols, { near: 99999, span: 99999 });
       });
       // decor autour : maneges, villages, remplissage, montgolfieres
-      for (const [u, s, k, x] of [[0.1, 1, 'car', 70], [0.2, -1, 'vil', 64], [0.3, 1, 'drop', 60], [0.42, -1, 'top', 100], [0.55, 1, 'vil', 64], [0.7, -1, 'swing', 90], [0.82, 1, 'tents', 100], [0.94, -1, 'car', 70]]) { S.reserve(d(u), s * x, 56, 56); S.item(d(u), (r) => { const lx = S.lane(d(u)).lx + s * x; if (k === 'car') carousel(S, d(u), lx, r, 1.6); else if (k === 'swing') swingRide(S, d(u), lx, r, 1.6); else if (k === 'drop') dropTower(S, d(u), lx, r, 120); else if (k === 'tents') tents(S, d(u), lx, r, 5); else if (k === 'top') bigTop(S, d(u), lx, r, 1.3); else village(S, d(u), lx, r); }); }
-      fillers(S, 24, 56, 22); parkTrees(S); for (let k = 0; k < 6; k++) balloons(S, d(0.08 + k * 0.16), 14, S.sr, 130);
-      hotAir(S, d(0.25), 30, 90, S.sr, true); hotAir(S, d(0.6), -40, 70, S.sr, true);
+      for (const [u, s, k, x] of [[0.1, 1, 'car', 70], [0.2, -1, 'vil', 64], [0.3, 1, 'drop', 60], [0.42, -1, 'top', 100], [0.56, 1, 'vil', 76], [0.66, -1, 'swing', 90], [0.74, 1, 'tents', 100], [0.92, -1, 'car', 70]]) { S.reserve(d(u), s * x, 56, 56); S.item(d(u), (r) => { const lx = Lx(d(u)) + s * x; if (k === 'car') carousel(S, d(u), lx, r, 1.6); else if (k === 'swing') swingRide(S, d(u), lx, r, 1.6); else if (k === 'drop') dropTower(S, d(u), lx, r, 120); else if (k === 'tents') tents(S, d(u), lx, r, 5); else if (k === 'top') bigTop(S, d(u), lx, r, 1.3); else village(S, d(u), lx, r); }); }
+      S.reserve(d(0.64), 0, 2 * HR + 16, 0.3 * L); fillers(S, 30, 60, 22); parkTrees(S); for (let k = 0; k < 6; k++) balloons(S, d(0.08 + k * 0.16), 14, S.sr, 130);
+      hotAir(S, d(0.25), 34, 90, S.sr, true); hotAir(S, d(0.9), 40, 70, S.sr, true);
       foe(S, 'heli', d(0.2), 0, 90, { name: 'HELICO', armed: true, patrol: (SS, dc, lx, y) => [SS.at(dc, -26, y), SS.at(dc + 22, 0, y + 6), SS.at(dc, 26, y), SS.at(dc - 22, 0, y + 6)], speed: 12 });
-      foe(S, 'aaturret', d(0.35), -20, 0, { name: 'TOURELLE', armed: true });
-      foe(S, 'tank', d(0.5), 18, 0, { name: 'BLINDE', hp: 3, armed: false });
-      foe(S, 'heli', d(0.72), 0, 50, { name: 'HELICO', armed: true, patrol: (SS, dc, lx, y) => [SS.at(dc, -26, y), SS.at(dc + 22, 0, y + 6), SS.at(dc, 26, y), SS.at(dc - 22, 0, y + 6)], speed: 12 });
-      foe(S, 'jeep', d(0.86), -14, 0, { name: 'JEEP', path: 90, speed: 18 });
+      foe(S, 'aaturret', d(0.35), 22, 0, { name: 'TOURELLE', armed: true });
+      foe(S, 'tank', d(0.45), 18, 0, { name: 'BLINDE', hp: 3, armed: false });
+      foe(S, 'heli', d(0.88), 0, 50, { name: 'HELICO', armed: true, patrol: (SS, dc, lx, y) => [SS.at(dc, -26, y), SS.at(dc + 22, 0, y + 6), SS.at(dc, 26, y), SS.at(dc - 22, 0, y + 6)], speed: 12 });
+      foe(S, 'jeep', d(0.94), 14, 0, { name: 'JEEP', path: 90, speed: 18 });
     } };
 
   // ---------- SCENE 8 : LE CHOIX : deux facades geantes cote a cote, l'usine a bonbons (gauche) et le manoir hante (droite), une porte chacune ----------
-  const DOOR = { w: 34, h: 30, x: 24 };   // portes centrees a +-24 m ; mur central entre les deux
+  const DOOR = { w: 76, h: 48, x: 48 };   // v411 : portes de 76 m, centrees a +-48 m ; mur central de 20 m entre les deux
   D.scenes.fchoix = { len: [300, 300], noDoor: true, noChaos: true, noDress: true, grass: false,
     pin: (T, sc) => ({ lx: 0, y: 16, from: 20, to: sc.d1 - sc.d0 - 4 }),
     ground: groundJ(W0),
     build(S) {
       const L = S.len, d = (u) => S.d0 + u * L, dF = S.d1 - 3;
-      paveScene(S, (dd, x) => { const i = Math.floor((dd - S.d0) / 4); if (Math.abs(x) < 70 && dd > S.d0 + 150) return [x < 0 ? (i % 2 ? '#f0b8d0' : C.cream) : (i % 2 ? '#8a7aa8' : '#b8b0c8'), x < 0 ? 'foireDalles' : 'foirePaves']; const j = Math.floor((x + 400) / 4); return [(i % 12 === 0 || j % 12 === 0) ? C.terra : (hsh(i, j) < 0.5 ? C.sand : C.grey), 'foireDalles']; });
+      paveScene(S, (dd, x) => { const i = Math.floor((dd - S.d0) / 4); if (Math.abs(x) < 100 && dd > S.d0 + 120) return [x < 0 ? (i % 2 ? '#f0b8d0' : C.cream) : (i % 2 ? '#8a7aa8' : '#b8b0c8'), x < 0 ? 'foireDalles' : 'foirePaves']; const j = Math.floor((x + 400) / 4); return [(i % 12 === 0 || j % 12 === 0) ? C.terra : (hsh(i, j) < 0.5 ? C.sand : C.grey), 'foireDalles']; });
       S.reserve(dF - 20, 0, 400, 60);
+      for (const u of [0.55, 0.7, 0.85]) S.item(d(u), () => { for (const s of [-1, 1]) for (let k = 0; k < 5; k++) S.bx(d(u) + k * 3, s * (14 + k * 4), 0.15, 3, 0.1, 3, 'col:' + (s < 0 ? C.pink : '#7aff9a'), undefined, false, { shadow: false }); });
       S.item(dF, (r) => {
         // ===== la facade continue (tout le monde du parc s'arrete ici) : percee de deux portes =====
-        const H = 70, fz = 6, Lw = -DOOR.x - DOOR.w / 2, Lr = -DOOR.x + DOOR.w / 2, Rl = DOOR.x - DOOR.w / 2, Rr = DOOR.x + DOOR.w / 2;
+        const H = 92, fz = 6, Lw = -DOOR.x - DOOR.w / 2, Lr = -DOOR.x + DOOR.w / 2, Rl = DOOR.x - DOOR.w / 2, Rr = DOOR.x + DOOR.w / 2;
         const wall = (x0, x1, y0, y1, col) => { if (x1 - x0 > 0.1 && y1 - y0 > 0.1) S.bx(dF, (x0 + x1) / 2, (y0 + y1) / 2, x1 - x0, y1 - y0, fz, 'col:' + col, undefined, true); };
         // usine a bonbons : rose et blanc, cheminees rayees ; manoir : violet nuit, tours pointues
-        wall(-420, Lw, 0, 40, '#ffb6d0'); wall(Lw, Lr, DOOR.h, 40, '#ffb6d0'); wall(Lr, -4, 0, 40, '#ffb6d0');
-        wall(4, Rl, 0, 44, '#4a3a66'); wall(Rl, Rr, DOOR.h, 44, '#4a3a66'); wall(Rr, 420, 0, 44, '#4a3a66'); wall(-4, 4, 0, H, C.stone);
-        S.bx(dF - 0.5, -212, 40.8, 416, 1.6, fz + 1, 'col:' + C.white, undefined, false); S.bx(dF - 0.5, 212, 44.8, 416, 1.6, fz + 1, 'col:#2a2040', undefined, false);
+        wall(-420, Lw, 0, 66, '#ffb6d0'); wall(Lw, Lr, DOOR.h, 66, '#ffb6d0'); wall(Lr, -10, 0, 66, '#ffb6d0');
+        wall(10, Rl, 0, 70, '#4a3a66'); wall(Rl, Rr, DOOR.h, 70, '#4a3a66'); wall(Rr, 420, 0, 70, '#4a3a66'); wall(-10, 10, 0, H, C.stone); S.ball(dF - 4, 0, H, 10, 'col:' + C.gold, undefined, false);
+        S.bx(dF - 0.5, -215, 66.8, 410, 1.6, fz + 1, 'col:' + C.white, undefined, false); S.bx(dF - 0.5, 215, 70.8, 410, 1.6, fz + 1, 'col:#2a2040', undefined, false);
         // usine : toits en dents de scie, cheminees rayees qui fument rose, fenetres, grosse sucette sur le fronton
-        for (let x = -150; x < -10; x += 16) { S.bxr(dF + 8, x, 46, 16, 0.6, 20, 'col:' + C.white, undefined, 20, 0, false); }
-        for (const x of [-120, -80, -44]) { S.cyl(dF + 10, x, 40, 3.4, 30, 'col:' + C.white, undefined, 12, 3, true); for (let k = 0; k < 4; k++) S.cyl(dF + 10, x, 44 + k * 7, 3.5, 2.4, 'col:' + C.pink, undefined, 12, 3.5, false); }
-        for (const x of [-140, -110, -70, -54]) for (const y of [10, 24]) { S.bx(dF - 3.1, x, y, 7, 6, 0.3, 'col:#fff0f6', undefined, false); S.bx(dF - 3.2, x, y, 6, 5, 0.2, 'emis:#ffd0e8', undefined, false, { shadow: false }); }
-        S.cyl(dF - 4, -DOOR.x, DOOR.h + 4, 0.6, 12, 'col:' + C.white, undefined, 8, 0.6, false); for (let k = 0; k < 3; k++) S.cyl(dF - 4 - k * 0.1, -DOOR.x, DOOR.h + 16 + k * 0.12, 8 - k * 2.4, 1.4, 'col:' + [C.red, C.white, C.red][k], undefined, 20, 8 - k * 2.4, k === 0);
-        for (let k = 0; k < 18; k++) S.bx(dF - 3.3, Lw + 1 + k * 1.9, DOOR.h + 1, 0.4, 0.4, 0.2, 'emis:#fff0b8', undefined, false, { shadow: false });
+        for (let x = -170; x < -12; x += 16) { S.bxr(dF + 8, x, 72, 16, 0.6, 20, 'col:' + C.white, undefined, 20, 0, false); }
+        for (const x of [-150, -110, -60, -30]) { S.cyl(dF + 10, x, 64, 3.4, 30, 'col:' + C.white, undefined, 12, 3, true); for (let k = 0; k < 4; k++) S.cyl(dF + 10, x, 68 + k * 7, 3.5, 2.4, 'col:' + C.pink, undefined, 12, 3.5, false); }
+        for (const x of [-150, -130, -110]) for (const y of [14, 32, 50]) { S.bx(dF - 3.1, x, y, 7, 6, 0.3, 'col:#fff0f6', undefined, false); S.bx(dF - 3.2, x, y, 6, 5, 0.2, 'emis:#ffd0e8', undefined, false, { shadow: false }); }
+        S.cyl(dF - 4, -DOOR.x, DOOR.h + 2, 0.6, 2, 'col:' + C.white, undefined, 8, 0.6, false); for (let k = 0; k < 3; k++) S.cyl(dF - 4 - k * 0.1, -DOOR.x, DOOR.h + 8 + k * 0.12, 8 - k * 2.4, 1.4, 'col:' + [C.red, C.white, C.red][k], undefined, 20, 8 - k * 2.4, k === 0);
+        for (let k = 0; k < 38; k++) S.bx(dF - 3.3, Lw + 1 + k * 1.95, DOOR.h + 1, 0.4, 0.4, 0.2, 'emis:#fff0b8', undefined, false, { shadow: false });
         // manoir : tours a toits pointus, fenetres eclairees vert et orange, grille, lucarnes
-        for (const x of [16, 62, 104, 150]) { S.bx(dF + 6, x, 30, 16, 60, 16, 'col:#3a2c52', undefined, true); S.cyl(dF + 6, x, 60, 11.4, 22, 'col:#241a38', undefined, 4, 0.2, false); S.ball(dF + 6, x, 83, 0.9, 'emis:#7aff9a', undefined, false); for (const y of [16, 30, 44]) S.bx(dF - 2.2, x, y, 4, 6, 0.3, 'emis:' + (y === 30 ? '#ffb04a' : '#7aff9a'), undefined, false, { shadow: false }); }
-        for (let x = 30; x < 160; x += 9) S.bxr(dF + 9, x, 47, 9, 0.6, 22, 'col:#241a38', undefined, -20, 0, false);
-        for (let k = 0; k < 18; k++) S.bx(dF - 3.3, Rl + 1 + k * 1.9, DOOR.h + 1, 0.4, 0.4, 0.2, 'emis:' + (k % 2 ? '#7aff9a' : '#c08aff'), undefined, false, { shadow: false });
+        for (const x of [104, 136, 168]) { S.bx(dF + 6, x, 42, 16, 84, 16, 'col:#3a2c52', undefined, true); S.cyl(dF + 6, x, 84, 11.4, 24, 'col:#241a38', undefined, 4, 0.2, false); S.ball(dF + 6, x, 109, 0.9, 'emis:#7aff9a', undefined, false); for (const y of [16, 34, 52, 70]) S.bx(dF - 2.2, x, y, 4, 6, 0.3, 'emis:' + (y === 30 ? '#ffb04a' : '#7aff9a'), undefined, false, { shadow: false }); }
+        for (let x = 14; x < 100; x += 9) S.bxr(dF + 9, x, 73, 9, 0.6, 22, 'col:#241a38', undefined, -20, 0, false);
+        for (let k = 0; k < 38; k++) S.bx(dF - 3.3, Rl + 1 + k * 1.95, DOOR.h + 1, 0.4, 0.4, 0.2, 'emis:' + (k % 2 ? '#7aff9a' : '#c08aff'), undefined, false, { shadow: false });
         // panneaux au-dessus des portes : sucette rose / tete de fantome en drap
-        S.ball(dF - 4, DOOR.x, DOOR.h + 10, 6, 'col:#f4f4f8', undefined, false, 1.2); S.cyl(dF - 4, DOOR.x, DOOR.h + 1, 6, 8, 'col:#f4f4f8', undefined, 14, 5.6, false); for (const o of [-2, 2]) S.ball(dF - 9.6, DOOR.x + o, DOOR.h + 11, 1.1, 'col:#1a1020', undefined, false);
+        S.ball(dF - 4, DOOR.x, DOOR.h + 12, 6, 'col:#f4f4f8', undefined, false, 1.2); S.cyl(dF - 4, DOOR.x, DOOR.h + 3, 6, 8, 'col:#f4f4f8', undefined, 14, 5.6, false); for (const o of [-2, 2]) S.ball(dF - 9.6, DOOR.x + o, DOOR.h + 13, 1.1, 'col:#1a1020', undefined, false);
         S.glow(dF - 6, -DOOR.x, 16, '#ffb6d0', 40); S.glow(dF - 6, DOOR.x, 16, '#9aff9a', 40);
       });
       // la place devant : fontaines, villages, manege de chaque cote, fumee rose et brume verte (sphere translucide)
@@ -775,59 +803,92 @@
   // ---------- SCENE 9 : SOUS LE PARC : deux tunnels qui descendent (usine / train fantome), puis les galeries communes, puis la remontee ----------
   const SL = 900, DEEP = 64;
   const ghostM = () => MT.ghost || (MT.ghost = new T3.MeshLambertMaterial({ color: '#f4f4f8', emissive: '#9aff9a', emissiveIntensity: 0.12, transparent: true, opacity: 0.88 }));
-  D.scenes.fsous = { len: [SL, SL], noDoor: true, noChaos: true, noDress: true, grass: false, gw: 40,
-    pin: (T, sc) => ({ lx: 0, y: 14, from: 10, to: sc.d1 - sc.d0 - 10 }),
+  D.scenes.fsous = { len: [SL, SL], noDoor: true, noChaos: true, noDress: true, grass: false, gw: 100,
+    pin: (T, sc) => ({ lx: -DOOR.x, y: 18, from: 0, to: (sc.d1 - sc.d0) * 0.3 }),   // la trajectoire par defaut passe par l'usine (le joueur choisit librement)
     relief(T, sc) { const fn = (d) => { const u = (d - sc.d0) / (sc.d1 - sc.d0); return -DEEP * ss(0.03, 0.2, u) * (1 - ss(0.76, 0.96, u)); }; sc.rlo = -DEEP; sc.rhi = 0; return { fn, max: DEEP }; },
     ground: (d, lx, c, sc) => { const u = (d - sc.d0) / (sc.d1 - sc.d0); c.lerp(new T3.Color(u < 0.32 ? (lx < 0 ? '#c8a0b4' : '#4a4058') : '#6a6070'), 0.95); },
     build(S) {
-      const L = S.len, d = (u) => S.d0 + u * L, T = S.T, uSplit = 0.34, H = 36;
+      const L = S.len, d = (u) => S.d0 + u * L, T = S.T, uSplit = 0.34, H = 54;
       // ===== parois et plafonds (les hauteurs suivent le sol creuse) =====
       for (let dc = S.d0 + 6; dc < S.d1 - 2; dc += 12) S.item(dc, (r) => {
-        const u = (dc - S.d0) / L, two = u < uSplit, fl = T.rel(dc), Lc = S.lane(dc).lx, hw = two ? 2 * DOOR.x + DOOR.w / 2 - 6 : 42, top = Math.max(H, -fl + 50);
+        const u = (dc - S.d0) / L, two = u < uSplit, fl = T.rel(dc), Lc = 0, hw = two ? DOOR.x + DOOR.w / 2 + 2 : 80, top = Math.max(H, -fl + 50);
         const wc = (x) => two ? (x < 0 ? '#ffc8dc' : '#3a2c52') : '#5a5068';
         for (const s of [-1, 1]) S.bx(dc, Lc + s * (hw + 6), top / 2 - 4, 12, top + 8, 12.4, 'col:' + wc(s), undefined, true);
         S.bx(dc, Lc, H + 6, 2 * hw + 24, 12, 12.4, 'col:' + (two ? '#5a4a68' : '#4a4058'), undefined, true);   // plafond (le dessus du tunnel)
         if (-fl + 2 > H + 12) S.bx(dc, Lc, (H + 12 + (-fl + 4)) / 2, 2 * hw + 24, (-fl + 4) - (H + 12), 12.4, 'col:#6a5a50', undefined, true);   // la terre au-dessus du tunnel jusqu'au niveau du parc
-        if (two) { S.bx(dc, Lc, H / 2, 8, H + 2, 12.4, 'col:' + C.stone, undefined, true); }   // le mur central entre les deux tunnels
+        if (two) { S.bx(dc, Lc, H / 2, 20, H + 2, 12.4, 'col:' + C.stone, undefined, true); for (const s of [-1, 1]) S.bx(dc, Lc + s * 10.2, H * 0.4, 0.3, 1.2, 12.4, 'emis:' + (s < 0 ? '#ffb6d0' : '#7aff9a'), undefined, false, { shadow: false }); }   // le mur central entre les deux tunnels
         // eclairage
         if (Math.round(dc / 12) % 2 === 0) { if (two) { S.bx(dc, Lc - DOOR.x, H - 0.5, 10, 0.4, 2, 'emis:#ffe0f0', undefined, false); S.glow(dc, Lc - DOOR.x, H - 2, '#ffd0e8', 34); S.bx(dc, Lc + DOOR.x, H - 0.5, 4, 0.4, 2, 'emis:#7aff9a', undefined, false); S.glow(dc, Lc + DOOR.x, H - 2, '#7aff9a', 24); } else { S.bx(dc, Lc, H - 0.5, 14, 0.4, 2, 'emis:#ffe9c0', undefined, false); S.glow(dc, Lc, H - 2, '#ffd8a8', 40); for (const s of [-1, 1]) { S.ball(dc, Lc + s * (hw - 1), 14, 0.7, 'emis:' + BAL[Math.round(dc) % 7], undefined, false); S.glow(dc, Lc + s * (hw - 2), 14, BAL[Math.round(dc) % 7], 14); } } }
       });
       // ===== cote USINE A BONBONS : tapis roulants, tuyaux de sucre, sucettes geantes, bonbons qui defilent =====
-      for (let dc = S.d0 + 20; dc < d(uSplit) - 10; dc += 26) S.item(dc, (r) => { const Lc = S.lane(dc).lx, x = Lc - DOOR.x;
-        S.bx(dc, x - 16, 2, 6, 4, 22, 'col:#e8e8f0', undefined, true); S.bx(dc, x - 16, 4.2, 6.4, 0.4, 22.4, 'col:#333333', undefined, false); for (let k = 0; k < 5; k++) S.ball(dc - 8 + k * 4, x - 16, 5.6, 1.1, 'col:' + pk(r, BAL), undefined, false);
-        S.cyl(dc, x + 14, 0, 1.2, H, 'col:' + C.white, undefined, 10, 1.2, true); for (let k = 0; k < 5; k++) S.cyl(dc, x + 14, 3 + k * 7, 1.3, 2, 'col:' + C.red, undefined, 10, 1.3, false);
-        if (r() < 0.6) { S.cyl(dc + 8, x - 6, 0, 0.5, 16, 'col:' + C.white, undefined, 8, 0.5, true); for (let k = 0; k < 3; k++) S.cyl(dc + 8, x - 6, 15.6 + k * 0.1, 5 - k * 1.5, 1.2, 'col:' + [C.pink, C.white, C.cyan][k], undefined, 18, 5 - k * 1.5, k === 0); }
-        S.bx(dc, x, 26, 30, 1.6, 1.6, 'col:#d8d8e0', undefined, true); S.bx(dc, x, 27.2, 30, 0.6, 2, 'col:' + C.pink, undefined, false); });
+      for (let dc = S.d0 + 20; dc < d(uSplit) - 10; dc += 26) S.item(dc, (r) => { const Lc = 0, x = Lc - DOOR.x;
+        S.bx(dc, x - 32, 2, 6, 4, 22, 'col:#e8e8f0', undefined, true); S.bx(dc, x - 32, 4.2, 6.4, 0.4, 22.4, 'col:#333333', undefined, false); for (let k = 0; k < 5; k++) S.ball(dc - 8 + k * 4, x - 32, 5.6, 1.1, 'col:' + pk(r, BAL), undefined, false);
+        S.cyl(dc, x + 32, 0, 1.6, H, 'col:' + C.white, undefined, 10, 1.6, true); for (let k = 0; k < 6; k++) S.cyl(dc, x + 32, 3 + k * 8, 1.7, 2.4, 'col:' + C.red, undefined, 10, 1.7, false);
+        if (r() < 0.6) { S.cyl(dc + 8, x - 30, 0, 0.5, 18, 'col:' + C.white, undefined, 8, 0.5, true); for (let k = 0; k < 3; k++) S.cyl(dc + 8, x - 30, 17.6 + k * 0.1, 5 - k * 1.5, 1.2, 'col:' + [C.pink, C.white, C.cyan][k], undefined, 18, 5 - k * 1.5, k === 0); }
+        S.bx(dc, x, H - 3, 70, 1.6, 1.6, 'col:#d8d8e0', undefined, true); S.bx(dc, x, H - 1.8, 70, 0.6, 2, 'col:' + C.pink, undefined, false); });
       // presses a bonbons qui descendent sur le chemin de l'usine (obstacle rythme)
-      for (const [u, ph] of [[0.15, 0], [0.24, 1.2]]) S.item(d(u), () => { const dc = d(u), Lc = S.lane(dc).lx, x = Lc - DOOR.x, fl = T.rel(dc); const g = new T3.Group(), body = bake([{ g: BX(18, 8, 8), c: C.pink, p: [0, 0, 0] }, { g: BX(18.4, 1.2, 8.4), c: C.white, p: [0, -4.4, 0] }, { g: BX(1.4, 30, 1.4), c: '#888888', p: [-6, 18, 0] }, { g: BX(1.4, 30, 1.4), c: '#888888', p: [6, 18, 0] }]); g.add(body); EVO.colBox(body, 18.4, 9, 8.4, 0, -0.4, 0);
+      for (const [u, ph] of [[0.15, 0], [0.24, 1.2]]) S.item(d(u), () => { const dc = d(u), Lc = 0, x = Lc - DOOR.x, fl = T.rel(dc); const g = new T3.Group(), body = bake([{ g: BX(18, 8, 8), c: C.pink, p: [0, 0, 0] }, { g: BX(18.4, 1.2, 8.4), c: C.white, p: [0, -4.4, 0] }, { g: BX(1.4, 30, 1.4), c: '#888888', p: [-6, 18, 0] }, { g: BX(1.4, 30, 1.4), c: '#888888', p: [6, 18, 0] }]); g.add(body); EVO.colBox(body, 18.4, 9, 8.4, 0, -0.4, 0);
         EVO.placeGroup(S, g, dc, x, 0, 0); const y0 = g.position.y; EVO.addDyn(g, (t) => { const k = ((t + ph) % 3.2) / 3.2, h = k < 0.5 ? 26 * ss(0, 0.5, k) : k < 0.7 ? 26 : k < 0.78 ? 26 * (1 - Math.pow((k - 0.7) / 0.08, 2)) : 0; g.position.y = y0 + 5 + h; }, body.children.slice(), { near: 9999, span: 40 }); });
       // ===== cote MANOIR / TRAIN FANTOME : rails, wagons fantomes qui arrivent, draps de fantomes qui flottent, cercueils, toiles =====
-      for (let dc = S.d0 + 10; dc < d(uSplit) - 6; dc += 3) S.item(dc, () => { const Lc = S.lane(dc).lx, x = Lc + DOOR.x + 8, fl = T.rel(dc), fl1 = T.rel(dc + 3); beam(S, dc, x - 1, fl + 0.4, dc + 3, x - 1, fl1 + 0.4, 0.3, 0.3, '#888888', false); beam(S, dc, x + 1, fl + 0.4, dc + 3, x + 1, fl1 + 0.4, 0.3, 0.3, '#888888', false); });
-      for (let dc = S.d0 + 30; dc < d(uSplit) - 10; dc += 34) S.item(dc, (r) => { const Lc = S.lane(dc).lx, x = Lc + DOOR.x; for (let k = 0; k < 2; k++) { const xx = x - 12 + k * 26, zz = dc + r.between([-6, 6]); S.bx(zz, xx, 0.8, 2.6, 1.6, 6, 'col:#2a1a10', undefined, true); S.bx(zz, xx, 1.7, 2.8, 0.3, 6.2, 'col:#4a2a18', undefined, false); } for (let k = 0; k < 4; k++) S.bx(dc + k * 2, x + 15, 20 + k * 3, 0.05, 10, 0.05, 'col:#dddddd', undefined, false, { shadow: false }); });
-      for (let k = 0; k < 7; k++) S.item(d(0.04 + k * 0.042), (r) => { const dc = d(0.04 + k * 0.042), Lc = S.lane(dc).lx, x = Lc + DOOR.x + r.between([-12, 12]), g = new T3.Group(), sheet = new T3.Mesh(CO(3.4, 7, 12, 1, true), ghostM()), head = new T3.Mesh(SP(2.4, 12, 9), ghostM()); sheet.position.y = 0; head.position.y = 3.6; g.add(sheet); g.add(head); for (const o of [-0.8, 0.8]) { const e = new T3.Mesh(SP(0.45, 6, 5), lam('#120a18')); e.position.set(o, 4, -2.1); g.add(e); } EVO.colBox(g, 6, 9, 6, 0, 1, 0);
+      for (let dc = S.d0 + 10; dc < d(uSplit) - 6; dc += 3) S.item(dc, () => { const Lc = 0, x = Lc + DOOR.x + 28, fl = T.rel(dc), fl1 = T.rel(dc + 3); beam(S, dc, x - 1, fl + 0.4, dc + 3, x - 1, fl1 + 0.4, 0.3, 0.3, '#888888', false); beam(S, dc, x + 1, fl + 0.4, dc + 3, x + 1, fl1 + 0.4, 0.3, 0.3, '#888888', false); });
+      for (let dc = S.d0 + 30; dc < d(uSplit) - 10; dc += 34) S.item(dc, (r) => { const Lc = 0, x = Lc + DOOR.x; for (let k = 0; k < 2; k++) { const xx = x - 30 + k * 18, zz = dc + r.between([-6, 6]); S.bx(zz, xx, 0.8, 2.6, 1.6, 6, 'col:#2a1a10', undefined, true); S.bx(zz, xx, 1.7, 2.8, 0.3, 6.2, 'col:#4a2a18', undefined, false); } for (let k = 0; k < 4; k++) S.bx(dc + k * 2, x + 15, 20 + k * 3, 0.05, 10, 0.05, 'col:#dddddd', undefined, false, { shadow: false }); });
+      for (let k = 0; k < 5; k++) S.item(d(0.05 + k * 0.055), (r) => { const dc = d(0.05 + k * 0.055), Lc = 0, x = Lc + DOOR.x + (k % 2 ? -1 : 1) * r.between([16, 28]), g = new T3.Group(), sheet = new T3.Mesh(CO(3.4, 7, 12, 1, true), ghostM()), head = new T3.Mesh(SP(2.4, 12, 9), ghostM()); sheet.position.y = 0; head.position.y = 3.6; g.add(sheet); g.add(head); for (const o of [-0.8, 0.8]) { const e = new T3.Mesh(SP(0.45, 6, 5), lam('#120a18')); e.position.set(o, 4, -2.1); g.add(e); } EVO.colBox(g, 6, 9, 6, 0, 1, 0);
         EVO.placeGroup(S, g, dc, x, 16 + r() * 10, Math.PI); const y0 = g.position.y, x0 = g.position.x, ph = r() * 6; EVO.addDyn(g, (t) => { g.position.y = y0 + Math.sin(t * 1.3 + ph) * 3.5; g.position.x = x0 + Math.sin(t * 0.7 + ph) * 5; g.rotation.z = Math.sin(t * 1.1 + ph) * 0.15; }, g.children.filter((o) => o.userData.size), { near: 9999, span: 40 }); });
       // le train fantome : trois wagons noirs a yeux verts qui foncent en face sur leur rail
       S.item(d(0.12), () => { const g = new T3.Group(), parts = []; for (let i = 0; i < 3; i++) { const z = -i * 6; parts.push({ g: BX(4.6, 3.4, 5.4), c: '#1a1220', p: [0, 2.2, z] }, { g: BX(4.8, 0.6, 5.6), c: '#7a2a8a', p: [0, 4.1, z] }, { g: SP(0.6, 6, 5), c: '#7aff9a', p: [-1.2, 3.4, z + 2.8] }, { g: SP(0.6, 6, 5), c: '#7aff9a', p: [1.2, 3.4, z + 2.8] }); }
         const body = bake(parts); g.add(body); EVO.colBox(body, 5, 4.6, 18, 0, 2.2, -6); S.b.root.add(g); const st = { on: false, t0: 0 }, dA = d(0.04), dB = d(uSplit - 0.02);
         EVO.addDyn(g, (t, dt, game) => { const run = game.endlessRun; if (!run) return; if (!st.on && game.state === 'FLIGHT' && run.dist > dA - 60) { st.on = true; st.t0 = t; } if (run.dist < dA - 120) st.on = false; if (!st.on) { g.visible = false; return; } const dd = dB - 34 * (t - st.t0); g.visible = dd > dA; if (!g.visible) return;
-          const x = S.lane(dd).lx + DOOR.x + 8, p = T.at(dd, x, 0.5), q = T.at(dd - 4, S.lane(dd - 4).lx + DOOR.x + 8, 0.5); g.position.set(p[0], p[1], p[2]); g.lookAt(q[0], q[1], q[2]); }, [body], { near: 99999, span: 9999 });
+          const x = 0 + DOOR.x + 28, p = T.at(dd, x, 0.5), q = T.at(dd - 4, 0 + DOOR.x + 28, 0.5); g.position.set(p[0], p[1], p[2]); g.lookAt(q[0], q[1], q[2]); }, [body], { near: 99999, span: 9999 });
         EVO.dyn[EVO.dyn.length - 1].cols = body.children.slice(); });
       // ===== LES GALERIES communes : piliers rayes, lanternes, bonbons geants et fantomes melanges, quelques arches lumineuses =====
-      for (let dc = d(uSplit) + 20; dc < d(0.78); dc += 30) S.item(dc, (r) => { const Lc = S.lane(dc).lx; for (const x of [-26, 26]) { const xx = Lc + x + r.between([-4, 4]); S.cyl(dc, xx, 0, 2.6, H, 'col:' + pk(r, ['#e8e0f0', '#ffd0e0']), undefined, 12, 2.6, true); for (let k = 0; k < 4; k++) S.cyl(dc, xx, 4 + k * 8, 2.7, 1.6, 'col:' + pk(r, BAL), undefined, 12, 2.7, false); }
-        if (r() < 0.5) { const x = Lc + r.between([-12, 12]); S.cyl(dc + 12, x, 0, 1.4, H, 'col:' + C.stone, undefined, 10, 1.4, true); } });
-      for (const u of [0.42, 0.55, 0.68]) S.item(d(u), () => { const dc = d(u), Lc = S.lane(dc).lx; for (let k = 0; k <= 20; k++) { const a = k / 20 * Math.PI; S.ball(dc, Lc + Math.cos(a) * 20, 6 + Math.sin(a) * 24, 1.2, 'emis:' + (k % 2 ? '#ff8ad8' : '#7af0ff'), undefined, true); } });
+      for (let dc = d(uSplit) + 20; dc < d(0.78); dc += 30) S.item(dc, (r) => { const Lc = 0; for (const x of [-50, 50]) { const xx = Lc + x + r.between([-4, 4]); S.cyl(dc, xx, 0, 2.6, H, 'col:' + pk(r, ['#e8e0f0', '#ffd0e0']), undefined, 12, 2.6, true); for (let k = 0; k < 4; k++) S.cyl(dc, xx, 4 + k * 8, 2.7, 1.6, 'col:' + pk(r, BAL), undefined, 12, 2.7, false); }
+        });
+      for (const u of [0.42, 0.55, 0.68]) S.item(d(u), () => { const dc = d(u), Lc = 0; for (let k = 0; k <= 20; k++) { const a = k / 20 * Math.PI; S.ball(dc, Lc + Math.cos(a) * 46, 4 + Math.sin(a) * 44, 1.4, 'emis:' + (k % 2 ? '#ff8ad8' : '#7af0ff'), undefined, true); } });
       jets(S, d(0.6), [-10, 10], 0.4, 3);
       // ===== LA REMONTEE : rampe vers la surface, arche de sortie lumineuse =====
-      S.item(d(0.97), () => { const dc = d(0.97), Lc = S.lane(dc).lx; S.wall(dc, Lc - 400, Lc + 400, -10, 90, 6, 'col:#5a4a40', undefined, { lx: Lc, yc: H / 2 + 2, w: 2 * 42, h: H + 2 }); for (let k = 0; k < 30; k++) S.bx(dc - 3.2, Lc - 42 + k * 2.9, H + 2.6, 0.5, 0.5, 0.2, 'emis:#fff0b8', undefined, false, { shadow: false }); });
-      foe(S, 'aaturret', d(0.2), -DOOR.x - 6, 0, { name: 'TOURELLE', armed: true, fixed: true });
+      S.item(d(0.97), () => { const dc = d(0.97), Lc = 0; S.wall(dc, Lc - 400, Lc + 400, -10, 110, 6, 'col:#5a4a40', undefined, { lx: Lc, yc: H / 2 + 2, w: 2 * 80, h: H + 2 }); for (let k = 0; k < 56; k++) S.bx(dc - 3.2, Lc - 80 + k * 2.9, H + 2.6, 0.5, 0.5, 0.2, 'emis:#fff0b8', undefined, false, { shadow: false }); });
+      foe(S, 'aaturret', d(0.2), -DOOR.x - 26, 0, { name: 'TOURELLE', armed: true, fixed: true });
       foe(S, 'jeep', d(0.42), 6, 0, { name: 'JEEP', path: 90, speed: 18 });
       foe(S, 'tank', d(0.52), -12, 0, { name: 'BLINDE', hp: 3, armed: false });
       foe(S, 'apc', d(0.64), 10, 0, { name: 'TRANSPORT', path: 80, speed: 15 });
       foe(S, 'rocketTruck', d(0.72), -10, 0, { name: 'LANCE-ROQUETTES', armed: true });
     } };
 
+  // ---------- SCENE 10 : LA GRANDE PLACE DE NUIT : tout s'illumine, feux d'artifice, l'arene du boss (a venir) ----------
+  function fireworks(S, dc) {   // gerbes de feu d'artifice au-dessus de la place (instanciees, en boucle)
+    if (!S.inClip(dc)) return; const n = 360, im = new T3.InstancedMesh(SP(0.7, 5, 4), MT.fw || (MT.fw = new T3.MeshBasicMaterial({ color: '#ffffff', fog: false })), n); im.frustumCulled = false;
+    const B = [], m4 = new T3.Matrix4(), q = new T3.Quaternion(), sv = new T3.Vector3(), pv = new T3.Vector3(), NB = 6, per = n / NB;
+    for (let b = 0; b < NB; b++) { const c = pk(S.sr, ['#ff5ad8', '#ffd23a', '#5af0ff', '#ff6a3a', '#9aff6a', '#ffffff']); for (let k = 0; k < per; k++) im.setColorAt(b * per + k, _c.set(c)); B.push({ t0: -9, o: new T3.Vector3(), dirs: Array.from({ length: per }, () => new T3.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize().multiplyScalar(18 + Math.random() * 10)) }); }
+    S.b.root.add(im); const C0 = S.at(dc, 0, 0);
+    EVO.addDyn(im, (t) => {
+      for (let b = 0; b < NB; b++) { const Bq = B[b]; let age = t - Bq.t0; if (age > 2.6 + b * 0.37) { Bq.t0 = t; age = 0; const p = S.at(dc + (Math.random() - 0.3) * 260, (Math.random() - 0.5) * 300, 90 + Math.random() * 70); Bq.o.set(p[0], p[1], p[2]); }
+        const k = Math.min(1, age / 0.6), e = 1 - Math.pow(1 - k, 3), fall = age * age * 2.2, sc = Math.max(0.001, 1.6 * (1 - age / 2.6));
+        for (let i = 0; i < per; i++) { const dv = Bq.dirs[i]; pv.set(Bq.o.x + dv.x * e, Bq.o.y + dv.y * e - fall, Bq.o.z + dv.z * e); m4.compose(pv, q, sv.setScalar(sc)); im.setMatrixAt(b * per + i, m4); } }
+      im.instanceMatrix.needsUpdate = true; }, [], { near: 99999 });
+  }
+  D.scenes.fnuit = { len: [700, 700], noDoor: true, noChaos: true, noDress: true, grass: false, turns: [[0.15, 0.4, -30]],
+    pin: (T, sc) => ({ lx: 0, y: 20, from: 20, to: sc.d1 - sc.d0 - 10 }),
+    ground: groundJ(W0),
+    build(S) {
+      const L = S.len, d = (u) => S.d0 + u * L, dC = d(0.62);
+      // sol : grandes dalles sombres et brillantes, chemins dores, une immense rosace sous l'arene
+      paveScene(S, (dd, x) => { const ro = rosace(dd, x, dC, 0, 110, '#6a4a8a', '#e8b43a', '#ffffff'); if (ro) return ro; const i = Math.floor((dd - S.d0) / 4), j = Math.floor((x + 400) / 4), ax = Math.abs(x); if (ax < 8) return [i % 2 ? '#e8b43a' : '#8a7aa8', 'foirePaves']; return [(i % 10 === 0 || j % 10 === 0) ? '#b8963a' : (hsh(i, j) < 0.5 ? '#7a7090' : '#8a8098'), 'foireDalles']; });
+      // les illuminations : guirlandes d'ampoules partout, lampadaires, arches lumineuses, chapelets de lumieres sur les maneges
+      for (let dc = S.d0 + 10; dc < S.d1; dc += 20) S.item(dc, () => { const Lc = S.lane(dc).lx; for (const s of [-1, 1]) lampPost(S, dc, Lc + s * 24); });
+      for (let dc = S.d0 + 30; dc < dC - 120; dc += 36) S.item(dc, (r) => { const Lc = S.lane(dc).lx; garland(S, dc, Lc - 24, Lc + 24, 20 + r.between([0, 4]), r); for (let k = 0; k < 24; k++) S.bx(dc + 0.3, Lc - 23 + k * 2, 19 + Math.sin(k * 0.6) * 1.2, 0.3, 0.3, 0.3, 'emis:' + BAL[k % 7], undefined, false, { shadow: false }); });
+      for (const u of [0.1, 0.3]) S.item(d(u), () => { const dc = d(u), Lc = S.lane(dc).lx; for (let k = 0; k <= 30; k++) { const a = k / 30 * Math.PI; S.ball(dc, Lc + Math.cos(a) * 34, 4 + Math.sin(a) * 40, 1.1, 'emis:' + (k % 2 ? '#ffd23a' : '#ff5ad8'), undefined, true); } });
+      for (const [u, s, k, x] of [[0.08, 1, 'car', 70], [0.14, -1, 'swing', 76], [0.24, 1, 'drop', 66], [0.3, -1, 'top', 110], [0.42, 1, 'vil', 70], [0.46, -1, 'car', 72], [0.8, 1, 'swing', 120], [0.86, -1, 'drop', 120]]) { S.reserve(d(u), s * x, 56, 56); S.item(d(u), (r) => { const lx = S.lane(d(u)).lx + s * x; if (k === 'car') carousel(S, d(u), lx, r, 1.6); else if (k === 'swing') swingRide(S, d(u), lx, r, 1.6); else if (k === 'drop') dropTower(S, d(u), lx, r, 120); else if (k === 'top') bigTop(S, d(u), lx, r, 1.3); else village(S, d(u), lx, r); }); }
+      // l'arene du boss : un cercle de mats lumineux autour de la grande rosace (le boss arrive a la prochaine etape)
+      S.item(dC, () => { for (let k = 0; k < 16; k++) { const a = k / 16 * 6.283, z = dC + Math.cos(a) * 104, x = Math.sin(a) * 104; if (Math.abs(x) < 30) continue; S.cyl(z, x, 0, 1.6, 2, 'col:' + C.gold, undefined, 10, 1.6, true); S.cyl(z, x, 2, 0.5, 26, 'col:#2a2040', undefined, 8, 0.4, true); S.ball(z, x, 29, 2, 'emis:' + BAL[k % 7], undefined, false); S.glow(z, x, 29, BAL[k % 7], 30); } });
+      S.reserve(dC, 0, 200, 200); fillers(S, 30, 60, 26); parkTrees(S);
+      fireworks(S, d(0.05)); fireworks(S, d(0.55));
+      foe(S, 'tank', d(0.2), -12, 0, { name: 'BLINDE', hp: 3, armed: false });
+      foe(S, 'heli', d(0.36), 0, 50, { name: 'HELICO', armed: true, patrol: (SS, dc, lx, y) => [SS.at(dc, -26, y), SS.at(dc + 22, 0, y + 6), SS.at(dc, 26, y), SS.at(dc - 22, 0, y + 6)], speed: 12 });
+      foe(S, 'aaturret', d(0.5), 20, 0, { name: 'TOURELLE', armed: true });
+    } };
+
   // ---------- la fiche du niveau 3 ----------
-  const SC3 = ['fdepart', 'fportes', 'fplace', 'fparc', 'fmarteaux', 'froue', 'fcoaster', 'fchoix', 'fsous'], NAMES = { fcoaster: 'LES MONTAGNES RUSSES', fchoix: 'LE CHOIX', fsous: 'SOUS LE PARC', fdepart: 'LE PARKING', fportes: 'LES GRANDES PORTES', fplace: "LA PLACE DE L'HORLOGE", fparc: 'LA FOIRE', fmarteaux: 'LES MARTEAUX', froue: 'LA GRANDE ROUE' };
+  const SC3 = ['fdepart', 'fportes', 'fplace', 'fparc', 'fmarteaux', 'froue', 'fcoaster', 'fchoix', 'fsous', 'fnuit'], NAMES = { fnuit: 'LA PLACE DE NUIT', fcoaster: 'LES MONTAGNES RUSSES', fchoix: 'LE CHOIX', fsous: 'SOUS LE PARC', fdepart: 'LE PARKING', fportes: 'LES GRANDES PORTES', fplace: "LA PLACE DE L'HORLOGE", fparc: 'LA FOIRE', fmarteaux: 'LES MARTEAUX', froue: 'LA GRANDE ROUE' };
   const _ld = EVO.levelDef;
   EVO.levelDef = (g) => {
     if (!(EVO.stage && EVO.stage(g) === 3) || g.evoPreview) return _ld(g);
