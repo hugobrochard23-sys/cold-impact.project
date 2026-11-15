@@ -48,7 +48,7 @@
       }
       if (!ok) { (window.__evoSkipped = window.__evoSkipped || []).push([type, Math.round(dc)]); return; }   // aucun emplacement libre : pas d'ennemi invisible
       const L = S.lane(dc), p = S.at(dc, lx, y || 0);
-      const ex = { unarmed: !o.armed, evoHp: o.hp, evoName: o.name || type, evoVal: o.val }; if (o.drift !== undefined) ex.drift = o.drift;
+      const ex = { unarmed: !o.armed, evoHp: o.hp, evoName: o.name || type, evoVal: o.val }; if (o.drift !== undefined) ex.drift = o.drift; if (o.scale) ex.scale = o.scale;   // v409 : niveau 3 : ennemis agrandis
       if (o.patrol) ex.patrol = o.patrol(S, dc, lx, y || 0), ex.patrolSpeed = o.speed || 9, ex.patrolPhase = o.phase || 0;
       if (o.path) { const L2 = o.path; ex.path = [S.at(dc, lx, y || 0), S.at(dc + L2, lx, y || 0)]; ex.fleeSpeed = o.speed || 16; }
       S.b.target(type, p, S.yaw(dc) + (type === 'truck' ? 90 : 0) + RO.face(type) + (o.yaw || 0), RO.opts(type, ex));

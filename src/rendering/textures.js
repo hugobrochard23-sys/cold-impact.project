@@ -357,12 +357,14 @@
     }
   }
 
+  // v409 : textures ajoutees par un autre fichier (pavages du niveau 3) : dessin, taille reelle couverte (m), taille du canevas, filtrage lisse
+  T.def = (name, draw, tile, size, smooth) => { defs[name] = draw; T.tile[name] = tile; (T.sizes = T.sizes || {})[name] = size; if (smooth) (T.smooth = T.smooth || {})[name] = 1; };
   T.get = function (name) {
     if (!cache[name]) {
       const d = defs[name];
       if (!d) throw new Error('Texture inconnue : ' + name);
-      const nat = name === 'grass' || name === 'dirt' || name === 'white' || name === 'sand' || name === 'evoGrass';   // v117 : sols naturels
-      const big = nat ? [256, 256] : name === 'rockface' ? [64, 64] : /^facade/.test(name) ? [128, 128] : name === 'storefront' ? [64, 32] : name === 'fabric' ? [64, 64] : [32, 32];   // design : façades 4 × 4 travées
+      const nat = name === 'grass' || name === 'dirt' || name === 'white' || name === 'sand' || name === 'evoGrass' || !!(T.smooth && T.smooth[name]);   // v117 : sols naturels
+      const big = T.sizes && T.sizes[name] ? T.sizes[name] : nat ? [256, 256] : name === 'rockface' ? [64, 64] : /^facade/.test(name) ? [128, 128] : name === 'storefront' ? [64, 32] : name === 'fabric' ? [64, 64] : [32, 32];   // design : façades 4 × 4 travées
       cache[name] = make(name, big[0], big[1], d);
       if (nat) { cache[name].magFilter = THREE.LinearFilter; cache[name].anisotropy = 8; }
     }
