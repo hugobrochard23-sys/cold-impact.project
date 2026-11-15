@@ -24,6 +24,8 @@
   EVO.fast = () => !!((CC.Portal && CC.Portal.on) || /[?&]pc=1/.test(location.search));
   EVO.CHEST_N = 3;   // nombre de vols (equivalents) pour remplir le coffre
   EVO.isS2 = () =>!!(EVO.stage && CC.game && EVO.stage(CC.game) === 2);
+  EVO.isS3 = () => !!(EVO.stage && CC.game && EVO.stage(CC.game) === 3);   // v408 : niveau 3 « fete foraine » (physique du niveau 1, fusee clown)
+  EVO.ownBody = () => EVO.isS2() || EVO.isS3();   // fusees a silhouette propre (rocket_w.js) : pas de pieces rapportees du niveau 1
   EVO.rkNext = () => (EVO.isS2() ? RK_NEXT2 : RK_NEXT);
   const COIN_COST = [150, 250, 420, 700, 1100];
   const MAXN = { rk: 99999, la: 99999, cm: 99999 };   // v158 : plus de maximum : le carburant grandit avec chaque amelioration, a l'infini
@@ -138,6 +140,7 @@
     { c: { body: '#3c6a98', nose: '#243649', tip: '#5ff0ff', band: '#5ff0ff', fin: '#243649', nozzle: '#1a2128' }, d: { r: 0.095, len: 1.2, noseLen: 0.42, noseR: 0.018 }, flame: '#5ff0ff' },
     { c: { body: '#2a4258', nose: '#1b2b3a', tip: '#5ff0ff', band: '#d9a441', fin: '#1b2b3a', nozzle: '#12181e' }, d: { r: 0.092, len: 1.5, noseLen: 0.6, noseR: 0.01 }, flame: '#5ff0ff' },
   ];
+  for (let i = 0; i < 4; i++) CC.Skins.byId['evoC' + i] = { id: 'evoC' + i, name: 'evoC' + i, short: 'evoC' + i, tier: 'base', price: 0, tierLabel: '', c: { body: '#f4f1ea', nose: '#e8352f', tip: '#ffc928', band: '#2f7fe0', fin: '#ffc928', nozzle: '#23262c' }, flame: ['#ffb84a', '#ffb84a', '#ff7ad8', '#7af0ff'][i], build: 'clown', stage: i, dims: { r: 0.1, len: 1, noseLen: 0.3, noseR: 0.02, fins: 0, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 }, parts: [] };   // v408 : missile clown (niveau 3)
   SKIN_W.forEach((d, i) => { CC.Skins.byId['evoW' + i] = { id: 'evoW' + i, name: 'evoW' + i, short: 'evoW' + i, tier: 'base', price: 0, tierLabel: '', c: Object.assign({}, d.c), flame: d.flame, build: 'amphibie', stage: i, dims: Object.assign({ fins: 0, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 }, d.d), parts: [] }; });
   let _pm = null;
   const PM = () => _pm || (_pm = { card: new THREE.MeshLambertMaterial({ color: '#c8a46e' }), cardD: new THREE.MeshLambertMaterial({ color: '#8a6a44' }), white: new THREE.MeshLambertMaterial({ color: '#eceef2' }), red: new THREE.MeshLambertMaterial({ color: '#d8402c' }),
@@ -183,9 +186,9 @@
   EVO.attachParts = (g) => {
     const rk = g.rocket, r = EVO.rocket(EVO.save(g).rk);
     if (rk.mesh.userData.evoParts) rk.mesh.remove(rk.mesh.userData.evoParts);
-    const PT = EVO.partTier(), root = EVO.isS2() ? buildPartsW(r.tier) : buildParts(r.tier); rk.mesh.add(root); rk.mesh.userData.evoParts = root; g.evoParts = root.userData.P;
+    const PT = EVO.partTier(), root = EVO.ownBody() ? buildPartsW(r.tier) : buildParts(r.tier); rk.mesh.add(root); rk.mesh.userData.evoParts = root; g.evoParts = root.userData.P;
     for (const k of Object.keys(g.evoParts)) { const on = r.tier >= PT[k]; g.evoParts[k].userData.k = on ? 1 : 0; g.evoParts[k].scale.setScalar(on ? 1 : 0.0001); g.evoParts[k].visible = on; }
-    if (!EVO.isS2()) rk.mesh.userData.finTips = r.tier >= 3 ? [new V(0.4, 0, -0.62), new V(-0.4, 0, -0.62), new V(0, 0.4, -0.62), new V(0, -0.4, -0.62)] : r.tier >= 1 ? [new V(0.44, 0, -0.18), new V(-0.44, 0, -0.18), new V(0, 0.44, -0.18), new V(0, -0.44, -0.18)] : [];   // bouts d'ailes : traînées de condensation
+    if (!EVO.ownBody()) rk.mesh.userData.finTips = r.tier >= 3 ? [new V(0.4, 0, -0.62), new V(-0.4, 0, -0.62), new V(0, 0.4, -0.62), new V(0, -0.4, -0.62)] : r.tier >= 1 ? [new V(0.44, 0, -0.18), new V(-0.44, 0, -0.18), new V(0, 0.44, -0.18), new V(0, -0.44, -0.18)] : [];   // bouts d'ailes : traînées de condensation
     rk.mesh.scale.setScalar((1 + 0.012 * r.n) * 1.28);
   };
   // v159 : LIVREES : une fois la fusee au bout de ses ameliorations (niveau 20), on peut en changer l'apparence ; une nouvelle s'ouvre tous les 5 niveaux
@@ -204,7 +207,7 @@
   const dimRocket = (g) => { g.rocket.mesh.traverse((o) => { const ms = Array.isArray(o.material) ? o.material : (o.material ? [o.material] : []); for (const m of ms) { if (m.userData.dimmed || m.isMeshBasicMaterial) continue; m.userData.dimmed = 1; if (m.emissive) m.emissiveIntensity = (m.emissiveIntensity === undefined ? 1 : m.emissiveIntensity) * 0.3; if (m.specular) m.specular.multiplyScalar(0.4); if (m.shininess !== undefined) m.shininess *= 0.6; if (m.color && m.color.r > 0.85 && m.color.g > 0.85 && m.color.b > 0.85) m.color.multiplyScalar(0.84); } }); };
   EVO.applySkin = (g) => {
     const r = EVO.rocket(EVO.save(g).rk), L = EVO.livery(g), M = PM(); M.red.color.set(r.tier >= 2 ? L.acc : '#d8402c'); M.white.color.set(r.tier >= 2 ? L.wh : '#eceef2');
-    g.rocket.setSkin(CC.Skins.get(EVO.isS2() ? 'evoW' + r.tier : 'evoT' + r.tier + (r.tier >= 2 && L.id !== 'classic' ? L.id : ''))); EVO.attachParts(g); dimRocket(g);
+    g.rocket.setSkin(CC.Skins.get(EVO.isS2() ? 'evoW' + r.tier : EVO.isS3() ? 'evoC' + r.tier : 'evoT' + r.tier + (r.tier >= 2 && L.id !== 'classic' ? L.id : ''))); EVO.attachParts(g); dimRocket(g);
   };
   // lanceur : anneaux d'accélération le long du rail, de plus en plus nombreux et lumineux
   EVO.dressPad = (pad) => {

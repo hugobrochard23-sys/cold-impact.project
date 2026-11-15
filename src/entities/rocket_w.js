@@ -60,6 +60,32 @@
       if (st >= 3) for (const sx of [-1, 1]) put(g, box(0.008, 0.012, 0.74), RED, { p: [sx * 0.2155, 0.0, -0.04], basic: true });
       return { tail: -0.84, jr: 0.075, noseZ: 0.84, tips };
     },
+    // v408 : NIVEAU 3 « FETE FORAINE » : LE MISSILE CLOWN, une seule fusee qui evolue en 4 etats (st 0..3) :
+    //   0 petard (tube raye rouge et blanc, petits ailerons) -> 1 ailes jaunes -> 2 canons a confettis sous les ailes -> 3 missile clown (long, blanc a anneaux, nez rouge rond, collerette)
+    clown(g, st) {
+      const F = st >= 3, RED = '#e8352f', WH = '#f4f1ea', YE = '#ffc928', BL = '#2f7fe0', DK = '#23262c';
+      const len = F ? 1.0 : st >= 1 ? 0.86 : 0.72, z0 = -len * 0.62, zn = len * 0.48, r0 = F ? 0.1 : 0.108;
+      const CT = [[z0, r0 * 0.7], [z0 + 0.06, r0], [zn - 0.1, r0], [zn, r0 * 0.86], [zn + 0.12, r0 * 0.5], [zn + 0.2, 0.012]];
+      const rad = (z) => { for (let i = 0; i < CT.length - 1; i++) if (z <= CT[i + 1][0]) { const t = (z - CT[i][0]) / (CT[i + 1][0] - CT[i][0]); return CT[i][1] + (CT[i + 1][1] - CT[i][1]) * Math.max(0, t); } return 0.012; };
+      const sec = (a, b, c) => { const p = [[rad(a), a]]; for (const q of CT) if (q[0] > a + 1e-3 && q[0] < b - 1e-3) p.push([q[1], q[0]]); p.push([rad(b), b]); put(g, lathe(p, 20), c); };
+      // corps a bandes : rayures rouges / blanches (petard), blanc a anneaux de couleur (missile clown)
+      const nb = F ? 7 : 6, step = (zn - z0) / nb, RING = [RED, YE, BL];
+      for (let k = 0; k < nb; k++) sec(z0 + k * step, z0 + (k + 1) * step, F ? (k % 2 ? RING[(k >> 1) % 3] : WH) : (k % 2 ? WH : RED));
+      sec(zn, zn + 0.2, F ? WH : YE);
+      if (F) { put(g, sph(0.062), RED, { p: [0, 0, zn + 0.21] }); for (let k = 0; k < 10; k++) { const a = k * Math.PI / 5; put(g, sph(0.034), k % 2 ? YE : BL, { p: [Math.cos(a) * 0.105, Math.sin(a) * 0.105, zn + 0.01] }); } }   // nez rouge rond + collerette de pompons
+      else put(g, cylZ(0.016, 0.016, 0.06, 8), DK, { p: [0, 0, zn + 0.22] });   // la meche du petard
+      // tuyere
+      const BELL = [[0.088, z0 - 0.13], [0.08, z0 - 0.09], [0.066, z0 - 0.04], [0.06, z0 + 0.01]];
+      put(g, lathe(BELL, 18), '#5a5f68'); put(g, lathe(BELL.map((q) => [q[0] - 0.008, q[1]]).reverse(), 18), '#07090c');
+      // ailerons de queue (4, alternes jaune / bleu)
+      for (let k = 0; k < 4; k++) { const f = new T3.Group(); f.rotation.z = k * Math.PI / 2 + Math.PI / 4; g.add(f); put(g, fin([[z0 + 0.22, r0 * 0.8], [z0 + 0.02, r0 * 0.6], [z0 - 0.06, r0 + 0.17], [z0 + 0.08, r0 + 0.18]], 0.022), k % 2 ? BL : YE, { parent: f }); }
+      const tips = [];
+      // etat 1+ : ailes jaunes a bouts rouges
+      if (st >= 1) { const wz = -0.02, sp = F ? 0.36 : 0.42; for (const sx of [-1, 1]) { put(g, flat([[0, wz + 0.16], [sx * sp, wz - 0.02], [sx * sp, wz - 0.12], [0, wz - 0.18]].map((q) => [q[0], q[1]]), 0.02), YE); put(g, sph(0.035), RED, { p: [sx * sp, 0, wz - 0.07] }); tips.push([sx * sp, 0, wz - 0.07]); } }
+      // etat 2+ : deux canons a confettis sous les ailes (bleus a bandes blanches, embout jaune)
+      if (st >= 2) for (const sx of [-1, 1]) { const x = sx * 0.2; put(g, cylZ(0.045, 0.045, 0.42, 14), BL, { p: [x, -0.05, -0.06] }); put(g, cylZ(0.0465, 0.0465, 0.05, 14), WH, { p: [x, -0.05, 0.03] }); put(g, cylZ(0.045, 0.0, 0.1, 14), YE, { p: [x, -0.05, 0.2] }); put(g, cylZ(0.038, 0.05, 0.05, 14), DK, { p: [x, -0.05, -0.29] }); }
+      return { tail: z0 - 0.13, jr: 0.07, noseZ: zn + 0.25, tips };
+    },
   };
 
   // jet de la tuyere : meme mecanique que M.rocket (allumage / vacillement animes par Rocket.updateMesh)
