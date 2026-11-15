@@ -36,7 +36,7 @@
     g.writeSave(); if (g.audio) g.audio.play('levelUp');
   };
   window.__natPurchase = (pid, token) => {
-    try { const S = CC.EVO.saveBase(CC.game); S.ptok = S.ptok || {}; if (!S.ptok[token]) { S.ptok[token] = 1; grant(pid); toast('ACHAT RECU, MERCI !'); } B.confirm(token, /^gems/.test(pid)); } catch (e) { /* sera relivre au prochain demarrage */ }
+    try { const S = CC.EVO.saveBase(CC.game); S.ptok = S.ptok || {}; if (!S.ptok[token]) { S.ptok[token] = 1; grant(pid); toast('ACHAT RECU, MERCI !'); } B.confirm(token, /^(gems|coins)/.test(pid)); }   /* v407 : les paquets de pieces sont consommes aussi (sinon achetables une seule fois) */ catch (e) { /* sera relivre au prochain demarrage */ }
   };
   window.__natPurchaseFail = () => toast('ACHAT INDISPONIBLE POUR LE MOMENT');
   N.buy = (id) => B.buy(id);
