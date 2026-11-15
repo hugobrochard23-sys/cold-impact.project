@@ -26,6 +26,7 @@
     usine:  { wind: 0.02, windF: 300, low: 0.1, lowF: 130, hum: 0.06, humF: 50, pulse: 0.03, pulseF: 1.1, hiss: 0.008, hissF: 3800 },
     // v413 : niveau 3, la fete foraine
     foire: { wind: 0.05, windF: 620, low: 0.025, lowF: 120, hiss: 0.004, hissF: 5200 }, foireSous: { wind: 0.02, windF: 280, low: 0.11, lowF: 90, hum: 0.04, humF: 52, hiss: 0.003, hissF: 3600 }, foireNuit: { wind: 0.03, windF: 380, low: 0.06, lowF: 110, hum: 0.02, humF: 82, hiss: 0.006, hissF: 6200 },
+    espace: { wind: 0.0, low: 0.05, lowF: 70, hum: 0.025, humF: 55, hiss: 0.003, hissF: 7200 },   // v415 : niveau 4 : le vide (un grondement sourd, presque rien)
   };
   // événements lointains : intervalle (s) entre deux sons, liste (jour) et liste de nuit
   const AMBIENT_EVENTS = {
@@ -44,6 +45,7 @@
     usine:  { gap: [3, 6], list: ['press', 'clank', 'alarm', 'press'] },
     foire: { gap: [2.5, 5], list: ['fairBell', 'fairWhistle', 'fairPop', 'fairRide', 'fairChime', 'fairBell', 'jetPass'] }, foireSous: { gap: [3, 6], list: ['press', 'fairChime', 'drip', 'clank', 'trainFar'] },
     foireNuit: { gap: [2, 4], list: ['fairPop', 'fwBurst', 'fairBell', 'fwBurst', 'siren', 'fairRide'] },
+    espace: { gap: [5, 10], list: ['radio', 'beep', 'radioEnd', 'musicBox'] },
   };
 
   class Audio {
@@ -531,7 +533,11 @@
     STYLES.foireNuit = { bpm: 150, root: 45, scale: [0, 2, 3, 5, 7, 8, 11], prog: [0, -2, -4, -5], kick: P16([0, 4, 8, 12]), snare: P16([4, 12]), hat: P16([2, 6, 10, 14]),
       bass: { type: 'sawtooth', steps: P16([0, 2, 4, 6, 8, 10, 12, 14]), oct: -12, len: 1.2, vol: 0.13, cut: 520 }, pah: { steps: P16([4, 12]), iv: [3, 7, 12], vol: 0.02, len: 1.2, cut: 1800 },
       mel: M([[0, 3, 7, 12, 11, 7, 3, _], [-2, 2, 5, 10, 9, 5, 2, _], [-4, 0, 3, 8, 7, 3, 0, 2], [-5, -1, 2, 7, 8, 7, 2, -1]]), melOct: 1, melVol: 0.045,
-      pad: { type: 'sawtooth', vol: 0.03, cut: 900, attack: 0.5, iv: [0, 7, 12] } }; }
+      pad: { type: 'sawtooth', vol: 0.03, cut: 900, attack: 0.5, iv: [0, 7, 12] } };
+    // v415 : niveau 4 : l'espace (nappes larges, arpege qui flotte en echo, un battement lent)
+    STYLES.espace = { bpm: 96, root: 40, scale: [0, 2, 4, 7, 9, 11], prog: [0, -3, 5, -5], kick: P16([0, 10]), snare: [], hat: P16([4, 12]),
+      bass: { type: 'sine', steps: P16([0, 8]), oct: -12, len: 7, vol: 0.18, cut: 380 }, arp: { type: 'triangle', steps: P16([0, 3, 6, 8, 11, 14]), oct: 2, len: 2.4, vol: 0.05, cut: 3600, echo: 3 },
+      pad: { type: 'sawtooth', vol: 0.04, cut: 1100, attack: 1.2, iv: [0, 7, 11, 14] }, ping: { p: 0.05, oct: 3 } }; }
   class Music {
     constructor(ctx, out) {
       this.ctx = ctx; this.out = out; this.playing = false; this.step = 0; this.next = 0; this.timer = null;
