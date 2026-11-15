@@ -13,7 +13,7 @@
   const EVO = CC.EVO, U = CC.U, T3 = THREE, V = T3.Vector3;
   if (!EVO || !EVO.on || !EVO.addDyn || !CC.Rocket) return;
   const on4 = (g) => !!(g && g.evo && !g.evo.preview && EVO.stage && EVO.stage(g) === 4);
-  const R = 16, ROPEN = 26, rr = (a, b) => a + Math.random() * (b - a);
+  const R = 16, ROPEN = 34, rr = (a, b) => a + Math.random() * (b - a);
   const _a = new V(), _b = new V(), _c = new V(), _d = new V(), _q = new T3.Quaternion(), _q2 = new T3.Quaternion(), _m = new T3.Matrix4();
   const ss = (a, b, x) => { const t = U.clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
   const lam = (c, o) => new T3.MeshLambertMaterial(Object.assign({ color: c }, o || {}));
@@ -41,11 +41,12 @@
 
   // ============================== LE TUBE TRANSPARENT ==============================
   const tubeMat = () => new T3.ShaderMaterial({
-    uniforms: { uT: { value: 0 }, uC: { value: new T3.Color('#8fe6ff') }, uC2: { value: new T3.Color('#ffffff') }, uK: { value: 1 } },
+    uniforms: { uT: { value: 0 }, uZ: { value: null }, uLen: { value: 6000 }, uC2: { value: new T3.Color('#ffffff') }, uK: { value: 1 } },
     vertexShader: 'varying vec3 vN; varying vec3 vW; varying vec2 vUv; void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * viewMatrix * w; }',
     fragmentShader: [
-      'uniform float uT; uniform vec3 uC; uniform vec3 uC2; uniform float uK; varying vec3 vN; varying vec3 vW; varying vec2 vUv;',
+      'uniform float uT; uniform sampler2D uZ; uniform float uLen; uniform vec3 uC2; uniform float uK; varying vec3 vN; varying vec3 vW; varying vec2 vUv;',
       'void main(){',
+      '  vec4 zc = texture2D(uZ, vec2(clamp(vUv.x / uLen, 0.0, 1.0), 0.5)); vec3 uC = zc.rgb; float bo = zc.a;',   // la couleur de la zone ; bo = accelerateur
       '  vec3 Vd = normalize(cameraPosition - vW); float f = 1.0 - abs(dot(normalize(vN), Vd)); float fr = pow(f, 3.0);',   // bords du verre brillants (Fresnel) : on SENT la surface
       '  float s = vUv.x, a = vUv.y;',
       '  float gA = abs(fract(a * 24.0) - 0.5), gS = abs(fract(s / 9.0) - 0.5);',
@@ -53,8 +54,9 @@
       '  float pulse = exp(-pow((fract((s - uT * 75.0) / 150.0) - 0.5) * 16.0, 2.0));',   // une onde de lumiere qui file vers l avant
       '  float hl = exp(-pow((a - 0.18) * 38.0, 2.0)) * 0.55 + exp(-pow((a - 0.31) * 70.0, 2.0)) * 0.3;',   // reflet de la vitre (deux traits brillants)
       '  float fl = abs(a - 0.75); float stripe = (1.0 - smoothstep(0.008, 0.016, fl)) * step(0.45, fract(s / 12.0 - uT * 1.6));',   // bande jaune du plancher : on sait toujours ou est le bas
-      '  vec3 col = uC * (0.25 + fr * 1.5) + uC * grid * 0.7 + uC2 * (pulse * 0.6 + hl) + vec3(1.0, 0.78, 0.2) * stripe * 1.4;',
-      '  float al = 0.045 + fr * 0.55 + grid * 0.16 + pulse * 0.12 + hl * 0.45 + stripe * 0.85;',
+      '  float chev = bo * (1.0 - smoothstep(0.03, 0.09, abs(fract((s - uT * 150.0) / 9.0 + abs(fract(a * 6.0) - 0.5) * 0.7) - 0.5)));',   // accelerateur : des chevrons qui filent vers l avant
+      '  vec3 col = uC * (0.25 + fr * 1.5) + uC * grid * 0.7 + uC2 * (pulse * 0.6 + hl) + vec3(1.0, 0.78, 0.2) * stripe * 1.4 + vec3(1.0, 0.85, 0.35) * chev * 1.3;',
+      '  float al = 0.06 + fr * 0.55 + grid * 0.2 + pulse * 0.12 + hl * 0.45 + stripe * 0.85 + chev * 0.55;',
       '  gl_FragColor = vec4(col, min(1.0, al) * uK);',
       '}'].join('\n'),
     transparent: true, depthWrite: false, side: T3.DoubleSide, fog: false });
@@ -69,19 +71,20 @@
   }
   // un objet pose dans le repere de la voie a la distance s (x a droite, y en haut, z en avant)
   const frameQ = (F, out) => out.setFromRotationMatrix(_m.makeBasis(F.r, F.u, _d.copy(F.t).negate()));   // -Z de l'objet = l'avant de la voie
-  function placeAt(PA, o, s, x, y, zf) { const F = PA.fr(s); o.position.copy(F.p).addScaledVector(F.r, x || 0).addScaledVector(F.u, y || 0).addScaledVector(F.t, zf || 0); frameQ(F, o.quaternion); return o; }
+  const _PF = {};
+  function placeAt(PA, o, s, x, y, zf) { const F = PA.fr(s, _PF);o.position.copy(F.p).addScaledVector(F.r, x || 0).addScaledVector(F.u, y || 0).addScaledVector(F.t, zf || 0); frameQ(F, o.quaternion); return o; }
 
   function buildTube(PA, grp, sections) {
-    const M = tubeMat(); L.tubeMats.push(M);
+    const M = tubeMat(); L.tubeMats.push(M); M.uniforms.uZ.value = zoneTex(PA.len); M.uniforms.uLen.value = PA.len;
     const ringG = new T3.TorusGeometry(R + 0.12, 0.16, 6, 56), frameG = new T3.TorusGeometry(R + 0.5, 0.55, 8, 56), portG = new T3.TorusGeometry(R + 2.4, 1.3, 10, 64);
-    const ringM = bas('#9af0ff', { fog: false, transparent: true, opacity: 0.85 }), frameM = lam('#e8eef6', { emissive: '#3a4a5a' }), portM = bas('#7ad8ff', { fog: false });
+    const ringM = bas('#ffffff', { fog: false, transparent: true, opacity: 0.85 }), frameM = lam('#e8eef6', { emissive: '#3a4a5a' }), portM = bas('#7ad8ff', { fog: false });
     const lightM = bas('#fff2b0', { fog: false }), railM = bas('#7fe8ff', { fog: false, transparent: true, opacity: 0.9 });
     for (const [s0, s1] of sections) {
       const glass = new T3.Mesh(sweep(PA, s0, s1, R, 48, 3), M); glass.renderOrder = 5; glass.frustumCulled = false; grp.add(glass);
       for (const a of [Math.PI * 0.25, Math.PI * 0.75, Math.PI * 1.25, Math.PI * 1.75]) { const g = sweepOff(PA, s0, s1, a); grp.add(new T3.Mesh(g, railM)); }
       const nR = Math.floor((s1 - s0) / 12), rings = new T3.InstancedMesh(ringG, ringM, nR), nF = Math.floor((s1 - s0) / 96) + 1, frames = new T3.InstancedMesh(frameG, frameM, nF), lights = new T3.InstancedMesh(new T3.SphereGeometry(0.75, 8, 6), lightM, nF * 4);
       const o = new T3.Object3D();
-      for (let k = 0; k < nR; k++) { placeAt(PA, o, s0 + 6 + k * 12); o.updateMatrix(); rings.setMatrixAt(k, o.matrix); }
+      for (let k = 0; k < nR; k++) { placeAt(PA, o, s0 + 6 + k * 12); o.updateMatrix(); rings.setMatrixAt(k, o.matrix); rings.setColorAt(k, zoneCol(s0 + 6 + k * 12).lerp(new T3.Color('#ffffff'), 0.25)); }
       for (let k = 0; k < nF; k++) { const s = s0 + k * 96; placeAt(PA, o, s); o.updateMatrix(); frames.setMatrixAt(k, o.matrix); const F = PA.fr(s);
         for (let j = 0; j < 4; j++) { const a = j * Math.PI / 2 + Math.PI / 4; o.position.copy(F.p).addScaledVector(F.r, Math.cos(a) * (R + 0.9)).addScaledVector(F.u, Math.sin(a) * (R + 0.9)); o.quaternion.identity(); o.updateMatrix(); lights.setMatrixAt(k * 4 + j, o.matrix); } }
       for (const im of [rings, frames, lights]) { im.frustumCulled = false; grp.add(im); }
@@ -150,8 +153,12 @@
   }
   function launchPad(g, PA, grp) {
     const O = PA.O, F0 = PA.F0, R0 = PA.R0, root = new T3.Group(); root.position.copy(O); root.quaternion.setFromRotationMatrix(_m.makeBasis(R0, new V(0, 1, 0), _d.copy(F0).negate())); grp.add(root);   // repere local : x droite, y haut, -z avant
-    const gy = (() => { try { return U.clamp(g.endlessRun.T.base(0) - O.y, -6, 0) - 0.15; } catch (e) { return -0.8; } })();   // le vrai sol (pas le toit du hangar du menu)
+    const gy = L.groundY - 0.15 - O.y;   // le vrai sol (pas le toit du hangar du menu)
     root.position.y += gy; const P = [], OR = '#d8501c', GR = '#8a929c', DK = '#3a4048', WH = '#eef0f2', CO = '#bdb6aa';
+    // la TABLE DE LANCEMENT sur l'octogone : la fusee y est posee debout (menu), quatre griffes de maintien, mat ombilical
+    { const top = O.y - L.groundY + 0.15 - L.rkL * 0.5; P.push({ s: [9, top - 4, 9], c: '#5a6068', p: [0, 4 + (top - 4) / 2, 0] }, { s: [9.6, 0.4, 9.6], c: '#ffd23a', p: [0, top - 0.2, 0] }, { s: [3.4, 0.5, 3.4], c: '#2a2e34', p: [0, top + 0.05, 0] });
+      for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) P.push({ s: [0.3, 0.7, 0.3], c: '#c8352a', p: [x * 1.1, top + 0.35, z * 1.1] }, { s: [0.5, 0.18, 0.2], c: '#c8352a', p: [x * 0.85, top + 0.62, z * 1.1] });
+      P.push({ s: [0.8, top + 4, 0.8], c: GR, p: [-6, (top + 4) / 2, 0] }, { s: [5, 0.4, 0.4], c: WH, p: [-3.6, top + 3, 0] }); }
     // la dalle du pas de tir, l'octogone, la fosse a flammes et ses deflecteurs
     P.push({ s: [220, 1.2, 220], c: '#9a948a', p: [0, -0.6, 0] }, { cyl: [34, 36, 4, 8], c: CO, p: [0, 2, 0] }, { s: [12, 4.2, 80], c: '#2a2622', p: [0, 2.1, 0] });
     for (const sz of [-1, 1]) P.push({ s: [11.6, 1, 22], c: '#6a6058', p: [0, 1.4, sz * 14], r: [sz * 0.35, 0, 0] });
@@ -227,15 +234,181 @@
       EVO.addDyn(st, (t, dt) => { ring.rotation.z += 0.12 * dt; arms.rotation.z += 0.55 * dt; }, cols, { near: 1e5, span: 120 }); }
   }
 
+  // ============================== LE PROGRAMME DU NIVEAU : une zone = une couleur de tube et un genre d'epreuve ==============================
+  // [debut, fin, cle, titre, couleur du tube, genre] ; genre : tube (obstacles) / boost (accelerateur) / open (a decouvert : asteroides, drones)
+  const ZN = [[0, 140, 'lpad', 'LE PAS DE TIR', '#8fe6ff', 'pad'], [140, 560, 'lmontee', 'LA MONTEE', '#8fe6ff', 'tube'], [560, 980, 'laccel', 'ACCELERATEUR', '#ffc23a', 'boost'],
+    [980, 1530, 'lvento', 'LES VENTILOS', '#ff5a4a', 'tube'], [1530, 2230, 'lorbite', 'L ORBITE', '#8fe6ff', 'open'], [2230, 2640, 'llaser', 'LES LASERS', '#b46aff', 'tube'],
+    [2640, 3400, 'lvrille', 'LE TIRE-BOUCHON', '#ff5ad8', 'tube'], [3400, 3560, 'lturbo', 'TURBO', '#ffc23a', 'boost'], [3560, 4140, 'lstation', 'LA STATION', '#8fe6ff', 'open'],
+    [4140, 4900, 'lpiston', 'LES PISTONS', '#4aff8a', 'tube'], [4900, 5450, 'lsprint', 'LE SPRINT', '#ffc23a', 'boost'], [5450, 1e9, 'llune', 'VERS LA LUNE', '#8fe6ff', 'open']];
+  const zoneAt = (s) => { for (let i = ZN.length - 1; i >= 0; i--) if (s >= ZN[i][0]) return i; return 0; };
+  const GAPS = [[1530, 2230], [3560, 4140], [5450, 1e9]];
+  // la couleur du tube le long de la voie (une texture de 1024 x 1) ; alpha = accelerateur (chevrons qui filent)
+  function zoneTex(len) {
+    const W = 1024, d = new Uint8Array(W * 4), c = new T3.Color(), c2 = new T3.Color();
+    for (let i = 0; i < W; i++) { const s = (i + 0.5) / W * len, zi = zoneAt(s), Z = ZN[zi]; c.set(Z[4]); let bo = Z[5] === 'boost' ? 1 : 0;
+      if (zi > 0) { const k = U.clamp((s - Z[0]) / 30, 0, 1); if (k < 1) { const P = ZN[zi - 1]; c2.set(P[4]).lerp(c, k); c.copy(c2); bo = (P[5] === 'boost' ? 1 : 0) * (1 - k) + bo * k; } }
+      d[i * 4] = c.r * 255; d[i * 4 + 1] = c.g * 255; d[i * 4 + 2] = c.b * 255; d[i * 4 + 3] = bo * 255; }
+    const t = new T3.DataTexture(d, W, 1, T3.RGBAFormat); t.magFilter = T3.LinearFilter; t.minFilter = T3.LinearFilter; t.needsUpdate = true; return t;
+  }
+  const zoneCol = (s) => new T3.Color(ZN[zoneAt(s)][4]);
+  let HZ = null;
+  const hazTex = () => { if (HZ) return HZ; const c = document.createElement('canvas'); c.width = 128; c.height = 128; const x = c.getContext('2d'); x.fillStyle = '#ffd21e'; x.fillRect(0, 0, 128, 128); x.fillStyle = '#16181c'; for (let k = -4; k < 8; k++) { x.beginPath(); x.moveTo(k * 32, 128); x.lineTo(k * 32 + 16, 128); x.lineTo(k * 32 + 144, 0); x.lineTo(k * 32 + 128, 0); x.closePath(); x.fill(); } HZ = new T3.CanvasTexture(c); HZ.wrapS = HZ.wrapT = T3.RepeatWrapping; return HZ; };
+  const glowS = (size, col, op) => { const s = EVO.boss2Kit ? EVO.boss2Kit.glow(size, col) : new T3.Object3D(); if (s.material) s.material.opacity = op === undefined ? 1 : op; return s; };
+
+  // ---- les obstacles : chacun est teste dans le repere de la voie (x, y dans la section, a la distance s) : exact et sans surprise ----
+  function obstacles(g, PA, grp) {
+    const OB = L.O = [], BX = new T3.BoxGeometry(1, 1, 1), M = { red: lam('#e8322a', { emissive: '#5a0a06' }), white: lam('#f2f2f2', { emissive: '#3a3a3a' }), dark: lam('#2a2e36'), steel: lam('#8a949e'),
+      haz: new T3.MeshLambertMaterial({ map: hazTex(), side: T3.DoubleSide, emissive: '#3a3000' }), yel: bas('#ffe23a', { fog: false }), grn: bas('#5aff7a', { fog: false }), laser: bas('#ff2a1a', { fog: false }),
+      lglow: bas('#ff3a2a', { fog: false, transparent: true, opacity: 0.28, blending: T3.AdditiveBlending, depthWrite: false }), pis: lam('#2fbf5a', { emissive: '#0a3a18' }), mine: lam('#5a1010', { emissive: '#200404' }) };
+    const holder = (s) => { const h = placeAt(PA, new T3.Group(), s); grp.add(h); return h; };
+    // VENTILO : n pales qui tournent en travers du tube ; on passe entre les pales
+    const fan = (s, n, w, hw, ph) => { const h = holder(s), rot = new T3.Group(); h.add(rot); const len = R - 3.4 - 0.4;
+      for (let k = 0; k < n; k++) { const piv = new T3.Group(); piv.rotation.z = k / n * Math.PI * 2; rot.add(piv);
+        for (let j = 0; j < 4; j++) { const sg = new T3.Mesh(BX, j % 2 ? M.white : M.red); sg.scale.set(len / 4, hw * 2, 1.2); sg.position.x = 3.4 + len / 8 + j * len / 4; sg.rotation.x = 0.25; piv.add(sg); }
+        const tip = new T3.Mesh(new T3.SphereGeometry(0.55, 8, 6), M.yel); tip.position.x = R - 0.8; piv.add(tip); }
+      const hub = new T3.Mesh(new T3.CylinderGeometry(3.4, 3.4, 2.4, 18), M.red); hub.rotation.x = Math.PI / 2; rot.add(hub); const cap = new T3.Mesh(new T3.SphereGeometry(1.6, 12, 8), M.white); cap.position.z = 1.4; rot.add(cap);
+      const frame = new T3.Mesh(new T3.TorusGeometry(R - 0.2, 0.7, 8, 48), M.dark); h.add(frame); for (let j = 0; j < 8; j++) { const l = new T3.Mesh(new T3.SphereGeometry(0.5, 8, 6), M.laser), a = j / 8 * Math.PI * 2; l.position.set(Math.cos(a) * (R - 1), Math.sin(a) * (R - 1), 0.6); h.add(l); }
+      OB.push({ s, th: 1.5, kind: 'fan', hit: (x, y, t) => { const r = Math.hypot(x, y); if (r < 4.3) return true; const a0 = w * t + ph; for (let k = 0; k < n; k++) { const a = a0 + k / n * 6.2832, al = x * Math.cos(a) + y * Math.sin(a), pp = -x * Math.sin(a) + y * Math.cos(a); if (al > 0 && Math.abs(pp) < hw + 0.9) return true; } return false; }, upd: (t) => { rot.rotation.z = w * t + ph; } }); };
+    // VOLET : un secteur plein (centre c, ouverture sp) ; on passe par le cote ouvert, balise en vert
+    const shutter = (s, c, sp, w) => { const h = holder(s), rot = new T3.Group(); h.add(rot);
+      const pl = new T3.Mesh(new T3.CircleGeometry(R - 0.3, 48, c - sp / 2, sp), M.haz); rot.add(pl);
+      for (const e of [c - sp / 2, c + sp / 2]) { const b = new T3.Mesh(BX, M.yel); b.scale.set(R - 0.3, 0.5, 0.6); b.position.set(Math.cos(e) * (R - 0.3) / 2, Math.sin(e) * (R - 0.3) / 2, 0); b.rotation.z = e; rot.add(b); }
+      for (let j = 0; j < 7; j++) { const a = c + sp / 2 + (j + 0.5) / 7 * (6.2832 - sp), l = new T3.Mesh(new T3.SphereGeometry(0.55, 8, 6), M.grn); l.position.set(Math.cos(a) * (R - 1.2), Math.sin(a) * (R - 1.2), 0); rot.add(l); }
+      OB.push({ s, th: 1.4, kind: 'shutter', c, w, hit: (x, y, t) => { const r = Math.hypot(x, y); if (r < 1.6) return true; let d = Math.atan2(y, x) - (c + w * t); d = Math.atan2(Math.sin(d), Math.cos(d)); return Math.abs(d) < sp / 2 + Math.asin(Math.min(1, 0.9 / r)); }, upd: (t) => { rot.rotation.z = w * t; } }); };
+    // LASER : une barre rouge qui balaie le tube (h = monte et descend, v = gauche droite, rot = tourne autour du centre)
+    const laser = (s, mode, amp, w, ph) => { const h = holder(s), bar = new T3.Group(); h.add(bar); const core = new T3.Mesh(new T3.CylinderGeometry(0.22, 0.22, 2 * R, 8), M.laser), gl = new T3.Mesh(new T3.CylinderGeometry(0.9, 0.9, 2 * R, 10, 1, true), M.lglow); bar.add(core); bar.add(gl);
+      const em = []; for (const sd of [-1, 1]) { const e = new T3.Mesh(BX, M.dark); e.scale.set(1.6, 1.6, 2.4); e.position.y = sd * (R - 0.4); bar.add(e); em.push(e); }
+      if (mode === 'h') bar.rotation.z = Math.PI / 2;
+      const pos = (t) => amp * Math.sin(w * t + ph);
+      OB.push({ s, th: 1.2, kind: 'laser', hit: (x, y, t) => { if (mode === 'h') return Math.abs(y - pos(t)) < 1.15; if (mode === 'v') return Math.abs(x - pos(t)) < 1.15; const a = w * t + ph + Math.PI / 2; return Math.abs(-x * Math.sin(a) + y * Math.cos(a)) < 1.15; },
+        upd: (t) => { if (mode === 'rot') { bar.rotation.z = w * t + ph; return; } const p = pos(t), ch = Math.sqrt(Math.max(1, R * R - p * p)); if (mode === 'h') bar.position.y = p; else bar.position.x = p; core.scale.y = gl.scale.y = ch / R; for (const e of em) e.position.y = Math.sign(e.position.y) * (ch - 0.4); } }); };
+    // PISTON : un bloc qui sort de la paroi et y rentre (angle a, profondeur entre d0 et d1)
+    const piston = (s, a, d0, d1, w, ph) => { const h = holder(s), rt = new T3.Group(); rt.rotation.z = a; h.add(rt); const blk = new T3.Mesh(BX, M.pis), face = new T3.Mesh(BX, M.haz); rt.add(blk); rt.add(face);
+      const dep = (t) => d0 + (d1 - d0) * (0.5 + 0.5 * Math.sin(w * t + ph));
+      OB.push({ s, th: 3.4, kind: 'piston', hit: (x, y, t) => { const al = x * Math.cos(a) + y * Math.sin(a), pp = -x * Math.sin(a) + y * Math.cos(a); return al > R - dep(t) - 0.9 && Math.abs(pp) < 4.9; },
+        upd: (t) => { const d = dep(t); blk.scale.set(d, 8, 5); blk.position.x = R - d / 2; face.scale.set(0.4, 8.2, 5.2); face.position.x = R - d - 0.2; } }); };
+    // MINE : une boule a pointes qui clignote
+    const mine = (s, x, y, b) => { const h = holder(s), m = new T3.Group(); h.add(m); m.add(new T3.Mesh(new T3.SphereGeometry(1.5, 14, 10), M.mine)); for (let k = 0; k < 10; k++) { const sp = new T3.Mesh(new T3.ConeGeometry(0.35, 1.4, 6), M.steel), v = new V(rr(-1, 1), rr(-1, 1), rr(-1, 1)).normalize(); sp.position.copy(v).multiplyScalar(1.7); sp.quaternion.setFromUnitVectors(new V(0, 1, 0), v); m.add(sp); }
+      const lt = new T3.Mesh(new T3.SphereGeometry(0.5, 8, 6), M.laser); lt.position.z = 1.4; m.add(lt); const ph = rr(0, 6);
+      const yy = (t) => y + b * Math.sin(t * 1.3 + ph);
+      OB.push({ s, th: 2.5, kind: 'mine', hit: (px, py, t) => Math.hypot(px - x, py - yy(t)) < 2.5, upd: (t) => { m.position.set(x, yy(t), 0); m.rotation.y = t * 0.8; lt.visible = Math.sin(t * 7 + ph) > 0; } }); };
+    // ASTEROIDES (a decouvert) : quatre formes, dessinees en lots (un appel de dessin par forme)
+    const AV = []; for (let v = 0; v < 4; v++) { const gm = new T3.IcosahedronGeometry(1, 1), P = gm.attributes.position, q = new V(); for (let i = 0; i < P.count; i++) { q.fromBufferAttribute(P, i); const n = 1 + 0.22 * Math.sin(q.x * 3.1 + v * 2) * Math.cos(q.y * 2.7 + v) + 0.12 * Math.sin(q.z * 5.3 + v * 3); q.multiplyScalar(n); P.setXYZ(i, q.x, q.y * (0.8 + v * 0.06), q.z); } gm.computeVertexNormals(); AV.push({ gm, list: [] }); }
+    const ast = (s, x, y, rad, ax, w) => { const A = { s, x, y, rad, ax, w: w || rr(0.3, 0.8), ph: rr(0, 6), rs: new V(rr(-1, 1), rr(-1, 1), rr(-1, 1)).normalize(), rw: rr(0.2, 0.9) }; AV[Math.floor(Math.random() * 4)].list.push(A);
+      const xx = (t) => A.x + A.ax * Math.sin(A.w * t + A.ph); A.xx = xx;
+      OB.push({ s, th: rad * 0.8 + 0.9, kind: 'ast', hit: (px, py, t) => Math.hypot(px - xx(t), py - y) < rad * 0.82 + 0.9 }); };
+    // ---- le programme ----
+    const H = Math.PI / 2;
+    // LA MONTEE : quatre volets fixes (gauche, droite, haut, bas) : on apprend a se decaler
+    [[270, Math.PI], [360, 0], [450, H], [530, -H]].forEach(([s, c]) => shutter(s, c, 3.6, 0));
+    // LES VENTILOS
+    [[1050, 3, 0.9, 2.6], [1140, 3, -1.1, 2.6], [1230, 4, 0.8, 2.2], [1320, 2, 1.4, 2.8], [1410, 3, -1.3, 2.6], [1490, 4, 1.0, 2.2]].forEach(([s, n, w, hw], i) => fan(s, n, w, hw, i * 0.9));
+    // LES LASERS
+    laser(2300, 'h', 11, 1.6, 0); laser(2370, 'v', 11, -1.8, 1); laser(2440, 'rot', 0, 1.0, 0); laser(2510, 'h', 10, 1.4, 0); laser(2512, 'v', 10, 1.1, 2); laser(2580, 'rot', 0, -0.8, 0); laser(2581, 'rot', 0, -0.8, Math.PI / 2); laser(2620, 'h', 12, 2.2, 1);
+    // LE TIRE-BOUCHON : mines et volets qui tournent
+    for (let s = 2690; s < 3380; s += 52) { if (Math.abs(s - 2850) < 20 || Math.abs(s - 3050) < 20 || Math.abs(s - 3250) < 20) continue; const n = s > 3000 ? 2 : 1; for (let k = 0; k < n; k++) { const a = rr(0, 6.28), r = rr(0, 10); mine(s + k * 6, Math.cos(a) * r, Math.sin(a) * r, rr(0, 2.5)); } }
+    shutter(2850, 0, 2.6, 0.6); shutter(3050, H, 2.9, -0.7); shutter(3250, Math.PI, 3.2, 0.8);
+    // LES PISTONS : des portes de 1, 2 ou 3 blocs (le centre reste toujours libre)
+    { let k = 0; for (let s = 4210; s < 4880; s += 72, k++) { const a0 = rr(0, 6.28), ph = rr(0, 6), w = rr(1.3, 2.0), n = 1 + (k % 3); for (let j = 0; j < n; j++) piston(s, a0 + j * 6.2832 / n, 3, n === 1 ? 14 : 11.5, w, ph + j * 1.2); } }
+    // LE SPRINT : deux ventilos lents et deux lasers, a pleine vitesse
+    fan(5020, 2, 0.6, 2.4, 0); laser(5140, 'h', 10, 1.2, 0); fan(5260, 3, -0.7, 2.2, 1); laser(5380, 'v', 11, 1.3, 2);
+    // A DECOUVERT : champs d'asteroides (on evite les satellites, la station et les drones), plus denses vers la Lune
+    const keep = [[1705, 30], [1880, 30], [2055, 30], [3850, 46]];
+    for (const [a, b, dn] of [[1560, 2210, 13], [3590, 4120, 15], [5480, PA.len - 90, 9]]) for (let s = a; s < b; s += dn * rr(0.7, 1.3)) { if (keep.some(([c, w]) => Math.abs(s - c) < w)) continue; const an = rr(0, 6.28), r = rr(0, 30), rad = rr(2.2, s > 5400 ? 6.5 : 5.5); ast(s, Math.cos(an) * r, Math.sin(an) * r, rad, Math.random() < 0.4 ? rr(3, 9) : 0); }
+    for (let s = 5500; s < PA.len - 100; s += 90) mine(s, rr(-14, 14), rr(-14, 14), 3);
+    for (const A of AV) { const im = new T3.InstancedMesh(A.gm, lam('#4e4842', { flatShading: true, emissive: '#100e0c' }), Math.max(1, A.list.length)); im.count = A.list.length; im.frustumCulled = false; grp.add(im); A.im = im; }
+    L.AV = AV; L.OB = OB;
+    // les anneaux d'acceleration (passer dedans = BOOST)
+    L.boostR = []; const RG = new T3.TorusGeometry(4.4, 0.45, 8, 32), RM = bas('#ffc23a', { fog: false }), AM = bas('#fff2a0', { fog: false });
+    for (const [s, x, y] of [[650, 0, 6], [760, -7, -3], [870, 7, 2], [960, 0, -6], [3440, 0, 0], [3510, 6, 5], [4960, -6, 0], [5080, 6, 4], [5200, 0, -7], [5320, -5, 6]]) { const h = holder(s), m = new T3.Group(); m.position.set(x, y, 0); h.add(m); m.add(new T3.Mesh(RG, RM)); m.add(glowS(14, '#ffb020', 0.5)); for (let j = 0; j < 4; j++) { const c = new T3.Mesh(new T3.ConeGeometry(0.7, 1.6, 4), AM), a = j / 4 * Math.PI * 2 + 0.785; c.position.set(Math.cos(a) * 2.2, Math.sin(a) * 2.2, 0); c.rotation.x = -Math.PI / 2; m.add(c); } L.boostR.push({ s, x, y, m, done: false }); }
+    // l'arche d'ARRIVEE
+    { const s = PA.len - 70, h = holder(s), n = 28, im = new T3.InstancedMesh(new T3.BoxGeometry(4.4, 2.2, 2.2), lam('#ffffff', { emissive: '#444444' }), n * 2), o = new T3.Object3D(), c = new T3.Color();
+      for (let i = 0; i < n * 2; i++) { const a = (i % n) / n * Math.PI * 2, rr2 = 26 + (i >= n ? 2.2 : 0); o.position.set(Math.cos(a) * rr2, Math.sin(a) * rr2, 0); o.rotation.set(0, 0, a + Math.PI / 2); o.updateMatrix(); im.setMatrixAt(i, o.matrix); im.setColorAt(i, c.set(((i % n) + (i >= n ? 1 : 0)) % 2 ? '#16181c' : '#ffffff')); }
+      h.add(im); const cv = document.createElement('canvas'); cv.width = 512; cv.height = 128; const x = cv.getContext('2d'); x.fillStyle = '#ffd21e'; x.font = '900 96px Arial Black, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('ARRIVEE', 256, 66);
+      const sp = new T3.Mesh(new T3.PlaneGeometry(36, 9), new T3.MeshBasicMaterial({ map: new T3.CanvasTexture(cv), transparent: true, fog: false, side: T3.DoubleSide })); sp.position.y = 34; h.add(sp); h.add(glowS(120, '#ffd27a', 0.35)); }
+  }
+
+  // ---- les ecrous a ramasser : des files qui montrent le bon chemin ----
+  function nuts(PA, grp) {
+    const S = [], X = [], Y = [], add = (s, x, y) => { if (L.OB.some((o) => o.kind !== 'ast' && Math.abs(o.s - s) < o.th + 3)) return; S.push(s); X.push(x); Y.push(y); };
+    const line = (s0, s1, fx, fy, st) => { for (let s = s0; s <= s1; s += st || 6) add(s, fx(s), fy(s)); };
+    [[270, Math.PI], [360, 0], [450, H2], [530, -H2]].forEach(([s, c]) => line(s - 40, s + 24, () => -Math.cos(c) * 9, () => -Math.sin(c) * 9));
+    line(590, 970, (s) => Math.cos(s * 0.03) * 7, (s) => Math.sin(s * 0.03) * 7, 5);
+    for (let s = 1050; s < 1500; s += 90) line(s + 14, s + 70, (q) => Math.cos(q * 0.05) * 9, (q) => Math.sin(q * 0.05) * 9, 6);
+    for (let s = 2240; s < 2640; s += 8) add(s, 0, 0);
+    line(2660, 3390, (s) => Math.cos(s * 0.04) * 11, (s) => Math.sin(s * 0.04) * 11, 7);
+    for (const b of L.boostR) line(b.s - 30, b.s + 30, () => b.x, () => b.y, 6);
+    for (let s = 4180; s < 4890; s += 7) add(s, 0, 0);
+    for (const d of L.sent) line(d.s - 90, d.s - 12, (q) => d.x * (q - d.s + 90) / 78, (q) => d.y * (q - d.s + 90) / 78, 7);
+    const n = S.length, ord = S.map((s, i) => i).sort((a, b) => S[a] - S[b]);
+    const N = L.nut = { n, s: new Float32Array(n), x: new Float32Array(n), y: new Float32Array(n), p: new Float32Array(n * 3), alive: new Uint8Array(n).fill(1), i0: 0 };
+    const im = new T3.InstancedMesh(new T3.CylinderGeometry(0.85, 0.85, 0.34, 6), lam('#ffc820', { emissive: '#7a4a00' }), Math.max(1, n)), o = new T3.Object3D();
+    ord.forEach((j, i) => { N.s[i] = S[j]; N.x[i] = X[j]; N.y[i] = Y[j]; const F = PA.fr(S[j]); _a.copy(F.p).addScaledVector(F.r, X[j]).addScaledVector(F.u, Y[j]); N.p[i * 3] = _a.x; N.p[i * 3 + 1] = _a.y; N.p[i * 3 + 2] = _a.z; o.position.copy(_a); o.rotation.set(Math.PI / 2, 0, 0); o.updateMatrix(); im.setMatrixAt(i, o.matrix); });
+    im.frustumCulled = false; grp.add(im); N.im = im;
+  }
+  const H2 = Math.PI / 2;
+
+  // ---- les ennemis : sentinelles (a percuter : elles explosent) et chasseurs (ils filent devant et tirent) ----
+  function droneMesh(big) {
+    const g = new T3.Group(), body = new T3.Mesh(new T3.SphereGeometry(big ? 2.2 : 1.5, 16, 12), lam('#2a2e36', { emissive: '#0c0e12' })); body.scale.y = 0.62; g.add(body);
+    const eye = new T3.Mesh(new T3.SphereGeometry(big ? 0.95 : 0.7, 12, 8), bas('#ff2a1a', { fog: false })); eye.position.z = big ? 1.7 : 1.2; g.add(eye); { const gw = glowS(big ? 7 : 5, '#ff3020', 0.8); gw.position.copy(eye.position); g.add(gw); }
+    const lt = []; for (let k = 0; k < 4; k++) { const a = k / 4 * Math.PI * 2 + 0.785, arm = new T3.Mesh(new T3.BoxGeometry(big ? 3.2 : 2.4, 0.3, 0.5), lam('#5a606a')); arm.position.set(Math.cos(a) * (big ? 2.4 : 1.8), Math.sin(a) * (big ? 1.6 : 1.2), 0); arm.rotation.z = a; g.add(arm);
+      const l = new T3.Mesh(new T3.SphereGeometry(0.35, 8, 6), bas('#ff5a3a', { fog: false })); l.position.set(Math.cos(a) * (big ? 4 : 3), Math.sin(a) * (big ? 2.6 : 2), 0); g.add(l); lt.push(l); }
+    if (big) { const tg = new T3.Mesh(new T3.TorusGeometry(4.2, 0.2, 6, 40), bas('#ff3a2a', { fog: false })); tg.position.z = 0.5; g.add(tg); for (let k = 0; k < 4; k++) { const t2 = new T3.Mesh(new T3.BoxGeometry(0.3, 1.6, 0.2), bas('#ff3a2a', { fog: false })), a = k / 4 * Math.PI * 2; t2.position.set(Math.cos(a) * 4.2, Math.sin(a) * 4.2, 0.5); t2.rotation.z = a + Math.PI / 2; g.add(t2); } g.userData.tg = tg; }
+    g.userData.lt = lt; return g;
+  }
+  function enemies(g, PA, grp) {
+    L.sent = []; L.chase = []; L.bul = [];
+    for (const s of [1620, 1790, 1970, 2150, 3640, 3760, 3990, 4090, 5560, 5760, 5950]) { const a = rr(0, 6.28), r = rr(6, 16), m = droneMesh(true); grp.add(m); L.sent.push({ s, x: Math.cos(a) * r, y: Math.sin(a) * r, m, alive: true, fT: rr(0.5, 1.5), ph: rr(0, 6) }); }
+    for (const [a, b, n] of [[1600, 2200, 2], [3600, 4110, 3], [5500, PA.len - 120, 2]]) for (let k = 0; k < n; k++) { const m = droneMesh(false); m.visible = false; grp.add(m); L.chase.push({ a, b, k, n, m, ds: 260, fT: 1 + k * 0.6, ph: k * 2.1, on: false }); }
+    const bg = new T3.SphereGeometry(0.6, 10, 8), bm = bas('#ff4a2a', { fog: false });
+    for (let i = 0; i < 40; i++) { const m = new T3.Group(); m.add(new T3.Mesh(bg, bm)); m.add(glowS(4.2, '#ff3a1a', 0.9)); m.visible = false; grp.add(m); L.bul.push({ m, on: false, s: 0, x: 0, y: 0, vs: 0, vx: 0, vy: 0, t: 0 }); }
+  }
+  const fire = (g, s, x, y) => { const b = L.bul.find((q) => !q.on); if (!b) return; const vs = -26, tau = Math.max(0.5, (s - L.s) / Math.max(20, L.v - vs)); Object.assign(b, { on: true, s, x, y, vs, vx: (L.x - x) / tau, vy: (L.y - y) / tau, t: 0 }); b.m.visible = true; g.audio.play('heliFire'); };
+  // le jeu de la zone : tirs, sentinelles percutees, anneaux de boost, ecrous ; appele par le pilotage, une fois par image de vol
+  function play(g, rk, dt, s0) {
+    const PA = L.PA, run = g.endlessRun, t = L.t;
+    // sentinelles : elles tirent quand on approche ; on les percute = elles explosent
+    for (const d of L.sent) { if (!d.alive) continue; const ds = d.s - L.s;
+      if (ds > 40 && ds < 200) { d.fT -= dt; if (d.fT <= 0) { d.fT = 1.6; fire(g, d.s, d.x, d.y); } }
+      if (d.s >= s0 - 2 && d.s <= L.s + 2.5 && Math.hypot(L.x - d.x, L.y - d.y) < 4.2) { d.alive = false; d.m.visible = false; const p = d.m.position.clone(); g.effects.explosion(p, null, false, 'orange'); g.audio.play('target'); g.rig.shake = Math.max(g.rig.shake, 0.7); g.flash = 0.2; g.flashColor = '#ffb070';
+        const v = run && run.addBonus ? Math.round(run.addBonus(150)) : 150; if (g.feed) g.feed('DRONE DETRUIT  +' + v, '#ff9a5a'); (g.killPops = g.killPops || []).push({ p: p.clone(), t0: performance.now(), txt: 'BOUM !' }); } }
+    // chasseurs : ils arrivent de face, se placent devant, tirent, puis repartent
+    for (const c of L.chase) { const on = L.s > c.a && L.s < c.b; if (on && !c.on) { c.on = true; c.ds = 260; c.m.visible = true; if (c.k === 0) { if (CC.L1) CC.L1.msg(g, 'CHASSEURS EN APPROCHE !', 2, '#ff6a5a'); g.audio.play('alarm'); } }
+      if (!c.on) continue; const want = on ? 46 + c.k * 12 + 6 * Math.sin(t * 0.7 + c.ph) : 420; c.ds += (want - c.ds) * Math.min(1, dt * (on ? 1.4 : 0.6));
+      c.x = Math.cos(t * 0.55 + c.ph) * (10 + 6 * Math.sin(t * 0.3 + c.k)); c.y = Math.sin(t * 0.7 + c.ph * 1.3) * 12;
+      if (on && c.ds < 90) { c.fT -= dt; if (c.fT <= 0) { c.fT = 1.5 + c.n * 0.25; fire(g, L.s + c.ds, c.x, c.y); } }
+      if (!on && c.ds > 400) { c.on = false; c.m.visible = false; } }
+    // les tirs : ils remontent la voie vers la fusee ; touche = on freine, ca secoue (pas mortel)
+    for (const b of L.bul) { if (!b.on) continue; b.t += dt; b.s += b.vs * dt; b.x += b.vx * dt; b.y += b.vy * dt; if (b.t > 4 || b.s < L.s - 20) { b.on = false; b.m.visible = false; continue; }
+      if (Math.abs(b.s - L.s) < 2.2 && Math.hypot(b.x - L.x, b.y - L.y) < 1.9 && L.inv <= 0) { b.on = false; b.m.visible = false; L.v *= 0.6; L.inv = 0.5; g.onRocketCrash('missile', rk.pos.clone(), null); } }
+    // anneaux d'acceleration
+    for (const B of L.boostR) { if (B.done || B.s < s0 - 1 || B.s > L.s + 1) continue; B.done = true; if (Math.hypot(L.x - B.x, L.y - B.y) < 5) { L.boostT = 2.6; g.audio.play('boostOn'); g.audio.play('whoosh'); if (g.feed) g.feed('BOOST !', '#ffc23a'); g.flash = 0.15; g.flashColor = '#ffe08a'; } }
+    // ecrous
+    const N = L.nut; if (N) { while (N.i0 < N.n && N.s[N.i0] < L.s - 6) N.i0++; for (let i = N.i0; i < N.n && N.s[i] < L.s + 4; i++) { if (!N.alive[i]) continue; if (Math.abs(N.s[i] - L.s) < 3.5 && Math.hypot(N.x[i] - L.x, N.y[i] - L.y) < 3.4) { N.alive[i] = 0; _a.set(N.p[i * 3], N.p[i * 3 + 1], N.p[i * 3 + 2]); g.onCollect('cell', _a.clone()); } } }
+  }
+  // l'animation de tout ce qui bouge (chaque image, meme au menu)
+  const _o4 = new T3.Object3D(), _ec = new T3.Color();
+  function animate(g) {
+    const PA = L.PA, t = L.t;
+    for (const o of L.OB) if (o.upd && Math.abs(o.s - L.s) < 700) o.upd(t);
+    for (const A of L.AV) { let i = 0; for (const a of A.list) { const F = PA.fr(a.s, _PF);_o4.position.copy(F.p).addScaledVector(F.r, a.xx(t)).addScaledVector(F.u, a.y); _o4.quaternion.setFromAxisAngle(a.rs, t * a.rw + a.ph); _o4.scale.setScalar(a.rad); _o4.updateMatrix(); A.im.setMatrixAt(i++, _o4.matrix); } A.im.instanceMatrix.needsUpdate = true; }
+    for (const d of L.sent) if (d.alive) { placeAt(PA, d.m, d.s, d.x, d.y + Math.sin(t * 1.4 + d.ph) * 0.8); d.m.rotateZ(Math.sin(t * 0.8 + d.ph) * 0.3); if (d.m.userData.tg) d.m.userData.tg.scale.setScalar(1 + 0.12 * Math.sin(t * 6)); for (const l of d.m.userData.lt) l.visible = Math.sin(t * 8 + d.ph) > 0; }
+    for (const c of L.chase) if (c.on) { placeAt(PA, c.m, L.s + c.ds, c.x, c.y); c.m.rotateZ(Math.sin(t * 1.2 + c.ph) * 0.5); }
+    for (const b of L.bul) if (b.on) placeAt(PA, b.m, b.s, b.x, b.y);
+    for (const B of L.boostR) B.m.rotation.z = t * 1.5;
+    const N = L.nut; if (N) { const im = N.im; for (let i = N.i0; i < N.n && N.s[i] < L.s + 260; i++) { if (N.alive[i]) _o4.position.set(N.p[i * 3], N.p[i * 3 + 1], N.p[i * 3 + 2]); else _o4.position.set(0, -1e5, 0); _o4.rotation.set(Math.PI / 2 + Math.sin(t * 2 + i) * 0.3, t * 3 + i, 0); _o4.scale.setScalar(N.alive[i] ? 1 : 0); _o4.updateMatrix(); im.setMatrixAt(i, _o4.matrix); } if (N.i0 > 0) { _o4.scale.setScalar(0); _o4.updateMatrix(); im.setMatrixAt(N.i0 - 1, _o4.matrix); } im.instanceMatrix.needsUpdate = true; }
+  }
+
   // ============================== LA FICHE DU NIVEAU 4 ==============================
   { const Dc = CC.Zones.defs && CC.Zones.defs.campagne; if (Dc) { Dc.scenes.lpad = { len: [800, 800], noDoor: true, noChaos: true, noDress: true, build() {} }; Dc.scenes.lvide = { len: [1000, 1000], noDoor: true, noChaos: true, noDress: true, grass: false, build() {} }; } }
-  const CH4 = [['LE PAS DE TIR', 0, 'lpad'], ['LA MONTEE', 160, 'lmontee'], ['LES NUAGES', 330, 'lnuages'], ['L ESPACE', 620, 'lespace'], ['L ORBITE', 1300, 'lorbite'], ['LE TIRE-BOUCHON', 2000, 'lvrille'], ['LA STATION', 2700, 'lstation']];
+  const CH4 = ZN.map((z) => [z[3], z[0], z[2]]);
   const _ld = EVO.levelDef;
   EVO.levelDef = (g) => {
     if (!(EVO.stage && EVO.stage(g) === 4) || g.evoPreview) return _ld(g);
     EVO.chapters = CH4.map((c, i) => ({ d: c[1], i, name: c[0], key: c[2] }));
-    if (EVO.SCENE_AUDIO) { EVO.SCENE_AUDIO.lpad = 'evoDawn'; EVO.SCENE_AUDIO.lmontee = 'sky'; EVO.SCENE_AUDIO.lnuages = 'sky'; for (const k of ['lespace', 'lorbite', 'lvrille', 'lstation']) EVO.SCENE_AUDIO[k] = 'espace'; }
-    return EVO.baseDef({ zone: 'campagne', len: 9000, scenes: ['lpad', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide'], order: new Array(90).fill('campagne'), theme: CC.LM.THEMES[0], seed: 4404, bossEnt: null });
+    if (EVO.SCENE_AUDIO) { EVO.SCENE_AUDIO.lpad = 'evoDawn'; EVO.SCENE_AUDIO.lmontee = 'sky'; EVO.SCENE_AUDIO.lnuages = 'sky'; for (const z of ZN.slice(2)) EVO.SCENE_AUDIO[z[2]] = 'espace'; }
+    return EVO.baseDef({ zone: 'campagne', len: 6150, scenes: ['lpad', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide'], order: new Array(90).fill('campagne'), theme: CC.LM.THEMES[0], seed: 4404, bossEnt: null });
   };
 
   // ============================== CONSTRUCTION, PILOTAGE, CAMERA ==============================
@@ -244,13 +417,16 @@
   function build(g) {
     const pad = g.pad, run = g.endlessRun, T = run.T, a = T.at(0, 0, 0), b = T.at(8, 0, 0), F0 = new V(b[0] - a[0], 0, b[2] - a[2]).normalize();
     const O = (pad && pad.origin ? pad.origin.clone() : new V(a[0], a[1] + 2, a[2]));
-    L = EVO.space = { tubeMats: [], beacons: [], t: 0, s: 0, x: 0, y: 0, v: 0, started: false, smokeT: 0, cam: null };
+    L = EVO.space = { tubeMats: [], beacons: [], t: 0, s: 0, x: 0, y: 0, v: 0, started: false, smokeT: 0, cam: null, inv: 0, boostT: 0, bk: 0, zi: 0 };
+    // la fusee part DEBOUT de la table de lancement : le depart de la voie = le centre de la fusee posee sur la table (6,6 m au-dessus du sol)
+    L.rkL = (EVO.rocketLen && EVO.rocketLen(g)) || 2.4; L.groundY = (() => { try { return U.clamp(T.base(0), O.y - 6, O.y); } catch (e) { return O.y - 0.8; } })(); O.y = L.groundY + 6.6 + L.rkL * 0.5;
     const PA = L.PA = buildPath(O, F0), grp = L.grp = new T3.Group(); g.scene.add(grp);
     const sV = PA.sOf([0, 905, 880]), sC = PA.sOf([-250, 820, 1940]), sE = PA.sOf([-300, 900, 2700]), sJ = PA.sOf([-310, 1130, 3180]);
-    L.gap1 = [sV + 140, sV + 420]; L.gap2 = [sE + 60, sE + 330];
-    L.tubeSecs = [[140, L.gap1[0]], [L.gap1[1], L.gap2[0]], [L.gap2[1], PA.len - 30]];
-    buildTube(PA, grp, L.tubeSecs); beacons(PA, grp, L.gap1[0], L.gap1[1]); beacons(PA, grp, L.gap2[0], L.gap2[1]);
+    L.gap1 = GAPS[0].slice(); L.gap2 = GAPS[1].slice(); L.gap3 = [GAPS[2][0], PA.len];
+    L.tubeSecs = [[140, L.gap1[0]], [L.gap1[1], L.gap2[0]], [L.gap2[1], L.gap3[0]]];
+    buildTube(PA, grp, L.tubeSecs); beacons(PA, grp, L.gap1[0], L.gap1[1]); beacons(PA, grp, L.gap2[0], L.gap2[1]); beacons(PA, grp, L.gap3[0], PA.len - 20);
     launchPad(g, PA, grp); cloudDeck(PA, grp); spaceStuff(PA, grp, L.gap1, L.gap2); buildSky(g);
+    obstacles(g, PA, grp); enemies(g, PA, grp); nuts(PA, grp);
     // poussiere d'espace : des points qui defilent pres de la fusee (on sent la vitesse dans le vide)
     { const n = 360, pos = new Float32Array(n * 3), geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(pos, 3)); const p = new T3.Points(geo, new T3.PointsMaterial({ color: '#cfe8ff', size: 0.5, transparent: true, opacity: 0, depthWrite: false, fog: false })); p.frustumCulled = false; g.scene.add(p); L.dust = p; L.dustInit = false; }
     L.far0 = g.camera.far;
@@ -266,37 +442,60 @@
     if (!L.started) { L.started = true; L.s = 0; L.x = 0; L.y = 0; L.v = Math.max(26, this.vel.length()); L.launchT = 0; const e = new T3.Euler().setFromQuaternion(inp.aimQ, 'YXZ'); L.yaw0 = e.y; L.pit0 = e.x; L.ry = 0; L.rp = 0; }
     // la commande : l'ecart de cap du joystick / des fleches depuis le depart = ou on veut aller dans le tube ; il revient doucement au centre
     { const e = new T3.Euler().setFromQuaternion(inp.aimQ, 'YXZ'); let dy = e.y - L.yaw0; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); L.ry = U.clamp(dy, -0.62, 0.62) * Math.exp(-dt * 0.9); L.rp = U.clamp(e.x - L.pit0, -0.62, 0.62) * Math.exp(-dt * 0.9); inp.setAim(L.yaw0 + L.ry, L.pit0 + L.rp); }
-    const F = PA.fr(L.s), alt = altOf(F.p), up = U.clamp(F.t.y, 0, 1), atmo = 1 - ss(500, 900, alt);
+    const F = PA.fr(L.s), alt = altOf(F.p), up = U.clamp(F.t.y, 0, 1), atmo = 1 - ss(500, 900, alt), s0 = L.s;
     this.fuel = this.fuelMax;   // PROTOTYPE : carburant illimite
-    const vMax = 44 + 10 * ss(500, 1000, alt);   // dans le vide on va un peu plus vite
-    L.v += ((this.throttle || this.freeBoost ? vMax : vMax * 0.7) - L.v) * Math.min(1, dt * 0.9) - 6 * up * atmo * dt;   // la pesanteur freine un peu la montee verticale
+    // la zone : titre a l'entree, accelerateur
+    const zi = zoneAt(L.s), Z = ZN[zi], boostZ = Z[5] === 'boost';
+    if (zi !== L.zi) { L.zi = zi; if (CC.L1) CC.L1.msg(g, Z[3] + (boostZ ? ' !' : ''), 2.2, Z[4]); if (boostZ) { g.audio.play('boostOn'); g.audio.play('whoosh'); } else if (Z[5] === 'open') g.audio.play('jetPass'); else g.audio.play('alarm'); }
+    if (L.boostT > 0) L.boostT -= dt; if (L.inv > 0) L.inv -= dt;
+    const vMax = L.boostT > 0 ? 96 : boostZ ? 80 : 47 + 9 * ss(500, 1000, alt);   // dans le vide on va un peu plus vite ; accelerateur et anneaux : on file
+    L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
+    L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.7) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)) - 6 * up * atmo * dt;   // la pesanteur freine un peu la montee verticale
     L.v = Math.max(24, L.v);
-    const vx = -L.v * Math.sin(L.ry) * 0.85, vy = L.v * Math.sin(L.rp) * 0.85; L.x += vx * dt; L.y += vy * dt; L.s += L.v * dt;
+    const vx = -L.v * Math.sin(L.ry) * 0.85, vy = L.v * Math.sin(L.rp) * 0.85, lat = Math.min(1, 52 / L.v); L.x += vx * lat * dt; L.y += vy * lat * dt; L.s += L.v * dt;   // a grande vitesse, le deplacement de cote reste le meme (pas de glissade incontrolable)
     // le tube retient la fusee (on glisse sur la paroi, etincelles) ; a decouvert, une limite douce plus large
     const lim = inTube(L.s) ? R - 2.2 : ROPEN - 2, rr2 = Math.hypot(L.x, L.y);
     if (rr2 > lim) { L.x *= lim / rr2; L.y *= lim / rr2; L.v *= 1 - dt * 0.6; if (inTube(L.s) && Math.random() < dt * 14) { const F2 = PA.fr(L.s); _a.copy(F2.p).addScaledVector(F2.r, L.x * 1.12).addScaledVector(F2.u, L.y * 1.12); g.effects.sparks.emit({ pos: _a.clone(), vel: new V(rr(-1, 1), rr(-1, 1), rr(-1, 1)).multiplyScalar(10), life: 0.4, s0: 0.3, s1: 0.4, s2: 0.1, cols: g.effects.pal.cyan, drag: 1, grav: 0, a: 1, fout: 0.5 }); if (Math.random() < 0.15) g.audio.play('clank'); } }
     const F2 = PA.fr(L.s); this.pos.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y);
-    this.vel.copy(F2.t).multiplyScalar(L.v).addScaledVector(F2.r, vx).addScaledVector(F2.u, vy); this.speed = this.vel.length(); this.fwd.copy(this.vel).normalize(); this.flightDist += L.v * dt;
+    this.vel.copy(F2.t).multiplyScalar(L.v).addScaledVector(F2.r, vx * lat).addScaledVector(F2.u, vy * lat); this.speed = this.vel.length(); this.fwd.copy(this.vel).normalize(); this.flightDist += L.v * dt;
     if (g.endlessRun) g.endlessRun.dist = Math.max(g.endlessRun.dist, L.s);
-    this.thrustK = 1; if (L.s > PA.len - 60 && !g.evoFinish && EVO.finishRun) { if (CC.L1) CC.L1.msg(g, 'FIN DU PROTOTYPE !', 2.4, '#ffe9a0'); EVO.finishRun(g); }
+    this.thrustK = 1;
+    // les obstacles du programme (teste dans la section du tube, sur tout le trajet de l'image : rien ne passe au travers)
+    if (L.inv <= 0 && L.OB) for (const o of L.OB) { if (o.s + o.th < s0 || o.s - o.th > L.s) continue; if (o.hit(L.x, L.y, L.t)) { g.onRocketCrash('wall', this.pos.clone(), F2.t.clone().negate()); if (this.active) { L.inv = 0.8; L.v *= 0.5; g.rig.shake = Math.max(g.rig.shake, 1); } break; } }
+    if (this.active && L.sent) play(g, this, dt, s0);
+    if (this.active && L.s > PA.len - 60 && !g.evoFinish && EVO.finishRun) { if (CC.L1) CC.L1.msg(g, 'ARRIVEE !  LA LUNE : BIENTOT', 2.6, '#ffe9a0'); EVO.finishRun(g); }
   };
 
+  // --- AU MENU (et pendant la charge) : la fusee debout sur la table de lancement, la tour de 150 m derriere elle ---
+  function menuView(g, rig, dt) {
+    const PA = L.PA, O = PA.O, R0 = PA.R0, F0 = PA.F0, cam = rig.cam, rk = g.rocket, A = g.evoAnim, Y = new V(0, 1, 0), Lw = L.rkL;
+    if (rk.mesh) { rk.mesh.visible = true; rk.mesh.position.copy(O); rk.mesh.quaternion.setFromRotationMatrix(_m.makeBasis(_a.copy(R0).negate(), _c.copy(F0).negate(), Y)); }
+    let p, look; const t = L.t;
+    if (A && A.kind === 'tier') { const an = -1.1 + Math.sin(A.t * 0.5) * 0.35, D = U.clamp(2.8 * Lw, 4.5, 8); p = new V().copy(O).addScaledVector(R0, -Math.cos(an) * D).addScaledVector(F0, Math.sin(an) * D).addScaledVector(Y, Lw * 0.3); look = O.clone(); }   // amelioration : tout pres de la fusee, on voit la piece arriver
+    else { const ch = g.evoAim ? (g.evoAim.lock ? 1 : g.evoAim.ch || 0) : 0; p = new V().copy(O).addScaledVector(R0, -7 + 2 * ch).addScaledVector(F0, -4 - 1.2 * Math.sin(t * 0.12)).addScaledVector(Y, -0.8); look = new V().copy(O).addScaledVector(R0, 1).addScaledVector(Y, 2.6 - 1 * ch);
+      if (ch > 0.2) { p.x += (Math.random() - 0.5) * 0.12 * ch; p.y += (Math.random() - 0.5) * 0.12 * ch; } }
+    if (!L.mc) { L.mc = p.clone(); L.ml = look.clone(); } const k = 1 - Math.exp(-dt * 4); L.mc.lerp(p, k); L.ml.lerp(look, k);
+    cam.position.copy(L.mc); cam.up.set(0, 1, 0); cam.lookAt(L.ml); if (Math.abs(cam.fov - 55) > 0.01) { cam.fov = 55; cam.updateProjectionMatrix(); } if (cam.far < 7000) { cam.far = 7000; cam.updateProjectionMatrix(); } cam.updateMatrixWorld();
+  }
   // --- la camera suit le repere de la voie (on regarde vers l'avant de la voie, le haut = le haut de la voie) ---
   const _rup = CC.CameraRig.prototype.update;
   CC.CameraRig.prototype.update = function (dt) {
     _rup.call(this, dt); const g = this.game, rk = g.rocket;
+    if (L && L.PA && on4(g) && !rk.active && (g.state === 'MENU' || g.state === 'AIM' || g.state === 'LAUNCH')) { menuView(g, this, dt); return; }
     if (!L || !L.PA || !on4(g) || !rk.active || g.state !== 'FLIGHT' || !L.started || (g.evoFinish && g.evoFinish.hold)) return;
     const PA = L.PA, cam = this.cam, F = PA.fr(L.s + 6), Fq = frameQ(F, _q2.clone());
     if (!L.camQ) L.camQ = Fq.clone(); L.camQ.slerp(Fq, 1 - Math.exp(-dt * 3.2));
-    const cr = _a.set(1, 0, 0).applyQuaternion(L.camQ), cu = _b.set(0, 1, 0).applyQuaternion(L.camQ), cf = _c.set(0, 0, -1).applyQuaternion(L.camQ);
+    const cr = new V(1, 0, 0).applyQuaternion(L.camQ), cu = new V(0, 1, 0).applyQuaternion(L.camQ), cf = new V(0, 0, -1).applyQuaternion(L.camQ);
     const F0 = PA.fr(L.s), ctr = _d.copy(F0.p).addScaledVector(F0.r, L.x * 0.8).addScaledVector(F0.u, L.y * 0.8);
     cam.position.copy(ctr).addScaledVector(cf, -11).addScaledVector(cu, 3.4);
     cam.up.copy(cu); cam.lookAt(_a.copy(rk.pos).addScaledVector(cf, 18).addScaledVector(cu, 1.2));
-    // au decollage : une grande vue depuis le sol (la tour, la fumee, la fusee qui s'arrache), qui glisse vers la poursuite entre 50 et 220 m
-    { const b = ss(50, 220, L.s); if (b < 1) { const qC = _q.copy(cam.quaternion), pC = _c.copy(cam.position), O = PA.O;
-      const pL = new V().copy(O).addScaledVector(PA.F0, -62).addScaledVector(PA.R0, -34).add(_b.set(0, 14 + L.s * 0.35, 0));
-      cam.position.copy(pL); cam.up.set(0, 1, 0); cam.lookAt(_a.copy(rk.pos).add(_b.set(0, 10 + L.s * 0.15, 0))); const qL = _q2.copy(cam.quaternion);
+    // au decollage : on part de la vue du menu (pres de la fusee, la tour derriere) et on recule vers une grande vue depuis le sol, puis la poursuite entre 50 et 220 m
+    { const b = ss(50, 220, L.s); if (b < 1) { const qC = _q.copy(cam.quaternion), pC = _c.copy(cam.position), O = PA.O, k = ss(0, 70, L.s);
+      const pL = new V().copy(O).addScaledVector(PA.R0, -(7 + 27 * k)).addScaledVector(PA.F0, -(4 + 58 * k)).add(_b.set(0, -0.8 + 14.8 * k + L.s * 0.35, 0));
+      const lk = new V().copy(O).addScaledVector(PA.R0, 1).add(_b.set(0, 2.6, 0)).lerp(_a.copy(rk.pos).add(_b.set(0, 10 + L.s * 0.15, 0)), ss(0, 25, L.s));
+      cam.position.copy(pL); cam.up.set(0, 1, 0); cam.lookAt(lk); const qL = _q2.copy(cam.quaternion);
       cam.position.lerpVectors(pL, pC, b); cam.quaternion.copy(qL).slerp(qC, b); cam.up.set(0, 1, 0).applyQuaternion(cam.quaternion); } }
+    { const f0 = cam.fov, fw = f0 + 16 * L.bk; if (Math.abs(fw - f0) > 0.01) { cam.fov = fw; cam.updateProjectionMatrix(); } }   // accelerateur : le champ s'elargit, les parois filent
     if (this.shake > 0) { cam.position.addScaledVector(cr, (U.fx() - 0.5) * this.shake * 0.5).addScaledVector(cu, (U.fx() - 0.5) * this.shake * 0.5); }
     if (cam.far < 7000) { cam.far = 7000; cam.updateProjectionMatrix(); }
     cam.updateMatrixWorld();
@@ -337,13 +536,14 @@
     if (L.started && !L.boomed) { L.boomed = 1; g.audio.play('boom'); g.audio.play('rumble'); g.flash = 0.35; g.flashColor = '#ffd8a0'; if (CC.L1) CC.L1.msg(g, 'DECOLLAGE !', 1.8, '#ffe9a0'); }
     // le sol, la base et les nuages disparaissent quand on est au-dessus de la couche ; la Terre apparait dessous
     const hideGround = alt > 470; for (const c of g.endlessRun.chunks.values()) if (c.builder && c.builder.root) c.builder.root.visible = !hideGround; if (L.pad) L.pad.visible = alt < 900; if (L.clouds) L.clouds.visible = alt < 720; if (g.pad && g.pad.hangar && g.state === 'FLIGHT') g.pad.hangar.visible = false;   /* le hangar du menu disparait au decollage */
-    if (g.state === 'FLIGHT') for (const o of g.scene.children) if (o.name === 'level') o.visible = false;   /* le decor du mode classique (murs du lancement) n'a rien a faire au niveau 4 */
+    for (const o of g.scene.children) if (o.name === 'level') o.visible = false;   if (g.pad && g.pad.evoL) g.pad.evoL.visible = false; if (g.pad && g.pad.hangar) g.pad.hangar.visible = false;   /* niveau 4 : ni le hangar du niveau 1, ni sa rampe : la fusee est sur la table de lancement */
+    animate(g);   /* le decor du mode classique (murs du lancement) n'a rien a faire au niveau 4 */
     if (L.sky) { L.sky.position.copy(cam.position); const E = L.earth, hv = 4 + Math.pow(Math.max(0, alt - 450), 1.5) * 0.02; E.visible = alt > 440; E.position.set(0, -(RS + hv), 0); E.rotation.set(Math.PI / 2 - 0.35, 0, L.t * 0.004); L.cloudSphere.rotation.y = L.t * 0.002;   // le pole est mis sur le cote : sous la fusee on voit l'equateur (oceans, continents), pas la calotte glaciaire
       for (const p of L.stars) p.material.opacity = p.userData.op * ss(500, 850, alt);
       const mf = _a.copy(PA.F0).multiplyScalar(0.8).addScaledVector(PA.R0, -0.25); mf.y = 0.42; mf.normalize(); L.moon.position.copy(mf).multiplyScalar(3200); L.moon.scale.setScalar(1 + 0.25 * ss(0, PA.len, L.s)); L.moon.visible = alt > 250;
       if (L.sun) { _b.copy(PA.R0).multiplyScalar(0.75).addScaledVector(PA.F0, 0.5); _b.y = 0.28; _b.normalize(); L.sun.position.copy(_b).multiplyScalar(2800); L.sun.material.opacity = 0.25 + 0.75 * K; } }   // le soleil est BAS, sur le cote : on ne le regarde jamais en face pendant la montee
     // la poussiere de l'espace (a decouvert surtout)
-    if (L.dust && L.started) { const P = L.dust.geometry.attributes.position, F = PA.fr(L.s), n = P.count; L.dust.material.opacity = 0.75 * K;
+    if (L.dust && L.started) { const P = L.dust.geometry.attributes.position, F = PA.fr(L.s), n = P.count; L.dust.material.opacity = Math.max(0.75 * K, 0.9 * L.bk); L.dust.material.size = 0.5 + 0.7 * L.bk;
       for (let i = 0; i < n; i++) { _a.set(P.getX(i), P.getY(i), P.getZ(i)); if (!L.dustInit || _b.subVectors(_a, rk.pos).dot(F.t) < -10 || _b.length() > 260) { _a.copy(rk.pos).addScaledVector(F.t, L.dustInit ? rr(140, 240) : rr(-10, 240)).addScaledVector(F.r, rr(-70, 70)).addScaledVector(F.u, rr(-70, 70)); P.setXYZ(i, _a.x, _a.y, _a.z); } }
       L.dustInit = true; P.needsUpdate = true; }
   };
