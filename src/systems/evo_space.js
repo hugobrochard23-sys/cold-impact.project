@@ -25,7 +25,7 @@
   { const _as = EVO.applySkin; EVO.applySkin = (g) => { if (!isS4()) return _as(g); const r = EVO.rocket(EVO.save(g).rk); g.rocket.setSkin(CC.Skins.get('evoS' + r.tier)); EVO.attachParts(g); }; }
   { const RK4 = ['SONDE', 'FUSEE A BOOSTERS', 'NAVETTE', 'VAISSEAU'], _rk = EVO.rocket; EVO.rocket = (n) => { const r = _rk(n); if (isS4()) r.name = RK4[r.tier]; return r; }; }
   // le carburant du niveau 4 : il grandit avec la fusee et le lanceur (plus de reservoir illimite)
-  { const _ol = EVO.onLaunch; EVO.onLaunch = (g) => { _ol(g); if (!isS4() || (g.evo && g.evo.preview)) return; const S = EVO.save(g), rk = g.rocket, f = 24 + 3.4 * (S.rk || 0) + 2.5 * (S.la || 0); rk.fuelMax = f; rk.fuel = (g.evoAimLast && g.evoAimLast.zone === 'gold') ? f : f * 0.9 + 0.1 * f; }; }
+  { const _ol = EVO.onLaunch; EVO.onLaunch = (g) => { _ol(g); if (!isS4() || (g.evo && g.evo.preview)) return; const S = EVO.save(g), rk = g.rocket, f = 30 + 3 * (S.rk || 0) + 2 * (S.la || 0); rk.fuelMax = f; rk.fuel = (g.evoAimLast && g.evoAimLast.zone === 'gold') ? f : f * 0.9 + 0.1 * f; }; }
   let L = null;   // l'etat du niveau 4 (voie, decor, pilotage), refait a chaque partie
 
   // ============================== LA VOIE 3D ==============================
@@ -51,10 +51,10 @@
 
   // ============================== LE TUBE TRANSPARENT ==============================
   const tubeMat = () => new T3.ShaderMaterial({
-    uniforms: { uT: { value: 0 }, uZ: { value: null }, uLen: { value: 6000 }, uC2: { value: new T3.Color('#ffffff') }, uK: { value: 1 } },
+    uniforms: { uT: { value: 0 }, uZ: { value: null }, uLen: { value: 6000 }, uC2: { value: new T3.Color('#ffffff') }, uK: { value: 1 }, uFar: { value: 1e5 } },
     vertexShader: 'varying vec3 vN; varying vec3 vW; varying vec2 vUv; void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * viewMatrix * w; }',
     fragmentShader: [
-      'uniform float uT; uniform sampler2D uZ; uniform float uLen; uniform vec3 uC2; uniform float uK; varying vec3 vN; varying vec3 vW; varying vec2 vUv;',
+      'uniform float uT; uniform sampler2D uZ; uniform float uLen; uniform vec3 uC2; uniform float uK; uniform float uFar; varying vec3 vN; varying vec3 vW; varying vec2 vUv;',
       'void main(){',
       '  vec4 zc = texture2D(uZ, vec2(clamp(vUv.x / uLen, 0.0, 1.0), 0.5)); vec3 uC = zc.rgb; float bo = zc.a;',   // la couleur de la zone ; bo = accelerateur
       '  vec3 Vd = normalize(cameraPosition - vW); float f = 1.0 - abs(dot(normalize(vN), Vd)); float fr = pow(f, 3.0);',   // bords du verre brillants (Fresnel) : on SENT la surface
@@ -67,7 +67,8 @@
       '  float chev = bo * (1.0 - smoothstep(0.03, 0.09, abs(fract((s - uT * 150.0) / 9.0 + abs(fract(a * 6.0) - 0.5) * 0.7) - 0.5)));',   // accelerateur : des chevrons qui filent vers l avant
       '  vec3 col = uC * (0.25 + fr * 1.5) + uC * grid * 0.5 + uC2 * (pulse * 0.6 + hl) + vec3(1.0, 0.78, 0.2) * stripe * 1.4 + vec3(1.0, 0.85, 0.35) * chev * 1.3;',
       '  float al = 0.05 + fr * 0.5 + grid * 0.11 + pulse * 0.08 + hl * 0.35 + stripe * 0.85 + chev * 0.55;   // v417 : verre plus discret : les obstacles et les cibles ressortent',
-      '  gl_FragColor = vec4(col, min(1.0, al) * uK);',
+      '  float fd = 1.0 - smoothstep(uFar * 0.5, uFar, length(cameraPosition - vW));',
+      '  gl_FragColor = vec4(col, min(1.0, al) * uK * fd);',
       '}'].join('\n'),
     transparent: true, depthWrite: false, side: T3.DoubleSide, fog: false });
   // balaye un cercle le long de la voie (tube de verre, rails) ; uv = (distance, angle / 2 pi)
@@ -108,6 +109,14 @@
       for (let j = 0; j <= seg; j++) { const a = j / seg * Math.PI * 2, c = Math.cos(a) * 0.22, sn = Math.sin(a) * 0.22; _a.copy(F.r).multiplyScalar(cx + c * Math.cos(ang)).addScaledVector(F.u, cy + c * Math.sin(ang)).addScaledVector(F.t, sn); pos.push(F.p.x + _a.x, F.p.y + _a.y, F.p.z + _a.z); } }
     for (let i = 0; i < n; i++) for (let j = 0; j < seg; j++) { const a = i * (seg + 1) + j, b = a + seg + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
     const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeBoundingSphere(); return geo;
+  }
+  // v418 : a decouvert, une seule LIGNE jaune relie les tubes (sous la voie, comme la bande du plancher) : on voit ou aller, sans balises partout
+  function cable(PA, grp, s0, s1) {
+    const n = Math.max(2, Math.ceil((s1 - s0) / 4)), pos = [], idx = [], F = {}, seg = 6, oy = -7, rad = 0.16;
+    for (let i = 0; i <= n; i++) { const s = s0 + (s1 - s0) * i / n; PA.fr(s, F); for (let j = 0; j <= seg; j++) { const a = j / seg * Math.PI * 2; _a.copy(F.p).addScaledVector(F.u, oy + Math.sin(a) * rad).addScaledVector(F.r, Math.cos(a) * rad); pos.push(_a.x, _a.y, _a.z); } }
+    for (let i = 0; i < n; i++) for (let j = 0; j < seg; j++) { const a = i * (seg + 1) + j, b = a + seg + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
+    const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeBoundingSphere();
+    const m = new T3.Mesh(geo, bas('#ffd23a')); m.frustumCulled = false; grp.add(m);
   }
   // a decouvert : des balises lumineuses en carre autour de la voie (on ne se perd jamais)
   function beacons(PA, grp, s0, s1) {
@@ -163,10 +172,10 @@
   }
   function launchPad(g, PA, grp) {
     const O = PA.O, F0 = PA.F0, R0 = PA.R0, root = new T3.Group(); root.position.copy(O); root.quaternion.setFromRotationMatrix(_m.makeBasis(R0, new V(0, 1, 0), _d.copy(F0).negate())); grp.add(root);   // repere local : x droite, y haut, -z avant
-    const gy = L.groundY - 0.15 - O.y;   // le vrai sol (pas le toit du hangar du menu)
+    const base = L.groundY + 0.25, gy = base - O.y;   // v418 : la dalle passe AU-DESSUS du sol du niveau 1 (plus de sable jaune qui clignote a travers)   // le vrai sol (pas le toit du hangar du menu)
     root.position.y += gy; const P = [], OR = '#d8501c', GR = '#8a929c', DK = '#3a4048', WH = '#eef0f2', CO = '#bdb6aa';
     // la TABLE DE LANCEMENT sur l'octogone : la fusee y est posee debout (menu), quatre griffes de maintien, mat ombilical
-    { const top = O.y - L.groundY + 0.15 - L.rkL * 0.5; P.push({ s: [9, top - 4, 9], c: '#5a6068', p: [0, 4 + (top - 4) / 2, 0] }, { s: [9.6, 0.4, 9.6], c: '#ffd23a', p: [0, top - 0.2, 0] }, { s: [3.4, 0.5, 3.4], c: '#2a2e34', p: [0, top + 0.05, 0] });
+    { const top = O.y - base - L.rkL * 0.5; P.push({ s: [9, top - 4, 9], c: '#5a6068', p: [0, 4 + (top - 4) / 2, 0] }, { s: [9.6, 0.4, 9.6], c: '#4a4f56', p: [0, top - 0.15, 0] }, { s: [10.1, 0.12, 0.3], c: '#ffd23a', p: [0, top - 0.25, 4.9] }, { s: [10.1, 0.12, 0.3], c: '#ffd23a', p: [0, top - 0.25, -4.9] }, { s: [0.3, 0.12, 10.1], c: '#ffd23a', p: [4.9, top - 0.25, 0] }, { s: [0.3, 0.12, 10.1], c: '#ffd23a', p: [-4.9, top - 0.25, 0] }, { s: [3.4, 0.5, 3.4], c: '#2a2e34', p: [0, top + 0.05, 0] });
       for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) P.push({ s: [0.3, 0.22, 0.3], c: '#c8352a', p: [x * 1.2, top + 0.11, z * 1.2] });   /* griffes basses : elles ne cachent plus la fusee */
       P.push({ s: [0.8, top + 4, 0.8], c: GR, p: [-6, (top + 4) / 2, 0] }, { s: [5, 0.4, 0.4], c: WH, p: [-3.6, top + 3, 0] }); }
     // la dalle du pas de tir, l'octogone, la fosse a flammes et ses deflecteurs
@@ -201,7 +210,8 @@
       const pl = new T3.Mesh(new T3.PlaneGeometry(80, 20), new T3.MeshBasicMaterial({ map: t })); pl.position.set(-260, 128, 320 - 45.6); pl.rotation.y = Math.PI; root.add(pl);
       for (const sd of [-1, 1]) { const road = new T3.Mesh(new T3.BoxGeometry(12, 0.3, 420), lam('#b8b0a0')); road.position.set(-130 + sd * 10, 0.15, 160); road.rotation.y = -0.6; root.add(road); } }
     // la mer, d'un cote (la cote vue d'en haut)
-    { const sea = new T3.Mesh(new T3.PlaneGeometry(3000, 3000), lam('#2a6aa8')); sea.rotation.x = -Math.PI / 2; sea.position.set(1700, -0.5, 0); root.add(sea); }
+    { const sea = new T3.Mesh(new T3.PlaneGeometry(3000, 3000), lam('#2a6aa8')); sea.rotation.x = -Math.PI / 2; sea.position.set(1700, -0.5, 0); root.add(sea);
+      const land = new T3.Mesh(new T3.PlaneGeometry(3000, 3000), lam('#8c9468')); land.rotation.x = -Math.PI / 2; land.position.set(-1300, -0.3, 0); root.add(land); }   // la cote : notre propre sol (celui du niveau 1 est cache)
     // les BRAS DE SERVICE : ils touchent presque la fusee et s'ecartent quand elle arrive (s'en approcher par la droite = choc)
     L.arms = [];
     for (const h of [36, 72, 108]) { const piv = new T3.Group(); piv.position.set(TX - w / 2, 4 + h, 0); root.add(piv); const arm = bakeBox([{ s: [TX - w / 2 - 3.2, 2.2, 3.4], c: WH, p: [-(TX - w / 2 - 3.2) / 2, 0, 0] }, { s: [4, 4.4, 4.6], c: '#c8ccd2', p: [-(TX - w / 2 - 3.2) + 1.6, 0.6, 0] }, { s: [TX - w / 2 - 3, 0.4, 3.6], c: OR, p: [-(TX - w / 2 - 3.2) / 2, -1.3, 0] }]); piv.add(arm);
@@ -360,10 +370,17 @@
     // v417 : DANS LE TUBE, a la place des ecrous : de petits drones-cibles a percuter (carburant et pieces), qui tirent eux aussi
     for (const [a, b] of [[230, 540], [1000, 1520], [2250, 3390], [4160, 4890]]) for (let s = a; s < b; s += rr(42, 60)) { if (L.O.some((o) => o.kind !== 'ast' && Math.abs(o.s - s) < 20)) continue; const an = rr(0, 6.28), r = rr(0, 8); sent(s, Math.cos(an) * r, Math.sin(an) * r, true); }
     for (const [a, b, n] of [[1600, 2200, 2], [3600, 4110, 2], [5500, 6080, 2]]) for (let k = 0; k < n; k++) { const m = droneMesh(false); m.visible = false; grp.add(m); L.chase.push({ a, b, k, n, m, ds: 260, fT: 1 + k * 0.6, ph: k * 2.1, on: false }); }
-    const bg = new T3.SphereGeometry(0.6, 10, 8), bm = bas('#ff4a2a', { fog: false });
-    for (let i = 0; i < 40; i++) { const m = new T3.Group(); m.add(new T3.Mesh(bg, bm)); m.add(glowS(4.2, '#ff3a1a', 0.9)); m.visible = false; grp.add(m); L.bul.push({ m, on: false, s: 0, x: 0, y: 0, vs: 0, vx: 0, vy: 0, t: 0 }); }
+    // v418 : de VRAIS MISSILES (corps blanc, ogive rouge, ailerons, flamme, trainee de fumee) a la place des boules rouges
+    const mBody = new T3.CylinderGeometry(0.22, 0.22, 2.2, 10).rotateX(Math.PI / 2), mNose = new T3.ConeGeometry(0.22, 0.7, 10).rotateX(Math.PI / 2).translate(0, 0, 1.45), mFin = new T3.BoxGeometry(0.9, 0.05, 0.5), mFl = new T3.ConeGeometry(0.2, 1.4, 8, 1, true).rotateX(-Math.PI / 2).translate(0, 0, -1.8);
+    const mW = lam('#eceef2', { emissive: '#3a3a3a' }), mR = lam('#e8322a', { emissive: '#5a0a06' }), mD = lam('#2a2e36'), mF = bas('#ffb04a', { transparent: true, opacity: 0.9, blending: T3.AdditiveBlending, depthWrite: false });
+    for (let i = 0; i < 24; i++) { const m = new T3.Group(), body = new T3.Group(); m.add(body); body.add(new T3.Mesh(mBody, mW)); body.add(new T3.Mesh(mNose, mR)); for (let k = 0; k < 2; k++) { const f = new T3.Mesh(mFin, mD); f.position.z = -0.85; f.rotation.z = k * Math.PI / 2; body.add(f); } body.add(new T3.Mesh(mFl, mF)); const gw = glowS(3, '#ff9a3a', 0.8); gw.position.z = -1.4; body.add(gw);
+      m.visible = false; grp.add(m); L.bul.push({ m, body, on: false, s: 0, x: 0, y: 0, vs: 0, vx: 0, vy: 0, t: 0, smT: 0 }); }
   }
-  const fire = (g, s, x, y) => { const b = L.bul.find((q) => !q.on); if (!b) return; const vs = -26, tau = Math.max(0.5, (s - L.s) / Math.max(20, L.v - vs)); Object.assign(b, { on: true, s, x, y, vs, vx: (L.x - x) / tau, vy: (L.y - y) / tau, t: 0 }); b.m.visible = true; g.audio.play('heliFire'); };
+  // un tir n'est PAS precis : il vise un point a 2,5-5 m de la fusee (il passe a cote, en sifflant) ; une fois sur cinq seulement il vise juste
+  const fire = (g, s, x, y) => { const b = L.bul.find((q) => !q.on); if (!b) return; const vs = -18, tau = Math.max(0.6, (s - L.s) / Math.max(20, L.v - vs)), a = rr(0, 6.28), off = Math.random() < 0.2 ? rr(0.6, 1.6) : rr(2.6, 5);
+    Object.assign(b, { on: true, s, x, y, vs, vx: (L.x + Math.cos(a) * off - x) / tau, vy: (L.y + Math.sin(a) * off - y) / tau, t: 0, smT: 0 }); b.m.visible = true; g.audio.play('whoosh'); };
+  // touche par un missile : on est seulement ralenti et secoue (jamais tue, pas de carburant perdu)
+  const missileHit = (g, rk) => { L.v *= 0.75; L.inv = 0.6; g.effects.explosion(rk.pos.clone(), null, false, 'orange'); g.audio.play('boomSmall', rk.pos); g.rig.shake = Math.max(g.rig.shake, 0.8); g.flash = 0.2; g.flashColor = '#ffb070'; (g.killPops = g.killPops || []).push({ p: rk.pos.clone().add(new V(0, 2.5, 0)), t0: performance.now() - 200, txt: 'TOUCHE !' }); };
   // le jeu de la zone : tirs, sentinelles percutees, anneaux de boost, ecrous ; appele par le pilotage, une fois par image de vol
   function play(g, rk, dt, s0) {
     const PA = L.PA, run = g.endlessRun, t = L.t;
@@ -386,28 +403,29 @@
       if (!on && c.ds > 400) { c.on = false; c.m.visible = false; } }
     // les tirs : ils remontent la voie vers la fusee ; touche = on freine, ca secoue (pas mortel)
     for (const b of L.bul) { if (!b.on) continue; b.t += dt; b.s += b.vs * dt; b.x += b.vx * dt; b.y += b.vy * dt; if (b.t > 4 || b.s < L.s - 20) { b.on = false; b.m.visible = false; continue; }
-      if (Math.abs(b.s - L.s) < 2.2 && Math.hypot(b.x - L.x, b.y - L.y) < 1.9 && L.inv <= 0) { b.on = false; b.m.visible = false; L.v *= 0.6; L.inv = 0.5; g.onRocketCrash('missile', rk.pos.clone(), null); } }
+      if (Math.abs(b.s - L.s) < 2 && Math.hypot(b.x - L.x, b.y - L.y) < 1.3 && L.inv <= 0) { b.on = false; b.m.visible = false; missileHit(g, rk); continue; }
+      b.smT -= dt; if (b.smT <= 0) { b.smT = 0.05; g.effects.smokePuff(b.m.position.clone(), new V(0, 0, 0), 0.9, 0.7); } }
     // anneaux d'acceleration
     for (const B of L.boostR) { if (B.done || B.s < s0 - 1 || B.s > L.s + 1) continue; B.done = true; if (Math.hypot(L.x - B.x, L.y - B.y) < 5) { L.boostT = 2.6; rk.fuel = Math.min(rk.fuelMax, rk.fuel + 3); g.audio.play('boostOn'); g.audio.play('whoosh'); if (g.feed) g.feed('BOOST !', '#ffc23a'); g.flash = 0.15; g.flashColor = '#ffe08a'; } }
   }
   // l'animation de tout ce qui bouge (chaque image, meme au menu)
-  const _o4 = new T3.Object3D(), _ec = new T3.Color();
+  const _o4 = new T3.Object3D(), _ec = new T3.Color(), _zA = new V(0, 0, 1);
   function animate(g) {
     const PA = L.PA, t = L.t;
     for (const o of L.OB) if (o.upd && Math.abs(o.s - L.s) < 700) o.upd(t);
     for (const A of L.AV) { let i = 0; for (const a of A.list) { const F = PA.fr(a.s, _PF);_o4.position.copy(F.p).addScaledVector(F.r, a.xx(t)).addScaledVector(F.u, a.y); _o4.quaternion.setFromAxisAngle(a.rs, t * a.rw + a.ph); _o4.scale.setScalar(a.rad); _o4.updateMatrix(); A.im.setMatrixAt(i++, _o4.matrix); } A.im.instanceMatrix.needsUpdate = true; }
     for (const d of L.sent) if (d.alive) { placeAt(PA, d.m, d.s, d.x, d.y + Math.sin(t * 1.4 + d.ph) * 0.8); d.m.rotateZ(Math.sin(t * 0.8 + d.ph) * 0.3); if (d.m.userData.tg) d.m.userData.tg.scale.setScalar(1 + 0.12 * Math.sin(t * 6)); for (const l of d.m.userData.lt) l.visible = Math.sin(t * 8 + d.ph) > 0; }
     for (const c of L.chase) if (c.on) { placeAt(PA, c.m, L.s + c.ds, c.x, c.y); c.m.rotateZ(Math.sin(t * 1.2 + c.ph) * 0.5); }
-    for (const b of L.bul) if (b.on) placeAt(PA, b.m, b.s, b.x, b.y);
+    for (const b of L.bul) if (b.on) { placeAt(PA, b.m, b.s, b.x, b.y); b.body.quaternion.setFromUnitVectors(_zA, _d.set(b.vx, b.vy, -b.vs).normalize()); b.body.rotateZ(L.t * 6); }
     for (const B of L.boostR) B.m.rotation.z = t * 1.5;
   }
 
   // ============================== v417 : LA LUNE (survol, cratere, puits de roche, coeur de lave) ==============================
   const rockMat = () => new T3.ShaderMaterial({
-    uniforms: { uT: { value: 0 }, uCore: { value: 7038 } },
-    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0); }',
+    uniforms: { uT: { value: 0 }, uCore: { value: 7038 }, uFar: { value: 650 } },
+    vertexShader: 'varying vec2 vUv; varying vec3 vW; void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
     fragmentShader: [
-      'uniform float uT; uniform float uCore; varying vec2 vUv;',
+      'uniform float uT; uniform float uCore; uniform float uFar; varying vec2 vUv; varying vec3 vW;',
       'float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
       'float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h(i), h(i + vec2(1.0, 0.0)), f.x), mix(h(i + vec2(0.0, 1.0)), h(i + vec2(1.0, 1.0)), f.x), f.y); }',
       'void main(){',
@@ -418,6 +436,7 @@
       '  col += vec3(1.0, 0.42, 0.08) * cr * (0.3 + 1.1 * heat) * (0.8 + 0.2 * sin(uT * 3.0 + vUv.x * 0.1));',
       '  float ring = smoothstep(0.94, 1.0, fract(vUv.x / 30.0)); col += vec3(1.0, 0.7, 0.3) * ring * 0.5;',
       '  float fl = abs(vUv.y - 0.75); col = mix(col, vec3(1.0, 0.78, 0.2), (1.0 - smoothstep(0.006, 0.013, fl)) * 0.85);',
+      '  col *= 1.0 - smoothstep(uFar * 0.4, uFar, length(cameraPosition - vW));',
       '  gl_FragColor = vec4(col, 1.0);',
       '}'].join('\n'), side: T3.DoubleSide });
   function moonWorld(g, PA, grp) {
@@ -532,11 +551,12 @@
     const sV = PA.sOf([0, 905, 880]), sC = PA.sOf([-250, 820, 1940]), sE = PA.sOf([-300, 900, 2700]), sJ = PA.sOf([-310, 1130, 3180]);
     L.gap1 = GAPS[0].slice(); L.gap2 = GAPS[1].slice(); L.gap3 = [GAPS[2][0], PA.len];
     L.tubeSecs = [[140, L.gap1[0]], [L.gap1[1], L.gap2[0]], [L.gap2[1], L.gap3[0]]];
-    buildTube(PA, grp, L.tubeSecs); beacons(PA, grp, L.gap1[0], L.gap1[1]); beacons(PA, grp, L.gap2[0], L.gap2[1]); beacons(PA, grp, L.gap3[0], 6100); beacons(PA, grp, 7560, PA.len - 20);
+    buildTube(PA, grp, L.tubeSecs); for (const [a, b] of [L.gap1, L.gap2, [L.gap3[0], 6545], [6918, 7158], [7540, PA.len - 70]]) cable(PA, grp, a, b);
     launchPad(g, PA, grp); cloudDeck(PA, grp); spaceStuff(PA, grp, L.gap1, L.gap2); buildSky(g);
     obstacles(g, PA, grp); enemies(g, PA, grp); moonWorld(g, PA, grp); bossBuild(g, PA, grp);
+    grp.traverse((o) => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) if (!m.isShaderMaterial && !m.fog) { m.fog = true; m.needsUpdate = true; } });   // v418 : tout s'efface dans la brume au loin
     // poussiere d'espace : des points qui defilent pres de la fusee (on sent la vitesse dans le vide)
-    { const n = 360, pos = new Float32Array(n * 3), geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(pos, 3)); const p = new T3.Points(geo, new T3.PointsMaterial({ color: '#cfe8ff', size: 0.5, transparent: true, opacity: 0, depthWrite: false, fog: false })); p.frustumCulled = false; g.scene.add(p); L.dust = p; L.dustInit = false; }
+    { const n = 120, pos = new Float32Array(n * 3), geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(pos, 3)); const p = new T3.Points(geo, new T3.PointsMaterial({ color: '#cfe8ff', size: 0.5, transparent: true, opacity: 0, depthWrite: false, fog: false })); p.frustumCulled = false; g.scene.add(p); L.dust = p; L.dustInit = false; }
     L.far0 = g.camera.far;
   }
   const inTube = (s) => { for (const [a, b] of L.tubeSecs) if (s >= a && s <= b) return true; for (const [a, b] of ROCK) if (s >= a && s <= b) return true; return false; };
@@ -549,7 +569,7 @@
   CC.Rocket.prototype.step = function (dt, input) {
     const g = this.game; if (!L || !on4(g) || !L.PA) return _step.call(this, dt, input);
     const PA = L.PA, inp = g.input; this.age += dt; if (!this.ignited && this.age >= this.cfg.ignitionDelay) { this.ignited = true; g.audio.play('ignite', this.pos); }
-    if (!L.started) { L.started = true; L.s = 0; L.x = 0; L.y = 0; L.v = Math.max(26, this.vel.length()); L.launchT = 0; const e = new T3.Euler().setFromQuaternion(inp.aimQ, 'YXZ'); L.yaw0 = e.y; L.pit0 = e.x; L.ry = 0; L.rp = 0; }
+    if (!L.started) { L.vb = 50 + 102 * (1 - Math.exp(-(EVO.save(g).rk || 0) / 9)); L.started = true; L.s = 0; L.x = 0; L.y = 0; L.v = Math.max(26, this.vel.length()); L.launchT = 0; const e = new T3.Euler().setFromQuaternion(inp.aimQ, 'YXZ'); L.yaw0 = e.y; L.pit0 = e.x; L.ry = 0; L.rp = 0; }
     // la commande : l'ecart de cap du joystick / des fleches depuis le depart = ou on veut aller dans le tube ; il revient doucement au centre
     { const e = new T3.Euler().setFromQuaternion(inp.aimQ, 'YXZ'); let dy = e.y - L.yaw0; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); L.ry = U.clamp(dy, -0.62, 0.62) * Math.exp(-dt * 0.9); L.rp = U.clamp(e.x - L.pit0, -0.62, 0.62) * Math.exp(-dt * 0.9); inp.setAim(L.yaw0 + L.ry, L.pit0 + L.rp); }
     const F = PA.fr(L.s), alt = altSky(F.p.y), up = U.clamp(F.t.y, 0, 1), atmo = 1 - ss(500, 900, alt), s0 = L.s;
@@ -560,7 +580,7 @@
     // v417 : vrai carburant (les accelerateurs et les anneaux portent la fusee gratuitement ; drones et anneaux en redonnent)
     if (!(boostZ || L.boostT > 0)) this.fuel = Math.max(0, this.fuel - dt); const dry = this.fuel <= 0;
     if (dry && !L.dry) { L.dry = 1; if (CC.L1) CC.L1.msg(g, 'PLUS DE CARBURANT !', 2, '#ff6a5a'); g.audio.play('warnFuel'); } if (!dry) L.dry = 0;
-    const vMax = L.boostT > 0 ? 96 : boostZ ? 80 : 47 + 9 * ss(500, 1000, alt);   // dans le vide on va un peu plus vite ; accelerateur et anneaux : on file
+    const vb = L.vb || 50, vMax = L.boostT > 0 ? vb * 1.45 : boostZ ? vb * 1.3 : vb * (0.9 + 0.1 * ss(500, 1000, alt));   // v418 : la vitesse grandit avec la fusee (200 km/h au debut, ~550 km/h tout ameliore) ; accelerateurs et anneaux : on file
     L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
     if (dry) { L.v -= (9 + 10 * up * atmo) * dt; if (L.v < 14 && this.active) { g.onRocketCrash('stalled', this.pos.clone(), null); return; } }   // a sec : la fusee ralentit puis s'arrete
     else { L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.7) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)) - 6 * up * atmo * dt; L.v = Math.max(24, L.v); }   // la pesanteur freine un peu la montee verticale
@@ -638,7 +658,7 @@
     const cam = g.camera, alt = altSky(cam.position.y), [top, hor, fog] = skyAt(alt), K = ss(560, 900, alt);
     if (g.skyMat) { const u = g.skyMat.uniforms; u.top.value.copy(top); u.horizon.value.copy(hor); u.bottom.value.copy(fog); u.cloud.value = 1 - K; if (u.sunDir) { u.sunDir.value.copy(L.PA.R0).multiplyScalar(0.75).addScaledVector(L.PA.F0, 0.5); u.sunDir.value.y = 0.28; u.sunDir.value.normalize(); } }   // le soleil du ciel : bas, sur le cote (pas au zenith)
     const inC = alt > 370 && alt < 470 ? Math.sin((alt - 370) / 100 * Math.PI) : 0;
-    g.scene.fog.color.copy(fog); g.scene.fog.near = U.lerp(U.lerp(160, 30, inC), 1e5, K); g.scene.fog.far = U.lerp(U.lerp(1500, 240, inC), 2e5, K); if (g.fogBase) { g.fogBase.near = g.scene.fog.near; g.fogBase.far = g.scene.fog.far; g.fogBase.color.copy(fog); }
+    g.scene.fog.color.copy(fog); g.scene.fog.near = U.lerp(U.lerp(160, 30, inC), 280, K); g.scene.fog.far = U.lerp(U.lerp(1500, 240, inC), 680, K);   // v418 : dans l'espace on voit ~650 m, comme les autres niveaux (plus tout le parcours d'un coup) if (g.fogBase) { g.fogBase.near = g.scene.fog.near; g.fogBase.far = g.scene.fog.far; g.fogBase.color.copy(fog); }
     g.renderer.setClearColor(fog); if (g.stars) g.stars.visible = false;
     g.nightK = K * 0.8; if (g.postParams) { g.postParams.bloomStrength = 0.1 + 0.3 * K; g.postParams.bloomThreshold = 0.95 - 0.25 * K; g.postParams.vignette = 0.2 + 0.2 * K; g.postParams.saturation = 1.05; g.postParams.contrast = 1.06; }
     g.ambient.intensity = 0.3 + 0.15 * K; g.sun.intensity = 0.85 + 0.4 * K; g.sun.color.set(K > 0.5 ? '#ffffff' : '#ffe2c0');
@@ -650,8 +670,8 @@
     if (!on4(g) || !g.endlessRun || !g.endlessRun.T) return;
     if (!L) { try { build(g); } catch (e) { console.warn('space', e); L = null; return; } }
     const PA = L.PA, rk = g.rocket, cam = g.camera, alt = altSky(cam.position.y), K = ss(560, 900, alt), fx = g.effects; L.t += dt;
-    for (const M of L.tubeMats) { M.uniforms.uT.value = L.t; M.uniforms.uK.value = 0.55 + 0.45 * K; }
-    if (L.rockMats) for (const M of L.rockMats) M.uniforms.uT.value = L.t; if (L.core) L.core.material.uniforms.uT.value = L.t; if (L.coreRings) L.coreRings.forEach((o, i) => o.rotateZ(dt * (i % 2 ? -0.5 : 0.4))); if (L.blinks) for (const b of L.blinks) b.visible = Math.sin(L.t * 5) > 0; bossAnim(g, dt);
+    for (const M of L.tubeMats) { M.uniforms.uT.value = L.t; M.uniforms.uK.value = 0.55 + 0.45 * K; M.uniforms.uFar.value = g.scene.fog.far; }
+    if (L.rockMats) for (const M of L.rockMats) { M.uniforms.uT.value = L.t; M.uniforms.uFar.value = Math.min(650, g.scene.fog.far); } if (L.core) L.core.material.uniforms.uT.value = L.t; if (L.coreRings) L.coreRings.forEach((o, i) => o.rotateZ(dt * (i % 2 ? -0.5 : 0.4))); if (L.blinks) for (const b of L.blinks) b.visible = Math.sin(L.t * 5) > 0; bossAnim(g, dt);
     // bras de service : ils s'ecartent quand la fusee arrive a leur hauteur
     for (const A of L.arms) { const want = L.started && L.s > A.h - 60 ? 1 : 0; A.k += (want - A.k) * Math.min(1, dt * 2.2); A.piv.rotation.y = -A.k * 1.45; }
     if (L.dish) L.dish.rotation.z = Math.sin(L.t * 0.3) * 0.4;
@@ -659,7 +679,7 @@
     if (L.started && L.s < 130 && g.state === 'FLIGHT') { L.smokeT -= dt; if (L.smokeT <= 0) { L.smokeT = 0.07; for (const sd of [-1, 1]) { _a.copy(PA.O).addScaledVector(PA.F0, sd * rr(26, 40)).add(_b.set(0, L.padGy + 3, 0)); fx.smokePuff(_a.clone(), new V(PA.F0.x * sd * rr(18, 34) + rr(-5, 5), rr(3, 10), PA.F0.z * sd * rr(18, 34) + rr(-5, 5)), rr(10, 18), rr(2.2, 3.2)); } } if (L.s < 80) g.rig.shake = Math.max(g.rig.shake, 0.6 * (1 - L.s / 80)); }   // les deux panaches sortent de la fosse, au sol (ils ne cachent plus la fusee)
     if (L.started && !L.boomed) { L.boomed = 1; g.audio.play('boom'); g.audio.play('rumble'); g.flash = 0.35; g.flashColor = '#ffd8a0'; if (CC.L1) CC.L1.msg(g, 'DECOLLAGE !', 1.8, '#ffe9a0'); }
     // le sol, la base et les nuages disparaissent quand on est au-dessus de la couche ; la Terre apparait dessous
-    const hideGround = alt > 470; for (const c of g.endlessRun.chunks.values()) if (c.builder && c.builder.root) c.builder.root.visible = !hideGround; if (L.pad) L.pad.visible = alt < 900; if (L.clouds) L.clouds.visible = alt < 720; if (g.pad && g.pad.hangar && g.state === 'FLIGHT') g.pad.hangar.visible = false;   /* le hangar du menu disparait au decollage */
+    const hideGround = true;   /* v418 : le sol du niveau 1 n'apparait jamais au niveau 4 (le pas de tir a son propre sol) */ for (const c of g.endlessRun.chunks.values()) if (c.builder && c.builder.root) c.builder.root.visible = !hideGround; if (L.pad) L.pad.visible = alt < 900; if (L.clouds) L.clouds.visible = alt < 720; if (g.pad && g.pad.hangar && g.state === 'FLIGHT') g.pad.hangar.visible = false;   /* le hangar du menu disparait au decollage */
     for (const o of g.scene.children) if (o.name === 'level') o.visible = false;   if (g.pad && g.pad.evoL) g.pad.evoL.visible = false; if (g.pad && g.pad.hangar) g.pad.hangar.visible = false;   /* niveau 4 : ni le hangar du niveau 1, ni sa rampe : la fusee est sur la table de lancement */
     animate(g);   /* le decor du mode classique (murs du lancement) n'a rien a faire au niveau 4 */
     if (L.sky) { L.sky.position.copy(cam.position); const E = L.earth, hv = 4 + Math.pow(Math.max(0, alt - 450), 1.5) * 0.02 + 900 * ss(7300, 7700, L.s); E.visible = alt > 440; E.position.set(0, -(RS + hv), 0); E.rotation.set(Math.PI / 2 - 0.35, 0, L.t * 0.004); L.cloudSphere.rotation.y = L.t * 0.002;   // le pole est mis sur le cote : sous la fusee on voit l'equateur (oceans, continents), pas la calotte glaciaire
@@ -667,7 +687,7 @@
       const mf = _a.copy(PA.F0).multiplyScalar(0.8).addScaledVector(PA.R0, -0.25); mf.y = 0.42; mf.normalize(); L.moon.position.copy(mf).multiplyScalar(3200); L.moon.scale.setScalar(1 + 0.25 * ss(0, PA.len, L.s)); L.moon.visible = false;   /* la vraie Lune (une sphere de 500 m sur la voie) remplace la Lune du ciel */
       if (L.sun) { _b.copy(PA.R0).multiplyScalar(0.75).addScaledVector(PA.F0, 0.5); _b.y = 0.28; _b.normalize(); L.sun.position.copy(_b).multiplyScalar(2800); L.sun.material.opacity = 0.25 + 0.75 * K; } }   // le soleil est BAS, sur le cote : on ne le regarde jamais en face pendant la montee
     // la poussiere de l'espace (a decouvert surtout)
-    if (L.dust && L.started) { const P = L.dust.geometry.attributes.position, F = PA.fr(L.s), n = P.count; L.dust.material.opacity = Math.max(0.75 * K, 0.9 * L.bk); L.dust.material.size = 0.5 + 0.7 * L.bk;
+    if (L.dust && L.started) { const P = L.dust.geometry.attributes.position, F = PA.fr(L.s), n = P.count; L.dust.material.opacity = Math.max(0.35 * K, 0.7 * L.bk); L.dust.material.size = 0.5 + 0.7 * L.bk;
       for (let i = 0; i < n; i++) { _a.set(P.getX(i), P.getY(i), P.getZ(i)); if (!L.dustInit || _b.subVectors(_a, rk.pos).dot(F.t) < -10 || _b.length() > 260) { _a.copy(rk.pos).addScaledVector(F.t, L.dustInit ? rr(140, 240) : rr(-10, 240)).addScaledVector(F.r, rr(-70, 70)).addScaledVector(F.u, rr(-70, 70)); P.setXYZ(i, _a.x, _a.y, _a.z); } }
       L.dustInit = true; P.needsUpdate = true; }
   };

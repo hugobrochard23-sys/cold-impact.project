@@ -89,57 +89,71 @@
     // v417 : NIVEAU 4 « ESPACE » : LA FUSEE SPATIALE, 4 etats (st 0..3) : 0 sonde (feuille d'or, panneaux solaires, antenne) -> 1 fusee blanche a deux boosters
     //   -> 2 navette (ailes en delta, nez et bords noirs, trois tuyeres, derive) -> 3 vaisseau (fuseau effile, verriere lumineuse, ailes en fleche a filets lumineux, deux nacelles)
     spatial(g, st) {
-      const WH = '#f2f4f6', DK = '#1c1f24', OR = '#e8622a', GO = '#d9a441', ST = '#9aa4ae', BL = '#1e3f9a';
+      // v418 : une seule livree pour les 4 etats (blanc, noir, orange, details dores) et les memes pieces partout :
+      // joints de panneaux sombres, tuyeres grises a anneau incandescent, quads de propulseurs d'attitude, hublots, drapeau
+      const WH = '#f2f4f6', WH2 = '#dfe3e8', DK = '#1c1f24', OR = '#e8622a', GO = '#d9a441', GR = '#9aa4ae', BL = '#1e3f9a', GLW = '#ffb066';
       const body = (CT, segs) => { const rad = (z) => { for (let i = 0; i < CT.length - 1; i++) if (z <= CT[i + 1][0]) { const t = (z - CT[i][0]) / (CT[i + 1][0] - CT[i][0]); return CT[i][1] + (CT[i + 1][1] - CT[i][1]) * Math.max(0, t); } return CT[CT.length - 1][1]; };
-        for (const [a, b, c] of segs) { const p = [[rad(a), a]]; for (const q of CT) if (q[0] > a + 1e-3 && q[0] < b - 1e-3) p.push([q[1], q[0]]); p.push([rad(b), b]); put(g, lathe(p, 22), c); } return rad; };
-      const bell = (x, y, z, r, c) => { const B = [[r, z - 0.12], [r * 0.88, z - 0.08], [r * 0.7, z - 0.03], [r * 0.62, z]]; put(g, lathe(B.map((q) => [q[0], q[1]]), 16), c || '#5a5f68', { p: [x, y, 0] }); put(g, lathe(B.map((q) => [q[0] - 0.007, q[1]]).reverse(), 16), '#07090c', { p: [x, y, 0] }); };
+        for (const [a, b, c] of segs) { const p = [[rad(a), a]]; for (const q of CT) if (q[0] > a + 1e-3 && q[0] < b - 1e-3) p.push([q[1], q[0]]); p.push([rad(b), b]); put(g, lathe(p, 24), c); } return rad; };
+      const joint = (z, r, c) => put(g, cylZ(r * 1.012, r * 1.012, 0.012, 24), c || '#8a9098', { p: [0, 0, z] });   // joint de panneau
+      const bell = (x, y, z, r) => { const B = [[r, z - 0.13], [r * 0.9, z - 0.09], [r * 0.72, z - 0.035], [r * 0.6, z]]; put(g, lathe(B, 18), '#4a4f58', { p: [x, y, 0] }); put(g, lathe(B.map((q) => [q[0] - 0.007, q[1]]).reverse(), 18), '#07090c', { p: [x, y, 0] }); put(g, ringG(r * 0.98, 0.006), GLW, { p: [x, y, z - 0.128], basic: true }); put(g, ringG(r * 0.62, 0.008), GR, { p: [x, y, z] }); };
+      const rcs = (z, r) => { for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4; put(g, box(0.03, 0.03, 0.04), DK, { p: [Math.cos(a) * (r + 0.012), Math.sin(a) * (r + 0.012), z] }); } };   // quads de propulseurs d'attitude
+      const flag = (x, y, z, r) => { put(g, box(0.004, 0.035, 0.055), '#c8352a', { p: [x, y, z], r: [0, 0, r || 0] }); put(g, box(0.005, 0.016, 0.024), BL, { p: [x, y + 0.009, z + 0.015], r: [0, 0, r || 0] }); };
+      const port = (x, y, z) => { put(g, sph(0.018), '#0c1420', { p: [x, y, z], s: [1, 1, 0.5] }); put(g, ringG(0.019, 0.004), GR, { p: [x, y, z] }); };
       const tips = [];
-      if (st === 0) {   // SONDE
-        const CT = [[-0.42, 0.07], [-0.38, 0.1], [0.2, 0.1], [0.3, 0.08], [0.42, 0.03], [0.46, 0.0]];
-        body(CT, [[-0.42, -0.2, GO], [-0.2, 0.0, shade(GO, 0.85)], [0.0, 0.2, GO], [0.2, 0.46, WH]]);
-        for (const z of [-0.2, 0.0, 0.2]) put(g, cylZ(0.103, 0.103, 0.02, 22), DK, { p: [0, 0, z] });
+      if (st === 0) {   // SONDE : corps en feuille d'or, coiffe blanche, deux ailes solaires, antenne parabolique
+        const CT = [[-0.42, 0.07], [-0.38, 0.1], [0.2, 0.1], [0.3, 0.085], [0.42, 0.035], [0.47, 0.0]];
+        body(CT, [[-0.42, -0.2, GO], [-0.2, 0.0, shade(GO, 0.86)], [0.0, 0.2, GO], [0.2, 0.47, WH]]);
+        joint(-0.2, 0.1, DK); joint(0.0, 0.1, DK); joint(0.2, 0.1, DK); put(g, cylZ(0.101, 0.101, 0.03, 24), OR, { p: [0, 0, 0.1] }); rcs(0.26, 0.09);
         bell(0, 0, -0.42, 0.075);
-        for (const sx of [-1, 1]) { put(g, box(0.12, 0.012, 0.012), ST, { p: [sx * 0.16, 0, -0.05] }); const px = sx * 0.4; put(g, box(0.36, 0.008, 0.2), BL, { p: [px, 0, -0.05] }); for (let k = 0; k < 5; k++) put(g, box(0.004, 0.011, 0.2), '#c8d4e8', { p: [px - 0.16 + k * 0.08, 0, -0.05] }); put(g, box(0.36, 0.011, 0.004), '#c8d4e8', { p: [px, 0, -0.05] }); tips.push([sx * 0.58, 0, -0.05]); }
-        put(g, new T3.SphereGeometry(0.07, 14, 8, 0, 6.283, 0, 1.1), WH, { p: [0, 0.16, 0.12], r: [-0.4, 0, 0] }); put(g, box(0.008, 0.07, 0.008), ST, { p: [0, 0.12, 0.12] });
-        put(g, sph(0.018), '#ff3a2a', { p: [0, 0.105, -0.3], basic: true });
-        return { tail: -0.54, jr: 0.06, noseZ: 0.48, tips };
+        for (const sx of [-1, 1]) { put(g, box(0.14, 0.014, 0.014), GR, { p: [sx * 0.17, 0, -0.06] }); const px = sx * 0.42;
+          put(g, box(0.38, 0.01, 0.22), DK, { p: [px, 0, -0.06] }); for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) put(g, box(0.085, 0.012, 0.095), BL, { p: [px - 0.143 + i * 0.095, 0, -0.06 - 0.05 + j * 0.1] });
+          put(g, box(0.39, 0.014, 0.006), GR, { p: [px, 0, 0.052] }); put(g, box(0.39, 0.014, 0.006), GR, { p: [px, 0, -0.172] }); tips.push([sx * 0.61, 0, -0.06]); }
+        put(g, new T3.SphereGeometry(0.075, 16, 8, 0, 6.283, 0, 1.0), WH, { p: [0, 0.16, 0.12], r: [-0.35, 0, 0] }); put(g, box(0.008, 0.07, 0.008), GR, { p: [0, 0.12, 0.12] }); put(g, sph(0.012), GR, { p: [0, 0.19, 0.16] });
+        put(g, sph(0.016), '#ff3a2a', { p: [0, 0.103, -0.3], basic: true }); flag(0.101, 0, 0.3, 0);
+        return { tail: -0.55, jr: 0.06, noseZ: 0.49, tips };
       }
-      if (st === 1) {   // FUSEE BLANCHE A BOOSTERS
-        const CT = [[-0.62, 0.09], [-0.56, 0.095], [0.5, 0.095], [0.62, 0.08], [0.76, 0.04], [0.84, 0.0]];
-        body(CT, [[-0.62, -0.1, WH], [-0.1, 0.0, DK], [0.0, 0.5, WH], [0.5, 0.62, OR], [0.62, 0.84, WH]]);
-        put(g, box(0.006, 0.06, 0.3), DK, { p: [0.096, 0, 0.25] }); put(g, box(0.006, 0.06, 0.3), DK, { p: [-0.096, 0, 0.25] });   // marquages noirs
+      if (st === 1) {   // FUSEE A BOOSTERS : corps blanc, interetage noir, bande orange, deux boosters a ogive orange
+        const CT = [[-0.62, 0.09], [-0.56, 0.095], [0.5, 0.095], [0.62, 0.082], [0.76, 0.042], [0.85, 0.0]];
+        body(CT, [[-0.62, -0.1, WH], [-0.1, 0.0, DK], [0.0, 0.5, WH], [0.5, 0.6, OR], [0.6, 0.85, WH]]);
+        for (const z of [-0.4, -0.25, 0.2, 0.35]) joint(z, 0.095); rcs(0.55, 0.088); flag(0.096, 0, 0.3, 0); port(0, 0.09, 0.66);
+        for (const sx of [-1, 1]) put(g, box(0.005, 0.07, 0.26), DK, { p: [sx * 0.096, 0, -0.35] });   // bandes de roulis noires
         bell(0, 0, -0.62, 0.08);
-        for (const sx of [-1, 1]) { const x = sx * 0.155; put(g, cylZ(0.05, 0.05, 0.78, 16), WH, { p: [x, 0, -0.18] }); put(g, cylZ(0.05, 0.0, 0.14, 16), OR, { p: [x, 0, 0.28] }); put(g, cylZ(0.051, 0.051, 0.04, 16), DK, { p: [x, 0, -0.4] }); bell(x, 0, -0.57, 0.045); for (const z of [-0.45, 0.1]) put(g, box(0.07, 0.02, 0.03), ST, { p: [sx * 0.11, 0, z] }); tips.push([x, 0, -0.62]); }
+        for (const sx of [-1, 1]) { const x = sx * 0.155; put(g, cylZ(0.05, 0.05, 0.78, 18), WH, { p: [x, 0, -0.18] }); put(g, cylZ(0.05, 0.0, 0.15, 18), OR, { p: [x, 0, 0.285] }); put(g, cylZ(0.051, 0.051, 0.04, 18), DK, { p: [x, 0, -0.4] }); put(g, cylZ(0.051, 0.051, 0.02, 18), DK, { p: [x, 0, 0.05] }); bell(x, 0, -0.57, 0.045);
+          for (const z of [-0.45, 0.1]) put(g, box(0.07, 0.02, 0.03), GR, { p: [sx * 0.11, 0, z] }); tips.push([x, 0, -0.62]); }
         for (let k = 0; k < 4; k++) { const f = new T3.Group(); f.rotation.z = k * Math.PI / 2; g.add(f); put(g, fin([[-0.4, 0.09], [-0.6, 0.09], [-0.64, 0.19], [-0.52, 0.19]], 0.016), DK, { parent: f }); }
-        return { tail: -0.74, jr: 0.07, noseZ: 0.86, tips };
+        return { tail: -0.75, jr: 0.07, noseZ: 0.87, tips };
       }
-      if (st === 2) {   // NAVETTE
-        const CT = [[-0.6, 0.1], [-0.5, 0.11], [0.45, 0.11], [0.6, 0.095], [0.72, 0.06], [0.79, 0.0]];
-        body(CT, [[-0.6, 0.45, WH], [0.45, 0.66, WH], [0.66, 0.79, DK]]);
-        put(g, box(0.2, 0.03, 1.0), DK, { p: [0, -0.095, 0.0] });   // ventre noir (tuiles)
-        for (const sx of [-1, 1]) put(g, box(0.004, 0.01, 0.8), '#c8ccd2', { p: [sx * 0.04, 0.11, -0.05] });   // portes de la soute
-        for (let k = 0; k < 3; k++) put(g, box(0.035, 0.02, 0.03), DK, { p: [-0.04 + k * 0.04, 0.085, 0.6] });   // verriere
-        for (const sx of [-1, 1]) { put(g, flat([[0, 0.3], [sx * 0.44, -0.4], [sx * 0.44, -0.52], [0, -0.52]], 0.018), WH, { p: [0, -0.04, 0] }); put(g, flat([[0, 0.31], [sx * 0.455, -0.4], [sx * 0.44, -0.4], [0, 0.29]], 0.022), DK, { p: [0, -0.04, 0] }); put(g, box(0.012, 0.02, 0.12), OR, { p: [sx * 0.43, -0.04, -0.46] }); tips.push([sx * 0.44, -0.04, -0.46]); }
-        put(g, fin([[-0.2, 0.1], [-0.58, 0.1], [-0.62, 0.4], [-0.5, 0.4]], 0.02), WH); put(g, box(0.024, 0.02, 0.13), OR, { p: [0, 0.39, -0.56] });
-        bell(0, 0.03, -0.6, 0.06, '#c8ccd2'); bell(-0.065, -0.03, -0.6, 0.05, '#c8ccd2'); bell(0.065, -0.03, -0.6, 0.05, '#c8ccd2');
-        for (const sx of [-1, 1]) put(g, cylZ(0.035, 0.035, 0.14, 10), WH, { p: [sx * 0.08, 0.06, -0.55] });   // pods de manoeuvre
-        return { tail: -0.72, jr: 0.08, noseZ: 0.8, tips };
+      if (st === 2) {   // NAVETTE : blanche, nez et ventre noirs, bords d'attaque noirs, derive a bande orange, trois tuyeres
+        const CT = [[-0.6, 0.1], [-0.5, 0.11], [0.45, 0.11], [0.6, 0.095], [0.72, 0.062], [0.8, 0.0]];
+        body(CT, [[-0.6, 0.45, WH], [0.45, 0.66, WH], [0.66, 0.8, DK]]);
+        for (const z of [-0.3, 0.0, 0.3]) joint(z, 0.11);
+        put(g, box(0.2, 0.03, 1.0), DK, { p: [0, -0.095, 0.0] });
+        for (const sx of [-1, 1]) put(g, box(0.004, 0.01, 0.8), '#b8bec6', { p: [sx * 0.045, 0.11, -0.05] });
+        for (let k = 0; k < 3; k++) put(g, box(0.035, 0.022, 0.03), DK, { p: [-0.04 + k * 0.04, 0.086, 0.6], r: [-0.4, 0, 0] });
+        for (const sx of [-1, 1]) { put(g, flat([[0, 0.3], [sx * 0.44, -0.4], [sx * 0.44, -0.52], [0, -0.52]], 0.018), WH, { p: [0, -0.04, 0] }); put(g, flat([[0, 0.31], [sx * 0.455, -0.4], [sx * 0.44, -0.4], [0, 0.29]], 0.022), DK, { p: [0, -0.04, 0] }); put(g, flat([[sx * 0.1, -0.45], [sx * 0.4, -0.45], [sx * 0.4, -0.52], [sx * 0.1, -0.52]], 0.02), WH2, { p: [0, -0.04, 0] }); put(g, box(0.012, 0.02, 0.12), OR, { p: [sx * 0.43, -0.04, -0.46] }); tips.push([sx * 0.44, -0.04, -0.46]); }
+        flag(0.111, 0.02, 0.1, 0); rcs(0.62, 0.085);
+        put(g, fin([[-0.2, 0.1], [-0.58, 0.1], [-0.62, 0.4], [-0.5, 0.4]], 0.02), WH); put(g, box(0.024, 0.02, 0.13), OR, { p: [0, 0.39, -0.56] }); put(g, box(0.022, 0.05, 0.05), DK, { p: [0, 0.32, -0.5] });
+        bell(0, 0.03, -0.6, 0.06); bell(-0.065, -0.03, -0.6, 0.05); bell(0.065, -0.03, -0.6, 0.05);
+        for (const sx of [-1, 1]) { put(g, cylZ(0.035, 0.035, 0.14, 12), WH, { p: [sx * 0.08, 0.06, -0.55] }); bell(sx * 0.08, 0.06, -0.62, 0.025); }
+        return { tail: -0.73, jr: 0.08, noseZ: 0.81, tips };
       }
-      // VAISSEAU
-      const DB = '#1a2234', GL = '#7af0ff', CH = '#e8eef6';
-      const CT = [[-0.7, 0.07], [-0.6, 0.09], [0.3, 0.085], [0.6, 0.055], [0.9, 0.015], [0.98, 0.0]];
-      body(CT, [[-0.7, -0.3, DB], [-0.3, 0.3, CH], [0.3, 0.98, CH]]);
-      put(g, cylZ(0.087, 0.087, 0.02, 22), GL, { p: [0, 0, -0.3], basic: true }); put(g, cylZ(0.086, 0.086, 0.02, 22), GL, { p: [0, 0, 0.3], basic: true });
-      { const cp = new T3.Mesh(new T3.SphereGeometry(0.06, 16, 10), new T3.MeshBasicMaterial({ color: '#2aa8d8' })); cp.scale.set(1, 0.7, 2.4); cp.position.set(0, 0.06, 0.48); g.add(cp); }   // verriere lumineuse
+      // VAISSEAU : meme livree (dessus blanc, ventre noir, filets orange), verriere, ailes en fleche, deux nacelles a anneau incandescent
+      const CT = [[-0.7, 0.07], [-0.6, 0.09], [0.3, 0.085], [0.6, 0.056], [0.9, 0.016], [0.98, 0.0]];
+      body(CT, [[-0.7, -0.3, WH2], [-0.3, 0.3, WH], [0.3, 0.98, WH]]);
+      for (const z of [-0.3, 0.0, 0.3, 0.6]) joint(z, 0.087); put(g, cylZ(0.088, 0.088, 0.03, 24), OR, { p: [0, 0, -0.45] });
+      put(g, box(0.15, 0.03, 1.1), DK, { p: [0, -0.07, -0.05] });   // ventre noir
+      { const cp = new T3.Mesh(new T3.SphereGeometry(0.06, 16, 10), new T3.MeshBasicMaterial({ color: '#1a5a7a' })); cp.scale.set(1, 0.7, 2.4); cp.position.set(0, 0.06, 0.48); g.add(cp); put(g, ringG(0.062, 0.006), DK, { p: [0, 0.06, 0.48], s: [1, 0.7, 1] }); }
+      flag(0.087, 0, 0.15, 0); rcs(0.75, 0.04);
       for (const sx of [-1, 1]) {
-        put(g, flat([[0, 0.25], [sx * 0.5, -0.38], [sx * 0.52, -0.48], [sx * 0.3, -0.42], [0, -0.5]], 0.02), DB);
-        put(g, flat([[sx * 0.06, 0.18], [sx * 0.49, -0.37], [sx * 0.5, -0.4], [sx * 0.06, 0.14]], 0.024), GL, { basic: true });   // filet lumineux du bord d'attaque
-        put(g, flat([[0, 0.72], [sx * 0.16, 0.58], [sx * 0.16, 0.55], [0, 0.6]], 0.014), DB);   // canards
-        const x = sx * 0.2; put(g, cylZ(0.055, 0.045, 0.5, 16), CH, { p: [x, -0.02, -0.3] }); put(g, cylZ(0.045, 0.0, 0.1, 16), DB, { p: [x, -0.02, -0.0] }); bell(x, -0.02, -0.55, 0.05, DB); put(g, ringG(0.05, 0.008), GL, { p: [x, -0.02, -0.56], basic: true });
-        const f = new T3.Group(); f.position.set(sx * 0.12, 0.05, 0); f.rotation.z = -sx * 0.35; g.add(f); put(g, fin([[-0.3, 0.0], [-0.62, 0.0], [-0.66, 0.26], [-0.52, 0.26]], 0.016), DB, { parent: f }); put(g, box(0.02, 0.012, 0.12), GL, { parent: f, p: [0, 0.255, -0.59], basic: true });
+        put(g, flat([[0, 0.25], [sx * 0.5, -0.38], [sx * 0.52, -0.48], [sx * 0.3, -0.42], [0, -0.5]], 0.02), DK);
+        put(g, flat([[sx * 0.06, 0.2], [sx * 0.49, -0.36], [sx * 0.5, -0.39], [sx * 0.06, 0.165]], 0.024), OR);   // filet orange du bord d'attaque
+        put(g, box(0.05, 0.022, 0.08), WH, { p: [sx * 0.5, 0, -0.43] });
+        put(g, flat([[0, 0.72], [sx * 0.16, 0.58], [sx * 0.16, 0.55], [0, 0.6]], 0.014), DK);
+        const x = sx * 0.2; put(g, cylZ(0.055, 0.045, 0.5, 18), WH, { p: [x, -0.02, -0.3] }); put(g, cylZ(0.056, 0.056, 0.02, 18), OR, { p: [x, -0.02, -0.12] }); put(g, cylZ(0.045, 0.0, 0.1, 18), DK, { p: [x, -0.02, -0.0] }); bell(x, -0.02, -0.55, 0.05);
+        const f = new T3.Group(); f.position.set(sx * 0.12, 0.05, 0); f.rotation.z = -sx * 0.35; g.add(f); put(g, fin([[-0.3, 0.0], [-0.62, 0.0], [-0.66, 0.26], [-0.52, 0.26]], 0.016), DK, { parent: f }); put(g, box(0.02, 0.012, 0.12), OR, { parent: f, p: [0, 0.255, -0.59] });
         tips.push([sx * 0.5, 0, -0.42]); }
-      bell(0, 0, -0.7, 0.075, DB); put(g, ringG(0.075, 0.009), GL, { p: [0, 0, -0.72], basic: true });
-      return { tail: -0.82, jr: 0.07, noseZ: 1.0, tips };
+      bell(0, 0, -0.7, 0.075);
+      return { tail: -0.84, jr: 0.07, noseZ: 1.0, tips };
     },
   };
 
