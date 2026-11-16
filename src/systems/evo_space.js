@@ -155,8 +155,8 @@
   function buildSky(g) {
     const sky = new T3.Group(), X = textures(); sky.renderOrder = -10;
     // etoiles : deux couches (petites et brillantes)
-    for (const [n, sz, op] of [[2600, 1.6, 0.85], [420, 2.8, 1]]) { const pos = new Float32Array(n * 3), col = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const u = rr(-1, 1), a = rr(0, 6.283), q = Math.sqrt(1 - u * u); pos[i * 3] = Math.cos(a) * q * 3000; pos[i * 3 + 1] = u * 3000; pos[i * 3 + 2] = Math.sin(a) * q * 3000; const t = Math.random(); col[i * 3] = 0.8 + 0.2 * t; col[i * 3 + 1] = 0.85 + 0.1 * t; col[i * 3 + 2] = 1; }
-      const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.BufferAttribute(col, 3)); const p = new T3.Points(geo, new T3.PointsMaterial({ size: sz, sizeAttenuation: false, vertexColors: true, transparent: true, opacity: op, depthWrite: false, fog: false })); p.renderOrder = -10; p.userData.op = op; sky.add(p); (L.stars = L.stars || []).push(p); }
+    for (const [n, sz, op] of [[1100, 1.5, 0.8], [160, 2.6, 1]]) { const pos = new Float32Array(n * 3), col = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const u = rr(-1, 1), a = rr(0, 6.283), q = Math.sqrt(1 - u * u); pos[i * 3] = Math.cos(a) * q * 3000; pos[i * 3 + 1] = u * 3000; pos[i * 3 + 2] = Math.sin(a) * q * 3000; const t = Math.random(); col[i * 3] = 0.8 + 0.2 * t; col[i * 3 + 1] = 0.85 + 0.1 * t; col[i * 3 + 2] = 1; }
+      const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.BufferAttribute(col, 3)); const p = new T3.Points(geo, new T3.PointsMaterial({ size: sz, sizeAttenuation: false, vertexColors: true, transparent: false, blending: T3.AdditiveBlending, depthWrite: false, fog: false })); /* v420 : liste opaque (avant la Terre, qui les recouvre) ; fondu par la couleur */ p.renderOrder = -10; p.userData.op = op; sky.add(p); (L.stars = L.stars || []).push(p); }
     // la Terre : sphere texturee, couche de nuages qui tourne, halo d'atmosphere
     const earth = new T3.Group(); sky.add(earth); L.earth = earth;
     const em = new T3.Mesh(new T3.SphereGeometry(RS, 96, 64), new T3.MeshBasicMaterial({ map: X.earth, color: '#c8d4e4', fog: false, depthWrite: false })); em.renderOrder = -9; earth.add(em);   // sans eclairage (l'eclairage de la scene la brulait en blanc)
@@ -448,12 +448,18 @@
   function moonWorld(g, PA, grp) {
     const X = textures(), C = PA.W(MC), Y = new V(0, 1, 0), Z = new V(0, 0, 1);
     // la Lune : une vraie sphere de 500 m qu'on survole puis qu'on traverse
-    const moon = new T3.Mesh(new T3.SphereGeometry(RMOON, 128, 80), new T3.MeshLambertMaterial({ map: X.moon, color: '#8c8c94', emissive: '#121216', fog: false })); moon.position.copy(C); grp.add(moon); L.moonW = moon;
+    const pitP = [6545, 7535].map((s) => C.clone().addScaledVector(new V().subVectors(PA.fr(s).p, C).normalize(), RMOON));
+    const coreP = []; { let pin = PA.fr(6800).p.distanceTo(C) < 125; for (let s = 6800; s <= 7300; s += 1) { const ins = PA.fr(s).p.distanceTo(C) < 125; if (ins !== pin) coreP.push(PA.fr(s).p.clone()); pin = ins; } } while (coreP.length < 2) coreP.push(new V(0, -1e6, 0));
+    const holes = (M, P, rad) => { M.onBeforeCompile = (sh) => { sh.uniforms.uH0 = { value: P[0] }; sh.uniforms.uH1 = { value: P[1] }; sh.uniforms.uHR = { value: rad };
+      sh.vertexShader = 'varying vec3 vHW;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n vHW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+      sh.fragmentShader = 'uniform vec3 uH0; uniform vec3 uH1; uniform float uHR; varying vec3 vHW;\n' + sh.fragmentShader.replace('void main() {', 'void main() {\n if (distance(vHW, uH0) < uHR || distance(vHW, uH1) < uHR) discard;'); }; return M; };
+    L.holeFx = holes;   // v420 : on VOIT l'entree des puits et des tunnels (plus de mur noir/de lave qu'on traverse sans savoir ce qu'il y a derriere)
+    const moon = new T3.Mesh(new T3.SphereGeometry(RMOON, 128, 80), holes(new T3.MeshLambertMaterial({ map: X.moon, color: '#8c8c94', emissive: '#121216', fog: false }), pitP, R + 1.5)); moon.position.copy(C); grp.add(moon); L.moonW = moon;
     const onS = (dir, h) => C.clone().addScaledVector(dir, RMOON + (h || 0));
     const upTo = (o, dir) => { o.quaternion.setFromUnitVectors(Y, dir); return o; };
     // les deux crateres-puits (entree en haut, sortie en dessous) : fosse noire, rebord, lampes
     for (const s of [6545, 7535]) { const F = PA.fr(s), dir = new V().subVectors(F.p, C).normalize();
-      const pit = new T3.Mesh(new T3.CircleGeometry(24, 40), bas('#050506', { fog: false })); pit.position.copy(onS(dir, 0.6)); pit.quaternion.setFromUnitVectors(Z, dir); grp.add(pit);
+      const pit = new T3.Mesh(new T3.RingGeometry(R + 1.5, 24, 40), bas('#050506', { fog: false, side: T3.DoubleSide })); pit.position.copy(onS(dir, 0.6)); pit.quaternion.setFromUnitVectors(Z, dir); grp.add(pit);
       const rim = new T3.Mesh(new T3.TorusGeometry(27, 4, 10, 48), lam('#8a8680', { emissive: '#1a1a1c' })); rim.position.copy(onS(dir, 1)); rim.quaternion.setFromUnitVectors(Z, dir); grp.add(rim);
       for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2, l = new T3.Mesh(new T3.SphereGeometry(0.9, 8, 6), bas('#ffb84a', { fog: false })); l.position.set(Math.cos(a) * 27, Math.sin(a) * 27, 4.5); rim.add(l); } }
     // la base lunaire sur la face qu'on survole : domes, antennes, plateformes, crateres
@@ -472,9 +478,9 @@
     // le puits et la sortie : tunnel de roche aux fissures de lave
     const RMt = rockMat(); L.rockMats = [RMt]; for (const [a, b] of ROCK) { const m = new T3.Mesh(sweep(PA, a, b, R, 40, 3), RMt); m.frustumCulled = false; grp.add(m); }
     // le COEUR : une grande chambre de lave (vue de l'interieur), anneaux de reacteur autour de la voie
-    { const ch = new T3.Mesh(new T3.SphereGeometry(125, 48, 32), new T3.ShaderMaterial({ uniforms: { uT: { value: 0 } }, side: T3.BackSide,
-        vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-        fragmentShader: 'uniform float uT; varying vec3 vP; float h(vec3 p){ return fract(sin(dot(p, vec3(12.9, 78.2, 37.7))) * 43758.5); } void main(){ float a = sin(vP.x * 9.0 + uT) * sin(vP.y * 7.0 - uT * 0.7) * sin(vP.z * 8.0 + uT * 0.5); vec3 c = mix(vec3(0.35, 0.06, 0.02), vec3(1.0, 0.55, 0.12), smoothstep(-0.2, 0.9, a)); c *= 0.75 + 0.25 * step(0.97, h(floor(vP * 40.0))); gl_FragColor = vec4(c, 1.0); }' }));
+    { const ch = new T3.Mesh(new T3.SphereGeometry(125, 48, 32), new T3.ShaderMaterial({ uniforms: { uT: { value: 0 }, uH0: { value: coreP[0] }, uH1: { value: coreP[coreP.length - 1] }, uHR: { value: R + 1 } }, side: T3.BackSide,
+        vertexShader: 'varying vec3 vP; varying vec3 vHW; void main(){ vP = normalize(position); vHW = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+        fragmentShader: 'uniform float uT; uniform vec3 uH0; uniform vec3 uH1; uniform float uHR; varying vec3 vP; varying vec3 vHW; float h(vec3 p){ return fract(sin(dot(p, vec3(12.9, 78.2, 37.7))) * 43758.5); } void main(){ if (distance(vHW, uH0) < uHR || distance(vHW, uH1) < uHR) discard; float a = sin(vP.x * 9.0 + uT) * sin(vP.y * 7.0 - uT * 0.7) * sin(vP.z * 8.0 + uT * 0.5); vec3 c = mix(vec3(0.35, 0.06, 0.02), vec3(1.0, 0.55, 0.12), smoothstep(-0.2, 0.9, a)); c *= 0.75 + 0.25 * step(0.97, h(floor(vP * 40.0))); gl_FragColor = vec4(c, 1.0); }' }));
       ch.position.copy(C); grp.add(ch); L.core = ch; L.coreRings = [];
       for (const [s, r] of [[6990, 30], [7038, 46], [7090, 30]]) { const o = placeAt(PA, new T3.Mesh(new T3.TorusGeometry(r, 1.6, 10, 64), lam('#3a3e46', { emissive: '#ff5a1a' })), s); grp.add(o); L.coreRings.push(o); }
       const gl = glowS(260, '#ff7a2a', 0.5); gl.position.copy(C); grp.add(gl); }
@@ -624,9 +630,9 @@
     const PA = L.PA, cam = this.cam, F = PA.fr(L.s + 6), Fq = frameQ(F, _q2.clone());
     if (!L.camQ) L.camQ = Fq.clone(); L.camQ.slerp(Fq, 1 - Math.exp(-dt * 3.2));
     const cr = new V(1, 0, 0).applyQuaternion(L.camQ), cu = new V(0, 1, 0).applyQuaternion(L.camQ), cf = new V(0, 0, -1).applyQuaternion(L.camQ);
-    const F0 = PA.fr(L.s), ctr = _d.copy(F0.p).addScaledVector(F0.r, L.x * 0.8).addScaledVector(F0.u, L.y * 0.8);
-    cam.position.copy(ctr).addScaledVector(cf, -11).addScaledVector(cu, 3.4);
-    cam.up.copy(cu); cam.lookAt(_a.copy(rk.pos).addScaledVector(cf, 18).addScaledVector(cu, 1.2));
+    const F0 = PA.fr(L.s), ctr = _d.copy(F0.p).addScaledVector(F0.r, L.x * 0.94).addScaledVector(F0.u, L.y * 0.94), bkD = U.clamp(1.5 * L.rkL, 3.6, 7.5);   // v420 : camera proche comme aux niveaux 1-3 (la fusee n'est plus toute petite)
+    cam.position.copy(ctr).addScaledVector(cf, -bkD).addScaledVector(cu, 0.47 * bkD);
+    cam.up.copy(cu); cam.lookAt(_a.copy(rk.pos).addScaledVector(cf, 4).addScaledVector(cu, 0.3));
     // au decollage : on part de la vue du menu (pres de la fusee, la tour derriere) et on recule vers une grande vue depuis le sol, puis la poursuite entre 50 et 220 m
     { const b = ss(50, 220, L.s); if (b < 1) { const qC = _q.copy(cam.quaternion), pC = _c.copy(cam.position), O = PA.O, k = ss(0, 70, L.s);
       const D = Math.max(1, L.rkL / 2.4), pL = new V().copy(O).addScaledVector(PA.R0, -(3.4 * D + 30 * k)).addScaledVector(PA.F0, -(3.2 * D + 58 * k)).add(_b.set(0, -0.3 * D + 14.3 * k + L.s * 0.35, 0));
@@ -689,7 +695,7 @@
     for (const o of g.scene.children) if (o.name === 'level') o.visible = false;   if (g.pad && g.pad.evoL) g.pad.evoL.visible = false; if (g.pad && g.pad.hangar) g.pad.hangar.visible = false;   /* niveau 4 : ni le hangar du niveau 1, ni sa rampe : la fusee est sur la table de lancement */
     animate(g);   /* le decor du mode classique (murs du lancement) n'a rien a faire au niveau 4 */
     if (L.sky) { L.sky.position.copy(cam.position); const E = L.earth, hv = 4 + Math.pow(Math.max(0, alt - 450), 1.5) * 0.02 + 900 * ss(7300, 7700, L.s); E.visible = alt > 440; E.position.set(0, -(RS + hv), 0); E.rotation.set(Math.PI / 2 - 0.35, 0, L.t * 0.004); L.cloudSphere.rotation.y = L.t * 0.002;   // le pole est mis sur le cote : sous la fusee on voit l'equateur (oceans, continents), pas la calotte glaciaire
-      for (const p of L.stars) p.material.opacity = p.userData.op * ss(500, 850, alt);
+      for (const p of L.stars) p.material.color.setScalar(p.userData.op * ss(500, 850, alt));
       const mf = _a.copy(PA.F0).multiplyScalar(0.8).addScaledVector(PA.R0, -0.25); mf.y = 0.42; mf.normalize(); L.moon.position.copy(mf).multiplyScalar(3200); L.moon.scale.setScalar(1 + 0.25 * ss(0, PA.len, L.s)); L.moon.visible = false;   /* la vraie Lune (une sphere de 500 m sur la voie) remplace la Lune du ciel */
       if (L.sun) { _b.copy(PA.R0).multiplyScalar(0.75).addScaledVector(PA.F0, 0.5); _b.y = 0.28; _b.normalize(); L.sun.position.copy(_b).multiplyScalar(2800); L.sun.material.opacity = 0.25 + 0.75 * K; } }   // le soleil est BAS, sur le cote : on ne le regarde jamais en face pendant la montee
     // la poussiere de l'espace (a decouvert surtout)
