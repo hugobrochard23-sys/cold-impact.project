@@ -25,7 +25,7 @@
   { const _as = EVO.applySkin; EVO.applySkin = (g) => { if (!isS4()) return _as(g); const r = EVO.rocket(EVO.save(g).rk); g.rocket.setSkin(CC.Skins.get('evoS' + r.tier)); EVO.attachParts(g); }; }
   { const RK4 = ['SONDE', 'FUSEE A BOOSTERS', 'NAVETTE', 'VAISSEAU'], _rk = EVO.rocket; EVO.rocket = (n) => { const r = _rk(n); if (isS4()) r.name = RK4[r.tier]; return r; }; }
   // le carburant du niveau 4 : il grandit avec la fusee et le lanceur (plus de reservoir illimite)
-  { const _ol = EVO.onLaunch; EVO.onLaunch = (g) => { _ol(g); if (!isS4() || (g.evo && g.evo.preview)) return; const S = EVO.save(g), rk = g.rocket, f = 40 + 5 * (S.rk || 0) + 3 * (S.la || 0); rk.fuelMax = f; rk.fuel = (g.evoAimLast && g.evoAimLast.zone === 'gold') ? f : f * 0.9 + 0.1 * f; }; }
+  { const _ol = EVO.onLaunch; EVO.onLaunch = (g) => { _ol(g); if (!isS4() || (g.evo && g.evo.preview)) return; const S = EVO.save(g), rk = g.rocket, f = 29 + 3.6 * (S.rk || 0) + 2.2 * (S.la || 0);   /* v421 : recale sur le niveau raccourci (~2 min) */ rk.fuelMax = f; rk.fuel = (g.evoAimLast && g.evoAimLast.zone === 'gold') ? f : f * 0.9 + 0.1 * f; }; }
   let L = null;   // l'etat du niveau 4 (voie, decor, pilotage), refait a chaque partie
 
   // ============================== LA VOIE 3D ==============================
@@ -36,22 +36,36 @@
   CP.push([-300, 900, 2700], [-310, 1000, 2950], [-310, 1130, 3180], [-300, 1220, 3420], [-280, 1230, 3700], [-250, 1190, 4000], [-230, 1170, 4300], [-220, 1170, 4700], [-220, 1192, 5000], [-220, 1084, 5296], [-220, 1148, 5419], [-220, 1175, 5526], [-220, 1150, 5590], [-220, 1060, 5602], [-220, 900, 5602], [-220, 650, 5600], [-220, 400, 5600], [-220, 200, 5600], [-220, 110, 5605], [-220, 40, 5650], [-220, 10, 5750], [-220, 0, 5900], [-220, 0, 6300], [-220, 10, 6800], [-220, 30, 7200]);
   // v417 : LA LUNE (centre MC, rayon RM) : on la survole a 30 m, on plonge dans un cratere, on la traverse par son coeur et on ressort dessous ; puis l'arene du CROISEUR LUNAIRE
   const MC = [-220, 650, 5600], RMOON = 500;
+  // v421 : NIVEAU RACCOURCI A ~2 MIN : on retire des morceaux de voie (en distance « d'origine ») et on recolle la suite ; toute la logique reste dans ces distances d'origine
+  const CUTS = [[1735, 2025], [2230, 2640], [3600, 3800], [3900, 5050]], END = 8600;
 
   function buildPath(O, F0) {
     const Y = new V(0, 1, 0), R0 = new V().crossVectors(F0, Y).normalize(), W = (p) => new V().copy(O).addScaledVector(R0, p[0]).addScaledVector(Y, p[1]).addScaledVector(F0, p[2]);
-    const curve = new T3.CatmullRomCurve3(CP.map(W), false, 'centripetal', 0.5), len = curve.getLength(), N = Math.ceil(len / 2);
-    const P = curve.getSpacedPoints(N), step = len / N, T = [], UP = [], RT = [];
+    const curve = new T3.CatmullRomCurve3(CP.map(W), false, 'centripetal', 0.5), len0 = curve.getLength(), N0 = Math.ceil(len0 / 2);
+    const P0 = curve.getSpacedPoints(N0), step = len0 / N0, T = [], UP = [], RT = [], len = END;
+    const inCut = (s) => CUTS.some(([a, b]) => s > a && s < b), cutRem = (s) => { let r = 0; for (const [a, b] of CUTS) { if (s >= b) r += b - a; else if (s > a) r += s - a; } return r; };
+    const toNew = (s) => s - cutRem(s), toOld = (n) => { let s = n; for (const [a, b] of CUTS) if (s >= a) s += b - a; return s; };
+    // la voie recollee : les points hors des coupes, la suite decalee pour continuer la ou on s'est arrete, puis le raccord adouci sur 60 m
+    const P = [], JN = []; let off = new V(), skip = false;
+    for (let i = 0; i <= N0; i++) { const s = i * step; if (s > END + 4) break; if (inCut(s)) { skip = true; continue; }
+      if (skip && P.length > 1) { const k = P.length - 1, d = new V().subVectors(P[k], P[k - 1]); off = new V().copy(P[k]).add(d).sub(P0[i]); JN.push(P.length); } skip = false; P.push(P0[i].clone().add(off)); }
+    for (const j of JN) for (let it = 0; it < 80; it++) for (let k = Math.max(1, j - 32); k <= Math.min(P.length - 2, j + 32); k++) { const w = 1 - Math.abs(k - j) / 33; P[k].lerp(_a.copy(P[k - 1]).add(P[k + 1]).multiplyScalar(0.5), 0.5 * w); }
+    // les coupes retirent de la montee : on rend la hauteur perdue par une pente douce (du tire-bouchon a l'approche de la Lune), la Lune et l'arene restent a leur hauteur
+    { const dy = -off.y, n0 = toNew(2640), n1 = toNew(5450); for (let k = 0; k < P.length; k++) P[k].y += dy * ss(n0, n1, k * step); off.y += dy; }
+    const N = P.length - 1, OFF = off.clone();
     for (let i = 0; i <= N; i++) { const a = P[Math.max(0, i - 1)], b = P[Math.min(N, i + 1)]; T.push(new V().subVectors(b, a).normalize()); }
     let up = new V().copy(F0).negate();   // au depart (voie verticale), le « haut » de l'ecran regarde vers l'arriere : apres la bascule il devient le ciel
     // v419 : le « haut » est transporte le long de la voie, puis REDRESSE doucement vers le vrai haut du monde des que la voie n'est pas verticale
     // (sauf dans le tire-bouchon, qui doit tourner) : apres la vrille, sur la Lune et dans l'arene, la camera est droite et centree
     for (let i = 0; i <= N; i++) { up = up.clone().addScaledVector(T[i], -up.dot(T[i])).normalize();
-      const sI = i * step, des = new V().copy(Y).addScaledVector(T[i], -Y.dot(T[i])), dl = des.length(), w = (dl > 0.35 ? ss(0.35, 0.6, dl) : 0) * (1 - ss(2560, 2640, sI) * (1 - ss(3420, 3560, sI)));
+      const sI = toOld(i * step), des = new V().copy(Y).addScaledVector(T[i], -Y.dot(T[i])), dl = des.length(), w = (dl > 0.35 ? ss(0.35, 0.6, dl) : 0) * (1 - ss(2560, 2640, sI) * (1 - ss(3420, 3560, sI)));
       if (w > 0) { des.normalize(); const ang = up.angleTo(des); if (ang > 1e-4) up.lerp(des, Math.min(1, 0.012 * w / ang)).normalize(); }
       UP.push(up); RT.push(new V().crossVectors(T[i], up).normalize()); }
-    const sOf = (p) => { const q = W(p); let bi = 0, bd = 1e18; for (let i = 0; i <= N; i++) { const d = P[i].distanceToSquared(q); if (d < bd) { bd = d; bi = i; } } return bi * step; };
-    const fr = (s, o) => { const u = U.clamp(s / step, 0, N - 1e-4), i = Math.floor(u), f = u - i; o = o || {}; o.p = (o.p || new V()).lerpVectors(P[i], P[i + 1], f); o.t = (o.t || new V()).lerpVectors(T[i], T[i + 1], f).normalize(); o.u = (o.u || new V()).lerpVectors(UP[i], UP[i + 1], f).normalize(); o.r = (o.r || new V()).crossVectors(o.t, o.u).normalize(); return o; };
-    return { O, F0, R0, len, step, N, P, T, UP, RT, fr, sOf, W };
+    const sOf = (p) => { const q = W(p); let bi = 0, bd = 1e18; for (let i = 0; i <= N; i++) { const d = P[i].distanceToSquared(q); if (d < bd) { bd = d; bi = i; } } return toOld(bi * step); };
+    const fr = (s, o) => { const u = U.clamp(toNew(s) / step, 0, N - 1e-4), i = Math.floor(u), f = u - i; o = o || {}; o.p = (o.p || new V()).lerpVectors(P[i], P[i + 1], f); o.t = (o.t || new V()).lerpVectors(T[i], T[i + 1], f).normalize(); o.u = (o.u || new V()).lerpVectors(UP[i], UP[i + 1], f).normalize(); o.r = (o.r || new V()).crossVectors(o.t, o.u).normalize(); return o; };
+    const cl = (s) => { for (const [a, b] of CUTS) if (s > a && s < b) return s - a < b - s ? a : b; return s; };
+    const cutA = (s) => { for (const [a, b] of CUTS) if (s > a && s < b) return a; return s; };
+    return { O, F0, R0, len, step, N, P, T, UP, RT, fr, sOf, W, W2: (p) => W(p).add(OFF), cut: inCut, cl, cutA, toNew, toOld, adv: (s, d) => toOld(toNew(s) + d), lenN: toNew(END) };
   }
 
   // ============================== LE TUBE TRANSPARENT ==============================
@@ -79,7 +93,7 @@
   // balaye un cercle le long de la voie (tube de verre, rails) ; uv = (distance, angle / 2 pi)
   function sweep(PA, s0, s1, rad, seg, dS, ang0) {
     const n = Math.max(2, Math.ceil((s1 - s0) / dS)), pos = [], nor = [], uv = [], idx = [], F = {};
-    for (let i = 0; i <= n; i++) { const s = s0 + (s1 - s0) * i / n; PA.fr(s, F);
+    for (let i = 0; i <= n; i++) { const s = PA.cl(s0 + (s1 - s0) * i / n); PA.fr(s, F);
       for (let j = 0; j <= seg; j++) { const a = (ang0 || 0) + j / seg * Math.PI * 2, c = Math.cos(a), sn = Math.sin(a); _a.copy(F.r).multiplyScalar(c).addScaledVector(F.u, sn);
         pos.push(F.p.x + _a.x * rad, F.p.y + _a.y * rad, F.p.z + _a.z * rad); nor.push(_a.x, _a.y, _a.z); uv.push(s, j / seg); } }
     for (let i = 0; i < n; i++) for (let j = 0; j < seg; j++) { const a = i * (seg + 1) + j, b = a + seg + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
@@ -88,7 +102,7 @@
   // un objet pose dans le repere de la voie a la distance s (x a droite, y en haut, z en avant)
   const frameQ = (F, out) => out.setFromRotationMatrix(_m.makeBasis(F.r, F.u, _d.copy(F.t).negate()));   // -Z de l'objet = l'avant de la voie
   const _PF = {};
-  function placeAt(PA, o, s, x, y, zf) { const F = PA.fr(s, _PF);o.position.copy(F.p).addScaledVector(F.r, x || 0).addScaledVector(F.u, y || 0).addScaledVector(F.t, zf || 0); frameQ(F, o.quaternion); return o; }
+  function placeAt(PA, o, s, x, y, zf) { if (PA.cut && PA.cut(s)) { o.position.set(0, -1e6, 0); return o; } const F = PA.fr(s, _PF);o.position.copy(F.p).addScaledVector(F.r, x || 0).addScaledVector(F.u, y || 0).addScaledVector(F.t, zf || 0); frameQ(F, o.quaternion); return o; }
 
   function buildTube(PA, grp, sections) {
     const M = tubeMat(); L.tubeMats.push(M); M.uniforms.uZ.value = zoneTex(PA.len); M.uniforms.uLen.value = PA.len;
@@ -105,12 +119,12 @@
         for (let j = 0; j < 4; j++) { const a = j * Math.PI / 2 + Math.PI / 4; o.position.copy(F.p).addScaledVector(F.r, Math.cos(a) * (R + 0.9)).addScaledVector(F.u, Math.sin(a) * (R + 0.9)); o.quaternion.identity(); o.updateMatrix(); lights.setMatrixAt(k * 4 + j, o.matrix); } }
       for (const im of [rings, frames, lights]) { im.frustumCulled = false; grp.add(im); }
       // portails aux deux bouts : gros anneau lumineux + chevrons
-      for (const s of [s0, s1]) { const p = placeAt(PA, new T3.Mesh(portG, portM), s); grp.add(p); for (let j = 0; j < 8; j++) { const c = new T3.Mesh(new T3.ConeGeometry(1.2, 3.2, 4), lightM), a = j / 8 * Math.PI * 2; placeAt(PA, c, s, Math.cos(a) * (R + 5), Math.sin(a) * (R + 5)); c.rotateX(-Math.PI / 2); grp.add(c); } }
+      for (const s of [PA.cl(s0), PA.cl(s1)]) { const p = placeAt(PA, new T3.Mesh(portG, portM), s); grp.add(p); for (let j = 0; j < 8; j++) { const c = new T3.Mesh(new T3.ConeGeometry(1.2, 3.2, 4), lightM), a = j / 8 * Math.PI * 2; placeAt(PA, c, s, Math.cos(a) * (R + 5), Math.sin(a) * (R + 5)); c.rotateX(-Math.PI / 2); grp.add(c); } }
     }
   }
   function sweepOff(PA, s0, s1, ang) {   // un rail : petit tube a l'exterieur du verre, a l'angle donne
     const n = Math.max(2, Math.ceil((s1 - s0) / 6)), pos = [], idx = [], F = {}, seg = 5;
-    for (let i = 0; i <= n; i++) { const s = s0 + (s1 - s0) * i / n; PA.fr(s, F); const cx = Math.cos(ang) * (R + 0.35), cy = Math.sin(ang) * (R + 0.35);
+    for (let i = 0; i <= n; i++) { const s = PA.cl(s0 + (s1 - s0) * i / n); PA.fr(s, F); const cx = Math.cos(ang) * (R + 0.35), cy = Math.sin(ang) * (R + 0.35);
       for (let j = 0; j <= seg; j++) { const a = j / seg * Math.PI * 2, c = Math.cos(a) * 0.22, sn = Math.sin(a) * 0.22; _a.copy(F.r).multiplyScalar(cx + c * Math.cos(ang)).addScaledVector(F.u, cy + c * Math.sin(ang)).addScaledVector(F.t, sn); pos.push(F.p.x + _a.x, F.p.y + _a.y, F.p.z + _a.z); } }
     for (let i = 0; i < n; i++) for (let j = 0; j < seg; j++) { const a = i * (seg + 1) + j, b = a + seg + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
     const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeBoundingSphere(); return geo;
@@ -118,7 +132,7 @@
   // v418 : a decouvert, une seule LIGNE jaune relie les tubes (sous la voie, comme la bande du plancher) : on voit ou aller, sans balises partout
   function cable(PA, grp, s0, s1) {
     const n = Math.max(2, Math.ceil((s1 - s0) / 4)), pos = [], idx = [], F = {}, seg = 6, oy = -7, rad = 0.16;
-    for (let i = 0; i <= n; i++) { const s = s0 + (s1 - s0) * i / n; PA.fr(s, F); for (let j = 0; j <= seg; j++) { const a = j / seg * Math.PI * 2; _a.copy(F.p).addScaledVector(F.u, oy + Math.sin(a) * rad).addScaledVector(F.r, Math.cos(a) * rad); pos.push(_a.x, _a.y, _a.z); } }
+    for (let i = 0; i <= n; i++) { const s = PA.cl(s0 + (s1 - s0) * i / n); PA.fr(s, F); for (let j = 0; j <= seg; j++) { const a = j / seg * Math.PI * 2; _a.copy(F.p).addScaledVector(F.u, oy + Math.sin(a) * rad).addScaledVector(F.r, Math.cos(a) * rad); pos.push(_a.x, _a.y, _a.z); } }
     for (let i = 0; i < n; i++) for (let j = 0; j < seg; j++) { const a = i * (seg + 1) + j, b = a + seg + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
     const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeBoundingSphere();
     const m = new T3.Mesh(geo, bas('#ffd23a')); m.frustumCulled = false; grp.add(m);
@@ -333,7 +347,7 @@
     // LES LASERS (plus lents)
     laser(2310, 'h', 10, 1.0, 0); laser(2400, 'v', 10, -1.1, 1); laser(2490, 'rot', 0, 0.6, 0); laser(2580, 'h', 10, 0.9, 0); laser(2582, 'v', 10, 0.7, 2);
     // LE TIRE-BOUCHON : quelques mines et des volets qui tournent doucement
-    for (let s = 2700; s < 3380; s += 75) { if (Math.abs(s - 2880) < 25 || Math.abs(s - 3120) < 25) continue; const a = rr(0, 6.28), r = rr(0, 9); mine(s, Math.cos(a) * r, Math.sin(a) * r, rr(0, 2)); }
+    for (let s = 2790; s < 3380; s += 75) { if (Math.abs(s - 2880) < 25 || Math.abs(s - 3120) < 25) continue; const a = rr(0, 6.28), r = rr(0, 9); mine(s, Math.cos(a) * r, Math.sin(a) * r, rr(0, 2)); }
     shutter(2880, 0, 2.4, 0.45); shutter(3120, H, 2.6, -0.45);
     // LES PISTONS : des portes de 1 ou 2 blocs (le centre reste toujours libre)
     { let k = 0; for (let s = 4220; s < 4880; s += 100, k++) { const a0 = rr(0, 6.28), ph = rr(0, 6), w = rr(0.9, 1.3), n = 1 + (k % 2); for (let j = 0; j < n; j++) piston(s, a0 + j * 6.2832 / n, 3, n === 1 ? 12 : 10, w, ph + j * 1.2); } }
@@ -345,7 +359,9 @@
     { const SIDES = [Math.PI, 0, Math.PI / 2, -Math.PI / 2], wall = (s, c) => { const dx = Math.cos(c), dy = Math.sin(c); for (let gx = -28; gx <= 28; gx += 8.5) for (let gy = -28; gy <= 28; gy += 8.5) { const x = gx + rr(-1.2, 1.2), y = gy + rr(-1.2, 1.2), d = x * dx + y * dy; if (d < 3 || Math.hypot(x, y) > 31) continue; ast(s + rr(-3, 3), x, y, rr(3.2, 4.2), 0); } };
       for (const [a, b, st] of [[1590, 2200, 95], [3600, 4110, 100], [5500, 6060, 90]]) { let k = 0; for (let s = a; s < b; s += st) { if (keep.some(([c, w]) => Math.abs(s - c) < w)) continue; wall(s, SIDES[k % 4]); k++; } } }
     moonObstacles(g, PA, grp, { shutter, laser, ast, mine, M });
+    for (const A of AV) A.list = A.list.filter((a) => !PA.cut(a.s));
     for (const A of AV) { const im = new T3.InstancedMesh(A.gm, lam('#4e4842', { flatShading: true, emissive: '#100e0c' }), Math.max(1, A.list.length)); im.count = A.list.length; im.frustumCulled = false; grp.add(im); A.im = im; }
+    for (const A of AV) A.list = A.list.filter((a) => !PA.cut(a.s)); for (let i = OB.length - 1; i >= 0; i--) if (PA.cut(OB[i].s)) OB.splice(i, 1);
     L.AV = AV; L.OB = OB;
     // les anneaux d'acceleration (passer dedans = BOOST)
     L.boostR = []; const RG = new T3.TorusGeometry(4.4, 0.45, 8, 32), RM = bas('#ffc23a', { fog: false }), AM = bas('#fff2a0', { fog: false });
@@ -405,10 +421,10 @@
     for (const c of L.chase) { const on = L.s > c.a && L.s < c.b; if (on && !c.on) { c.on = true; c.ds = 260; c.m.visible = true; if (c.k === 0) { if (CC.L1) CC.L1.msg(g, 'CHASSEURS EN APPROCHE !', 2, '#ff6a5a'); g.audio.play('alarm'); } }
       if (!c.on) continue; const want = on ? 46 + c.k * 12 + 6 * Math.sin(t * 0.7 + c.ph) : 420; c.ds += (want - c.ds) * Math.min(1, dt * (on ? 1.4 : 0.6));
       c.x = Math.cos(t * 0.55 + c.ph) * (10 + 6 * Math.sin(t * 0.3 + c.k)); c.y = Math.sin(t * 0.7 + c.ph * 1.3) * 12;
-      if (on && c.ds < 90) { c.fT -= dt; if (c.fT <= 0) { c.fT = 1.5 + c.n * 0.25; fire(g, L.s + c.ds, c.x, c.y); } }
+      if (on && c.ds < 90) { c.fT -= dt; if (c.fT <= 0) { c.fT = 1.5 + c.n * 0.25; fire(g, PA.adv(L.s, c.ds), c.x, c.y); } }
       if (!on && c.ds > 400) { c.on = false; c.m.visible = false; } }
     // les tirs : ils remontent la voie vers la fusee ; touche = on freine, ca secoue (pas mortel)
-    for (const b of L.bul) { if (!b.on) continue; b.t += dt; b.s += b.vs * dt; b.x += b.vx * dt; b.y += b.vy * dt; if (b.t > 4 || b.s < L.s - 20) { b.on = false; b.m.visible = false; continue; }
+    for (const b of L.bul) { if (!b.on) continue; b.t += dt; b.s += b.vs * dt; if (PA.cut(b.s)) b.s = PA.cutA(b.s); b.x += b.vx * dt; b.y += b.vy * dt; if (b.t > 4 || b.s < L.s - 20) { b.on = false; b.m.visible = false; continue; }
       if (Math.abs(b.s - L.s) < 2 && Math.hypot(b.x - L.x, b.y - L.y) < 1.3 && L.inv <= 0) { b.on = false; b.m.visible = false; missileHit(g, rk); continue; }
       b.smT -= dt; if (b.smT <= 0) { b.smT = 0.05; g.effects.smokePuff(b.m.position.clone(), new V(0, 0, 0), 0.9, 0.7); } }
     // anneaux d'acceleration
@@ -421,7 +437,7 @@
     for (const o of L.OB) if (o.upd && Math.abs(o.s - L.s) < 700) o.upd(t);
     for (const A of L.AV) { let i = 0; for (const a of A.list) { const F = PA.fr(a.s, _PF);_o4.position.copy(F.p).addScaledVector(F.r, a.xx(t)).addScaledVector(F.u, a.y); _o4.quaternion.setFromAxisAngle(a.rs, t * a.rw + a.ph); _o4.scale.setScalar(a.rad); _o4.updateMatrix(); A.im.setMatrixAt(i++, _o4.matrix); } A.im.instanceMatrix.needsUpdate = true; }
     for (const d of L.sent) if (d.alive) { placeAt(PA, d.m, d.s, d.x, d.y + Math.sin(t * 1.4 + d.ph) * 0.8); d.m.rotateZ(Math.sin(t * 0.8 + d.ph) * 0.3); if (d.m.userData.tg) d.m.userData.tg.scale.setScalar(1 + 0.12 * Math.sin(t * 6)); for (const l of d.m.userData.lt) l.visible = Math.sin(t * 8 + d.ph) > 0; }
-    for (const c of L.chase) if (c.on) { placeAt(PA, c.m, L.s + c.ds, c.x, c.y); c.m.rotateZ(Math.sin(t * 1.2 + c.ph) * 0.5); }
+    for (const c of L.chase) if (c.on) { placeAt(PA, c.m, PA.adv(L.s, c.ds), c.x, c.y); c.m.rotateZ(Math.sin(t * 1.2 + c.ph) * 0.5); }
     for (const b of L.bul) if (b.on) { placeAt(PA, b.m, b.s, b.x, b.y); b.body.quaternion.setFromUnitVectors(_zA, _d.set(b.vx, b.vy, -b.vs).normalize()); b.body.rotateZ(L.t * 6); }
     for (const B of L.boostR) B.m.rotation.z = t * 1.5;
   }
@@ -446,7 +462,7 @@
       '  gl_FragColor = vec4(col, 1.0);',
       '}'].join('\n'), side: T3.DoubleSide });
   function moonWorld(g, PA, grp) {
-    const X = textures(), C = PA.W(MC), Y = new V(0, 1, 0), Z = new V(0, 0, 1);
+    const X = textures(), C = PA.W2(MC), Y = new V(0, 1, 0), Z = new V(0, 0, 1);
     // la Lune : une vraie sphere de 500 m qu'on survole puis qu'on traverse
     const pitP = [6545, 7535].map((s) => C.clone().addScaledVector(new V().subVectors(PA.fr(s).p, C).normalize(), RMOON));
     const coreP = []; { let pin = PA.fr(6800).p.distanceTo(C) < 125; for (let s = 6800; s <= 7300; s += 1) { const ins = PA.fr(s).p.distanceTo(C) < 125; if (ins !== pin) coreP.push(PA.fr(s).p.clone()); pin = ins; } } while (coreP.length < 2) coreP.push(new V(0, -1e6, 0));
@@ -516,7 +532,7 @@
     { const cv = document.createElement('canvas'); cv.width = 512; cv.height = 192; const x = cv.getContext('2d'); x.fillStyle = 'rgba(20,6,6,0.85)'; x.fillRect(0, 0, 512, 192); x.strokeStyle = '#ff3a2a'; x.lineWidth = 10; x.strokeRect(5, 5, 502, 182); x.fillStyle = '#ff3a2a'; x.font = '900 64px Arial Black, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('BOSS', 256, 56); x.fillStyle = '#ffffff'; x.font = '900 46px Arial Black, Arial, sans-serif'; x.fillText('CROISEUR LUNAIRE', 256, 134);
       const sp = new T3.Sprite(new T3.SpriteMaterial({ map: new T3.CanvasTexture(cv), transparent: true, fog: false, depthTest: false })); sp.scale.set(26, 9.75, 1); sp.position.set(0, 26, 0); sp.renderOrder = 20; m.add(sp); }
     m.visible = false; grp.add(m);
-    L.boss = { m, tg, beacon, s: 7950, sT: 7950, x: 0, y: 0, hp: 3, on: false, dead: false, deadT: 0, hitT: 0, fT: 2, cap: PA.len - 420, boomT: 0 };
+    L.boss = { m, tg, beacon, s: 7800, sT: 7800, x: 0, y: 0, hp: 3, on: false, dead: false, deadT: 0, hitT: 0, fT: 2, cap: PA.len - 420, boomT: 0 };
   }
   function bossPlay(g, rk, dt) {
     const B = L.boss, PA = L.PA; if (!B || (B.dead && B.deadT > 3)) return;
@@ -547,7 +563,7 @@
     if (!(EVO.stage && EVO.stage(g) === 4) || g.evoPreview) return _ld(g);
     EVO.chapters = CH4.map((c, i) => ({ d: c[1], i, name: c[0], key: c[2] }));
     if (EVO.SCENE_AUDIO) { EVO.SCENE_AUDIO.lpad = 'evoDawn'; EVO.SCENE_AUDIO.lmontee = 'sky'; EVO.SCENE_AUDIO.lnuages = 'sky'; for (const z of ZN.slice(2)) EVO.SCENE_AUDIO[z[2]] = 'espace'; }
-    return EVO.baseDef({ zone: 'campagne', len: 9300, scenes: ['lpad', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide'], order: new Array(90).fill('campagne'), theme: CC.LM.THEMES[0], seed: 4404, bossEnt: null });
+    return EVO.baseDef({ zone: 'campagne', len: 6600, scenes: ['lpad', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide'], order: new Array(90).fill('campagne'), theme: CC.LM.THEMES[0], seed: 4404, bossEnt: null });
   };
 
   // ============================== CONSTRUCTION, PILOTAGE, CAMERA ==============================
@@ -566,6 +582,7 @@
     buildTube(PA, grp, L.tubeSecs); for (const [a, b] of [L.gap1, L.gap2, [L.gap3[0], 6545], [6918, 7158], [7540, PA.len - 70]]) cable(PA, grp, a, b);
     launchPad(g, PA, grp); cloudDeck(PA, grp); spaceStuff(PA, grp, L.gap1, L.gap2); buildSky(g);
     obstacles(g, PA, grp); enemies(g, PA, grp); moonWorld(g, PA, grp); bossBuild(g, PA, grp);
+    L.sent = L.sent.filter((d) => { if (PA.cut(d.s)) { d.m.visible = false; return false; } return true; }); L.boostR = L.boostR.filter((B) => { if (PA.cut(B.s)) { B.m.visible = false; return false; } return true; }); L.O = L.OB = L.O.filter((o) => !PA.cut(o.s));
     grp.traverse((o) => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) if (!m.isShaderMaterial && !m.fog) { m.fog = true; m.needsUpdate = true; } });   // v418 : tout s'efface dans la brume au loin
     // poussiere d'espace : des points qui defilent pres de la fusee (on sent la vitesse dans le vide)
     { const n = 120, pos = new Float32Array(n * 3), geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(pos, 3)); const p = new T3.Points(geo, new T3.PointsMaterial({ color: '#cfe8ff', size: 0.5, transparent: true, opacity: 0, depthWrite: false, fog: false })); p.frustumCulled = false; g.scene.add(p); L.dust = p; L.dustInit = false; }
@@ -596,13 +613,13 @@
     L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
     if (dry) { L.v -= (9 + 10 * up * atmo) * dt; if (L.v < 14 && this.active) { g.onRocketCrash('stalled', this.pos.clone(), null); return; } }   // a sec : la fusee ralentit puis s'arrete
     else { L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.7) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)) - 6 * up * atmo * dt; L.v = Math.max(24, L.v); }   // la pesanteur freine un peu la montee verticale
-    const vx = -L.v * Math.sin(L.ry) * 0.85, vy = L.v * Math.sin(L.rp) * 0.85, lat = Math.min(1, 52 / L.v); L.x += vx * lat * dt; L.y += vy * lat * dt; L.s += L.v * dt;   // a grande vitesse, le deplacement de cote reste le meme (pas de glissade incontrolable)
+    const vx = -L.v * Math.sin(L.ry) * 0.85, vy = L.v * Math.sin(L.rp) * 0.85, lat = Math.min(1, 52 / L.v); L.x += vx * lat * dt; L.y += vy * lat * dt; L.s += L.v * dt; if (PA.cut(L.s)) L.s = PA.toOld(PA.toNew(L.s));   // a grande vitesse, le deplacement de cote reste le meme (pas de glissade incontrolable)
     // le tube retient la fusee (on glisse sur la paroi, etincelles) ; a decouvert, une limite douce plus large
     const lim = inTube(L.s) ? R - 2.2 : Z[2] === 'lsurface' ? 22 : ROPEN - 2, rr2 = Math.hypot(L.x, L.y);
     if (rr2 > lim) { L.x *= lim / rr2; L.y *= lim / rr2; L.v *= 1 - dt * 0.6; if (inTube(L.s) && Math.random() < dt * 14) { const F2 = PA.fr(L.s); _a.copy(F2.p).addScaledVector(F2.r, L.x * 1.12).addScaledVector(F2.u, L.y * 1.12); g.effects.sparks.emit({ pos: _a.clone(), vel: new V(rr(-1, 1), rr(-1, 1), rr(-1, 1)).multiplyScalar(10), life: 0.4, s0: 0.3, s1: 0.4, s2: 0.1, cols: g.effects.pal.cyan, drag: 1, grav: 0, a: 1, fout: 0.5 }); if (Math.random() < 0.15) g.audio.play('clank'); } }
     const F2 = PA.fr(L.s); this.pos.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y);
     this.vel.copy(F2.t).multiplyScalar(L.v).addScaledVector(F2.r, vx * lat).addScaledVector(F2.u, vy * lat); this.speed = this.vel.length(); this.fwd.copy(this.vel).normalize(); this.flightDist += L.v * dt;
-    if (g.endlessRun) g.endlessRun.dist = Math.max(g.endlessRun.dist, L.s);
+    if (g.endlessRun) g.endlessRun.dist = Math.max(g.endlessRun.dist, PA.toNew(L.s));   // v421 : la distance affichee = la voie raccourcie
     this.thrustK = 1;
     // les obstacles du programme (teste dans la section du tube, sur tout le trajet de l'image : rien ne passe au travers)
     if (L.inv <= 0 && L.OB) for (const o of L.OB) { if (o.s + o.th < s0 || o.s - o.th > L.s) continue; if (o.hit(L.x, L.y, L.t)) { g.onRocketCrash('wall', this.pos.clone(), F2.t.clone().negate()); if (this.active) { L.inv = 0.8; L.v *= 0.5; g.rig.shake = Math.max(g.rig.shake, 1); } break; } }
