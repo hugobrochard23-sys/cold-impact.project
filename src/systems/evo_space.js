@@ -13,11 +13,19 @@
   const EVO = CC.EVO, U = CC.U, T3 = THREE, V = T3.Vector3;
   if (!EVO || !EVO.on || !EVO.addDyn || !CC.Rocket) return;
   const on4 = (g) => !!(g && g.evo && !g.evo.preview && EVO.stage && EVO.stage(g) === 4);
-  const R = 16, ROPEN = 34, rr = (a, b) => a + Math.random() * (b - a);
+  const R = 16, ROPEN = 34, RK = 0.55, rr = (a, b) => a + Math.random() * (b - a);
   const _a = new V(), _b = new V(), _c = new V(), _d = new V(), _q = new T3.Quaternion(), _q2 = new T3.Quaternion(), _m = new T3.Matrix4();
   const ss = (a, b, x) => { const t = U.clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
   const lam = (c, o) => new T3.MeshLambertMaterial(Object.assign({ color: c }, o || {}));
   const bas = (c, o) => new T3.MeshBasicMaterial(Object.assign({ color: c }, o || {}));
+  // ============================== v417 : LA FUSEE SPATIALE (4 etats : sonde, fusee a boosters, navette, vaisseau ; voir rocket_w.js « spatial ») ==============================
+  const isS4 = EVO.isS4 = () => !!(EVO.stage && CC.game && EVO.stage(CC.game) === 4);
+  for (let i = 0; i < 4; i++) CC.Skins.byId['evoS' + i] = { id: 'evoS' + i, name: 'evoS' + i, short: 'evoS' + i, tier: 'base', price: 0, tierLabel: '', c: { body: '#f2f4f6', nose: '#1c1f24', tip: '#e8622a', band: '#e8622a', fin: '#1c1f24', nozzle: '#23262c' }, flame: ['#ffd27a', '#ffb84a', '#9fd8ff', '#7af0ff'][i], build: 'spatial', stage: i, dims: { r: 0.1, len: 1, noseLen: 0.3, noseR: 0.02, fins: 0, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 }, parts: [] };
+  { const _ob = EVO.ownBody; EVO.ownBody = () => _ob() || isS4(); }
+  { const _as = EVO.applySkin; EVO.applySkin = (g) => { if (!isS4()) return _as(g); const r = EVO.rocket(EVO.save(g).rk); g.rocket.setSkin(CC.Skins.get('evoS' + r.tier)); EVO.attachParts(g); }; }
+  { const RK4 = ['SONDE', 'FUSEE A BOOSTERS', 'NAVETTE', 'VAISSEAU'], _rk = EVO.rocket; EVO.rocket = (n) => { const r = _rk(n); if (isS4()) r.name = RK4[r.tier]; return r; }; }
+  // le carburant du niveau 4 : il grandit avec la fusee et le lanceur (plus de reservoir illimite)
+  { const _ol = EVO.onLaunch; EVO.onLaunch = (g) => { _ol(g); if (!isS4() || (g.evo && g.evo.preview)) return; const S = EVO.save(g), rk = g.rocket, f = 24 + 3.4 * (S.rk || 0) + 2.5 * (S.la || 0); rk.fuelMax = f; rk.fuel = (g.evoAimLast && g.evoAimLast.zone === 'gold') ? f : f * 0.9 + 0.1 * f; }; }
   let L = null;   // l'etat du niveau 4 (voie, decor, pilotage), refait a chaque partie
 
   // ============================== LA VOIE 3D ==============================
@@ -25,7 +33,9 @@
   const CP = [[0, 0, 0], [0, 140, 0], [0, 300, 0], [0, 460, 6], [0, 600, 60], [0, 720, 190], [0, 820, 380], [0, 880, 620], [0, 905, 880], [-20, 895, 1130],
     [-70, 850, 1360], [-140, 800, 1560], [-210, 790, 1760], [-250, 820, 1940]];
   { const c0 = [-250, 820, 1940]; for (let j = 1; j <= 24; j++) { const a = j / 24 * Math.PI * 2.5; CP.push([c0[0] - 55 + 55 * Math.cos(a), c0[1] + 55 * Math.sin(a), c0[2] + j * 26]); } }   // le tire-bouchon (1 tour 1/4)
-  CP.push([-300, 900, 2700], [-310, 1000, 2950], [-310, 1130, 3180], [-300, 1220, 3420], [-280, 1230, 3700], [-250, 1190, 4000], [-230, 1170, 4300], [-220, 1170, 4700], [-220, 1170, 5200]);
+  CP.push([-300, 900, 2700], [-310, 1000, 2950], [-310, 1130, 3180], [-300, 1220, 3420], [-280, 1230, 3700], [-250, 1190, 4000], [-230, 1170, 4300], [-220, 1170, 4700], [-220, 1192, 5000], [-220, 1084, 5296], [-220, 1148, 5419], [-220, 1175, 5526], [-220, 1150, 5590], [-220, 1060, 5602], [-220, 900, 5602], [-220, 650, 5600], [-220, 400, 5600], [-220, 200, 5600], [-220, 110, 5605], [-220, 40, 5650], [-220, 10, 5750], [-220, 0, 5900], [-220, 0, 6300], [-220, 10, 6800], [-220, 30, 7200]);
+  // v417 : LA LUNE (centre MC, rayon RM) : on la survole a 30 m, on plonge dans un cratere, on la traverse par son coeur et on ressort dessous ; puis l'arene du CROISEUR LUNAIRE
+  const MC = [-220, 650, 5600], RMOON = 500;
 
   function buildPath(O, F0) {
     const Y = new V(0, 1, 0), R0 = new V().crossVectors(F0, Y).normalize(), W = (p) => new V().copy(O).addScaledVector(R0, p[0]).addScaledVector(Y, p[1]).addScaledVector(F0, p[2]);
@@ -55,8 +65,8 @@
       '  float hl = exp(-pow((a - 0.18) * 38.0, 2.0)) * 0.55 + exp(-pow((a - 0.31) * 70.0, 2.0)) * 0.3;',   // reflet de la vitre (deux traits brillants)
       '  float fl = abs(a - 0.75); float stripe = (1.0 - smoothstep(0.008, 0.016, fl)) * step(0.45, fract(s / 12.0 - uT * 1.6));',   // bande jaune du plancher : on sait toujours ou est le bas
       '  float chev = bo * (1.0 - smoothstep(0.03, 0.09, abs(fract((s - uT * 150.0) / 9.0 + abs(fract(a * 6.0) - 0.5) * 0.7) - 0.5)));',   // accelerateur : des chevrons qui filent vers l avant
-      '  vec3 col = uC * (0.25 + fr * 1.5) + uC * grid * 0.7 + uC2 * (pulse * 0.6 + hl) + vec3(1.0, 0.78, 0.2) * stripe * 1.4 + vec3(1.0, 0.85, 0.35) * chev * 1.3;',
-      '  float al = 0.06 + fr * 0.55 + grid * 0.2 + pulse * 0.12 + hl * 0.45 + stripe * 0.85 + chev * 0.55;',
+      '  vec3 col = uC * (0.25 + fr * 1.5) + uC * grid * 0.5 + uC2 * (pulse * 0.6 + hl) + vec3(1.0, 0.78, 0.2) * stripe * 1.4 + vec3(1.0, 0.85, 0.35) * chev * 1.3;',
+      '  float al = 0.05 + fr * 0.5 + grid * 0.11 + pulse * 0.08 + hl * 0.35 + stripe * 0.85 + chev * 0.55;   // v417 : verre plus discret : les obstacles et les cibles ressortent',
       '  gl_FragColor = vec4(col, min(1.0, al) * uK);',
       '}'].join('\n'),
     transparent: true, depthWrite: false, side: T3.DoubleSide, fog: false });
@@ -157,7 +167,7 @@
     root.position.y += gy; const P = [], OR = '#d8501c', GR = '#8a929c', DK = '#3a4048', WH = '#eef0f2', CO = '#bdb6aa';
     // la TABLE DE LANCEMENT sur l'octogone : la fusee y est posee debout (menu), quatre griffes de maintien, mat ombilical
     { const top = O.y - L.groundY + 0.15 - L.rkL * 0.5; P.push({ s: [9, top - 4, 9], c: '#5a6068', p: [0, 4 + (top - 4) / 2, 0] }, { s: [9.6, 0.4, 9.6], c: '#ffd23a', p: [0, top - 0.2, 0] }, { s: [3.4, 0.5, 3.4], c: '#2a2e34', p: [0, top + 0.05, 0] });
-      for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) P.push({ s: [0.3, 0.7, 0.3], c: '#c8352a', p: [x * 1.1, top + 0.35, z * 1.1] }, { s: [0.5, 0.18, 0.2], c: '#c8352a', p: [x * 0.85, top + 0.62, z * 1.1] });
+      for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) P.push({ s: [0.3, 0.22, 0.3], c: '#c8352a', p: [x * 1.2, top + 0.11, z * 1.2] });   /* griffes basses : elles ne cachent plus la fusee */
       P.push({ s: [0.8, top + 4, 0.8], c: GR, p: [-6, (top + 4) / 2, 0] }, { s: [5, 0.4, 0.4], c: WH, p: [-3.6, top + 3, 0] }); }
     // la dalle du pas de tir, l'octogone, la fosse a flammes et ses deflecteurs
     P.push({ s: [220, 1.2, 220], c: '#9a948a', p: [0, -0.6, 0] }, { cyl: [34, 36, 4, 8], c: CO, p: [0, 2, 0] }, { s: [12, 4.2, 80], c: '#2a2622', p: [0, 2.1, 0] });
@@ -239,9 +249,11 @@
   const ZN = [[0, 140, 'lpad', 'LE PAS DE TIR', '#8fe6ff', 'pad'], [140, 560, 'lmontee', 'LA MONTEE', '#8fe6ff', 'tube'], [560, 980, 'laccel', 'ACCELERATEUR', '#ffc23a', 'boost'],
     [980, 1530, 'lvento', 'LES VENTILOS', '#ff5a4a', 'tube'], [1530, 2230, 'lorbite', 'L ORBITE', '#8fe6ff', 'open'], [2230, 2640, 'llaser', 'LES LASERS', '#b46aff', 'tube'],
     [2640, 3400, 'lvrille', 'LE TIRE-BOUCHON', '#ff5ad8', 'tube'], [3400, 3560, 'lturbo', 'TURBO', '#ffc23a', 'boost'], [3560, 4140, 'lstation', 'LA STATION', '#8fe6ff', 'open'],
-    [4140, 4900, 'lpiston', 'LES PISTONS', '#4aff8a', 'tube'], [4900, 5450, 'lsprint', 'LE SPRINT', '#ffc23a', 'boost'], [5450, 1e9, 'llune', 'VERS LA LUNE', '#8fe6ff', 'open']];
+    [4140, 4900, 'lpiston', 'LES PISTONS', '#4aff8a', 'tube'], [4900, 5450, 'lsprint', 'LE SPRINT', '#ffc23a', 'boost'], [5450, 6100, 'llune', 'VERS LA LUNE', '#8fe6ff', 'open'],
+    [6100, 6545, 'lsurface', 'LA LUNE', '#8fe6ff', 'open'], [6545, 6918, 'lpuits', 'LE PUITS', '#ff8a3a', 'rock'], [6918, 7158, 'lcoeur', 'LE COEUR DE LA LUNE', '#ff8a3a', 'open'],
+    [7158, 7540, 'lsortie', 'LA SORTIE', '#ff8a3a', 'rock'], [7540, 1e9, 'lboss', 'LE CROISEUR LUNAIRE', '#ff4a3a', 'open']];
   const zoneAt = (s) => { for (let i = ZN.length - 1; i >= 0; i--) if (s >= ZN[i][0]) return i; return 0; };
-  const GAPS = [[1530, 2230], [3560, 4140], [5450, 1e9]];
+  const GAPS = [[1530, 2230], [3560, 4140], [5450, 1e9]], ROCK = [[6545, 6918], [7158, 7540]];
   // la couleur du tube le long de la voie (une texture de 1024 x 1) ; alpha = accelerateur (chevrons qui filent)
   function zoneTex(len) {
     const W = 1024, d = new Uint8Array(W * 4), c = new T3.Color(), c2 = new T3.Color();
@@ -268,59 +280,60 @@
         const tip = new T3.Mesh(new T3.SphereGeometry(0.55, 8, 6), M.yel); tip.position.x = R - 0.8; piv.add(tip); }
       const hub = new T3.Mesh(new T3.CylinderGeometry(3.4, 3.4, 2.4, 18), M.red); hub.rotation.x = Math.PI / 2; rot.add(hub); const cap = new T3.Mesh(new T3.SphereGeometry(1.6, 12, 8), M.white); cap.position.z = 1.4; rot.add(cap);
       const frame = new T3.Mesh(new T3.TorusGeometry(R - 0.2, 0.7, 8, 48), M.dark); h.add(frame); for (let j = 0; j < 8; j++) { const l = new T3.Mesh(new T3.SphereGeometry(0.5, 8, 6), M.laser), a = j / 8 * Math.PI * 2; l.position.set(Math.cos(a) * (R - 1), Math.sin(a) * (R - 1), 0.6); h.add(l); }
-      OB.push({ s, th: 1.5, kind: 'fan', hit: (x, y, t) => { const r = Math.hypot(x, y); if (r < 4.3) return true; const a0 = w * t + ph; for (let k = 0; k < n; k++) { const a = a0 + k / n * 6.2832, al = x * Math.cos(a) + y * Math.sin(a), pp = -x * Math.sin(a) + y * Math.cos(a); if (al > 0 && Math.abs(pp) < hw + 0.9) return true; } return false; }, upd: (t) => { rot.rotation.z = w * t + ph; } }); };
+      OB.push({ s, th: 1.5, kind: 'fan', hit: (x, y, t) => { const r = Math.hypot(x, y); if (r < 3.4 + RK) return true; const a0 = w * t + ph; for (let k = 0; k < n; k++) { const a = a0 + k / n * 6.2832, al = x * Math.cos(a) + y * Math.sin(a), pp = -x * Math.sin(a) + y * Math.cos(a); if (al > 0 && Math.abs(pp) < hw + RK) return true; } return false; }, upd: (t) => { rot.rotation.z = w * t + ph; } }); };
     // VOLET : un secteur plein (centre c, ouverture sp) ; on passe par le cote ouvert, balise en vert
-    const shutter = (s, c, sp, w) => { const h = holder(s), rot = new T3.Group(); h.add(rot);
-      const pl = new T3.Mesh(new T3.CircleGeometry(R - 0.3, 48, c - sp / 2, sp), M.haz); rot.add(pl);
+    const shutter = (s, c, sp, w, mat) => { const h = holder(s), rot = new T3.Group(); h.add(rot);
+      const pl = new T3.Mesh(new T3.CircleGeometry(R - 0.3, 48, c - sp / 2, sp), mat || M.haz); rot.add(pl);
       for (const e of [c - sp / 2, c + sp / 2]) { const b = new T3.Mesh(BX, M.yel); b.scale.set(R - 0.3, 0.5, 0.6); b.position.set(Math.cos(e) * (R - 0.3) / 2, Math.sin(e) * (R - 0.3) / 2, 0); b.rotation.z = e; rot.add(b); }
       for (let j = 0; j < 7; j++) { const a = c + sp / 2 + (j + 0.5) / 7 * (6.2832 - sp), l = new T3.Mesh(new T3.SphereGeometry(0.55, 8, 6), M.grn); l.position.set(Math.cos(a) * (R - 1.2), Math.sin(a) * (R - 1.2), 0); rot.add(l); }
-      OB.push({ s, th: 1.4, kind: 'shutter', c, w, hit: (x, y, t) => { const r = Math.hypot(x, y); if (r < 1.6) return true; let d = Math.atan2(y, x) - (c + w * t); d = Math.atan2(Math.sin(d), Math.cos(d)); return Math.abs(d) < sp / 2 + Math.asin(Math.min(1, 0.9 / r)); }, upd: (t) => { rot.rotation.z = w * t; } }); };
+      OB.push({ s, th: 1.4, kind: 'shutter', c, w, hit: (x, y, t) => { const r = Math.hypot(x, y); if (r < 1.6) return true; let d = Math.atan2(y, x) - (c + w * t); d = Math.atan2(Math.sin(d), Math.cos(d)); return Math.abs(d) < sp / 2 + Math.asin(Math.min(1, RK / r)); }, upd: (t) => { rot.rotation.z = w * t; } }); };
     // LASER : une barre rouge qui balaie le tube (h = monte et descend, v = gauche droite, rot = tourne autour du centre)
-    const laser = (s, mode, amp, w, ph) => { const h = holder(s), bar = new T3.Group(); h.add(bar); const core = new T3.Mesh(new T3.CylinderGeometry(0.22, 0.22, 2 * R, 8), M.laser), gl = new T3.Mesh(new T3.CylinderGeometry(0.9, 0.9, 2 * R, 10, 1, true), M.lglow); bar.add(core); bar.add(gl);
+    const laser = (s, mode, amp, w, ph, lm) => { const h = holder(s), bar = new T3.Group(); h.add(bar); const core = new T3.Mesh(new T3.CylinderGeometry(lm ? 0.6 : 0.22, lm ? 0.6 : 0.22, 2 * R, 8), lm ? lm[0] : M.laser), gl = new T3.Mesh(new T3.CylinderGeometry(lm ? 1.4 : 0.9, lm ? 1.4 : 0.9, 2 * R, 10, 1, true), lm ? lm[1] : M.lglow); bar.add(core); bar.add(gl);
       const em = []; for (const sd of [-1, 1]) { const e = new T3.Mesh(BX, M.dark); e.scale.set(1.6, 1.6, 2.4); e.position.y = sd * (R - 0.4); bar.add(e); em.push(e); }
       if (mode === 'h') bar.rotation.z = Math.PI / 2;
       const pos = (t) => amp * Math.sin(w * t + ph);
-      OB.push({ s, th: 1.2, kind: 'laser', hit: (x, y, t) => { if (mode === 'h') return Math.abs(y - pos(t)) < 1.15; if (mode === 'v') return Math.abs(x - pos(t)) < 1.15; const a = w * t + ph + Math.PI / 2; return Math.abs(-x * Math.sin(a) + y * Math.cos(a)) < 1.15; },
+      OB.push({ s, th: 1.2, kind: 'laser', hit: (x, y, t) => { if (mode === 'h') return Math.abs(y - pos(t)) < 0.8; if (mode === 'v') return Math.abs(x - pos(t)) < 0.8; const a = w * t + ph + Math.PI / 2; return Math.abs(-x * Math.sin(a) + y * Math.cos(a)) < 0.8; },
         upd: (t) => { if (mode === 'rot') { bar.rotation.z = w * t + ph; return; } const p = pos(t), ch = Math.sqrt(Math.max(1, R * R - p * p)); if (mode === 'h') bar.position.y = p; else bar.position.x = p; core.scale.y = gl.scale.y = ch / R; for (const e of em) e.position.y = Math.sign(e.position.y) * (ch - 0.4); } }); };
     // PISTON : un bloc qui sort de la paroi et y rentre (angle a, profondeur entre d0 et d1)
     const piston = (s, a, d0, d1, w, ph) => { const h = holder(s), rt = new T3.Group(); rt.rotation.z = a; h.add(rt); const blk = new T3.Mesh(BX, M.pis), face = new T3.Mesh(BX, M.haz); rt.add(blk); rt.add(face);
       const dep = (t) => d0 + (d1 - d0) * (0.5 + 0.5 * Math.sin(w * t + ph));
-      OB.push({ s, th: 3.4, kind: 'piston', hit: (x, y, t) => { const al = x * Math.cos(a) + y * Math.sin(a), pp = -x * Math.sin(a) + y * Math.cos(a); return al > R - dep(t) - 0.9 && Math.abs(pp) < 4.9; },
+      OB.push({ s, th: 3.4, kind: 'piston', hit: (x, y, t) => { const al = x * Math.cos(a) + y * Math.sin(a), pp = -x * Math.sin(a) + y * Math.cos(a); return al > R - dep(t) - RK && Math.abs(pp) < 4 + RK; },
         upd: (t) => { const d = dep(t); blk.scale.set(d, 8, 5); blk.position.x = R - d / 2; face.scale.set(0.4, 8.2, 5.2); face.position.x = R - d - 0.2; } }); };
     // MINE : une boule a pointes qui clignote
     const mine = (s, x, y, b) => { const h = holder(s), m = new T3.Group(); h.add(m); m.add(new T3.Mesh(new T3.SphereGeometry(1.5, 14, 10), M.mine)); for (let k = 0; k < 10; k++) { const sp = new T3.Mesh(new T3.ConeGeometry(0.35, 1.4, 6), M.steel), v = new V(rr(-1, 1), rr(-1, 1), rr(-1, 1)).normalize(); sp.position.copy(v).multiplyScalar(1.7); sp.quaternion.setFromUnitVectors(new V(0, 1, 0), v); m.add(sp); }
       const lt = new T3.Mesh(new T3.SphereGeometry(0.5, 8, 6), M.laser); lt.position.z = 1.4; m.add(lt); const ph = rr(0, 6);
       const yy = (t) => y + b * Math.sin(t * 1.3 + ph);
-      OB.push({ s, th: 2.5, kind: 'mine', hit: (px, py, t) => Math.hypot(px - x, py - yy(t)) < 2.5, upd: (t) => { m.position.set(x, yy(t), 0); m.rotation.y = t * 0.8; lt.visible = Math.sin(t * 7 + ph) > 0; } }); };
+      OB.push({ s, th: 2.5, kind: 'mine', hit: (px, py, t) => Math.hypot(px - x, py - yy(t)) < 1.5 + RK, upd: (t) => { m.position.set(x, yy(t), 0); m.rotation.y = t * 0.8; lt.visible = Math.sin(t * 7 + ph) > 0; } }); };
     // ASTEROIDES (a decouvert) : quatre formes, dessinees en lots (un appel de dessin par forme)
     const AV = []; for (let v = 0; v < 4; v++) { const gm = new T3.IcosahedronGeometry(1, 1), P = gm.attributes.position, q = new V(); for (let i = 0; i < P.count; i++) { q.fromBufferAttribute(P, i); const n = 1 + 0.22 * Math.sin(q.x * 3.1 + v * 2) * Math.cos(q.y * 2.7 + v) + 0.12 * Math.sin(q.z * 5.3 + v * 3); q.multiplyScalar(n); P.setXYZ(i, q.x, q.y * (0.8 + v * 0.06), q.z); } gm.computeVertexNormals(); AV.push({ gm, list: [] }); }
     const ast = (s, x, y, rad, ax, w) => { const A = { s, x, y, rad, ax, w: w || rr(0.3, 0.8), ph: rr(0, 6), rs: new V(rr(-1, 1), rr(-1, 1), rr(-1, 1)).normalize(), rw: rr(0.2, 0.9) }; AV[Math.floor(Math.random() * 4)].list.push(A);
       const xx = (t) => A.x + A.ax * Math.sin(A.w * t + A.ph); A.xx = xx;
-      OB.push({ s, th: rad * 0.8 + 0.9, kind: 'ast', hit: (px, py, t) => Math.hypot(px - xx(t), py - y) < rad * 0.82 + 0.9 }); };
+      OB.push({ s, th: rad * 0.8 + 0.9, kind: 'ast', hit: (px, py, t) => Math.hypot(px - xx(t), py - y) < rad * 0.75 + RK }); };
     // ---- le programme ----
     const H = Math.PI / 2;
-    // LA MONTEE : quatre volets fixes (gauche, droite, haut, bas) : on apprend a se decaler
-    [[270, Math.PI], [360, 0], [450, H], [530, -H]].forEach(([s, c]) => shutter(s, c, 3.6, 0));
-    // LES VENTILOS
-    [[1050, 3, 0.9, 2.6], [1140, 3, -1.1, 2.6], [1230, 4, 0.8, 2.2], [1320, 2, 1.4, 2.8], [1410, 3, -1.3, 2.6], [1490, 4, 1.0, 2.2]].forEach(([s, n, w, hw], i) => fan(s, n, w, hw, i * 0.9));
-    // LES LASERS
-    laser(2300, 'h', 11, 1.6, 0); laser(2370, 'v', 11, -1.8, 1); laser(2440, 'rot', 0, 1.0, 0); laser(2510, 'h', 10, 1.4, 0); laser(2512, 'v', 10, 1.1, 2); laser(2580, 'rot', 0, -0.8, 0); laser(2581, 'rot', 0, -0.8, Math.PI / 2); laser(2620, 'h', 12, 2.2, 1);
-    // LE TIRE-BOUCHON : mines et volets qui tournent
-    for (let s = 2690; s < 3380; s += 52) { if (Math.abs(s - 2850) < 20 || Math.abs(s - 3050) < 20 || Math.abs(s - 3250) < 20) continue; const n = s > 3000 ? 2 : 1; for (let k = 0; k < n; k++) { const a = rr(0, 6.28), r = rr(0, 10); mine(s + k * 6, Math.cos(a) * r, Math.sin(a) * r, rr(0, 2.5)); } }
-    shutter(2850, 0, 2.6, 0.6); shutter(3050, H, 2.9, -0.7); shutter(3250, Math.PI, 3.2, 0.8);
-    // LES PISTONS : des portes de 1, 2 ou 3 blocs (le centre reste toujours libre)
-    { let k = 0; for (let s = 4210; s < 4880; s += 72, k++) { const a0 = rr(0, 6.28), ph = rr(0, 6), w = rr(1.3, 2.0), n = 1 + (k % 3); for (let j = 0; j < n; j++) piston(s, a0 + j * 6.2832 / n, 3, n === 1 ? 14 : 11.5, w, ph + j * 1.2); } }
-    // LE SPRINT : deux ventilos lents et deux lasers, a pleine vitesse
-    fan(5020, 2, 0.6, 2.4, 0); laser(5140, 'h', 10, 1.2, 0); fan(5260, 3, -0.7, 2.2, 1); laser(5380, 'v', 11, 1.3, 2);
+    // LA MONTEE : quatre volets fixes (gauche, droite, haut, bas) : on apprend a se decaler (grande ouverture)
+    [[280, Math.PI], [380, 0], [470, H], [545, -H]].forEach(([s, c]) => shutter(s, c, 2.9, 0));
+    // LES VENTILOS (v417 : plus lents, pales fines, 130 m entre eux)
+    [[1070, 3, 0.5, 1.6], [1200, 2, 0.65, 1.7], [1330, 3, -0.55, 1.6], [1460, 3, 0.7, 1.6]].forEach(([s, n, w, hw], i) => fan(s, n, w, hw, i * 0.9));
+    // LES LASERS (plus lents)
+    laser(2310, 'h', 10, 1.0, 0); laser(2400, 'v', 10, -1.1, 1); laser(2490, 'rot', 0, 0.6, 0); laser(2580, 'h', 10, 0.9, 0); laser(2582, 'v', 10, 0.7, 2);
+    // LE TIRE-BOUCHON : quelques mines et des volets qui tournent doucement
+    for (let s = 2700; s < 3380; s += 75) { if (Math.abs(s - 2880) < 25 || Math.abs(s - 3120) < 25) continue; const a = rr(0, 6.28), r = rr(0, 9); mine(s, Math.cos(a) * r, Math.sin(a) * r, rr(0, 2)); }
+    shutter(2880, 0, 2.4, 0.45); shutter(3120, H, 2.6, -0.45);
+    // LES PISTONS : des portes de 1 ou 2 blocs (le centre reste toujours libre)
+    { let k = 0; for (let s = 4220; s < 4880; s += 100, k++) { const a0 = rr(0, 6.28), ph = rr(0, 6), w = rr(0.9, 1.3), n = 1 + (k % 2); for (let j = 0; j < n; j++) piston(s, a0 + j * 6.2832 / n, 3, n === 1 ? 12 : 10, w, ph + j * 1.2); } }
+    // LE SPRINT : deux ventilos lents et un laser, a pleine vitesse
+    fan(5040, 2, 0.45, 1.6, 0); laser(5180, 'h', 10, 0.8, 0); fan(5320, 3, -0.5, 1.5, 1);
     // A DECOUVERT : champs d'asteroides (on evite les satellites, la station et les drones), plus denses vers la Lune
     const keep = [[1705, 30], [1880, 30], [2055, 30], [3850, 46]];
-    for (const [a, b, dn] of [[1560, 2210, 13], [3590, 4120, 15], [5480, PA.len - 90, 9]]) for (let s = a; s < b; s += dn * rr(0.7, 1.3)) { if (keep.some(([c, w]) => Math.abs(s - c) < w)) continue; const an = rr(0, 6.28), r = rr(0, 30), rad = rr(2.2, s > 5400 ? 6.5 : 5.5); ast(s, Math.cos(an) * r, Math.sin(an) * r, rad, Math.random() < 0.4 ? rr(3, 9) : 0); }
-    for (let s = 5500; s < PA.len - 100; s += 90) mine(s, rr(-14, 14), rr(-14, 14), 3);
+    for (const [a, b, dn] of [[1560, 2210, 19], [3590, 4120, 21], [5480, 6060, 14], [7700, PA.len - 200, 40]]) for (let s = a; s < b; s += dn * rr(0.7, 1.3)) { if (keep.some(([c, w]) => Math.abs(s - c) < w)) continue; const boss = s > 7600, an = rr(0, 6.28), r = boss ? rr(16, 30) : rr(0, 30), rad = boss ? rr(1.5, 3) : rr(2, 5); ast(s, Math.cos(an) * r, Math.sin(an) * r, rad, Math.random() < 0.3 ? rr(3, 7) : 0); }
+    for (let s = 5520; s < 6060; s += 120) mine(s, rr(-12, 12), rr(-12, 12), 2.5);
+    moonObstacles(g, PA, grp, { shutter, laser, ast, mine, M });
     for (const A of AV) { const im = new T3.InstancedMesh(A.gm, lam('#4e4842', { flatShading: true, emissive: '#100e0c' }), Math.max(1, A.list.length)); im.count = A.list.length; im.frustumCulled = false; grp.add(im); A.im = im; }
     L.AV = AV; L.OB = OB;
     // les anneaux d'acceleration (passer dedans = BOOST)
     L.boostR = []; const RG = new T3.TorusGeometry(4.4, 0.45, 8, 32), RM = bas('#ffc23a', { fog: false }), AM = bas('#fff2a0', { fog: false });
-    for (const [s, x, y] of [[650, 0, 6], [760, -7, -3], [870, 7, 2], [960, 0, -6], [3440, 0, 0], [3510, 6, 5], [4960, -6, 0], [5080, 6, 4], [5200, 0, -7], [5320, -5, 6]]) { const h = holder(s), m = new T3.Group(); m.position.set(x, y, 0); h.add(m); m.add(new T3.Mesh(RG, RM)); m.add(glowS(14, '#ffb020', 0.5)); for (let j = 0; j < 4; j++) { const c = new T3.Mesh(new T3.ConeGeometry(0.7, 1.6, 4), AM), a = j / 4 * Math.PI * 2 + 0.785; c.position.set(Math.cos(a) * 2.2, Math.sin(a) * 2.2, 0); c.rotation.x = -Math.PI / 2; m.add(c); } L.boostR.push({ s, x, y, m, done: false }); }
+    for (const [s, x, y] of [[650, 0, 6], [760, -7, -3], [870, 7, 2], [960, 0, -6], [3440, 0, 0], [3510, 6, 5], [4960, -6, 0], [5110, 6, 4], [5250, 0, -7], [5400, -5, 6]]) { const h = holder(s), m = new T3.Group(); m.position.set(x, y, 0); h.add(m); m.add(new T3.Mesh(RG, RM)); m.add(glowS(14, '#ffb020', 0.5)); for (let j = 0; j < 4; j++) { const c = new T3.Mesh(new T3.ConeGeometry(0.7, 1.6, 4), AM), a = j / 4 * Math.PI * 2 + 0.785; c.position.set(Math.cos(a) * 2.2, Math.sin(a) * 2.2, 0); c.rotation.x = -Math.PI / 2; m.add(c); } L.boostR.push({ s, x, y, m, done: false }); }
     // l'arche d'ARRIVEE
     { const s = PA.len - 70, h = holder(s), n = 28, im = new T3.InstancedMesh(new T3.BoxGeometry(4.4, 2.2, 2.2), lam('#ffffff', { emissive: '#444444' }), n * 2), o = new T3.Object3D(), c = new T3.Color();
       for (let i = 0; i < n * 2; i++) { const a = (i % n) / n * Math.PI * 2, rr2 = 26 + (i >= n ? 2.2 : 0); o.position.set(Math.cos(a) * rr2, Math.sin(a) * rr2, 0); o.rotation.set(0, 0, a + Math.PI / 2); o.updateMatrix(); im.setMatrixAt(i, o.matrix); im.setColorAt(i, c.set(((i % n) + (i >= n ? 1 : 0)) % 2 ? '#16181c' : '#ffffff')); }
@@ -328,25 +341,6 @@
       const sp = new T3.Mesh(new T3.PlaneGeometry(36, 9), new T3.MeshBasicMaterial({ map: new T3.CanvasTexture(cv), transparent: true, fog: false, side: T3.DoubleSide })); sp.position.y = 34; h.add(sp); h.add(glowS(120, '#ffd27a', 0.35)); }
   }
 
-  // ---- les ecrous a ramasser : des files qui montrent le bon chemin ----
-  function nuts(PA, grp) {
-    const S = [], X = [], Y = [], add = (s, x, y) => { if (L.OB.some((o) => o.kind !== 'ast' && Math.abs(o.s - s) < o.th + 3)) return; S.push(s); X.push(x); Y.push(y); };
-    const line = (s0, s1, fx, fy, st) => { for (let s = s0; s <= s1; s += st || 6) add(s, fx(s), fy(s)); };
-    [[270, Math.PI], [360, 0], [450, H2], [530, -H2]].forEach(([s, c]) => line(s - 40, s + 24, () => -Math.cos(c) * 9, () => -Math.sin(c) * 9));
-    line(590, 970, (s) => Math.cos(s * 0.03) * 7, (s) => Math.sin(s * 0.03) * 7, 5);
-    for (let s = 1050; s < 1500; s += 90) line(s + 14, s + 70, (q) => Math.cos(q * 0.05) * 9, (q) => Math.sin(q * 0.05) * 9, 6);
-    for (let s = 2240; s < 2640; s += 8) add(s, 0, 0);
-    line(2660, 3390, (s) => Math.cos(s * 0.04) * 11, (s) => Math.sin(s * 0.04) * 11, 7);
-    for (const b of L.boostR) line(b.s - 30, b.s + 30, () => b.x, () => b.y, 6);
-    for (let s = 4180; s < 4890; s += 7) add(s, 0, 0);
-    for (const d of L.sent) line(d.s - 90, d.s - 12, (q) => d.x * (q - d.s + 90) / 78, (q) => d.y * (q - d.s + 90) / 78, 7);
-    const n = S.length, ord = S.map((s, i) => i).sort((a, b) => S[a] - S[b]);
-    const N = L.nut = { n, s: new Float32Array(n), x: new Float32Array(n), y: new Float32Array(n), p: new Float32Array(n * 3), alive: new Uint8Array(n).fill(1), i0: 0 };
-    const im = new T3.InstancedMesh(new T3.CylinderGeometry(0.85, 0.85, 0.34, 6), lam('#ffc820', { emissive: '#7a4a00' }), Math.max(1, n)), o = new T3.Object3D();
-    ord.forEach((j, i) => { N.s[i] = S[j]; N.x[i] = X[j]; N.y[i] = Y[j]; const F = PA.fr(S[j]); _a.copy(F.p).addScaledVector(F.r, X[j]).addScaledVector(F.u, Y[j]); N.p[i * 3] = _a.x; N.p[i * 3 + 1] = _a.y; N.p[i * 3 + 2] = _a.z; o.position.copy(_a); o.rotation.set(Math.PI / 2, 0, 0); o.updateMatrix(); im.setMatrixAt(i, o.matrix); });
-    im.frustumCulled = false; grp.add(im); N.im = im;
-  }
-  const H2 = Math.PI / 2;
 
   // ---- les ennemis : sentinelles (a percuter : elles explosent) et chasseurs (ils filent devant et tirent) ----
   function droneMesh(big) {
@@ -359,8 +353,13 @@
   }
   function enemies(g, PA, grp) {
     L.sent = []; L.chase = []; L.bul = [];
-    for (const s of [1620, 1790, 1970, 2150, 3640, 3760, 3990, 4090, 5560, 5760, 5950]) { const a = rr(0, 6.28), r = rr(6, 16), m = droneMesh(true); grp.add(m); L.sent.push({ s, x: Math.cos(a) * r, y: Math.sin(a) * r, m, alive: true, fT: rr(0.5, 1.5), ph: rr(0, 6) }); }
-    for (const [a, b, n] of [[1600, 2200, 2], [3600, 4110, 3], [5500, PA.len - 120, 2]]) for (let k = 0; k < n; k++) { const m = droneMesh(false); m.visible = false; grp.add(m); L.chase.push({ a, b, k, n, m, ds: 260, fT: 1 + k * 0.6, ph: k * 2.1, on: false }); }
+    const sent = (s, x, y, small) => { const m = droneMesh(true); if (small) m.scale.setScalar(0.72); grp.add(m); L.sent.push({ s, x, y, m, alive: true, fT: rr(0.8, 2), ph: rr(0, 6), small }); };
+    // a decouvert : de grosses sentinelles (cible rouge : on fonce dedans), et sur la Lune, des tourelles au ras du sol
+    for (const s of [1620, 1790, 1970, 2150, 3640, 3760, 3990, 4090, 5560, 5760, 5950]) { const a = rr(0, 6.28), r = rr(6, 16); sent(s, Math.cos(a) * r, Math.sin(a) * r, false); }
+    for (const [s, x] of [[6160, 6], [6250, -8], [6350, 4], [6440, -6]]) sent(s, x, -14, false);
+    // v417 : DANS LE TUBE, a la place des ecrous : de petits drones-cibles a percuter (carburant et pieces), qui tirent eux aussi
+    for (const [a, b] of [[230, 540], [1000, 1520], [2250, 3390], [4160, 4890]]) for (let s = a; s < b; s += rr(42, 60)) { if (L.O.some((o) => o.kind !== 'ast' && Math.abs(o.s - s) < 20)) continue; const an = rr(0, 6.28), r = rr(0, 8); sent(s, Math.cos(an) * r, Math.sin(an) * r, true); }
+    for (const [a, b, n] of [[1600, 2200, 2], [3600, 4110, 2], [5500, 6080, 2]]) for (let k = 0; k < n; k++) { const m = droneMesh(false); m.visible = false; grp.add(m); L.chase.push({ a, b, k, n, m, ds: 260, fT: 1 + k * 0.6, ph: k * 2.1, on: false }); }
     const bg = new T3.SphereGeometry(0.6, 10, 8), bm = bas('#ff4a2a', { fog: false });
     for (let i = 0; i < 40; i++) { const m = new T3.Group(); m.add(new T3.Mesh(bg, bm)); m.add(glowS(4.2, '#ff3a1a', 0.9)); m.visible = false; grp.add(m); L.bul.push({ m, on: false, s: 0, x: 0, y: 0, vs: 0, vx: 0, vy: 0, t: 0 }); }
   }
@@ -370,9 +369,15 @@
     const PA = L.PA, run = g.endlessRun, t = L.t;
     // sentinelles : elles tirent quand on approche ; on les percute = elles explosent
     for (const d of L.sent) { if (!d.alive) continue; const ds = d.s - L.s;
-      if (ds > 40 && ds < 200) { d.fT -= dt; if (d.fT <= 0) { d.fT = 1.6; fire(g, d.s, d.x, d.y); } }
-      if (d.s >= s0 - 2 && d.s <= L.s + 2.5 && Math.hypot(L.x - d.x, L.y - d.y) < 4.2) { d.alive = false; d.m.visible = false; const p = d.m.position.clone(); g.effects.explosion(p, null, false, 'orange'); g.audio.play('target'); g.rig.shake = Math.max(g.rig.shake, 0.7); g.flash = 0.2; g.flashColor = '#ffb070';
-        const v = run && run.addBonus ? Math.round(run.addBonus(150)) : 150; if (g.feed) g.feed('DRONE DETRUIT  +' + v, '#ff9a5a'); (g.killPops = g.killPops || []).push({ p: p.clone(), t0: performance.now(), txt: 'BOUM !' }); } }
+      if (ds > (d.small ? 50 : 40) && ds < (d.small ? 150 : 200)) { d.fT -= dt; if (d.fT <= 0) { d.fT = d.small ? 2.8 : 1.9; fire(g, d.s, d.x, d.y); } }
+      if (d.s >= s0 - 2 && d.s <= L.s + 2.5 && Math.hypot(L.x - d.x, L.y - d.y) < (d.small ? 3.6 : 4.4)) { d.alive = false; d.m.visible = false; const p = d.m.position.clone(); g.effects.explosion(p, null, false, 'orange'); g.audio.play('target'); g.rig.shake = Math.max(g.rig.shake, 0.7); g.flash = 0.2; g.flashColor = '#ffb070';
+        const ev = g.evo, S = EVO.save(g), c = Math.round((d.small ? 90 : 200) * EVO.mult(S.cm) * (EVO.COIN_K || 1)); if (ev) { ev.kills++; ev.coins += c; } rk.fuel = Math.min(rk.fuelMax, rk.fuel + (d.small ? 3 : 4));
+        (g.killPops = g.killPops || []).push({ p: p.clone(), t0: performance.now(), txt: '+' + c }); } }
+    // la premiere fois qu'on voit une epreuve : une consigne courte (lisible en une seconde)
+    { const HINT = { shutter: 'PASSE PAR LE COTE VERT', fan: 'PASSE ENTRE LES PALES', laser: 'PASSE QUAND LE LASER S ECARTE', piston: 'RESTE AU CENTRE', mine: 'EVITE LES MINES', mat: 'EVITE LES ANTENNES', ast: 'EVITE LES ASTEROIDES' }; L.seen = L.seen || {};
+      if (!L.hintT || L.t > L.hintT) { for (const o of L.O) { const ds = o.s - L.s; if (ds > 60 && ds < 170 && HINT[o.kind] && !L.seen[o.kind]) { L.seen[o.kind] = 1; L.hintT = L.t + 2.4; if (CC.L1) CC.L1.msg(g, HINT[o.kind], 2.2, '#ffffff'); break; } }
+        if (!L.seen.drone) { const d = L.sent.find((q) => q.alive && q.s - L.s > 50 && q.s - L.s < 170); if (d) { L.seen.drone = 1; L.hintT = L.t + 2.4; if (CC.L1) CC.L1.msg(g, 'CIBLE ROUGE : FONCE DEDANS !', 2.4, '#ff6a5a'); } } } }
+    bossPlay(g, rk, dt);
     // chasseurs : ils arrivent de face, se placent devant, tirent, puis repartent
     for (const c of L.chase) { const on = L.s > c.a && L.s < c.b; if (on && !c.on) { c.on = true; c.ds = 260; c.m.visible = true; if (c.k === 0) { if (CC.L1) CC.L1.msg(g, 'CHASSEURS EN APPROCHE !', 2, '#ff6a5a'); g.audio.play('alarm'); } }
       if (!c.on) continue; const want = on ? 46 + c.k * 12 + 6 * Math.sin(t * 0.7 + c.ph) : 420; c.ds += (want - c.ds) * Math.min(1, dt * (on ? 1.4 : 0.6));
@@ -383,9 +388,7 @@
     for (const b of L.bul) { if (!b.on) continue; b.t += dt; b.s += b.vs * dt; b.x += b.vx * dt; b.y += b.vy * dt; if (b.t > 4 || b.s < L.s - 20) { b.on = false; b.m.visible = false; continue; }
       if (Math.abs(b.s - L.s) < 2.2 && Math.hypot(b.x - L.x, b.y - L.y) < 1.9 && L.inv <= 0) { b.on = false; b.m.visible = false; L.v *= 0.6; L.inv = 0.5; g.onRocketCrash('missile', rk.pos.clone(), null); } }
     // anneaux d'acceleration
-    for (const B of L.boostR) { if (B.done || B.s < s0 - 1 || B.s > L.s + 1) continue; B.done = true; if (Math.hypot(L.x - B.x, L.y - B.y) < 5) { L.boostT = 2.6; g.audio.play('boostOn'); g.audio.play('whoosh'); if (g.feed) g.feed('BOOST !', '#ffc23a'); g.flash = 0.15; g.flashColor = '#ffe08a'; } }
-    // ecrous
-    const N = L.nut; if (N) { while (N.i0 < N.n && N.s[N.i0] < L.s - 6) N.i0++; for (let i = N.i0; i < N.n && N.s[i] < L.s + 4; i++) { if (!N.alive[i]) continue; if (Math.abs(N.s[i] - L.s) < 3.5 && Math.hypot(N.x[i] - L.x, N.y[i] - L.y) < 3.4) { N.alive[i] = 0; _a.set(N.p[i * 3], N.p[i * 3 + 1], N.p[i * 3 + 2]); g.onCollect('cell', _a.clone()); } } }
+    for (const B of L.boostR) { if (B.done || B.s < s0 - 1 || B.s > L.s + 1) continue; B.done = true; if (Math.hypot(L.x - B.x, L.y - B.y) < 5) { L.boostT = 2.6; rk.fuel = Math.min(rk.fuelMax, rk.fuel + 3); g.audio.play('boostOn'); g.audio.play('whoosh'); if (g.feed) g.feed('BOOST !', '#ffc23a'); g.flash = 0.15; g.flashColor = '#ffe08a'; } }
   }
   // l'animation de tout ce qui bouge (chaque image, meme au menu)
   const _o4 = new T3.Object3D(), _ec = new T3.Color();
@@ -397,9 +400,114 @@
     for (const c of L.chase) if (c.on) { placeAt(PA, c.m, L.s + c.ds, c.x, c.y); c.m.rotateZ(Math.sin(t * 1.2 + c.ph) * 0.5); }
     for (const b of L.bul) if (b.on) placeAt(PA, b.m, b.s, b.x, b.y);
     for (const B of L.boostR) B.m.rotation.z = t * 1.5;
-    const N = L.nut; if (N) { const im = N.im; for (let i = N.i0; i < N.n && N.s[i] < L.s + 260; i++) { if (N.alive[i]) _o4.position.set(N.p[i * 3], N.p[i * 3 + 1], N.p[i * 3 + 2]); else _o4.position.set(0, -1e5, 0); _o4.rotation.set(Math.PI / 2 + Math.sin(t * 2 + i) * 0.3, t * 3 + i, 0); _o4.scale.setScalar(N.alive[i] ? 1 : 0); _o4.updateMatrix(); im.setMatrixAt(i, _o4.matrix); } if (N.i0 > 0) { _o4.scale.setScalar(0); _o4.updateMatrix(); im.setMatrixAt(N.i0 - 1, _o4.matrix); } im.instanceMatrix.needsUpdate = true; }
   }
 
+  // ============================== v417 : LA LUNE (survol, cratere, puits de roche, coeur de lave) ==============================
+  const rockMat = () => new T3.ShaderMaterial({
+    uniforms: { uT: { value: 0 }, uCore: { value: 7038 } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0); }',
+    fragmentShader: [
+      'uniform float uT; uniform float uCore; varying vec2 vUv;',
+      'float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
+      'float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h(i), h(i + vec2(1.0, 0.0)), f.x), mix(h(i + vec2(0.0, 1.0)), h(i + vec2(1.0, 1.0)), f.x), f.y); }',
+      'void main(){',
+      '  vec2 p = vec2(vUv.x / 5.0, vUv.y * 18.0); float r = n(p) * 0.6 + n(p * 2.3) * 0.3 + n(p * 5.1) * 0.1;',
+      '  vec3 col = mix(vec3(0.13, 0.12, 0.12), vec3(0.4, 0.37, 0.34), r);',
+      '  float cr = 1.0 - smoothstep(0.0, 0.05, abs(n(p * 0.9 + 7.0) - 0.5));',
+      '  float heat = clamp(1.0 - abs(vUv.x - uCore) / 480.0, 0.0, 1.0);',
+      '  col += vec3(1.0, 0.42, 0.08) * cr * (0.3 + 1.1 * heat) * (0.8 + 0.2 * sin(uT * 3.0 + vUv.x * 0.1));',
+      '  float ring = smoothstep(0.94, 1.0, fract(vUv.x / 30.0)); col += vec3(1.0, 0.7, 0.3) * ring * 0.5;',
+      '  float fl = abs(vUv.y - 0.75); col = mix(col, vec3(1.0, 0.78, 0.2), (1.0 - smoothstep(0.006, 0.013, fl)) * 0.85);',
+      '  gl_FragColor = vec4(col, 1.0);',
+      '}'].join('\n'), side: T3.DoubleSide });
+  function moonWorld(g, PA, grp) {
+    const X = textures(), C = PA.W(MC), Y = new V(0, 1, 0), Z = new V(0, 0, 1);
+    // la Lune : une vraie sphere de 500 m qu'on survole puis qu'on traverse
+    const moon = new T3.Mesh(new T3.SphereGeometry(RMOON, 128, 80), new T3.MeshLambertMaterial({ map: X.moon, color: '#8c8c94', emissive: '#121216', fog: false })); moon.position.copy(C); grp.add(moon); L.moonW = moon;
+    const onS = (dir, h) => C.clone().addScaledVector(dir, RMOON + (h || 0));
+    const upTo = (o, dir) => { o.quaternion.setFromUnitVectors(Y, dir); return o; };
+    // les deux crateres-puits (entree en haut, sortie en dessous) : fosse noire, rebord, lampes
+    for (const s of [6545, 7535]) { const F = PA.fr(s), dir = new V().subVectors(F.p, C).normalize();
+      const pit = new T3.Mesh(new T3.CircleGeometry(24, 40), bas('#050506', { fog: false })); pit.position.copy(onS(dir, 0.6)); pit.quaternion.setFromUnitVectors(Z, dir); grp.add(pit);
+      const rim = new T3.Mesh(new T3.TorusGeometry(27, 4, 10, 48), lam('#8a8680', { emissive: '#1a1a1c' })); rim.position.copy(onS(dir, 1)); rim.quaternion.setFromUnitVectors(Z, dir); grp.add(rim);
+      for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2, l = new T3.Mesh(new T3.SphereGeometry(0.9, 8, 6), bas('#ffb84a', { fog: false })); l.position.set(Math.cos(a) * 27, Math.sin(a) * 27, 4.5); rim.add(l); } }
+    // la base lunaire sur la face qu'on survole : domes, antennes, plateformes, crateres
+    const rnd = (() => { let x = 77; return () => (x = (x * 16807) % 2147483647) / 2147483647; })();
+    const R0 = PA.R0, F0 = PA.F0;
+    const at = (th, ph) => new V().addScaledVector(Y, Math.cos(th) * Math.cos(ph)).addScaledVector(F0, -Math.sin(th) * Math.cos(ph)).addScaledVector(R0, Math.sin(ph)).normalize();   // th : du sommet vers l'arriere, ph : de cote
+    for (let k = 0; k < 70; k++) { const th = rnd() * 0.75 - 0.05, ph = (rnd() - 0.5) * 0.9, d = at(th, ph), r = 6 + rnd() * 26;
+      if (Math.abs(ph) < 0.07) continue; const c = new T3.Mesh(new T3.TorusGeometry(r, r * 0.12, 6, 28), lam('#5a5652', { emissive: '#121214' })); c.position.copy(onS(d, 0.3)); c.quaternion.setFromUnitVectors(Z, d); c.scale.z = 0.4; grp.add(c); }
+    const dome = (th, ph, r) => { const d = at(th, ph), o = upTo(new T3.Group(), d); o.position.copy(onS(d, -1)); grp.add(o); o.add(new T3.Mesh(new T3.SphereGeometry(r, 24, 12, 0, 6.283, 0, Math.PI / 2), lam('#e8eaee', { emissive: '#30343a' }))); o.add(new T3.Mesh(new T3.CylinderGeometry(r * 1.05, r * 1.1, 1.2, 24), lam('#5a5f68')));
+      for (let j = 0; j < 6; j++) { const w = new T3.Mesh(new T3.BoxGeometry(1.4, 0.9, 0.2), bas('#ffe08a', { fog: false })), a = j / 6 * 6.283; w.position.set(Math.cos(a) * r * 0.86, r * 0.35, Math.sin(a) * r * 0.86); w.lookAt(0, r * 0.35, 0); o.add(w); } };
+    const mast = (th, ph, h) => { const d = at(th, ph), o = upTo(new T3.Group(), d); o.position.copy(onS(d, 0)); grp.add(o); o.add(bakeBox([{ s: [1, h, 1], c: '#c8ccd2', p: [0, h / 2, 0] }, { s: [5, 0.4, 0.4], c: '#e8322a', p: [0, h * 0.8, 0] }, { s: [3, 0.4, 0.4], c: '#c8ccd2', p: [0, h * 0.6, 0] }]));
+      const l = new T3.Mesh(new T3.SphereGeometry(0.7, 8, 6), bas('#ff3a2a', { fog: false })); l.position.y = h + 0.6; o.add(l); (L.blinks = L.blinks || []).push(l); };
+    for (const [th, ph, r] of [[0.55, 0.13, 9], [0.5, -0.16, 12], [0.36, 0.2, 7], [0.25, -0.12, 10], [0.15, 0.16, 8], [0.62, -0.1, 6]]) dome(th, ph, r);
+    for (const [th, ph, h] of [[0.58, 0.07, 14], [0.44, -0.09, 18], [0.3, 0.1, 12], [0.2, -0.08, 16], [0.1, 0.09, 13]]) mast(th, ph, h);
+    for (const [th, ph] of [[0.48, 0.26], [0.32, -0.25]]) { const d = at(th, ph), o = upTo(new T3.Group(), d); o.position.copy(onS(d, 0.2)); grp.add(o); o.add(new T3.Mesh(new T3.CylinderGeometry(10, 10, 0.4, 8), lam('#8a8c90'))); for (let j = 0; j < 8; j++) { const l = new T3.Mesh(new T3.SphereGeometry(0.5, 6, 4), bas('#7af0ff', { fog: false })), a = j / 8 * 6.283; l.position.set(Math.cos(a) * 9.5, 0.4, Math.sin(a) * 9.5); o.add(l); } }
+    // le puits et la sortie : tunnel de roche aux fissures de lave
+    const RMt = rockMat(); L.rockMats = [RMt]; for (const [a, b] of ROCK) { const m = new T3.Mesh(sweep(PA, a, b, R, 40, 3), RMt); m.frustumCulled = false; grp.add(m); }
+    // le COEUR : une grande chambre de lave (vue de l'interieur), anneaux de reacteur autour de la voie
+    { const ch = new T3.Mesh(new T3.SphereGeometry(125, 48, 32), new T3.ShaderMaterial({ uniforms: { uT: { value: 0 } }, side: T3.BackSide,
+        vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+        fragmentShader: 'uniform float uT; varying vec3 vP; float h(vec3 p){ return fract(sin(dot(p, vec3(12.9, 78.2, 37.7))) * 43758.5); } void main(){ float a = sin(vP.x * 9.0 + uT) * sin(vP.y * 7.0 - uT * 0.7) * sin(vP.z * 8.0 + uT * 0.5); vec3 c = mix(vec3(0.35, 0.06, 0.02), vec3(1.0, 0.55, 0.12), smoothstep(-0.2, 0.9, a)); c *= 0.75 + 0.25 * step(0.97, h(floor(vP * 40.0))); gl_FragColor = vec4(c, 1.0); }' }));
+      ch.position.copy(C); grp.add(ch); L.core = ch; L.coreRings = [];
+      for (const [s, r] of [[6990, 30], [7038, 46], [7090, 30]]) { const o = placeAt(PA, new T3.Mesh(new T3.TorusGeometry(r, 1.6, 10, 64), lam('#3a3e46', { emissive: '#ff5a1a' })), s); grp.add(o); L.coreRings.push(o); }
+      const gl = glowS(260, '#ff7a2a', 0.5); gl.position.copy(C); grp.add(gl); }
+  }
+  // les epreuves de la Lune : grandes antennes (survol), dents de roche et jets de lave (puits), rochers du coeur
+  function moonObstacles(g, PA, grp, K) {
+    const OB = L.O, rockM = new T3.MeshLambertMaterial({ color: '#3e342e', emissive: '#3a1206', side: T3.DoubleSide }), lavaM = [bas('#ffb03a', { fog: false }), bas('#ff5a10', { fog: false, transparent: true, opacity: 0.35, blending: T3.AdditiveBlending, depthWrite: false })];
+    // SURVOL : de grandes antennes plantees dans la Lune montent jusqu'a la voie : passer a cote
+    for (const [s, x0] of [[6200, -9], [6300, 10], [6400, -4], [6480, 8]]) { const h = placeAt(PA, new T3.Group(), s); grp.add(h); h.add(bakeBox([{ s: [2.4, 40, 2.4], c: '#c8ccd2', p: [x0, -12, 0] }, { s: [2.6, 1, 2.6], c: '#e8322a', p: [x0, 2, 0] }, { s: [2.6, 1, 2.6], c: '#e8322a', p: [x0, -6, 0] }, { s: [9, 0.6, 0.6], c: '#c8ccd2', p: [x0, 4, 0] }]));
+      const l = new T3.Mesh(new T3.SphereGeometry(0.8, 8, 6), bas('#ff3a2a', { fog: false })); l.position.set(x0, 8.6, 0); h.add(l); (L.blinks = L.blinks || []).push(l);
+      OB.push({ s, th: 1.2 + RK, kind: 'mat', hit: (x, y) => (Math.abs(x - x0) < 1.2 + RK && y < 8) || (Math.abs(y - 4) < 0.3 + RK && Math.abs(x - x0) < 4.5) }); }
+    // LE PUITS et LA SORTIE : dents de roche (volets de pierre) et jets de lave (barres orange)
+    K.shutter(6620, Math.PI, 2.6, 0.3, rockM); K.laser(6690, 'h', 10, 0.8, 0, lavaM); K.shutter(6770, 0, 2.6, -0.3, rockM); K.laser(6850, 'v', 10, 0.9, 1, lavaM);
+    K.shutter(7230, Math.PI / 2, 2.6, 0.35, rockM); K.laser(7310, 'h', 10, 0.9, 2, lavaM); K.shutter(7390, -Math.PI / 2, 2.6, -0.35, rockM); K.laser(7470, 'rot', 0, 0.5, 0, lavaM);
+    // LE COEUR : quelques rochers qui flottent dans la lave
+    for (const [s, x, y, r] of [[6950, 9, 4, 3.5], [6990, -10, -6, 4], [7060, 6, -9, 3.5], [7110, -8, 8, 4]]) K.ast(s, x, y, r, 3, 0.4);
+  }
+  // ============================== v417 : LE BOSS, CROISEUR LUNAIRE (3 coups, on le percute partout) ==============================
+  function bossBuild(g, PA, grp) {
+    const m = new T3.Group(), hull = '#6e747e', dk = '#23262c', rd = '#e8322a', P = [];
+    P.push({ s: [16, 7, 46], c: hull, p: [0, 0, -4] }, { s: [12, 5, 10], c: hull, p: [0, -0.5, 22] }, { s: [6, 3.6, 8], c: hull, p: [0, -1, 30] },
+      { s: [16.4, 1.2, 46.4], c: dk, p: [0, -2.2, -4] }, { s: [16.6, 0.6, 3], c: rd, p: [0, 1.5, 12] }, { s: [16.6, 0.6, 3], c: rd, p: [0, 1.5, -20] },
+      { s: [7, 8, 11], c: hull, p: [0, 7, -12] }, { s: [7.4, 1.4, 11.4], c: dk, p: [0, 9, -12] }, { s: [1, 10, 1], c: '#9aa4ae', p: [0, 15, -14] },
+      { s: [24, 1.2, 9], c: dk, p: [0, 0, -18] }, { s: [4, 4, 12], c: hull, p: [-12, 0, -18] }, { s: [4, 4, 12], c: hull, p: [12, 0, -18] });
+    m.add(bakeBox(P));
+    for (const [x, y, z] of [[0, 4, 10], [0, 4, -2], [-6, -4, 4], [6, -4, 4]]) { const t = new T3.Group(); t.position.set(x, y, z); m.add(t); t.add(new T3.Mesh(new T3.CylinderGeometry(2.2, 2.6, 1.6, 12), lam(dk))); for (const sx of [-0.6, 0.6]) { const b = new T3.Mesh(new T3.CylinderGeometry(0.35, 0.35, 5, 8), lam('#5a606a')); b.rotation.x = Math.PI / 2; b.position.set(sx, 0.6, 2.4); t.add(b); } }
+    for (const x of [-5, 0, 5]) { const e = new T3.Mesh(new T3.CylinderGeometry(2, 2.4, 3, 14), lam(dk)); e.rotation.x = Math.PI / 2; e.position.set(x, 0, -28.5); m.add(e); const gw = glowS(10, '#ff8a3a', 0.9); gw.position.set(x, 0, -30.5); m.add(gw); }
+    for (let k = 0; k < 6; k++) { const w = new T3.Mesh(new T3.BoxGeometry(1.2, 0.8, 0.2), bas('#ff5a3a', { fog: false })); w.position.set(-2.5 + k, 8.2, -6.4); m.add(w); }
+    const beacon = new T3.Mesh(new T3.SphereGeometry(0.9, 10, 8), bas('#ff2a1a', { fog: false })); beacon.position.set(0, 20.5, -14); m.add(beacon);
+    // la GRANDE CIBLE ROUGE (face au joueur) et l'enseigne
+    const tg = new T3.Group(); tg.position.set(0, 2, 34); m.add(tg); tg.add(new T3.Mesh(new T3.TorusGeometry(13, 0.5, 8, 64), bas('#ff3a2a', { fog: false }))); tg.add(new T3.Mesh(new T3.TorusGeometry(7, 0.35, 8, 48), bas('#ff3a2a', { fog: false })));
+    for (let k = 0; k < 4; k++) { const t2 = new T3.Mesh(new T3.BoxGeometry(0.6, 4, 0.3), bas('#ff3a2a', { fog: false })), a = k / 4 * Math.PI * 2; t2.position.set(Math.cos(a) * 13, Math.sin(a) * 13, 0); t2.rotation.z = a + Math.PI / 2; tg.add(t2); }
+    { const cv = document.createElement('canvas'); cv.width = 512; cv.height = 192; const x = cv.getContext('2d'); x.fillStyle = 'rgba(20,6,6,0.85)'; x.fillRect(0, 0, 512, 192); x.strokeStyle = '#ff3a2a'; x.lineWidth = 10; x.strokeRect(5, 5, 502, 182); x.fillStyle = '#ff3a2a'; x.font = '900 64px Arial Black, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('BOSS', 256, 56); x.fillStyle = '#ffffff'; x.font = '900 46px Arial Black, Arial, sans-serif'; x.fillText('CROISEUR LUNAIRE', 256, 134);
+      const sp = new T3.Sprite(new T3.SpriteMaterial({ map: new T3.CanvasTexture(cv), transparent: true, fog: false, depthTest: false })); sp.scale.set(26, 9.75, 1); sp.position.set(0, 26, 0); sp.renderOrder = 20; m.add(sp); }
+    m.visible = false; grp.add(m);
+    L.boss = { m, tg, beacon, s: 7950, sT: 7950, x: 0, y: 0, hp: 3, on: false, dead: false, deadT: 0, hitT: 0, fT: 2, cap: PA.len - 420, boomT: 0 };
+  }
+  function bossPlay(g, rk, dt) {
+    const B = L.boss, PA = L.PA; if (!B || (B.dead && B.deadT > 3)) return;
+    if (!B.on && L.s > 7540 - 260) { B.on = true; B.m.visible = true; if (CC.L1) CC.L1.msg(g, 'BOSS : FONCE DANS LE CROISEUR (3 COUPS)', 3, '#ff5a3a'); g.audio.play('robotAlarm'); }
+    if (!B.on) return; const t = L.t;
+    if (B.dead) { B.deadT += dt; B.boomT -= dt; if (B.boomT <= 0 && B.deadT < 2.4) { B.boomT = 0.18; const p = B.m.position.clone().add(new V(rr(-8, 8), rr(-4, 6), rr(-20, 20))); g.effects.explosion(p, null, false, 'orange'); g.audio.play('boomSmall', p); }
+      if (B.deadT > 2.4 && B.m.visible) { B.m.visible = false; g.flash = 0.6; g.flashColor = '#ffd8a0'; g.audio.play('boom'); g.rig.shake = 1.4; for (let k = 0; k < 6; k++) g.effects.explosion(B.m.position.clone().add(new V(rr(-10, 10), rr(-6, 6), rr(-20, 20))), null, false, 'orange'); } return; }
+    B.hitT -= dt; B.s += (B.sT - B.s) * Math.min(1, dt * (B.hitT > 0 ? 2.5 : 1.2)); B.x = 7 * Math.sin(t * 0.45); B.y = 3 * Math.sin(t * 0.6);
+    const capped = B.sT >= B.cap - 1;
+    // il tire : une balle visee (phase 1), trois en eventail ensuite
+    const ds = B.s - L.s, ph = 3 - B.hp; if (ds > 45 && ds < 280) { B.fT -= dt; if (B.fT <= 0) { B.fT = [1.6, 1.25, 0.95][ph]; fire(g, B.s - 30, B.x, B.y + 4); if (ph >= 1) { fire(g, B.s - 30, B.x - 7, B.y - 3); fire(g, B.s - 30, B.x + 7, B.y - 3); } } }
+    // la fusee le percute (n'importe ou sur la coque ; tout le passage quand il est au bout de l'arene)
+    if (B.hitT <= 0 && L.s > B.s - 30 && L.s < B.s + 30 && (capped || (Math.abs(L.x - B.x) < 9 + RK && Math.abs(L.y - B.y) < 6 + RK))) {
+      B.hp = capped ? 0 : B.hp - 1; B.hitT = 1.6; L.inv = 1.2; L.v *= 0.6; g.rig.shake = 1.2; g.flash = 0.35; g.flashColor = '#ffffff'; g.effects.explosion(rk.pos.clone(), null, false, 'orange'); g.audio.play('reactorHit'); g.audio.play('boom');
+      if (EVO.onBossHit) EVO.onBossHit(g, null); rk.fuel = Math.min(rk.fuelMax, rk.fuel + 6);
+      if (B.hp <= 0) { B.dead = true; B.deadT = 0; if (CC.L1) CC.L1.msg(g, 'CROISEUR DETRUIT !', 3, '#ffe9a0'); g.audio.play('victory'); }
+      else { B.sT = Math.min(B.cap, L.s + 330); if (CC.L1) CC.L1.msg(g, B.hp === 2 ? 'TOUCHE !  ENCORE 2 COUPS' : 'ENCORE UN COUP !', 2, '#ff9a5a'); }
+      (g.killPops = g.killPops || []).push({ p: rk.pos.clone().add(new V(0, 3, 0)), t0: performance.now(), txt: B.hp > 0 ? '-1' : 'BOUM !' }); return; }
+    // on l'a evite : il repart devant
+    if (L.s > B.s + 30 && !capped) { B.sT = Math.min(B.cap, L.s + 260); B.s = Math.max(B.s, L.s + 120); if (CC.L1) CC.L1.msg(g, 'IL REVIENT !  FONCE DEDANS', 1.6, '#ff6a5a'); }
+  }
+  function bossAnim(g, dt) { const B = L.boss; if (!B || !B.on || !B.m.visible) return; if (!B.dead) { placeAt(L.PA, B.m, B.s, B.x, B.y); B.m.rotateY(Math.PI); } else { B.m.position.y -= dt * 4; B.m.rotateZ(dt * 0.4); } B.tg.scale.setScalar(1 + 0.08 * Math.sin(L.t * 5)); B.tg.visible = !B.dead; B.beacon.visible = Math.sin(L.t * 8) > 0; }
   // ============================== LA FICHE DU NIVEAU 4 ==============================
   { const Dc = CC.Zones.defs && CC.Zones.defs.campagne; if (Dc) { Dc.scenes.lpad = { len: [800, 800], noDoor: true, noChaos: true, noDress: true, build() {} }; Dc.scenes.lvide = { len: [1000, 1000], noDoor: true, noChaos: true, noDress: true, grass: false, build() {} }; } }
   const CH4 = ZN.map((z) => [z[3], z[0], z[2]]);
@@ -408,7 +516,7 @@
     if (!(EVO.stage && EVO.stage(g) === 4) || g.evoPreview) return _ld(g);
     EVO.chapters = CH4.map((c, i) => ({ d: c[1], i, name: c[0], key: c[2] }));
     if (EVO.SCENE_AUDIO) { EVO.SCENE_AUDIO.lpad = 'evoDawn'; EVO.SCENE_AUDIO.lmontee = 'sky'; EVO.SCENE_AUDIO.lnuages = 'sky'; for (const z of ZN.slice(2)) EVO.SCENE_AUDIO[z[2]] = 'espace'; }
-    return EVO.baseDef({ zone: 'campagne', len: 6150, scenes: ['lpad', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide'], order: new Array(90).fill('campagne'), theme: CC.LM.THEMES[0], seed: 4404, bossEnt: null });
+    return EVO.baseDef({ zone: 'campagne', len: 9300, scenes: ['lpad', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide', 'lvide'], order: new Array(90).fill('campagne'), theme: CC.LM.THEMES[0], seed: 4404, bossEnt: null });
   };
 
   // ============================== CONSTRUCTION, PILOTAGE, CAMERA ==============================
@@ -424,14 +532,16 @@
     const sV = PA.sOf([0, 905, 880]), sC = PA.sOf([-250, 820, 1940]), sE = PA.sOf([-300, 900, 2700]), sJ = PA.sOf([-310, 1130, 3180]);
     L.gap1 = GAPS[0].slice(); L.gap2 = GAPS[1].slice(); L.gap3 = [GAPS[2][0], PA.len];
     L.tubeSecs = [[140, L.gap1[0]], [L.gap1[1], L.gap2[0]], [L.gap2[1], L.gap3[0]]];
-    buildTube(PA, grp, L.tubeSecs); beacons(PA, grp, L.gap1[0], L.gap1[1]); beacons(PA, grp, L.gap2[0], L.gap2[1]); beacons(PA, grp, L.gap3[0], PA.len - 20);
+    buildTube(PA, grp, L.tubeSecs); beacons(PA, grp, L.gap1[0], L.gap1[1]); beacons(PA, grp, L.gap2[0], L.gap2[1]); beacons(PA, grp, L.gap3[0], 6100); beacons(PA, grp, 7560, PA.len - 20);
     launchPad(g, PA, grp); cloudDeck(PA, grp); spaceStuff(PA, grp, L.gap1, L.gap2); buildSky(g);
-    obstacles(g, PA, grp); enemies(g, PA, grp); nuts(PA, grp);
+    obstacles(g, PA, grp); enemies(g, PA, grp); moonWorld(g, PA, grp); bossBuild(g, PA, grp);
     // poussiere d'espace : des points qui defilent pres de la fusee (on sent la vitesse dans le vide)
     { const n = 360, pos = new Float32Array(n * 3), geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(pos, 3)); const p = new T3.Points(geo, new T3.PointsMaterial({ color: '#cfe8ff', size: 0.5, transparent: true, opacity: 0, depthWrite: false, fog: false })); p.frustumCulled = false; g.scene.add(p); L.dust = p; L.dustInit = false; }
     L.far0 = g.camera.far;
   }
-  const inTube = (s) => { for (const [a, b] of L.tubeSecs) if (s >= a && s <= b) return true; return false; };
+  const inTube = (s) => { for (const [a, b] of L.tubeSecs) if (s >= a && s <= b) return true; for (const [a, b] of ROCK) if (s >= a && s <= b) return true; return false; };
+  // altitude pour le ciel : une fois dans l'espace, on y reste (sous la Lune, on passe a hauteur du pas de tir : le ciel ne doit pas redevenir bleu)
+  const altSky = (y) => { const a = y - L.PA.O.y; return L.s > 1300 ? Math.max(a, 1150) : a; };
   const altOf = (p) => p.y - L.PA.O.y;
 
   // --- pilotage le long de la voie (remplace le pas physique de la fusee au niveau 4) ---
@@ -442,19 +552,21 @@
     if (!L.started) { L.started = true; L.s = 0; L.x = 0; L.y = 0; L.v = Math.max(26, this.vel.length()); L.launchT = 0; const e = new T3.Euler().setFromQuaternion(inp.aimQ, 'YXZ'); L.yaw0 = e.y; L.pit0 = e.x; L.ry = 0; L.rp = 0; }
     // la commande : l'ecart de cap du joystick / des fleches depuis le depart = ou on veut aller dans le tube ; il revient doucement au centre
     { const e = new T3.Euler().setFromQuaternion(inp.aimQ, 'YXZ'); let dy = e.y - L.yaw0; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); L.ry = U.clamp(dy, -0.62, 0.62) * Math.exp(-dt * 0.9); L.rp = U.clamp(e.x - L.pit0, -0.62, 0.62) * Math.exp(-dt * 0.9); inp.setAim(L.yaw0 + L.ry, L.pit0 + L.rp); }
-    const F = PA.fr(L.s), alt = altOf(F.p), up = U.clamp(F.t.y, 0, 1), atmo = 1 - ss(500, 900, alt), s0 = L.s;
-    this.fuel = this.fuelMax;   // PROTOTYPE : carburant illimite
+    const F = PA.fr(L.s), alt = altSky(F.p.y), up = U.clamp(F.t.y, 0, 1), atmo = 1 - ss(500, 900, alt), s0 = L.s;
     // la zone : titre a l'entree, accelerateur
     const zi = zoneAt(L.s), Z = ZN[zi], boostZ = Z[5] === 'boost';
     if (zi !== L.zi) { L.zi = zi; if (CC.L1) CC.L1.msg(g, Z[3] + (boostZ ? ' !' : ''), 2.2, Z[4]); if (boostZ) { g.audio.play('boostOn'); g.audio.play('whoosh'); } else if (Z[5] === 'open') g.audio.play('jetPass'); else g.audio.play('alarm'); }
     if (L.boostT > 0) L.boostT -= dt; if (L.inv > 0) L.inv -= dt;
+    // v417 : vrai carburant (les accelerateurs et les anneaux portent la fusee gratuitement ; drones et anneaux en redonnent)
+    if (!(boostZ || L.boostT > 0)) this.fuel = Math.max(0, this.fuel - dt); const dry = this.fuel <= 0;
+    if (dry && !L.dry) { L.dry = 1; if (CC.L1) CC.L1.msg(g, 'PLUS DE CARBURANT !', 2, '#ff6a5a'); g.audio.play('warnFuel'); } if (!dry) L.dry = 0;
     const vMax = L.boostT > 0 ? 96 : boostZ ? 80 : 47 + 9 * ss(500, 1000, alt);   // dans le vide on va un peu plus vite ; accelerateur et anneaux : on file
     L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
-    L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.7) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)) - 6 * up * atmo * dt;   // la pesanteur freine un peu la montee verticale
-    L.v = Math.max(24, L.v);
+    if (dry) { L.v -= (9 + 10 * up * atmo) * dt; if (L.v < 14 && this.active) { g.onRocketCrash('stalled', this.pos.clone(), null); return; } }   // a sec : la fusee ralentit puis s'arrete
+    else { L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.7) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)) - 6 * up * atmo * dt; L.v = Math.max(24, L.v); }   // la pesanteur freine un peu la montee verticale
     const vx = -L.v * Math.sin(L.ry) * 0.85, vy = L.v * Math.sin(L.rp) * 0.85, lat = Math.min(1, 52 / L.v); L.x += vx * lat * dt; L.y += vy * lat * dt; L.s += L.v * dt;   // a grande vitesse, le deplacement de cote reste le meme (pas de glissade incontrolable)
     // le tube retient la fusee (on glisse sur la paroi, etincelles) ; a decouvert, une limite douce plus large
-    const lim = inTube(L.s) ? R - 2.2 : ROPEN - 2, rr2 = Math.hypot(L.x, L.y);
+    const lim = inTube(L.s) ? R - 2.2 : Z[2] === 'lsurface' ? 22 : ROPEN - 2, rr2 = Math.hypot(L.x, L.y);
     if (rr2 > lim) { L.x *= lim / rr2; L.y *= lim / rr2; L.v *= 1 - dt * 0.6; if (inTube(L.s) && Math.random() < dt * 14) { const F2 = PA.fr(L.s); _a.copy(F2.p).addScaledVector(F2.r, L.x * 1.12).addScaledVector(F2.u, L.y * 1.12); g.effects.sparks.emit({ pos: _a.clone(), vel: new V(rr(-1, 1), rr(-1, 1), rr(-1, 1)).multiplyScalar(10), life: 0.4, s0: 0.3, s1: 0.4, s2: 0.1, cols: g.effects.pal.cyan, drag: 1, grav: 0, a: 1, fout: 0.5 }); if (Math.random() < 0.15) g.audio.play('clank'); } }
     const F2 = PA.fr(L.s); this.pos.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y);
     this.vel.copy(F2.t).multiplyScalar(L.v).addScaledVector(F2.r, vx * lat).addScaledVector(F2.u, vy * lat); this.speed = this.vel.length(); this.fwd.copy(this.vel).normalize(); this.flightDist += L.v * dt;
@@ -463,7 +575,7 @@
     // les obstacles du programme (teste dans la section du tube, sur tout le trajet de l'image : rien ne passe au travers)
     if (L.inv <= 0 && L.OB) for (const o of L.OB) { if (o.s + o.th < s0 || o.s - o.th > L.s) continue; if (o.hit(L.x, L.y, L.t)) { g.onRocketCrash('wall', this.pos.clone(), F2.t.clone().negate()); if (this.active) { L.inv = 0.8; L.v *= 0.5; g.rig.shake = Math.max(g.rig.shake, 1); } break; } }
     if (this.active && L.sent) play(g, this, dt, s0);
-    if (this.active && L.s > PA.len - 60 && !g.evoFinish && EVO.finishRun) { if (CC.L1) CC.L1.msg(g, 'ARRIVEE !  LA LUNE : BIENTOT', 2.6, '#ffe9a0'); EVO.finishRun(g); }
+    if (this.active && L.s > PA.len - 60 && (!L.boss || L.boss.dead) && !g.evoFinish && EVO.finishRun) { if (CC.L1) CC.L1.msg(g, 'ARRIVEE !', 2.6, '#ffe9a0'); EVO.finishRun(g); }
   };
 
   // --- AU MENU (et pendant la charge) : la fusee debout sur la table de lancement, la tour de 150 m derriere elle ---
@@ -472,7 +584,7 @@
     if (rk.mesh) { rk.mesh.visible = true; rk.mesh.position.copy(O); rk.mesh.quaternion.setFromRotationMatrix(_m.makeBasis(_a.copy(R0).negate(), _c.copy(F0).negate(), Y)); }
     let p, look; const t = L.t;
     if (A && A.kind === 'tier') { const an = -1.1 + Math.sin(A.t * 0.5) * 0.35, D = U.clamp(2.8 * Lw, 4.5, 8); p = new V().copy(O).addScaledVector(R0, -Math.cos(an) * D).addScaledVector(F0, Math.sin(an) * D).addScaledVector(Y, Lw * 0.3); look = O.clone(); }   // amelioration : tout pres de la fusee, on voit la piece arriver
-    else { const ch = g.evoAim ? (g.evoAim.lock ? 1 : g.evoAim.ch || 0) : 0; p = new V().copy(O).addScaledVector(R0, -7 + 2 * ch).addScaledVector(F0, -4 - 1.2 * Math.sin(t * 0.12)).addScaledVector(Y, -0.8); look = new V().copy(O).addScaledVector(R0, 1).addScaledVector(Y, 2.6 - 1 * ch);
+    else { const ch = g.evoAim ? (g.evoAim.lock ? 1 : g.evoAim.ch || 0) : 0; const D = Math.max(1, Lw / 2.4); p = new V().copy(O).addScaledVector(R0, (-3.4 + 0.8 * ch) * D).addScaledVector(F0, (-3.2 - 0.6 * Math.sin(t * 0.12)) * D).addScaledVector(Y, -0.3 * D); look = new V().copy(O).addScaledVector(R0, 0.25 * D).addScaledVector(Y, (0.35 - 0.2 * ch) * D);
       if (ch > 0.2) { p.x += (Math.random() - 0.5) * 0.12 * ch; p.y += (Math.random() - 0.5) * 0.12 * ch; } }
     if (!L.mc) { L.mc = p.clone(); L.ml = look.clone(); } const k = 1 - Math.exp(-dt * 4); L.mc.lerp(p, k); L.ml.lerp(look, k);
     cam.position.copy(L.mc); cam.up.set(0, 1, 0); cam.lookAt(L.ml); if (Math.abs(cam.fov - 55) > 0.01) { cam.fov = 55; cam.updateProjectionMatrix(); } if (cam.far < 7000) { cam.far = 7000; cam.updateProjectionMatrix(); } cam.updateMatrixWorld();
@@ -491,8 +603,8 @@
     cam.up.copy(cu); cam.lookAt(_a.copy(rk.pos).addScaledVector(cf, 18).addScaledVector(cu, 1.2));
     // au decollage : on part de la vue du menu (pres de la fusee, la tour derriere) et on recule vers une grande vue depuis le sol, puis la poursuite entre 50 et 220 m
     { const b = ss(50, 220, L.s); if (b < 1) { const qC = _q.copy(cam.quaternion), pC = _c.copy(cam.position), O = PA.O, k = ss(0, 70, L.s);
-      const pL = new V().copy(O).addScaledVector(PA.R0, -(7 + 27 * k)).addScaledVector(PA.F0, -(4 + 58 * k)).add(_b.set(0, -0.8 + 14.8 * k + L.s * 0.35, 0));
-      const lk = new V().copy(O).addScaledVector(PA.R0, 1).add(_b.set(0, 2.6, 0)).lerp(_a.copy(rk.pos).add(_b.set(0, 10 + L.s * 0.15, 0)), ss(0, 25, L.s));
+      const D = Math.max(1, L.rkL / 2.4), pL = new V().copy(O).addScaledVector(PA.R0, -(3.4 * D + 30 * k)).addScaledVector(PA.F0, -(3.2 * D + 58 * k)).add(_b.set(0, -0.3 * D + 14.3 * k + L.s * 0.35, 0));
+      const lk = new V().copy(O).addScaledVector(PA.R0, 0.25 * D).add(_b.set(0, 0.35 * D, 0)).lerp(_a.copy(rk.pos).add(_b.set(0, 10 + L.s * 0.15, 0)), ss(0, 25, L.s));
       cam.position.copy(pL); cam.up.set(0, 1, 0); cam.lookAt(lk); const qL = _q2.copy(cam.quaternion);
       cam.position.lerpVectors(pL, pC, b); cam.quaternion.copy(qL).slerp(qC, b); cam.up.set(0, 1, 0).applyQuaternion(cam.quaternion); } }
     { const f0 = cam.fov, fw = f0 + 16 * L.bk; if (Math.abs(fw - f0) > 0.01) { cam.fov = fw; cam.updateProjectionMatrix(); } }   // accelerateur : le champ s'elargit, les parois filent
@@ -505,6 +617,17 @@
 
   // --- au niveau 4 : pas de bande de collines lointaines autour de la camera (vue d'en dessous pendant la montee, elle faisait des murs) ---
   if (CC.Horizon) { const _hu = CC.Horizon.prototype.update; CC.Horizon.prototype.update = function (g) { if (L && on4(g)) { for (const m of [this.ring, this.glow, this.mtn]) if (m) m.visible = false; return; } return _hu.call(this, g); }; }
+  // --- ECRASEMENT EN L'AIR / DANS L'ESPACE : pas de chute de 1000 m vers un sol invisible ; l'epave flotte et ralentit, le drapeau se plante EN L'AIR, a cote d'elle (la camera le voit) ---
+  const _tf = EVO.tumbleFrame;
+  EVO.tumbleFrame = (g, dt) => {
+    const Tm = g.evoTumble; if (!Tm || !L || !L.PA || !on4(g)) return _tf(g, dt);
+    const alt = Tm.body.m.position.y - L.groundY; if (alt < 40 && !Tm.space) return _tf(g, dt); Tm.space = true;
+    for (const q of Tm.P) { q.v.y += 16 * dt; q.v.multiplyScalar(Math.exp(-1.8 * dt)); q.w.multiplyScalar(Math.exp(-0.7 * dt)); }   // on annule la pesanteur de l'epave, elle s'arrete en tournant doucement
+    const had = !!Tm.flag; _tf(g, dt);
+    if (Tm.flag && !had) { const F = Tm.flag, bp = Tm.body.m.position; F.position.copy(bp).add(new V(0, -2.2, 0)); F.children[F.children.length - 1].visible = false;   // pas de tertre de terre dans le vide
+      const ring = new T3.Mesh(new T3.TorusGeometry(0.9, 0.08, 6, 32), bas('#ffe28a', { fog: false })); ring.rotation.x = Math.PI / 2; F.add(ring); F.add(glowS(4, '#ffd27a', 0.6)); F.userData.ring = ring; }
+    if (Tm.flag && Tm.space) { const F = Tm.flag; F.position.y += Math.sin(Tm.t * 1.6) * 0.004; if (F.userData.ring) F.userData.ring.scale.setScalar(1 + 0.15 * Math.sin(Tm.t * 4)); }
+  };
   // --- l'ambiance selon l'altitude : ciel, brume, sol cache au-dessus des nuages, Terre, etoiles ---
   const SKY = [[0, '#3d6fb8', '#f2b07a', '#e8b896'], [260, '#2c63b8', '#a8ccf0', '#bcd4ee'], [420, '#3a6ac0', '#dfe8f4', '#f2f4f8'], [620, '#14246a', '#4a70c0', '#2a3c80'], [900, '#020308', '#0a1030', '#020308']];
   const _c1 = new T3.Color(), _c2 = new T3.Color(), _c3 = new T3.Color();
@@ -512,7 +635,7 @@
   const _am = EVO.applyMood;
   EVO.applyMood = (g, m) => {
     _am(g, m); if (!L || !L.PA || !on4(g)) return;
-    const cam = g.camera, alt = cam.position.y - L.PA.O.y, [top, hor, fog] = skyAt(alt), K = ss(560, 900, alt);
+    const cam = g.camera, alt = altSky(cam.position.y), [top, hor, fog] = skyAt(alt), K = ss(560, 900, alt);
     if (g.skyMat) { const u = g.skyMat.uniforms; u.top.value.copy(top); u.horizon.value.copy(hor); u.bottom.value.copy(fog); u.cloud.value = 1 - K; if (u.sunDir) { u.sunDir.value.copy(L.PA.R0).multiplyScalar(0.75).addScaledVector(L.PA.F0, 0.5); u.sunDir.value.y = 0.28; u.sunDir.value.normalize(); } }   // le soleil du ciel : bas, sur le cote (pas au zenith)
     const inC = alt > 370 && alt < 470 ? Math.sin((alt - 370) / 100 * Math.PI) : 0;
     g.scene.fog.color.copy(fog); g.scene.fog.near = U.lerp(U.lerp(160, 30, inC), 1e5, K); g.scene.fog.far = U.lerp(U.lerp(1500, 240, inC), 2e5, K); if (g.fogBase) { g.fogBase.near = g.scene.fog.near; g.fogBase.far = g.scene.fog.far; g.fogBase.color.copy(fog); }
@@ -526,8 +649,9 @@
     _tk(g, dt);
     if (!on4(g) || !g.endlessRun || !g.endlessRun.T) return;
     if (!L) { try { build(g); } catch (e) { console.warn('space', e); L = null; return; } }
-    const PA = L.PA, rk = g.rocket, cam = g.camera, alt = cam.position.y - PA.O.y, K = ss(560, 900, alt), fx = g.effects; L.t += dt;
+    const PA = L.PA, rk = g.rocket, cam = g.camera, alt = altSky(cam.position.y), K = ss(560, 900, alt), fx = g.effects; L.t += dt;
     for (const M of L.tubeMats) { M.uniforms.uT.value = L.t; M.uniforms.uK.value = 0.55 + 0.45 * K; }
+    if (L.rockMats) for (const M of L.rockMats) M.uniforms.uT.value = L.t; if (L.core) L.core.material.uniforms.uT.value = L.t; if (L.coreRings) L.coreRings.forEach((o, i) => o.rotateZ(dt * (i % 2 ? -0.5 : 0.4))); if (L.blinks) for (const b of L.blinks) b.visible = Math.sin(L.t * 5) > 0; bossAnim(g, dt);
     // bras de service : ils s'ecartent quand la fusee arrive a leur hauteur
     for (const A of L.arms) { const want = L.started && L.s > A.h - 60 ? 1 : 0; A.k += (want - A.k) * Math.min(1, dt * 2.2); A.piv.rotation.y = -A.k * 1.45; }
     if (L.dish) L.dish.rotation.z = Math.sin(L.t * 0.3) * 0.4;
@@ -538,9 +662,9 @@
     const hideGround = alt > 470; for (const c of g.endlessRun.chunks.values()) if (c.builder && c.builder.root) c.builder.root.visible = !hideGround; if (L.pad) L.pad.visible = alt < 900; if (L.clouds) L.clouds.visible = alt < 720; if (g.pad && g.pad.hangar && g.state === 'FLIGHT') g.pad.hangar.visible = false;   /* le hangar du menu disparait au decollage */
     for (const o of g.scene.children) if (o.name === 'level') o.visible = false;   if (g.pad && g.pad.evoL) g.pad.evoL.visible = false; if (g.pad && g.pad.hangar) g.pad.hangar.visible = false;   /* niveau 4 : ni le hangar du niveau 1, ni sa rampe : la fusee est sur la table de lancement */
     animate(g);   /* le decor du mode classique (murs du lancement) n'a rien a faire au niveau 4 */
-    if (L.sky) { L.sky.position.copy(cam.position); const E = L.earth, hv = 4 + Math.pow(Math.max(0, alt - 450), 1.5) * 0.02; E.visible = alt > 440; E.position.set(0, -(RS + hv), 0); E.rotation.set(Math.PI / 2 - 0.35, 0, L.t * 0.004); L.cloudSphere.rotation.y = L.t * 0.002;   // le pole est mis sur le cote : sous la fusee on voit l'equateur (oceans, continents), pas la calotte glaciaire
+    if (L.sky) { L.sky.position.copy(cam.position); const E = L.earth, hv = 4 + Math.pow(Math.max(0, alt - 450), 1.5) * 0.02 + 900 * ss(7300, 7700, L.s); E.visible = alt > 440; E.position.set(0, -(RS + hv), 0); E.rotation.set(Math.PI / 2 - 0.35, 0, L.t * 0.004); L.cloudSphere.rotation.y = L.t * 0.002;   // le pole est mis sur le cote : sous la fusee on voit l'equateur (oceans, continents), pas la calotte glaciaire
       for (const p of L.stars) p.material.opacity = p.userData.op * ss(500, 850, alt);
-      const mf = _a.copy(PA.F0).multiplyScalar(0.8).addScaledVector(PA.R0, -0.25); mf.y = 0.42; mf.normalize(); L.moon.position.copy(mf).multiplyScalar(3200); L.moon.scale.setScalar(1 + 0.25 * ss(0, PA.len, L.s)); L.moon.visible = alt > 250;
+      const mf = _a.copy(PA.F0).multiplyScalar(0.8).addScaledVector(PA.R0, -0.25); mf.y = 0.42; mf.normalize(); L.moon.position.copy(mf).multiplyScalar(3200); L.moon.scale.setScalar(1 + 0.25 * ss(0, PA.len, L.s)); L.moon.visible = false;   /* la vraie Lune (une sphere de 500 m sur la voie) remplace la Lune du ciel */
       if (L.sun) { _b.copy(PA.R0).multiplyScalar(0.75).addScaledVector(PA.F0, 0.5); _b.y = 0.28; _b.normalize(); L.sun.position.copy(_b).multiplyScalar(2800); L.sun.material.opacity = 0.25 + 0.75 * K; } }   // le soleil est BAS, sur le cote : on ne le regarde jamais en face pendant la montee
     // la poussiere de l'espace (a decouvert surtout)
     if (L.dust && L.started) { const P = L.dust.geometry.attributes.position, F = PA.fr(L.s), n = P.count; L.dust.material.opacity = Math.max(0.75 * K, 0.9 * L.bk); L.dust.material.size = 0.5 + 0.7 * L.bk;

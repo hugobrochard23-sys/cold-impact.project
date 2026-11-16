@@ -883,7 +883,7 @@
       const gr = ph * 0.5, gcx = W * 0.935, gcy = py + ph / 2; ctx.save(); ctx.beginPath(); ctx.arc(gcx, gcy, gr, 0, 6.2832); ctx.fillStyle = '#3a8ee0'; ctx.fill(); ctx.lineWidth = Math.max(2, gr * 0.12); ctx.strokeStyle = '#b8e0ff'; ctx.stroke(); ctx.restore(); gearIcon(ctx, gcx, gcy, gr * 0.62); hit(ui, gcx - gr, gcy - gr, gr * 2, gr * 2, () => { ui.overlay = 'msettings'; }); }
     // ---- niveau 1 / 2 (colonne de droite) ----
     if (E.stage) { const stg = E.stage(game), bw = u * 0.075, bx0 = W * 0.965 - bw, by0 = Y(0.115), bp = P(['2'], bw * 0.5, u * 0.0075);
-      for (let n = 1; n <= 3; n++) { const y = by0 + (n - 1) * bw * 1.25, on = stg === n, open = n === 1 || (n === 2 ? !!S.clr1 : !!S.clr2);   // v413 : le niveau 3 s'ouvre apres le niveau 2 pill(ctx, bx0, y, bw, bw, on ? 'rgba(242,184,34,0.9)' : 'rgba(20,34,58,0.82)', on ? '#fff0b0' : 'rgba(159,176,200,0.5)', bw * 0.3); TC(String(n), bx0 + bw / 2, y + bw / 2, bp, open ? '#ffffff' : '#5a6678', { align: 'center' });
+      for (let n = 1; n <= 4; n++) { const y = by0 + (n - 1) * bw * 1.25, on = stg === n, open = n === 1 || (n === 2 ? !!S.clr1 : n === 3 ? !!S.clr2 : !!S.clr3);   // v413 : le niveau 3 s'ouvre apres le niveau 2 pill(ctx, bx0, y, bw, bw, on ? 'rgba(242,184,34,0.9)' : 'rgba(20,34,58,0.82)', on ? '#fff0b0' : 'rgba(159,176,200,0.5)', bw * 0.3); TC(String(n), bx0 + bw / 2, y + bw / 2, bp, open ? '#ffffff' : '#5a6678', { align: 'center' });
         if (!open) { ctx.fillStyle = '#9aa6b8'; ctx.fillRect(Math.round(bx0 + bw * 0.62), Math.round(y + bw * 0.62), Math.round(bw * 0.3), Math.round(bw * 0.24)); }
         if (open && !on) hit(ui, bx0, y, bw, bw, () => E.switchStage(game, n)); } }
     // ---- animation d'evolution : seul le nom de la piece s'affiche, la fusee est au centre ----
@@ -928,7 +928,7 @@
       ms.forEach((k, i) => { const s = NAMES[k] + ' : VOL ' + S.marks[k].run + '  ' + E.fmt(S.marks[k].sec); T(s, cx, Y(0.245 + i * 0.027), P([s], W * 0.94, u * 0.0056), k === 'boss' ? GOLD : '#c8d0dc', { align: 'center' }); });
     }
     // ---- colonne de gauche : coffre (toutes les 2 h), gemme contre pub ----
-    { const ly0 = recap ? Y(0.365) : Y(0.17), s = u * 0.09, lx = W * 0.035, ready = E.chestReady(game), unlocked = S.runs >= 3, wait = Math.max(0, (S.chestAt || 0) - Date.now());
+    { const ly0 = recap ? Y(0.365) : Y(0.17), s = u * 0.09, lx = W * 0.035, ready = E.chestReady(game), unlocked = E.chestUnlocked(game), wait = Math.max(0, (E.saveBase(game).chestAt || 0) - Date.now());
       if (unlocked || S.runs >= 2) {
         const pulse = 0.5 + 0.5 * Math.sin(now / 240); pill(ctx, lx, ly0, s, s, 'rgba(20,34,58,0.78)', ready ? '#ffd23a' : 'rgba(159,176,200,0.45)', s * 0.22);
         if (unlocked) { chestIcon(ctx, lx + s / 2, ly0 + s * 0.45, s * 0.34, false, ready ? 0.35 + 0.3 * pulse : 0); const tp = P(['0:00:00'], s * 1.15, s * 0.02); T(ready ? 'OUVRIR' : secFmt(wait), lx + s / 2, ly0 + s * 0.8, ready ? P(['OUVRIR'], s * 0.95, s * 0.02) : tp, ready ? '#ffd23a' : '#c8d0dc', { align: 'center' }); hit(ui, lx, ly0, s, s, () => E.openChest(game)); }

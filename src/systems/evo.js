@@ -49,7 +49,7 @@
     if (EVO.fast() && !S.wingsInit && !S.runs && !(S.rk > 0) && !S.stage) { S.wingsInit = 1; S.rk = 5; }
     if (!EVO._cheat) {
       EVO._cheat = 1; const q = (k) => { const m = new RegExp('[?&]' + k + '=(\\d+)').exec(location.search); return m ? parseInt(m[1], 10) : null; };
-      const T = (/[?&]lv=3/.test(location.search) || (S.stage === 3 && !/[?&]lv=\d/.test(location.search))) ? EVO.stage3(S) : (/[?&]lv=2/.test(location.search) || S.stage === 2) ? EVO.stage2(S) : S;   // les triches de test visent le niveau en cours
+      const T = (/[?&]lv=4/.test(location.search) || (S.stage === 4 && !/[?&]lv=\d/.test(location.search))) ? EVO.stage4(S) : (/[?&]lv=3/.test(location.search) || (S.stage === 3 && !/[?&]lv=\d/.test(location.search))) ? EVO.stage3(S) : (/[?&]lv=2/.test(location.search) || S.stage === 2) ? EVO.stage2(S) : S;   // les triches de test visent le niveau en cours
       const a = q('evocoins'); if (a !== null) T.coins = a; const b = q('evork'); if (b !== null) T.rk = b; const c = q('evola'); if (c !== null) T.la = c; const d = q('evocm'); if (d !== null) T.cm = d;
     }
     return S;
@@ -58,10 +58,11 @@
   const S2K = { rk: 1, la: 1, cm: 1, best: 1, runs: 1, kills: 1, cleared: 1, t0: 1, marks: 1, seen: 1 };
   EVO.stage2 = (B) => (B.s2 = B.s2 || { coins: 0, rk: 0, la: 0, cm: 0, best: 0, runs: 0, kills: 0, cleared: 0, t0: 0, marks: {}, seen: {} });
   EVO.stage3 = (B) => (B.s3 = B.s3 || { coins: 0, rk: 0, la: 0, cm: 0, best: 0, runs: 0, kills: 0, cleared: 0, t0: 0, marks: {}, seen: {} });   // v413 : le niveau 3 a aussi sa progression (fusee clown, lancement, revenu, record)
+  EVO.stage4 = (B) => (B.s4 = B.s4 || { coins: 0, rk: 0, la: 0, cm: 0, best: 0, runs: 0, kills: 0, cleared: 0, t0: 0, marks: {}, seen: {} });   // v417 : le niveau 4 (l'espace) a sa propre progression (fusee spatiale)
   EVO.save = (g) => {
     const B = EVO.saveBase(g), m = /[?&]lv=(\d)/.exec(location.search), st = m ? +m[1] : (B.stage || 1);
-    if (st !== 2 && st !== 3) return B;
-    const s2 = st === 3 ? EVO.stage3(B) : EVO.stage2(B); if (s2.coins) { B.coins += s2.coins; s2.coins = 0; }   // v286 : une seule bourse pour les deux niveaux (anciennes pieces du niveau 2 reversees)
+    if (st !== 2 && st !== 3 && st !== 4) return B;
+    const s2 = st === 4 ? EVO.stage4(B) : st === 3 ? EVO.stage3(B) : EVO.stage2(B); if (s2.coins) { B.coins += s2.coins; s2.coins = 0; }   // v286 : une seule bourse pour les deux niveaux (anciennes pieces du niveau 2 reversees)
     if (EVO._px && EVO._px.B === B && EVO._px.s2 === s2) return EVO._px.p;
     const p = new Proxy({}, { get: (t, k) => (S2K[k] ? s2[k] : B[k]), set: (t, k, v) => { if (S2K[k]) s2[k] = v; else B[k] = v; return true; }, has: (t, k) => (S2K[k] ? k in s2 : k in B) });
     EVO._px = { B, s2, p }; return p;
@@ -637,7 +638,7 @@
     for (const mk of [100, 300, 600, 1000, 1500, 2000, 2500, 3000]) if (dist >= mk) EVO.mark(g, 'd' + mk);
     if (g.crashKind === 'weak') EVO.mark(g, 'weak');
     if (record) S.best = dist; S.coins += total; S.runs++; S.kills += ev.kills;
-    if (EVO.fast()) { const cf0 = S.cf || 0, add = Math.max(0.5, Math.min(1, (ev.ft || 0) / 20)); S.cf = Math.min(EVO.CHEST_N, cf0 + add); g.evoChestAnim = { from: cf0 / EVO.CHEST_N, to: S.cf / EVO.CHEST_N, t0: performance.now() + 700 }; }   // v343 : coffre : chaque vol le remplit (un vol de 20 s ou plus = un tiers, minimum un demi-tiers)
+    if (false) { const cf0 = S.cf || 0, add = Math.max(0.5, Math.min(1, (ev.ft || 0) / 20)); S.cf = Math.min(EVO.CHEST_N, cf0 + add); g.evoChestAnim = { from: cf0 / EVO.CHEST_N, to: S.cf / EVO.CHEST_N, t0: performance.now() + 700 }; }   // v343 : coffre : chaque vol le remplit (un vol de 20 s ou plus = un tiers, minimum un demi-tiers)
     const r = EVO.rocket(S.rk);
     g.evoLast = { dist, kills: ev.kills, lines, total, record, cause: g.crashKind === 'stalled' ? (r.tier >= 2 && g.rocket.fuel <= 0.5 ? 'PLUS DE CARBURANT' : EVO.isS2() ? 'PLUS D ELAN' : 'ELLE EST TOMBEE') : g.causeOf(g.crashKind), doubled: false, t0: 0, crash: g.crashKind,
       detail: g.crashKind === 'weak' && g.evoWeak ? 'ENNEMI ' + g.evoWeak.hp + ' PV : TES DEGATS ' + g.evoWeak.dmg.toFixed(1) : g.crashKind === 'stalled' ? (r.tier >= 2 ? 'DETRUIS DES ENNEMIS POUR RECHARGER' : 'AMELIORE LA FUSEE : ELLE IRA PLUS LOIN') : 'GLISSE LE DOIGT POUR ESQUIVER' };
@@ -666,11 +667,13 @@
     if ((S.gems || 0) >= gc) pay(); else g.ui.overlay = 'evoShop';   // v264 : pas assez de gemmes : on va a la boutique (plus de pub directe)
   };
   // coffre : disponible des le 3e vol, puis toutes les 2 heures
-  EVO.chestReady = (g) => { const S = EVO.save(g); if (EVO.fast()) return (S.cf || 0) >= EVO.CHEST_N - 0.001; return S.runs >= 3 && Date.now() >= (S.chestAt || 0); };
-  EVO.chestPct = (g) => { const S = EVO.save(g); return EVO.fast() ? Math.min(1, (S.cf || 0) / EVO.CHEST_N) : (EVO.chestReady(g) ? 1 : 0); };
+  // v417 : partout (PC compris) : le coffre s'ouvre a partir du 3e lancer du niveau 1, puis toutes les 2 heures (plus de jauge a remplir vol apres vol)
+  EVO.chestUnlocked = (g) => (EVO.saveBase(g).runs || 0) >= 3;
+  EVO.chestReady = (g) => { const B = EVO.saveBase(g); return EVO.chestUnlocked(g) && Date.now() >= (B.chestAt || 0); };
+  EVO.chestPct = (g) => (EVO.chestReady(g) ? 1 : 0);
   EVO.openChest = (g) => {
     const S = EVO.save(g); if (!EVO.chestReady(g) || g.evoChest) return;
-    const fast = EVO.fast(), cst = EVO.isS2() ? EVO.cost2('rk', S.rk) : EVO.cost('rk', S.rk), coins = fast ? Math.max(300, Math.round(cst * 1.6)) : Math.max(150, Math.round(cst * 0.7)); S.coins += coins; S.gems = (S.gems || 0) + 1; if (fast) S.cf = 0; else S.chestAt = Date.now() + 2 * 3600 * 1000; g.writeSave();   // v343 : mode ordinateur : le coffre se vide et se remplit a nouveau (pas d'attente de 2 h), recompense plus grosse
+    const fast = EVO.fast(), cst = EVO.isS2() ? EVO.cost2('rk', S.rk) : EVO.cost('rk', S.rk), coins = fast ? Math.max(300, Math.round(cst * 1.6)) : Math.max(150, Math.round(cst * 0.7)); S.coins += coins; S.gems = (S.gems || 0) + 1; EVO.saveBase(g).chestAt = Date.now() + 2 * 3600 * 1000; g.writeSave();   // v343 : mode ordinateur : le coffre se vide et se remplit a nouveau (pas d'attente de 2 h), recompense plus grosse
     g.evoChest = { t0: performance.now(), coins, gems: 1 }; if (CC.Haptics) CC.Haptics.tick('warn'); g.telemetry.event('evoChest', { coins });
   };
   EVO.start = (g) => { if (g.evoAnim || g.evoAim) return; EVO.startAim(g); };

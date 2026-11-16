@@ -4,7 +4,7 @@
   const U = CC.U, EVO = CC.EVO;
   if (!EVO || !EVO.on) return;
   EVO.stage = (g) => { const m = /[?&]lv=(\d)/.exec(location.search); return m ? +m[1] : (EVO.saveBase(g).stage || 1); };
-  EVO.setStage = (g, n) => { const S = EVO.save(g), old = S.stage || 1; if (old === n) return; if (n === 3 || old === 3) { EVO.saveBase(g).stage = n; g.writeSave(); return; }   /* v413 : le niveau 3 garde son record dans sa propre sauvegarde (s3) */ S['best' + old] = S.best || 0; S.best = S['best' + n] || 0; S.stage = n; g.writeSave(); };
+  EVO.setStage = (g, n) => { const S = EVO.save(g), old = S.stage || 1; if (old === n) return; if (n >= 3 || old >= 3) { EVO.saveBase(g).stage = n; g.writeSave(); return; }   /* v413 : le niveau 3 garde son record dans sa propre sauvegarde (s3) */ S['best' + old] = S.best || 0; S.best = S['best' + n] || 0; S.stage = n; g.writeSave(); };
   // --- écran d'accueil : cinématique d'intro la toute première fois, ou la suite programmée (victoire, niveau suivant)
   EVO.showHome = (g) => {
     if (g.evoNext) { const f = g.evoNext; g.evoNext = null; f(); return; }
@@ -27,7 +27,7 @@
   // v280 : chaque niveau termine DOUBLE le multiplicateur de pieces (x2 -> x4 ...) : EVO.stageMult, relu a chaque lecture de la sauvegarde
   { const _sv = EVO.save, _ml = EVO.mult; EVO.TEST_FREE = false; EVO.save = (g) => { const S = _sv(g); { const B = EVO.saveBase(g); if (!B.freeOff) { B.freeOff = 1; if (B.coins >= 9e11) B.coins = 0; if (B.s2 && B.s2.coins >= 9e11) B.s2.coins = 0; if (S.coins >= 9e11) S.coins = 0; g.writeSave(); } }   /* v317 : fin des pieces illimitees : une seule remise a zero des pieces de test */ EVO.stageMult = (S.clr1 ? 2 : 1) * (S.clr2 ? 2 : 1); { const B0 = EVO.saveBase(g); EVO.carryMult = S !== B0 ? _ml(B0.cm) : 1; }   /* v338 : le niveau 2 demarre avec le multiplicateur du niveau 1 (x8 reste x8) ; les prix suivent (EVO.cost2) */ if (EVO.TEST_FREE && S.coins < 999000000000) S.coins = 999000000000; return S; };   /* TEMPORAIRE (essais) : achats illimites ; a RETIRER (false) avant l'envoi aux editeurs */ EVO.mult = (n) => _ml(n) * (EVO.stageMult || 1) * (EVO.carryMult || 1); }   // v329 : plus de multiplicateur herite du niveau 1 au niveau 2 (le x6 du depart) : le niveau 2 repart de x1   // v286 : au niveau 2 le multiplicateur du niveau 1 est conserve (x8 reste x8), les ameliorations du revenu s'y ajoutent
   EVO.onClear = (g) => {
-    const S = EVO.save(g), st = EVO.stage(g), first = st === 1 ? !S.clr1 : st === 2 ? !S.clr2 : !S.clr3, m0 = EVO.mult(S.cm); EVO.mark(g, 'boss' + (st > 1 ? st : '')); S.cleared = (S.cleared || 0) + 1; if (st === 1) S.clr1 = 1; else if (st === 2) S.clr2 = 1; else S.clr3 = 1; const bonus = st === 1 ? 800 : st === 2 ? 1500 : 2500;   // v412 : le niveau 3 a sa propre marque (clr3) S.coins += bonus; g.writeSave(); EVO.save(g);
+    const S = EVO.save(g), st = EVO.stage(g), first = st === 1 ? !S.clr1 : st === 2 ? !S.clr2 : st === 3 ? !S.clr3 : !S.clr4, m0 = EVO.mult(S.cm); EVO.mark(g, 'boss' + (st > 1 ? st : '')); S.cleared = (S.cleared || 0) + 1; if (st === 1) S.clr1 = 1; else if (st === 2) S.clr2 = 1; else if (st === 3) S.clr3 = 1; else S.clr4 = 1; const bonus = st === 1 ? 800 : st === 2 ? 1500 : st === 3 ? 2500 : 4000;   // v412 : le niveau 3 a sa propre marque (clr3) S.coins += bonus; g.writeSave(); EVO.save(g);
     g.evoWin = { stage: st, bonus, t0: performance.now(), coins: S.coins, mult: first ? { old: m0, now: EVO.mult(S.cm) } : null };
     g.ui.overlay = 'evoWin'; g.audio.play('victory');   // on reste sur la scene finale (camera fixe a la ligne d'arrivee), les recompenses s'affichent par-dessus ; pas de cinematique de fin
   };
@@ -38,7 +38,8 @@
   };
   // v413 : apres le niveau 2, le niveau 3 (la fete foraine) ; apres le niveau 3, on reste au niveau 3
   EVO.goStage3 = (g) => { const B = EVO.saveBase(g); B.stage = 3; g.writeSave(); g.evoWin = null; g.evoNext = () => EVO.dropIn(g); g.goHome({}); };
-  EVO.nextStage = (g, st) => { if (st === 1) EVO.goStage2(g); else if (st === 2) EVO.goStage3(g); else EVO.backStage1(g); };
+  EVO.goStage4 = (g) => { const B = EVO.saveBase(g); B.stage = 4; g.writeSave(); g.evoWin = null; g.evoNext = () => EVO.dropIn(g); g.goHome({}); };   // v417 : apres la fete foraine, l'espace
+  EVO.nextStage = (g, st) => { if (st === 1) EVO.goStage2(g); else if (st === 2) EVO.goStage3(g); else if (st === 3) EVO.goStage4(g); else EVO.backStage1(g); };
   EVO.backStage1 = (g) => { g.evoWin = null; g.ui.overlay = 'evo'; g.goHome({}); };   // après le niveau 2 : on reste sur le niveau 2 (rejouer, améliorer)
   EVO.switchStage = (g, n) => { if (EVO.stage(g) === n) return; EVO.setStage(g, n); g.ui.overlay = null; g.goHome({}); };
   // --- le niveau 2 : lancement automatique, sans la barre (le missile sort du tube)
