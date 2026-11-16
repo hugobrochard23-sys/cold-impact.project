@@ -25,7 +25,7 @@
   { const _as = EVO.applySkin; EVO.applySkin = (g) => { if (!isS4()) return _as(g); const r = EVO.rocket(EVO.save(g).rk); g.rocket.setSkin(CC.Skins.get('evoS' + r.tier)); EVO.attachParts(g); }; }
   { const RK4 = ['SONDE', 'FUSEE A BOOSTERS', 'NAVETTE', 'VAISSEAU'], _rk = EVO.rocket; EVO.rocket = (n) => { const r = _rk(n); if (isS4()) r.name = RK4[r.tier]; return r; }; }
   // le carburant du niveau 4 : il grandit avec la fusee et le lanceur (plus de reservoir illimite)
-  { const _ol = EVO.onLaunch; EVO.onLaunch = (g) => { _ol(g); if (!isS4() || (g.evo && g.evo.preview)) return; const S = EVO.save(g), rk = g.rocket, f = 30 + 3 * (S.rk || 0) + 2 * (S.la || 0); rk.fuelMax = f; rk.fuel = (g.evoAimLast && g.evoAimLast.zone === 'gold') ? f : f * 0.9 + 0.1 * f; }; }
+  { const _ol = EVO.onLaunch; EVO.onLaunch = (g) => { _ol(g); if (!isS4() || (g.evo && g.evo.preview)) return; const S = EVO.save(g), rk = g.rocket, f = 40 + 5 * (S.rk || 0) + 3 * (S.la || 0); rk.fuelMax = f; rk.fuel = (g.evoAimLast && g.evoAimLast.zone === 'gold') ? f : f * 0.9 + 0.1 * f; }; }
   let L = null;   // l'etat du niveau 4 (voie, decor, pilotage), refait a chaque partie
 
   // ============================== LA VOIE 3D ==============================
@@ -43,7 +43,12 @@
     const P = curve.getSpacedPoints(N), step = len / N, T = [], UP = [], RT = [];
     for (let i = 0; i <= N; i++) { const a = P[Math.max(0, i - 1)], b = P[Math.min(N, i + 1)]; T.push(new V().subVectors(b, a).normalize()); }
     let up = new V().copy(F0).negate();   // au depart (voie verticale), le « haut » de l'ecran regarde vers l'arriere : apres la bascule il devient le ciel
-    for (let i = 0; i <= N; i++) { up = up.clone().addScaledVector(T[i], -up.dot(T[i])).normalize(); UP.push(up); RT.push(new V().crossVectors(T[i], up).normalize()); }
+    // v419 : le « haut » est transporte le long de la voie, puis REDRESSE doucement vers le vrai haut du monde des que la voie n'est pas verticale
+    // (sauf dans le tire-bouchon, qui doit tourner) : apres la vrille, sur la Lune et dans l'arene, la camera est droite et centree
+    for (let i = 0; i <= N; i++) { up = up.clone().addScaledVector(T[i], -up.dot(T[i])).normalize();
+      const sI = i * step, des = new V().copy(Y).addScaledVector(T[i], -Y.dot(T[i])), dl = des.length(), w = (dl > 0.35 ? ss(0.35, 0.6, dl) : 0) * (1 - ss(2560, 2640, sI) * (1 - ss(3420, 3560, sI)));
+      if (w > 0) { des.normalize(); const ang = up.angleTo(des); if (ang > 1e-4) up.lerp(des, Math.min(1, 0.012 * w / ang)).normalize(); }
+      UP.push(up); RT.push(new V().crossVectors(T[i], up).normalize()); }
     const sOf = (p) => { const q = W(p); let bi = 0, bd = 1e18; for (let i = 0; i <= N; i++) { const d = P[i].distanceToSquared(q); if (d < bd) { bd = d; bi = i; } } return bi * step; };
     const fr = (s, o) => { const u = U.clamp(s / step, 0, N - 1e-4), i = Math.floor(u), f = u - i; o = o || {}; o.p = (o.p || new V()).lerpVectors(P[i], P[i + 1], f); o.t = (o.t || new V()).lerpVectors(T[i], T[i + 1], f).normalize(); o.u = (o.u || new V()).lerpVectors(UP[i], UP[i + 1], f).normalize(); o.r = (o.r || new V()).crossVectors(o.t, o.u).normalize(); return o; };
     return { O, F0, R0, len, step, N, P, T, UP, RT, fr, sOf, W };
@@ -336,8 +341,9 @@
     fan(5040, 2, 0.45, 1.6, 0); laser(5180, 'h', 10, 0.8, 0); fan(5320, 3, -0.5, 1.5, 1);
     // A DECOUVERT : champs d'asteroides (on evite les satellites, la station et les drones), plus denses vers la Lune
     const keep = [[1705, 30], [1880, 30], [2055, 30], [3850, 46]];
-    for (const [a, b, dn] of [[1560, 2210, 19], [3590, 4120, 21], [5480, 6060, 14], [7700, PA.len - 200, 40]]) for (let s = a; s < b; s += dn * rr(0.7, 1.3)) { if (keep.some(([c, w]) => Math.abs(s - c) < w)) continue; const boss = s > 7600, an = rr(0, 6.28), r = boss ? rr(16, 30) : rr(0, 30), rad = boss ? rr(1.5, 3) : rr(2, 5); ast(s, Math.cos(an) * r, Math.sin(an) * r, rad, Math.random() < 0.3 ? rr(3, 7) : 0); }
-    for (let s = 5520; s < 6060; s += 120) mine(s, rr(-12, 12), rr(-12, 12), 2.5);
+    // v419 : ASTEROIDES PREVISIBLES : des murs de rochers qui bouchent une moitie du passage (gauche, puis droite, puis haut, puis bas...) ; l'autre moitie est toujours libre
+    { const SIDES = [Math.PI, 0, Math.PI / 2, -Math.PI / 2], wall = (s, c) => { const dx = Math.cos(c), dy = Math.sin(c); for (let gx = -28; gx <= 28; gx += 8.5) for (let gy = -28; gy <= 28; gy += 8.5) { const x = gx + rr(-1.2, 1.2), y = gy + rr(-1.2, 1.2), d = x * dx + y * dy; if (d < 3 || Math.hypot(x, y) > 31) continue; ast(s + rr(-3, 3), x, y, rr(3.2, 4.2), 0); } };
+      for (const [a, b, st] of [[1590, 2200, 95], [3600, 4110, 100], [5500, 6060, 90]]) { let k = 0; for (let s = a; s < b; s += st) { if (keep.some(([c, w]) => Math.abs(s - c) < w)) continue; wall(s, SIDES[k % 4]); k++; } } }
     moonObstacles(g, PA, grp, { shutter, laser, ast, mine, M });
     for (const A of AV) { const im = new T3.InstancedMesh(A.gm, lam('#4e4842', { flatShading: true, emissive: '#100e0c' }), Math.max(1, A.list.length)); im.count = A.list.length; im.frustumCulled = false; grp.add(im); A.im = im; }
     L.AV = AV; L.OB = OB;
@@ -391,7 +397,7 @@
         const ev = g.evo, S = EVO.save(g), c = Math.round((d.small ? 90 : 200) * EVO.mult(S.cm) * (EVO.COIN_K || 1)); if (ev) { ev.kills++; ev.coins += c; } rk.fuel = Math.min(rk.fuelMax, rk.fuel + (d.small ? 3 : 4));
         (g.killPops = g.killPops || []).push({ p: p.clone(), t0: performance.now(), txt: '+' + c }); } }
     // la premiere fois qu'on voit une epreuve : une consigne courte (lisible en une seconde)
-    { const HINT = { shutter: 'PASSE PAR LE COTE VERT', fan: 'PASSE ENTRE LES PALES', laser: 'PASSE QUAND LE LASER S ECARTE', piston: 'RESTE AU CENTRE', mine: 'EVITE LES MINES', mat: 'EVITE LES ANTENNES', ast: 'EVITE LES ASTEROIDES' }; L.seen = L.seen || {};
+    { const HINT = { shutter: 'PASSE PAR LE COTE VERT', fan: 'PASSE ENTRE LES PALES', laser: 'PASSE QUAND LE LASER S ECARTE', piston: 'RESTE AU CENTRE', mine: 'EVITE LES MINES', mat: 'EVITE LES ANTENNES', ast: 'PASSE DU COTE LIBRE' }; L.seen = L.seen || {};
       if (!L.hintT || L.t > L.hintT) { for (const o of L.O) { const ds = o.s - L.s; if (ds > 60 && ds < 170 && HINT[o.kind] && !L.seen[o.kind]) { L.seen[o.kind] = 1; L.hintT = L.t + 2.4; if (CC.L1) CC.L1.msg(g, HINT[o.kind], 2.2, '#ffffff'); break; } }
         if (!L.seen.drone) { const d = L.sent.find((q) => q.alive && q.s - L.s > 50 && q.s - L.s < 170); if (d) { L.seen.drone = 1; L.hintT = L.t + 2.4; if (CC.L1) CC.L1.msg(g, 'CIBLE ROUGE : FONCE DEDANS !', 2.4, '#ff6a5a'); } } } }
     bossPlay(g, rk, dt);
@@ -569,7 +575,7 @@
   CC.Rocket.prototype.step = function (dt, input) {
     const g = this.game; if (!L || !on4(g) || !L.PA) return _step.call(this, dt, input);
     const PA = L.PA, inp = g.input; this.age += dt; if (!this.ignited && this.age >= this.cfg.ignitionDelay) { this.ignited = true; g.audio.play('ignite', this.pos); }
-    if (!L.started) { L.vb = 50 + 102 * (1 - Math.exp(-(EVO.save(g).rk || 0) / 9)); L.started = true; L.s = 0; L.x = 0; L.y = 0; L.v = Math.max(26, this.vel.length()); L.launchT = 0; const e = new T3.Euler().setFromQuaternion(inp.aimQ, 'YXZ'); L.yaw0 = e.y; L.pit0 = e.x; L.ry = 0; L.rp = 0; }
+    if (!L.started) { L.started = true; L.s = 0; L.x = 0; L.y = 0; L.v = Math.max(26, this.vel.length()); L.launchT = 0; const e = new T3.Euler().setFromQuaternion(inp.aimQ, 'YXZ'); L.yaw0 = e.y; L.pit0 = e.x; L.ry = 0; L.rp = 0; }
     // la commande : l'ecart de cap du joystick / des fleches depuis le depart = ou on veut aller dans le tube ; il revient doucement au centre
     { const e = new T3.Euler().setFromQuaternion(inp.aimQ, 'YXZ'); let dy = e.y - L.yaw0; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); L.ry = U.clamp(dy, -0.62, 0.62) * Math.exp(-dt * 0.9); L.rp = U.clamp(e.x - L.pit0, -0.62, 0.62) * Math.exp(-dt * 0.9); inp.setAim(L.yaw0 + L.ry, L.pit0 + L.rp); }
     const F = PA.fr(L.s), alt = altSky(F.p.y), up = U.clamp(F.t.y, 0, 1), atmo = 1 - ss(500, 900, alt), s0 = L.s;
@@ -580,7 +586,7 @@
     // v417 : vrai carburant (les accelerateurs et les anneaux portent la fusee gratuitement ; drones et anneaux en redonnent)
     if (!(boostZ || L.boostT > 0)) this.fuel = Math.max(0, this.fuel - dt); const dry = this.fuel <= 0;
     if (dry && !L.dry) { L.dry = 1; if (CC.L1) CC.L1.msg(g, 'PLUS DE CARBURANT !', 2, '#ff6a5a'); g.audio.play('warnFuel'); } if (!dry) L.dry = 0;
-    const vb = L.vb || 50, vMax = L.boostT > 0 ? vb * 1.45 : boostZ ? vb * 1.3 : vb * (0.9 + 0.1 * ss(500, 1000, alt));   // v418 : la vitesse grandit avec la fusee (200 km/h au debut, ~550 km/h tout ameliore) ; accelerateurs et anneaux : on file
+    const vMax = L.boostT > 0 ? 96 : boostZ ? 80 : 47 + 9 * ss(500, 1000, alt);   // v419 : retour a la vitesse de la v417 (la vitesse qui grandit rendait l'esquive trop dure) ; accelerateurs et anneaux : on file
     L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
     if (dry) { L.v -= (9 + 10 * up * atmo) * dt; if (L.v < 14 && this.active) { g.onRocketCrash('stalled', this.pos.clone(), null); return; } }   // a sec : la fusee ralentit puis s'arrete
     else { L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.7) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)) - 6 * up * atmo * dt; L.v = Math.max(24, L.v); }   // la pesanteur freine un peu la montee verticale

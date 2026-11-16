@@ -673,7 +673,7 @@
   EVO.chestPct = (g) => (EVO.chestReady(g) ? 1 : 0);
   EVO.openChest = (g) => {
     const S = EVO.save(g); if (!EVO.chestReady(g) || g.evoChest) return;
-    const fast = EVO.fast(), cst = EVO.isS2() ? EVO.cost2('rk', S.rk) : EVO.cost('rk', S.rk), coins = fast ? Math.max(300, Math.round(cst * 1.6)) : Math.max(150, Math.round(cst * 0.7)); S.coins += coins; S.gems = (S.gems || 0) + 1; EVO.saveBase(g).chestAt = Date.now() + 2 * 3600 * 1000; g.writeSave();   // v343 : mode ordinateur : le coffre se vide et se remplit a nouveau (pas d'attente de 2 h), recompense plus grosse
+    const fast = EVO.fast(), cst = EVO.nextCost(g, 'rk') || EVO.cost('rk', S.rk), coins = fast ? Math.max(300, Math.round(cst * 1.6)) : Math.max(150, Math.round(cst * 0.7)); S.coins += coins; S.gems = (S.gems || 0) + 1; EVO.saveBase(g).chestAt = Date.now() + 2 * 3600 * 1000; g.writeSave();   // v343 : mode ordinateur : le coffre se vide et se remplit a nouveau (pas d'attente de 2 h), recompense plus grosse
     g.evoChest = { t0: performance.now(), coins, gems: 1 }; if (CC.Haptics) CC.Haptics.tick('warn'); g.telemetry.event('evoChest', { coins });
   };
   EVO.start = (g) => { if (g.evoAnim || g.evoAim) return; EVO.startAim(g); };
