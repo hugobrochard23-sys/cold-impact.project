@@ -62,7 +62,7 @@
       'float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
       'float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h(i), h(i + vec2(1.0, 0.0)), f.x), mix(h(i + vec2(0.0, 1.0)), h(i + vec2(1.0, 1.0)), f.x), f.y); }',
       'void main(){',
-      '  float a = vUv.y * 6.2832; vec2 p = vec2(vUv.y * 22.0, vW.y * 0.12); float r = n(p) * 0.6 + n(p * 2.7) * 0.3 + n(p * 6.1) * 0.1;',
+      '  if (vW.y > uGY) discard;', '  float a = vUv.y * 6.2832; vec2 p = vec2(vUv.y * 22.0, vW.y * 0.12); float r = n(p) * 0.6 + n(p * 2.7) * 0.3 + n(p * 6.1) * 0.1;',
       '  float d = uGY - vW.y + (n(vec2(vUv.y * 9.0, 3.0)) - 0.5) * 10.0;',
       '  vec3 c;',
       '  if (d < 40.0) { c = mix(vec3(0.16, 0.10, 0.05), vec3(0.27, 0.17, 0.08), r); float rt = 1.0 - smoothstep(0.0, 0.035, abs(n(vec2(vUv.y * 40.0, vW.y * 0.25)) - 0.5)); c = mix(c, vec3(0.42, 0.30, 0.16), rt * 0.8); }',
@@ -108,11 +108,11 @@
     fragmentShader: 'uniform float uT; varying vec3 vP; void main(){ float a = sin(vP.x * 7.0 + uT * 0.6) * sin(vP.y * 9.0 - uT * 0.4) * sin(vP.z * 6.0 + uT * 0.3); float b = sin(vP.y * 30.0 + a * 4.0 + uT * 1.5); vec3 c = mix(vec3(0.45, 0.08, 0.02), vec3(1.0, 0.62, 0.18), smoothstep(-0.3, 0.8, a)); c = mix(c, vec3(1.0, 0.95, 0.75), smoothstep(0.85, 1.0, b) * 0.6); gl_FragColor = vec4(c, 1.0); }' });
 
   // balaye un cercle le long de la voie ; uv = (distance, angle / 2 pi)
-  function sweep(PA, s0, s1, rad, seg, dS) {
+  function sweep(PA, s0, s1, radIn, seg, dS) {
     const n = Math.max(2, Math.ceil((s1 - s0) / dS)), pos = [], nor = [], uv = [], idx = [], F = {};
-    for (let i = 0; i <= n; i++) { const s = s0 + (s1 - s0) * i / n; PA.fr(s, F);
+    for (let i = 0; i <= n; i++) { const s = s0 + (s1 - s0) * i / n; PA.fr(s, F); const rd = typeof radIn === 'function' ? radIn(s) : [radIn, radIn];
       for (let j = 0; j <= seg; j++) { const a = j / seg * Math.PI * 2, c = Math.cos(a), sn = Math.sin(a); _a.copy(F.r).multiplyScalar(c).addScaledVector(F.u, sn);
-        pos.push(F.p.x + _a.x * rad, F.p.y + _a.y * rad, F.p.z + _a.z * rad); nor.push(_a.x, _a.y, _a.z); uv.push(s, j / seg); } }
+        pos.push(F.p.x + F.r.x * c * rd[0] + F.u.x * sn * rd[1], F.p.y + F.r.y * c * rd[0] + F.u.y * sn * rd[1], F.p.z + F.r.z * c * rd[0] + F.u.z * sn * rd[1]); nor.push(_a.x, _a.y, _a.z); uv.push(s, j / seg); } }
     for (let i = 0; i < n; i++) for (let j = 0; j < seg; j++) { const a = i * (seg + 1) + j, b = a + seg + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
     const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('normal', new T3.Float32BufferAttribute(nor, 3)); geo.setAttribute('uv', new T3.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeBoundingSphere(); return geo;
   }
@@ -136,7 +136,8 @@
     [1120, 1680, 'cciel', 'LES NUAGES', '#cfe8ff', 'open'], [1680, 2657, 'ccampagne', 'LA CAMPAGNE', '#9aff6a', 'low'], [2657, 3587, 'ccouches', 'LES COUCHES DE LA TERRE', '#e8a060', 'shaft'],
     [3587, 4327, 'cgeode', 'LA GEODE', '#c08aff', 'open'], [4327, 5087, 'cmanteau', 'LE MANTEAU', '#ff6a2a', 'rock'], [5087, 5417, 'cdescente', 'LA DESCENTE', '#ffc23a', 'boostrock'], [5417, 1e9, 'cnoyau', 'LE NOYAU', '#ff4a3a', 'open']];
   const zoneAt = (s) => { for (let i = ZN.length - 1; i >= 0; i--) if (s >= ZN[i][0]) return i; return 0; };
-  const RSH = 22;   // le rayon du puits de forage
+  const RSH = 22;   // la largeur utile de la faille (la paroi est a RSH + 4)
+  const faille = (s) => [RSH + 4 + 36 * ss(3400, 3587, s), 170 - 108 * ss(3300, 3587, s)];   // [moitie de largeur, moitie de longueur] : elle s'evase sur la geode
   const WALLS = [[2600, 3587, RSH], [4327, 5417, R]];   // puits et tunnels (paroi proche) : [debut, fin, rayon]
   // l'ambiance le long de la voie : [s, ciel haut, horizon, brume, brume proche, brume loin, lumiere]
   const MOOD = [[0, '#000000', '#04060c', '#020308', 280, 680, 1], [600, '#020308', '#0a1030', '#020308', 280, 680, 1], [700, '#3a1004', '#ff7a2a', '#7a2a0a', 60, 520, 1.1], [1060, '#4a1a08', '#ff9a4a', '#8a3a14', 60, 520, 1.1],
@@ -186,14 +187,16 @@
   const RS = 2000;
   function buildSky(g) {
     const sky = new T3.Group(), X = textures(); sky.renderOrder = -10; L.stars = [];
-    for (const [n, sz, op] of [[1100, 1.5, 0.8], [160, 2.6, 1]]) { const pos = new Float32Array(n * 3), col = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const u = rr(-0.2, 1), a = rr(0, 6.283), q = Math.sqrt(1 - u * u); pos[i * 3] = Math.cos(a) * q * 3000; pos[i * 3 + 1] = u * 3000; pos[i * 3 + 2] = Math.sin(a) * q * 3000; const t = Math.random(); col[i * 3] = 0.8 + 0.2 * t; col[i * 3 + 1] = 0.85 + 0.1 * t; col[i * 3 + 2] = 1; }
-      const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.BufferAttribute(col, 3)); const p = new T3.Points(geo, new T3.PointsMaterial({ size: sz, sizeAttenuation: false, vertexColors: true, transparent: false, blending: T3.AdditiveBlending, depthWrite: false, fog: false })); p.renderOrder = -10; p.userData.op = op; sky.add(p); L.stars.push(p); }
+    for (const [n, sz, op] of [[3400, 2.2, 0.9], [700, 3.4, 1], [90, 6, 1]]) { const pos = new Float32Array(n * 3), col = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const u = rr(0.0, 1), a = rr(0, 6.283), q = Math.sqrt(1 - u * u); pos[i * 3] = Math.cos(a) * q * 520; pos[i * 3 + 1] = u * 520; pos[i * 3 + 2] = Math.sin(a) * q * 520; const t = Math.random(); col[i * 3] = 0.8 + 0.2 * t; col[i * 3 + 1] = 0.85 + 0.1 * t; col[i * 3 + 2] = 1; }
+      const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.BufferAttribute(col, 3)); const p = new T3.Points(geo, new T3.PointsMaterial({ size: sz, sizeAttenuation: false, vertexColors: true, transparent: true, blending: T3.AdditiveBlending, depthWrite: false, fog: false })); p.renderOrder = -10; p.userData.op = op; sky.add(p); L.stars.push(p); }
     const earth = new T3.Group(); sky.add(earth); L.earth = earth;
     const em = new T3.Mesh(new T3.SphereGeometry(RS, 96, 64), new T3.MeshBasicMaterial({ map: X.earth, color: '#ffffff', fog: false, depthWrite: false })); em.renderOrder = -9; earth.add(em);
     const cm = new T3.Mesh(new T3.SphereGeometry(RS * 1.006, 96, 64), new T3.MeshBasicMaterial({ map: X.clouds, transparent: true, opacity: 0.9, fog: false, depthWrite: false })); cm.renderOrder = -8; earth.add(cm); L.cloudSphere = cm;
     const atm = new T3.Mesh(new T3.SphereGeometry(RS * 1.04, 64, 48), new T3.ShaderMaterial({ uniforms: { uC: { value: new T3.Color('#5ab0ff') } }, vertexShader: 'varying vec3 vN; varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * viewMatrix * w; }',
       fragmentShader: 'uniform vec3 uC; varying vec3 vN; varying vec3 vW; void main(){ vec3 V = normalize(cameraPosition - vW); float f = 1.0 - abs(dot(vN, V)); gl_FragColor = vec4(uC, pow(f, 2.2) * 0.9); }', transparent: true, depthWrite: false, side: T3.BackSide, blending: T3.AdditiveBlending, fog: false })); atm.renderOrder = -8; earth.add(atm);
     if (EVO.boss2Kit) { const sun = EVO.boss2Kit.glow(340, '#ffe8c0'); sun.renderOrder = -9; sky.add(sun); L.sun = sun; }
+    { const mn = new T3.Mesh(new T3.SphereGeometry(190, 32, 20), new T3.MeshBasicMaterial({ color: '#b8bcc6', fog: false, transparent: true, depthWrite: false, depthTest: false })); mn.renderOrder = -9; mn.position.set(-1500, 1100, -1600); sky.add(mn); L.moon = mn;
+      for (let k = 0; k < 9; k++) { const c = new T3.Mesh(new T3.CircleGeometry(rr(14, 34), 14), new T3.MeshBasicMaterial({ color: '#8a8e98', fog: false, transparent: true, depthWrite: false, depthTest: false })); const a = rr(0, 6.28), e = rr(0.2, 1.2); c.position.set(Math.cos(a) * 160, Math.sin(a) * 160 * 0.9, 0).add(mn.position); c.lookAt(mn.position.x * 2, mn.position.y * 2, mn.position.z * 2); c.position.sub(mn.position).setLength(188).add(mn.position); c.lookAt(0, 0, 0); c.renderOrder = -9; sky.add(c); } }
     g.scene.add(sky); L.sky = sky;
   }
 
@@ -219,7 +222,7 @@
     // les deux pinces autour de la fusee (elles s'ecartent au largage)
     L.runway = []; L.clamps = []; { const cr = L.rkL * 0.12 + 0.08, cm = lam('#d8dce2', { emissive: '#22252a' }); for (const z of [-L.rkL * 0.28, L.rkL * 0.28]) { const c = new T3.Group(); c.position.set(0, 0, z); root.add(c); const ring = new T3.Mesh(new T3.TorusGeometry(cr, 0.05, 8, 24, Math.PI * 1.5), cm); ring.rotation.z = -Math.PI * 1.25; c.add(ring); const arm = new T3.Mesh(new T3.BoxGeometry(0.1, -yb - cr, 0.1), cm); arm.position.y = (yb - cr) / 2; c.add(arm); const l = new T3.Mesh(new T3.SphereGeometry(0.1, 8, 6), bas('#ff3a2a', { fog: false })); l.position.set(0, cr + 0.05, 0); c.add(l); L.clamps.push(c); } }
     // quelques satellites autour, loin
-    for (let k = 0; k < 6; k++) { const s = satellite(rr(1, 2)), a = rr(0, 6.28); s.position.set(Math.cos(a) * rr(120, 260), rr(-60, 80), -rr(0, 700)); s.rotation.set(rr(0, 6), rr(0, 6), rr(0, 6)); root.add(s); const w = rr(0.05, 0.2); EVO.addDyn(s, (t, dt) => s.rotateY(w * dt), [], { near: 1e5 }); }
+    for (let k = 0; k < 14; k++) { const s = satellite(rr(1, 2.4)), a = rr(0, 6.28); s.position.set(Math.cos(a) * rr(120, 260), rr(-60, 80), -rr(0, 700)); s.rotation.set(rr(0, 6), rr(0, 6), rr(0, 6)); root.add(s); const w = rr(0.05, 0.2); EVO.addDyn(s, (t, dt) => s.rotateY(w * dt), [], { near: 1e5 }); }
     L.dock = root;
   }
 
@@ -236,20 +239,24 @@
 
   // ============================== LA CAMPAGNE : des champs a perte de vue, des bosquets, des fermes, une base, le derrick du puits ==============================
   function countryside(g, PA, grp) { { const lg = new T3.Group(); grp.add(lg); L.landG = lg; grp = lg; }   // tout ce qui est au sol : cache tant qu'on est dans l'espace
-    const X = textures(), gy = L.gy = PA.O.y + GY, sH = PA.sBelow(gy, 2400), H = PA.fr(sH).p.clone(), HR = 36; L.holeS = sH;
+    const X = textures(), gy = L.gy = PA.O.y + GY, sH = PA.sBelow(gy, 2400), FH = PA.fr(sH), H = FH.p.clone(); L.holeS = sH;
+    // la FENTE : l'ellipse que la faille decoupe dans le sol (grand axe = la direction du « haut » de la voie, a plat)
+    const rX = new V(FH.r.x, 0, FH.r.z).normalize(), Dv = new V().copy(FH.u).addScaledVector(FH.t, -FH.u.y / (FH.t.y || -0.9)), halfL = 170 * Dv.length() + 6, Dn = new V(-rX.z, 0, rX.x), halfW = RSH + 4 + 3;
+    L.slit = { H, rX, Dn, halfL, halfW };
     const gnd = new T3.Mesh(new T3.PlaneGeometry(12000, 12000), new T3.MeshLambertMaterial({ map: X.fields, color: '#8a9682' })); gnd.rotation.x = -Math.PI / 2; gnd.position.set(H.x, gy, H.z);
-    gnd.material.onBeforeCompile = (sh) => { sh.uniforms.uH0 = { value: H }; sh.uniforms.uHR = { value: HR }; sh.vertexShader = 'varying vec3 vHW;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n vHW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-      sh.fragmentShader = 'uniform vec3 uH0; uniform float uHR; varying vec3 vHW;\n' + sh.fragmentShader.replace('void main() {', 'void main() {\n if (distance(vHW.xz, uH0.xz) < uHR) discard;'); };
+    gnd.material.onBeforeCompile = (sh) => { sh.uniforms.uH0 = { value: H }; sh.uniforms.uRX = { value: new T3.Vector2(rX.x, rX.z) }; sh.uniforms.uDN = { value: new T3.Vector2(Dn.x, Dn.z) }; sh.uniforms.uAB = { value: new T3.Vector2(halfW, halfL) }; sh.vertexShader = 'varying vec3 vHW;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n vHW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+      sh.fragmentShader = 'uniform vec3 uH0; uniform vec2 uRX; uniform vec2 uDN; uniform vec2 uAB; varying vec3 vHW;\n' + sh.fragmentShader.replace('void main() {', 'void main() {\n { vec2 d = vHW.xz - uH0.xz; float a = dot(d, uRX) / uAB.x, b = dot(d, uDN) / uAB.y; if (a * a + b * b < 1.0) discard; }'); };
     grp.add(gnd); L.gnd = gnd;
-    // le chantier du puits : un anneau de terre retournee, une bordure d'acier, des feux, le DERRICK (la voie passe entre ses pieds)
-    { const dirt = new T3.Mesh(new T3.RingGeometry(HR, 80, 56, 1), lam('#6a4a2a')); dirt.rotation.x = -Math.PI / 2; dirt.position.set(H.x, gy + 0.1, H.z); grp.add(dirt);
-      const rim = new T3.Mesh(new T3.TorusGeometry(HR + 0.6, 1.6, 10, 56), lam('#4a4f58', { emissive: '#101216' })); rim.rotation.x = Math.PI / 2; rim.position.set(H.x, gy + 0.6, H.z); grp.add(rim);
-      for (let k = 0; k < 14; k++) { const a = k / 14 * 6.283, l = new T3.Mesh(new T3.SphereGeometry(0.8, 8, 6), bas(k % 2 ? '#ffb84a' : '#ff3a2a', { fog: false })); l.position.set(H.x + Math.cos(a) * (HR + 0.6), gy + 2.2, H.z + Math.sin(a) * (HR + 0.6)); grp.add(l); (L.blinks = L.blinks || []).push(l); }
-      const DP = [], hgt = 90, w = 44; for (const [cx, cz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { DP.push({ s: [1.8, hgt, 1.8], c: '#c8352a', p: [cx * w, hgt / 2, cz * w], r: [cz * 0.13, 0, -cx * 0.13] }); blob(grp, new V(H.x + cx * w, gy, H.z + cz * w), 5, 5); }
+    // le bord de la faille : de la terre arrachee tout autour, des feux d'alerte qui clignotent, le chantier de secours (derrick) un peu plus loin
+    { const sh = new T3.Shape(); sh.absellipse(0, 0, halfW + 16, halfL + 14, 0, 6.2832, false, 0); const hole = new T3.Path(); hole.absellipse(0, 0, halfW - 0.5, halfL - 0.5, 0, 6.2832, true, 0); sh.holes.push(hole);
+      const dirt = new T3.Mesh(new T3.ShapeGeometry(sh, 40), lam('#5a3e22')); const ang = Math.atan2(-rX.z, rX.x); dirt.rotation.set(-Math.PI / 2, 0, 0); const dg = new T3.Group(); dg.add(dirt); dg.rotation.y = ang; dg.position.set(H.x, gy + 0.1, H.z); grp.add(dg);
+      for (let k = 0; k < 22; k++) { const a = k / 22 * 6.283, l = new T3.Mesh(new T3.SphereGeometry(0.9, 8, 6), bas(k % 2 ? '#ffb84a' : '#ff3a2a', { fog: false })); l.position.copy(H).addScaledVector(rX, Math.cos(a) * (halfW + 2)).addScaledVector(Dn, Math.sin(a) * (halfL + 2)).setY(gy + 2.4); grp.add(l); (L.blinks = L.blinks || []).push(l); }
+      const DO = new V().copy(H).addScaledVector(rX, -130).setY(gy); L.derrickAt = DO;
+      const DP = [], hgt = 90, w = 44; for (const [cx, cz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { DP.push({ s: [1.8, hgt, 1.8], c: '#c8352a', p: [cx * w, hgt / 2, cz * w], r: [cz * 0.13, 0, -cx * 0.13] }); blob(grp, new V(DO.x + cx * w, gy, DO.z + cz * w), 5, 5); }
       for (let y = 28; y < hgt; y += 13) { const k = 1 - y / hgt * 0.26; DP.push({ s: [2 * w * k, 0.8, 0.8], c: '#e8ecf0', p: [0, y, -w * k] }, { s: [2 * w * k, 0.8, 0.8], c: '#e8ecf0', p: [0, y, w * k] }, { s: [0.8, 0.8, 2 * w * k], c: '#e8ecf0', p: [-w * k, y, 0] }, { s: [0.8, 0.8, 2 * w * k], c: '#e8ecf0', p: [w * k, y, 0] }); }
       DP.push({ s: [18, 5, 18], c: '#3a3e46', p: [0, hgt + 2, 0] }, { s: [3, 14, 3], c: '#c8352a', p: [0, hgt + 10, 0] });
-      const der = bakeBox(DP); der.position.set(H.x, gy, H.z); grp.add(der); }
-    const onG = (s, side, d) => { const F = PA.fr(Math.min(s, sH - 60)); return new V().copy(F.p).addScaledVector(F.r, side * d).setY(gy); }, yawAt = (s) => { const F = PA.fr(Math.min(s, sH - 60)); return Math.atan2(F.t.x, F.t.z); };
+      const der = bakeBox(DP); der.position.copy(DO); grp.add(der); }
+        const onG = (s, side, d) => { const F = PA.fr(Math.min(s, sH - 60)); return new V().copy(F.p).addScaledVector(F.r, side * d).setY(gy); }, yawAt = (s) => { const F = PA.fr(Math.min(s, sH - 60)); return Math.atan2(F.t.x, F.t.z); };
     const keep = [];   // les endroits deja pris (pas d'arbre dessus)
     const put = (o, p, rot, sx, sz) => { o.position.copy(p); o.rotation.y = rot || 0; grp.add(o); blob(grp, p, sx, sz, -(rot || 0)); keep.push([p.x, p.z, Math.max(sx, sz) + 6]); return o; };
     // la BASE au bord du puits : hangars, radome, citernes, une tour de controle
@@ -269,7 +276,7 @@
       put(o, p, yawAt(s) + Math.PI, 8, 8); L.windR.push({ r: rot, w: rr(0.6, 0.9) * (k % 3 ? 1 : -1) }); }
     // les BOSQUETS : des groupes d'arbres (jamais sur la voie ni sur un batiment), chacun avec son ombre
     { const low = []; for (let s = 1560; s < sH; s += 20) { const p = PA.fr(s).p; low.push([p.x, p.z]); }
-      const free = (x, z) => { for (const q of low) if ((q[0] - x) ** 2 + (q[1] - z) ** 2 < 38 * 38) return false; if ((H.x - x) ** 2 + (H.z - z) ** 2 < 95 * 95) return false; for (const q of keep) if ((q[0] - x) ** 2 + (q[1] - z) ** 2 < q[2] * q[2]) return false; return true; };
+      const free = (x, z) => { for (const q of low) if ((q[0] - x) ** 2 + (q[1] - z) ** 2 < 38 * 38) return false; { const dx = x - H.x, dz = z - H.z, a = (dx * rX.x + dz * rX.z) / (halfW + 22), b = (dx * Dn.x + dz * Dn.z) / (halfL + 24); if (a * a + b * b < 1) return false; } if ((L.derrickAt.x - x) ** 2 + (L.derrickAt.z - z) ** 2 < 75 * 75) return false; for (const q of keep) if ((q[0] - x) ** 2 + (q[1] - z) ** 2 < q[2] * q[2]) return false; return true; };
       const T = []; const C0 = PA.fr(2150).p;
       for (let c = 0; c < 190; c++) { let cx, cz; if (c < 110) { const s = rr(1560, sH), F = PA.fr(Math.min(s, sH - 60)), sd = Math.random() < 0.5 ? -1 : 1, d = rr(42, 380); cx = F.p.x + F.r.x * sd * d; cz = F.p.z + F.r.z * sd * d; } else { const a = rr(0, 6.28), d = rr(200, 2200); cx = C0.x + Math.cos(a) * d; cz = C0.z + Math.sin(a) * d; }
         const n = 4 + Math.floor(Math.random() * 7); for (let k = 0; k < n; k++) { const x = cx + rr(-22, 22), z = cz + rr(-22, 22); if (free(x, z)) T.push([x, z, rr(0.8, 1.35)]); } }
@@ -285,15 +292,12 @@
   function caverns(PA, grp) {
     L.cMats = [];
     const add = (s0, s1, rad, M) => { const m = new T3.Mesh(sweep(PA, s0, s1, rad, 48, 4), M); m.frustumCulled = false; grp.add(m); L.cMats.push(M); return m; };
-    add(L.holeS - 1, 3587, RSH, strataMat(PA.O.y + GY));   // le puits : les couches de la Terre
+    add(L.holeS - 90, 3587, faille, strataMat(PA.O.y + GY));   // la faille : les couches de la Terre
     add(3587, 4327, 62, caveMat('#140a22', '#3a2a50', '#c08aff', 1.0, 3, 0));   // la geode
     add(4327, 5087, R, caveMat('#140806', '#4a3028', '#ff6a1a', 1.3, 1, 1));   // le manteau
     add(5087, 5417, R, caveMat('#2a0a04', '#6a2a14', '#ffb03a', 1.6, 1, 1));   // la descente
-    // les fonds de la geode (on ne voit pas de trou en sortant du puits) et les bouches
-    for (const [s, r0, sg] of [[3587, RSH, -1], [4327, R, 1]]) { const o = placeAt(PA, new T3.Mesh(new T3.RingGeometry(r0, 64, 48, 1), new T3.MeshLambertMaterial({ color: '#241a30', emissive: '#0a0612', side: T3.DoubleSide })), s); grp.add(o);
-      grp.add(placeAt(PA, new T3.Mesh(new T3.TorusGeometry(r0 + 1.5, 2.2, 10, 48), lam('#3a3e46', { emissive: '#1a0a04' })), s)); }
-    // le cuvelage du haut du puits : quelques cerclages d'acier
-    for (let k = 0; k < 4; k++) grp.add(placeAt(PA, new T3.Mesh(new T3.TorusGeometry(RSH - 0.4, 0.7, 8, 48), lam('#6a707a', { emissive: '#1a1c20' })), L.holeS + 6 + k * 14));
+    // la bouche du manteau
+    { const o = placeAt(PA, new T3.Mesh(new T3.RingGeometry(R, 64, 48, 1), new T3.MeshLambertMaterial({ color: '#241a30', emissive: '#0a0612', side: T3.DoubleSide })), 4327); grp.add(o); grp.add(placeAt(PA, new T3.Mesh(new T3.TorusGeometry(R + 1.5, 2.2, 10, 48), lam('#3a3e46', { emissive: '#1a0a04' })), 4327)); }
     // les cristaux plantes dans les parois de la geode (decor), en lots
     { const n = 70, im = new T3.InstancedMesh(new T3.CylinderGeometry(0, 1, 1, 6, 1), new T3.MeshLambertMaterial({ color: '#c8a0ff', emissive: '#6a2ab0' }), n), o = new T3.Object3D(), F = {};
       for (let i = 0; i < n; i++) { const s = rr(3607, 4317); PA.fr(s, F); const a = rr(0, 6.28), d = 60; _a.copy(F.r).multiplyScalar(Math.cos(a)).addScaledVector(F.u, Math.sin(a)); o.position.copy(F.p).addScaledVector(_a, d); o.quaternion.setFromUnitVectors(_b.set(0, 1, 0), _c.copy(_a).negate().addScaledVector(F.t, rr(-0.3, 0.3)).normalize()); const h = rr(10, 28); o.scale.set(h * 0.18, h, h * 0.18); o.updateMatrix(); im.setMatrixAt(i, o.matrix); }
@@ -305,8 +309,8 @@
     const OB = L.O = [], M = { dark: lam('#2a2e36'), white: lam('#eef0f2'), red: lam('#e8322a', { emissive: '#5a0a06' }), cable: lam('#1c1e22'), ball: bas('#ff7a2a', { fog: false }), steel: lam('#9aa2ac', { emissive: '#1a1c20' }),
       rock: new T3.MeshLambertMaterial({ color: '#2e2622', emissive: '#120604', side: T3.DoubleSide }), root: new T3.MeshLambertMaterial({ color: '#6a4626', emissive: '#1e1006', flatShading: true }), wood: lam('#7a5a32', { emissive: '#1a1006' }),
       water: new T3.MeshBasicMaterial({ color: '#3aa8ff', transparent: true, opacity: 0.35, side: T3.DoubleSide, depthWrite: false, fog: false }),
-      vein: bas('#ffa030', { fog: false, side: T3.DoubleSide }), lava: [bas('#ffb03a', { fog: false }), bas('#ff5a10', { fog: false, transparent: true, opacity: 0.35, blending: T3.AdditiveBlending, depthWrite: false })] };
-    const hold = (s) => holder(PA, grp, s), holdL = (s) => holder(PA, L.landG, s), gyAt = (s) => { const F = PA.fr(s); return (L.gy - F.p.y) / Math.max(0.3, F.u.y); }, atDepth = (d) => PA.sBelow(L.gy - d, L.holeS);
+      steam: [bas('#ffffff', { fog: false, transparent: true, opacity: 0.8 }), bas('#dfe8ff', { fog: false, transparent: true, opacity: 0.3, blending: T3.AdditiveBlending, depthWrite: false })], vein: bas('#ffa030', { fog: false, side: T3.DoubleSide }), lava: [bas('#ffb03a', { fog: false }), bas('#ff5a10', { fog: false, transparent: true, opacity: 0.35, blending: T3.AdditiveBlending, depthWrite: false })] };
+    const hold = (s) => holder(PA, s > 2600 ? L.deepG : grp, s), holdL = (s) => holder(PA, L.landG, s), gyAt = (s) => { const F = PA.fr(s); return (L.gy - F.p.y) / Math.max(0.3, F.u.y); }, atDepth = (d) => PA.sBelow(L.gy - d, L.holeS);
     // BARRE qui balaie (jets de magma) : h = monte et descend, v = gauche droite
     const bar = (s, mode, amp, w, ph, lm, kind) => { const h = hold(s), b = new T3.Group(); h.add(b); const core = new T3.Mesh(new T3.CylinderGeometry(0.7, 0.7, 2 * R, 8), lm[0]), gl = new T3.Mesh(new T3.CylinderGeometry(1.6, 1.6, 2 * R, 10, 1, true), lm[1]); b.add(core); b.add(gl);
       if (mode === 'h') b.rotation.z = Math.PI / 2; const pos = (t) => amp * Math.sin(w * t + ph);
@@ -353,18 +357,19 @@
     // 3. LA CAMPAGNE : des eoliennes dont les pales balaient la voie, des lignes a haute tension
     eol(1790, 8, 5, 0.75, 0); eol(1890, -9, 6, -0.7, 1); ligne(1990, [-1]); eol(2100, 0, 6, 0.6, 0.5); ligne(2220, [-5, 6]); eol(2330, -7, 5, 0.8, 2); ligne(2450, [2]);
     // 4. LES COUCHES : des racines, des eboulis, des tuyaux de gaz, la nappe d'eau (elle accelere), des etais de la vieille mine de charbon
-    const RL = 2 * RSH + 8;
-    beam(atDepth(10), 0.3, -4, 1.3, RL, M.root, 'racine', 5); beam(atDepth(24), 1.9, 6, 1.4, RL, M.root, 'racine', 5); beam(atDepth(36), -0.7, 2, 1.2, RL, M.root, 'racine', 5);
-    half('rock', atDepth(75), 0, RSH - 3); half('rock', atDepth(120), Math.PI, RSH - 3);
-    beam(atDepth(180), 1.2, -7, 1.6, RL, M.steel, 'tuyau', 12); beam(atDepth(225), 2.6, 7, 1.6, RL, M.steel, 'tuyau', 12);
-    { const s = L.nappeS = atDepth(270), h = hold(s), wm = new T3.Mesh(new T3.CircleGeometry(RSH - 0.4, 48), M.water); h.add(wm); L.nappeM = wm; }
-    half('rock', atDepth(330), H, RSH - 3); half('rock', atDepth(395), -H, RSH - 3); half('rock', atDepth(455), 0.8, RSH - 3);
-    beam(atDepth(520), 0.2, 5, 1.1, RL, M.wood, 'poutre', 4); beam(atDepth(560), 1.8, -6, 1.1, RL, M.wood, 'poutre', 4); beam(atDepth(600), -0.9, 0, 1.1, RL, M.wood, 'poutre', 4);
+    // des traverses accrochees aux deux falaises (une racine, un pont, un tuyau, un etai) : on passe AU-DESSUS ou EN DESSOUS
+    const RL = 2 * (RSH + 4) + 8, PH = Math.PI / 2, tl = (k) => PH + k;   // a = PH : la poutre court de gauche a droite ; k l'incline
+    beam(atDepth(10), tl(-0.22), 5, 1.3, RL, M.root, 'racine', 5); beam(atDepth(26), tl(0.2), -5, 1.4, RL, M.root, 'racine', 5); beam(atDepth(42), tl(-0.15), 4, 1.2, RL, M.root, 'racine', 5);
+    half('rock', atDepth(80), 0, RSH - 3); half('rock', atDepth(125), Math.PI, RSH - 3);
+    beam(atDepth(180), tl(0.18), -6, 1.6, RL, M.steel, 'tuyau', 12); beam(atDepth(225), tl(-0.2), 6, 1.6, RL, M.steel, 'tuyau', 12);
+    { const s = L.nappeS = atDepth(270), h = hold(s), wm = new T3.Mesh(new T3.CircleGeometry(1, 48), M.water); wm.scale.set(RSH + 3.6, 170, 1); h.add(wm); L.nappeM = wm; }
+    bar(atDepth(330), 'h', 10, 1.0, 0, M.steam, 'vapeur'); half('rock', atDepth(395), PH, RSH - 3); half('rock', atDepth(440), -PH, RSH - 3); bar(atDepth(495), 'v', 10, 0.9, 1, M.steam, 'vapeur');
+    beam(atDepth(545), tl(0.2), 5, 1.1, RL, M.wood, 'poutre', 4); beam(atDepth(585), tl(-0.2), -6, 1.1, RL, M.wood, 'poutre', 4); beam(atDepth(625), tl(0.1), 0, 1.1, RL, M.wood, 'poutre', 4);
     // 5. LA GEODE : de grands prismes en travers
     [[3715, 0.3, -6, 2.4], [3817, 1.9, 7, 2.4], [3919, -0.6, 0, 2.2], [4021, 1.2, -8, 2.6], [4110, 2.6, 5, 2.4], [4212, 0.9, 9, 2.4], [4219, 0.9, -9, 2.4]].forEach(([s, a, d, w]) => beam(s, a, d, w, 140, new T3.MeshLambertMaterial({ color: '#8a5ad0', emissive: '#3a1478', transparent: true, opacity: 0.9 }), 'xtal'));
     // 6. LE MANTEAU : des veines a forer et des jets de magma
     vein(4422, Math.PI, 1.6, 0); bar(4517, 'h', 10, 0.9, 0, M.lava); vein(4612, 0.4, 1.4, 0.3); bar(4707, 'v', 10, 1.0, 1, M.lava); vein(4802, -H, 1.3, -0.35); bar(4897, 'h', 10, 1.1, 2, M.lava); vein(4992, 2.4, 1.2, 0.45);
-    for (const A of AV) { const im = new T3.InstancedMesh(A.gm, mats[A.mk], Math.max(1, A.list.length)); im.count = A.list.length; im.frustumCulled = false; grp.add(im); A.im = im; }
+    for (const A of AV) { const im = new T3.InstancedMesh(A.gm, mats[A.mk], Math.max(1, A.list.length)); im.count = A.list.length; im.frustumCulled = false; (A.mk === 'rock' ? L.deepG : grp).add(im); A.im = im; }
     L.AV = AV; L.OB = OB;
     // les anneaux d'acceleration (pendant la rentree et la descente)
     L.boostR = []; const RG = new T3.TorusGeometry(4.4, 0.45, 8, 32), RM = bas('#ffc23a', { fog: false });
@@ -426,7 +431,7 @@
         const ev = g.evo, S = EVO.save(g), c = Math.round((d.small ? 90 : d.heli ? 260 : 200) * EVO.mult(S.cm) * (EVO.COIN_K || 1)); if (ev) { ev.kills++; ev.coins += c; } if (rk.fuel > 0) rk.fuel = Math.min(rk.fuelMax, rk.fuel + (d.small ? 0.3 : 0.8));
         (g.killPops = g.killPops || []).push({ p: p.clone(), t0: performance.now(), txt: '+' + c }); } }
     // les consignes, la premiere fois
-    { const HINT = { debris: 'PASSE DU COTE LIBRE', eol: 'PASSE ENTRE LES PALES', ligne: 'ATTENTION AUX CABLES !', racine: 'EVITE LES RACINES', tuyau: 'EVITE LES TUYAUX', poutre: 'EVITE LES ETAIS DE LA MINE', xtal: 'PASSE A COTE DES CRISTAUX', vein: 'FORE LA VEINE ORANGE !', magma: 'EVITE LE MAGMA' }; L.seen = L.seen || {};
+    { const HINT = { debris: 'PASSE DU COTE LIBRE', eol: 'PASSE ENTRE LES PALES', ligne: 'ATTENTION AUX CABLES !', racine: 'PASSE AU-DESSUS OU EN DESSOUS', tuyau: 'PASSE AU-DESSUS OU EN DESSOUS', poutre: 'PASSE AU-DESSUS OU EN DESSOUS', vapeur: 'ATTENTION : GEYSER DE VAPEUR', xtal: 'PASSE A COTE DES CRISTAUX', vein: 'FORE LA VEINE ORANGE !', magma: 'EVITE LE MAGMA' }; L.seen = L.seen || {};
       if (!L.hintT || L.t > L.hintT) { for (const o of L.O) { const ds = o.s - L.s; if (ds > 60 && ds < 170 && HINT[o.kind] && !L.seen[o.kind]) { L.seen[o.kind] = 1; L.hintT = L.t + 2.4; if (CC.L1) CC.L1.msg(g, HINT[o.kind], 2.2, o.kind === 'vein' ? '#ffb03a' : '#ffffff'); break; } }
         if (!L.seen.drone) { const d = L.sent.find((q) => q.alive && q.s - L.s > 50 && q.s - L.s < 200); if (d) { L.seen.drone = 1; L.hintT = L.t + 2.4; if (CC.L1) CC.L1.msg(g, d.heli ? 'HELICOPTERE : FONCE DEDANS !' : 'CIBLE ROUGE : FONCE DEDANS !', 2.4, '#ff6a5a'); } } } }
     // les veines forees : un boost, des eclats de roche ; les eclairs : un flash
@@ -527,7 +532,7 @@
     L = EVO.core = { t: 0, s: 0, x: 0, y: 0, v: 0, started: false, cam: null, inv: 0, boostT: 0, bk: 0, zi: 0, tubeMats: [] };
     L.rkL = (EVO.rocketLen && EVO.rocketLen(g)) || 2.4; O.y += 60;   // l'orbite : un peu au-dessus du hangar du niveau 1 (qui est cache)
     const PA = L.PA = buildPath(O, F0), grp = L.grp = new T3.Group(); g.scene.add(grp);
-    dock(g, PA, grp); buildSky(g); clouds(PA, grp); countryside(g, PA, grp); caverns(PA, grp); obstacles(g, PA, grp); enemies(g, PA, grp); coreWorld(PA, grp); bossBuild(g, PA, grp);
+    L.deepG = new T3.Group(); grp.add(L.deepG); dock(g, PA, grp); buildSky(g); clouds(PA, grp); countryside(g, PA, grp); caverns(PA, L.deepG); obstacles(g, PA, grp); enemies(g, PA, grp); coreWorld(PA, L.deepG); bossBuild(g, PA, grp);
     grp.traverse((o) => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) if (!m.isShaderMaterial && !m.fog) { m.fog = true; m.needsUpdate = true; } });
     // la poussiere / les braises / la neige qui defilent pres de la fusee
     { const n = 140, pos = new Float32Array(n * 3), geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(pos, 3)); const p = new T3.Points(geo, new T3.PointsMaterial({ color: '#cfe8ff', size: 0.5, map: dotTex(), transparent: true, opacity: 0, depthWrite: false, fog: false })); p.frustumCulled = false; g.scene.add(p); L.dust = p; L.dustInit = false; }
@@ -638,7 +643,7 @@
     // le decor du niveau 1 n'a rien a faire ici (sol, hangar, rampe)
     for (const c of g.endlessRun.chunks.values()) if (c.builder && c.builder.root) c.builder.root.visible = false;
     for (const o of g.scene.children) if (o.name === 'level') o.visible = false; if (g.pad && g.pad.evoL) g.pad.evoL.visible = false; if (g.pad && g.pad.hangar) g.pad.hangar.visible = false;
-    if (L.dock) L.dock.visible = s < 800; if (L.landG) L.landG.visible = s > 1060 && s < 2827;
+    if (L.dock) L.dock.visible = s < 800; if (L.landG) L.landG.visible = s > 1060 && s < 2827; if (L.deepG) L.deepG.visible = s > 1500;
     // feux de la catapulte : ils filent vers l'avant
     if (L.clamps && L.started) for (const c of L.clamps) { c.position.y = Math.max(-3, c.position.y - dt * 4); c.rotation.x = Math.min(1.2, c.rotation.x + dt * 3); }
     if (L.started && !L.boomed) { L.boomed = 1; g.audio.play('boom'); g.audio.play('rumble'); g.flash = 0.3; g.flashColor = '#bfe8ff'; if (CC.L1) CC.L1.msg(g, 'LARGAGE !', 1.8, '#bfe8ff'); }
