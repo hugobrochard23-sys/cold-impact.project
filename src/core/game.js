@@ -1059,7 +1059,7 @@
             this.updateWarnings(dt, rk);
             this.lastSpeed = rk.speed;
             const killY = this.endlessRun ? this.endlessRun.T.base(this.endlessRun.dist) - 170 : (this.level.killY !== undefined ? this.level.killY : -60);   // v035 : le vide sous la base aérienne tue à −170 m du sol de la zone
-            if (rk.pos.y < killY || (rk.pos.length() > 4000 && !this.endlessRun)) this.onRocketCrash('outOfBounds', rk.pos.clone(), null);   // v033 : le couloir infini n'a pas de bord
+            if (!(CC.EVO && CC.EVO.noKill && CC.EVO.noKill(this)) && (rk.pos.y < killY || (rk.pos.length() > 4000 && !this.endlessRun))) this.onRocketCrash('outOfBounds', rk.pos.clone(), null);   // v033 : le couloir infini n'a pas de bord
             // v032 : roquette immobilisée (posée en glissant sur un toit, sans essence) → comptée comme un crash, sinon
             // la partie ne peut plus avancer
             const stuck = !(this.evo && CC.EVO.isS2()) && rk.speed < 6 && this.flightTime > 1 && (!this.evo || rk.sliding > 0);   // v123 : évolution : lent en l'air = on retombe, pas d'explosion

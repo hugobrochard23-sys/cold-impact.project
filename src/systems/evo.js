@@ -49,7 +49,7 @@
     if (EVO.fast() && !S.wingsInit && !S.runs && !(S.rk > 0) && !S.stage) { S.wingsInit = 1; S.rk = 5; }
     if (!EVO._cheat) {
       EVO._cheat = 1; const q = (k) => { const m = new RegExp('[?&]' + k + '=(\\d+)').exec(location.search); return m ? parseInt(m[1], 10) : null; };
-      const T = (/[?&]lv=4/.test(location.search) || (S.stage === 4 && !/[?&]lv=\d/.test(location.search))) ? EVO.stage4(S) : (/[?&]lv=3/.test(location.search) || (S.stage === 3 && !/[?&]lv=\d/.test(location.search))) ? EVO.stage3(S) : (/[?&]lv=2/.test(location.search) || S.stage === 2) ? EVO.stage2(S) : S;   // les triches de test visent le niveau en cours
+      const T = (/[?&]lv=5/.test(location.search) || (S.stage === 5 && !/[?&]lv=\d/.test(location.search))) ? EVO.stage5(S) : (/[?&]lv=4/.test(location.search) || (S.stage === 4 && !/[?&]lv=\d/.test(location.search))) ? EVO.stage4(S) : (/[?&]lv=3/.test(location.search) || (S.stage === 3 && !/[?&]lv=\d/.test(location.search))) ? EVO.stage3(S) : (/[?&]lv=2/.test(location.search) || S.stage === 2) ? EVO.stage2(S) : S;   // les triches de test visent le niveau en cours
       const a = q('evocoins'); if (a !== null) T.coins = a; const b = q('evork'); if (b !== null) T.rk = b; const c = q('evola'); if (c !== null) T.la = c; const d = q('evocm'); if (d !== null) T.cm = d;
     }
     return S;
@@ -59,10 +59,11 @@
   EVO.stage2 = (B) => (B.s2 = B.s2 || { coins: 0, rk: 0, la: 0, cm: 0, best: 0, runs: 0, kills: 0, cleared: 0, t0: 0, marks: {}, seen: {} });
   EVO.stage3 = (B) => (B.s3 = B.s3 || { coins: 0, rk: 0, la: 0, cm: 0, best: 0, runs: 0, kills: 0, cleared: 0, t0: 0, marks: {}, seen: {} });   // v413 : le niveau 3 a aussi sa progression (fusee clown, lancement, revenu, record)
   EVO.stage4 = (B) => (B.s4 = B.s4 || { coins: 0, rk: 0, la: 0, cm: 0, best: 0, runs: 0, kills: 0, cleared: 0, t0: 0, marks: {}, seen: {} });   // v417 : le niveau 4 (l'espace) a sa propre progression (fusee spatiale)
+  EVO.stage5 = (B) => (B.s5 = B.s5 || { coins: 0, rk: 0, la: 0, cm: 0, best: 0, runs: 0, kills: 0, cleared: 0, t0: 0, marks: {}, seen: {} });   // v423 : le niveau 5 (plongee vers le noyau) a sa propre progression (ogive foreuse)
   EVO.save = (g) => {
     const B = EVO.saveBase(g), m = /[?&]lv=(\d)/.exec(location.search), st = m ? +m[1] : (B.stage || 1);
-    if (st !== 2 && st !== 3 && st !== 4) return B;
-    const s2 = st === 4 ? EVO.stage4(B) : st === 3 ? EVO.stage3(B) : EVO.stage2(B); if (s2.coins) { B.coins += s2.coins; s2.coins = 0; }   // v286 : une seule bourse pour les deux niveaux (anciennes pieces du niveau 2 reversees)
+    if (st !== 2 && st !== 3 && st !== 4 && st !== 5) return B;
+    const s2 = st === 5 ? EVO.stage5(B) : st === 4 ? EVO.stage4(B) : st === 3 ? EVO.stage3(B) : EVO.stage2(B); if (s2.coins) { B.coins += s2.coins; s2.coins = 0; }   // v286 : une seule bourse pour les deux niveaux (anciennes pieces du niveau 2 reversees)
     if (EVO._px && EVO._px.B === B && EVO._px.s2 === s2) return EVO._px.p;
     const p = new Proxy({}, { get: (t, k) => (S2K[k] ? s2[k] : B[k]), set: (t, k, v) => { if (S2K[k]) s2[k] = v; else B[k] = v; return true; }, has: (t, k) => (S2K[k] ? k in s2 : k in B) });
     EVO._px = { B, s2, p }; return p;
@@ -392,7 +393,7 @@
     // v264 : en chute libre (nez vers le bas) la fusee accelere jusqu'a sa vitesse maximale (plus de plafond a 100 km/h)
     if (!ev.preview && rk.vel.y < -1 && rk.fwd.y < -0.25) { const vm = (r.tier >= 2 ? r.vmax : EVO.launcher(S.la).speed) || 60; if (sp < vm) rk.vel.addScaledVector(rk.fwd, 18 * U.clamp(-rk.fwd.y * 1.3, 0, 1) * (1 - sp / vm) * dt); }
     // filet de sécurité : la fusée ne s'enfonce jamais dans le sol (elle roule dessus, le glissement la fait s'écraser)
-    if (!(CC.EVO.course && CC.EVO.course.isle)) { const gyy = run.T.base(Math.max(0, run.dist)) + 0.32; if (rk.pos.y < gyy) { rk.pos.y = gyy; if (rk.vel.y < 0) rk.vel.y = 0; rk.sliding = Math.max(rk.sliding || 0, 0.03); } }
+    if (!(CC.EVO.course && CC.EVO.course.isle) && !(EVO.noKill && EVO.noKill(g))) { const gyy = run.T.base(Math.max(0, run.dist)) + 0.32; if (rk.pos.y < gyy) { rk.pos.y = gyy; if (rk.vel.y < 0) rk.vel.y = 0; rk.sliding = Math.max(rk.sliding || 0, 0.03); } }
     // sans réacteur ou sans carburant : la fusée tombe ; au sol, le vol est fini
     const out = (r.tier < 2 || rk.fuel <= 0.01) && !ev.preview;
     if (out && EVO.isS2() && g.flightTime > 1 && !((g._wsub || 0) > 0.5)) { ev.outT = (ev.outT || 0) + dt; rk.vel.y -= 38 * Math.min(1, ev.outT / 0.8) * dt; if (rk.fwd.y > -0.6) g.input.addAim(0, -2.2 * dt); } else ev.outT = 0;   // v249 : niveau 2 : sans carburant on pique et on accelere vers le bas (plus de longue glissade)
@@ -640,8 +641,8 @@
     if (record) S.best = dist; S.coins += total; S.runs++; S.kills += ev.kills;
     if (false) { const cf0 = S.cf || 0, add = Math.max(0.5, Math.min(1, (ev.ft || 0) / 20)); S.cf = Math.min(EVO.CHEST_N, cf0 + add); g.evoChestAnim = { from: cf0 / EVO.CHEST_N, to: S.cf / EVO.CHEST_N, t0: performance.now() + 700 }; }   // v343 : coffre : chaque vol le remplit (un vol de 20 s ou plus = un tiers, minimum un demi-tiers)
     const r = EVO.rocket(S.rk);
-    g.evoLast = { dist, kills: ev.kills, lines, total, record, cause: g.crashKind === 'stalled' ? ((r.tier >= 2 || (EVO.isS4 && EVO.isS4())) && g.rocket.fuel <= 0.5 ? 'PLUS DE CARBURANT' : EVO.isS2() ? 'PLUS D ELAN' : 'ELLE EST TOMBEE') : g.causeOf(g.crashKind), doubled: false, t0: 0, crash: g.crashKind,
-      detail: g.crashKind === 'weak' && g.evoWeak ? 'ENNEMI ' + g.evoWeak.hp + ' PV : TES DEGATS ' + g.evoWeak.dmg.toFixed(1) : g.crashKind === 'stalled' ? (r.tier >= 2 && !(EVO.isS4 && EVO.isS4()) ? 'DETRUIS DES ENNEMIS POUR RECHARGER' : 'AMELIORE LA FUSEE : ELLE IRA PLUS LOIN') : 'GLISSE LE DOIGT POUR ESQUIVER' };
+    g.evoLast = { dist, kills: ev.kills, lines, total, record, cause: g.crashKind === 'stalled' ? ((r.tier >= 2 || (EVO.isTube && EVO.isTube())) && g.rocket.fuel <= 0.5 ? 'PLUS DE CARBURANT' : EVO.isS2() ? 'PLUS D ELAN' : 'ELLE EST TOMBEE') : g.causeOf(g.crashKind), doubled: false, t0: 0, crash: g.crashKind,
+      detail: g.crashKind === 'weak' && g.evoWeak ? 'ENNEMI ' + g.evoWeak.hp + ' PV : TES DEGATS ' + g.evoWeak.dmg.toFixed(1) : g.crashKind === 'stalled' ? (r.tier >= 2 && !(EVO.isTube && EVO.isTube()) ? 'DETRUIS DES ENNEMIS POUR RECHARGER' : 'AMELIORE LA FUSEE : ELLE IRA PLUS LOIN') : 'GLISSE LE DOIGT POUR ESQUIVER' };
     g.writeSave();
     g.telemetry.event('evoEnd', { dist, kills: ev.kills, coins: total, rk: S.rk, la: S.la, cm: S.cm, cause: g.crashKind });
     g.evoReport = true; g.evoAdDone = false; g.ui.overlay = 'evoReport'; g.audio.play('report');   // v152 : le rapport de vol s'affiche sur le lieu du crash ; SUIVANT ramene au menu

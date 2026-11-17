@@ -155,6 +155,54 @@
       bell(0, 0, -0.7, 0.075);
       return { tail: -0.84, jr: 0.07, noseZ: 1.0, tips };
     },
+    // v423 : NIVEAU 5 « PLONGEE VERS LE NOYAU » : L'OGIVE FOREUSE, 4 etats (st 0..3) : 0 pointe de forage (acier, bandes de danger) -> 1 foreuse a vis (jaune engin de chantier,
+    //   grosse vis a deux filets) -> 2 torpille thermique (corps noir, pointe chauffee a blanc, radiateurs) -> 3 foreuse a plasma (pointe et anneaux de plasma cyan, ailes en fleche)
+    drill(g, st) {
+      const ST = '#8a9098', ST2 = '#c8ccd2', DK = '#1c1f24', YE = '#e8b020', OR = '#e8622a', RD = '#c8352a';
+      // pointe de forage : cone + filet en helice (petites lames le long d'une spirale qui se resserre)
+      const tip = (z0, len, r, turns, cb, cr, glow, th) => { put(g, cylZ(r, 0.004, len, 24), cb, { p: [0, 0, z0 + len / 2], basic: !!glow });
+        for (const ph of turns > 1.5 ? [0, Math.PI] : [0]) { const n = Math.round(34 * turns); for (let i = 0; i < n; i++) { const t = i / n, a = t * turns * Math.PI * 2 + ph, rad = r * (1 - t) + 0.006, z = z0 + t * len;
+          put(g, box(th || 0.026, 0.016, 0.045 + 0.03 * (1 - t)), cr, { p: [Math.cos(a) * rad, Math.sin(a) * rad, z], r: [0, 0, a], basic: !!glow }); } } };
+      const band = (z, r, c, w) => put(g, cylZ(r * 1.015, r * 1.015, w || 0.03, 24), c, { p: [0, 0, z] });
+      const hazard = (z0, z1, r) => { const n = Math.round((z1 - z0) / 0.03); for (let i = 0; i < n; i++) band(z0 + (i + 0.5) * (z1 - z0) / n, r, i % 2 ? DK : YE, (z1 - z0) / n); };
+      const nozzle = (x, y, z, r) => { put(g, cylZ(r * 1.1, r * 0.75, 0.1, 18), '#4a4f58', { p: [x, y, z - 0.05] }); put(g, ringG(r, 0.008), '#ffb066', { p: [x, y, z - 0.1], basic: true }); };
+      const fins4 = (z0, z1, r, h, c, rot) => { for (let k = 0; k < 4; k++) { const f = new T3.Group(); f.rotation.z = k * Math.PI / 2 + (rot || 0); g.add(f); put(g, fin([[z1, r], [z0, r], [z0 - 0.05, r + h], [z1 - 0.12, r + h]], 0.016), c, { parent: f }); } };
+      const tips = [];
+      if (st === 0) {   // POINTE DE FORAGE
+        put(g, cylZ(0.085, 0.09, 0.74, 24), ST, { p: [0, 0, -0.13] }); hazard(-0.12, 0.06, 0.09); band(-0.38, 0.09, DK); band(0.2, 0.09, DK, 0.02);
+        tip(0.24, 0.32, 0.088, 2.2, ST2, '#3a3e46', false, 0.024); put(g, ringG(0.09, 0.012), DK, { p: [0, 0, 0.24] });
+        fins4(-0.32, -0.5, 0.085, 0.09, DK, Math.PI / 4); nozzle(0, 0, -0.5, 0.07);
+        put(g, sph(0.014), '#ff3a2a', { p: [0, 0.09, 0.1], basic: true });
+        tips.push([0.18, 0, -0.45], [-0.18, 0, -0.45]); return { tail: -0.6, jr: 0.06, noseZ: 0.58, tips };
+      }
+      if (st === 1) {   // FOREUSE A VIS
+        put(g, cylZ(0.1, 0.105, 0.95, 24), YE, { p: [0, 0, -0.12] }); hazard(-0.62, -0.5, 0.1); band(-0.2, 0.105, DK); band(0.1, 0.105, DK); band(0.33, 0.106, '#3a3e46', 0.04);
+        for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; put(g, box(0.02, 0.02, 0.5), '#b88a10', { p: [Math.cos(a) * 0.104, Math.sin(a) * 0.104, -0.15], r: [0, 0, a] }); }   // nervures
+        tip(0.35, 0.5, 0.108, 2.6, ST2, DK, false, 0.034);
+        for (const sx of [-1, 1]) { put(g, cylZ(0.035, 0.035, 0.4, 12), DK, { p: [sx * 0.13, 0, -0.2] }); put(g, cylZ(0.035, 0.0, 0.1, 12), ST2, { p: [sx * 0.13, 0, 0.05] }); }   // verins lateraux
+        fins4(-0.42, -0.62, 0.1, 0.12, DK, Math.PI / 4); nozzle(0, 0, -0.6, 0.08);
+        tips.push([0.22, 0, -0.55], [-0.22, 0, -0.55]); return { tail: -0.72, jr: 0.07, noseZ: 0.86, tips };
+      }
+      if (st === 2) {   // TORPILLE THERMIQUE
+        put(g, cylZ(0.11, 0.115, 1.0, 24), '#2a2e34', { p: [0, 0, -0.1] }); for (const z of [-0.45, -0.15, 0.15]) put(g, cylZ(0.117, 0.117, 0.018, 24), OR, { p: [0, 0, z], basic: true });
+        put(g, cylZ(0.115, 0.122, 0.08, 24), '#4a4f58', { p: [0, 0, 0.42] });
+        tip(0.46, 0.46, 0.118, 2.4, '#ffd08a', '#ff6a1a', true, 0.03);   // pointe chauffee a blanc
+        for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2; put(g, box(0.006, 0.05, 0.3), '#5a606a', { p: [Math.cos(a) * 0.13, Math.sin(a) * 0.13, -0.35], r: [0, 0, a + Math.PI / 2] }); }   // radiateurs
+        for (const sx of [-1, 1]) { put(g, cylZ(0.05, 0.05, 0.5, 14), RD, { p: [sx * 0.17, -0.02, -0.15] }); put(g, cylZ(0.05, 0.0, 0.1, 14), DK, { p: [sx * 0.17, -0.02, 0.15] }); band(-0.3, 0.05, DK); }
+        fins4(-0.45, -0.66, 0.11, 0.13, DK, Math.PI / 4); nozzle(0, 0, -0.6, 0.085);
+        tips.push([0.24, 0, -0.6], [-0.24, 0, -0.6]); return { tail: -0.74, jr: 0.08, noseZ: 0.93, tips };
+      }
+      // FOREUSE A PLASMA
+      put(g, cylZ(0.1, 0.12, 1.1, 24), '#dfe3e8', { p: [0, 0, -0.1] }); put(g, box(0.17, 0.03, 1.0), DK, { p: [0, -0.1, -0.1] });
+      for (const z of [-0.5, -0.2, 0.1]) band(z, 0.11, DK, 0.02);
+      put(g, cylZ(0.12, 0.125, 0.06, 24), DK, { p: [0, 0, 0.47] });
+      tip(0.5, 0.5, 0.12, 2.8, '#bff8ff', '#2ad8ff', true, 0.03);
+      for (const z of [0.55, 0.7, 0.85]) put(g, ringG(0.135 - (z - 0.55) * 0.18, 0.01), '#7af0ff', { p: [0, 0, z], basic: true });   // anneaux de plasma
+      for (const sx of [-1, 1]) { put(g, flat([[0, 0.1], [sx * 0.46, -0.42], [sx * 0.46, -0.52], [0, -0.5]], 0.02), DK, { p: [0, -0.02, 0] }); put(g, flat([[sx * 0.08, 0.05], [sx * 0.45, -0.4], [sx * 0.46, -0.43], [sx * 0.08, 0.01]], 0.024), '#2ad8ff', { p: [0, -0.02, 0], basic: true });
+        const x = sx * 0.22; put(g, cylZ(0.05, 0.045, 0.45, 16), '#dfe3e8', { p: [x, -0.02, -0.32] }); put(g, ringG(0.05, 0.008), '#7af0ff', { p: [x, -0.02, -0.1], basic: true }); nozzle(x, -0.02, -0.55, 0.045); tips.push([sx * 0.46, 0, -0.47]); }
+      put(g, fin([[-0.3, 0.12], [-0.62, 0.12], [-0.66, 0.36], [-0.54, 0.36]], 0.018), DK); nozzle(0, 0, -0.65, 0.08);
+      return { tail: -0.78, jr: 0.08, noseZ: 1.0, tips };
+    },
   };
 
   // jet de la tuyere : meme mecanique que M.rocket (allumage / vacillement animes par Rocket.updateMesh)
