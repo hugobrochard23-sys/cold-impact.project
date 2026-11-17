@@ -630,7 +630,7 @@
   EVO.beginEnd = (g) => {
     if (g.evo && g.evo.preview) { EVO.endTumble(g); g.evoPreview = false; g.evoLast = { zone2: true, t0: 0 }; g.goHome({}); return; }   // l'epave et le drapeau restent visibles sous le rapport (nettoyes au depart)
     const S = EVO.save(g), ev = g.evo || { kills: 0, coins: 0, maxD: 0 }, run = g.endlessRun, dist = Math.round(Math.max(ev.maxD, run ? run.dist : 0)), m = EVO.mult(S.cm) * (EVO.fast() && S.rk < (EVO.isS2() ? 12 : 10) ? 4 : 1);   // v343 : mode ordinateur : gains x2,5 tant que le palier REACTEUR n'est pas atteint (ailes en ~2 min)
-    const sd = Math.round(dist * EVO.SCORE_K(g)), distCoins = Math.floor(sd * m), lines = [['DISTANCE ' + sd + ' M', distCoins]];
+    const sd = Math.round(dist * EVO.SCORE_K(g)), distCoins = Math.floor(sd * m * (EVO.distPay ? EVO.distPay(g, dist) : 1)), lines = [['DISTANCE ' + sd + ' M', distCoins]];
     if (ev.kills) lines.push(['ENNEMIS ' + ev.kills, ev.coins - (ev.bossHits ? Math.round(150 * m) * ev.bossHits : 0)]);
     if (ev.bossHits) lines.push(['COUPS AU BOSS ' + ev.bossHits, Math.round(150 * m) * ev.bossHits]);
     if (ev.chapCoins) lines.push(['CHAPITRE ' + ev.chap + ' SUR ' + (EVO.chapters ? EVO.chapters.length : 1), ev.chapCoins]);
@@ -640,8 +640,8 @@
     if (record) S.best = dist; S.coins += total; S.runs++; S.kills += ev.kills;
     if (false) { const cf0 = S.cf || 0, add = Math.max(0.5, Math.min(1, (ev.ft || 0) / 20)); S.cf = Math.min(EVO.CHEST_N, cf0 + add); g.evoChestAnim = { from: cf0 / EVO.CHEST_N, to: S.cf / EVO.CHEST_N, t0: performance.now() + 700 }; }   // v343 : coffre : chaque vol le remplit (un vol de 20 s ou plus = un tiers, minimum un demi-tiers)
     const r = EVO.rocket(S.rk);
-    g.evoLast = { dist, kills: ev.kills, lines, total, record, cause: g.crashKind === 'stalled' ? (r.tier >= 2 && g.rocket.fuel <= 0.5 ? 'PLUS DE CARBURANT' : EVO.isS2() ? 'PLUS D ELAN' : 'ELLE EST TOMBEE') : g.causeOf(g.crashKind), doubled: false, t0: 0, crash: g.crashKind,
-      detail: g.crashKind === 'weak' && g.evoWeak ? 'ENNEMI ' + g.evoWeak.hp + ' PV : TES DEGATS ' + g.evoWeak.dmg.toFixed(1) : g.crashKind === 'stalled' ? (r.tier >= 2 ? 'DETRUIS DES ENNEMIS POUR RECHARGER' : 'AMELIORE LA FUSEE : ELLE IRA PLUS LOIN') : 'GLISSE LE DOIGT POUR ESQUIVER' };
+    g.evoLast = { dist, kills: ev.kills, lines, total, record, cause: g.crashKind === 'stalled' ? ((r.tier >= 2 || (EVO.isS4 && EVO.isS4())) && g.rocket.fuel <= 0.5 ? 'PLUS DE CARBURANT' : EVO.isS2() ? 'PLUS D ELAN' : 'ELLE EST TOMBEE') : g.causeOf(g.crashKind), doubled: false, t0: 0, crash: g.crashKind,
+      detail: g.crashKind === 'weak' && g.evoWeak ? 'ENNEMI ' + g.evoWeak.hp + ' PV : TES DEGATS ' + g.evoWeak.dmg.toFixed(1) : g.crashKind === 'stalled' ? (r.tier >= 2 && !(EVO.isS4 && EVO.isS4()) ? 'DETRUIS DES ENNEMIS POUR RECHARGER' : 'AMELIORE LA FUSEE : ELLE IRA PLUS LOIN') : 'GLISSE LE DOIGT POUR ESQUIVER' };
     g.writeSave();
     g.telemetry.event('evoEnd', { dist, kills: ev.kills, coins: total, rk: S.rk, la: S.la, cm: S.cm, cause: g.crashKind });
     g.evoReport = true; g.evoAdDone = false; g.ui.overlay = 'evoReport'; g.audio.play('report');   // v152 : le rapport de vol s'affiche sur le lieu du crash ; SUIVANT ramene au menu

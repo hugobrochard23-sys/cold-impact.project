@@ -25,7 +25,12 @@
   { const _as = EVO.applySkin; EVO.applySkin = (g) => { if (!isS4()) return _as(g); const r = EVO.rocket(EVO.save(g).rk); g.rocket.setSkin(CC.Skins.get('evoS' + r.tier)); EVO.attachParts(g); }; }
   { const RK4 = ['SONDE', 'FUSEE A BOOSTERS', 'NAVETTE', 'VAISSEAU'], _rk = EVO.rocket; EVO.rocket = (n) => { const r = _rk(n); if (isS4()) r.name = RK4[r.tier]; return r; }; }
   // le carburant du niveau 4 : il grandit avec la fusee et le lanceur (plus de reservoir illimite)
-  { const _ol = EVO.onLaunch; EVO.onLaunch = (g) => { _ol(g); if (!isS4() || (g.evo && g.evo.preview)) return; const S = EVO.save(g), rk = g.rocket, f = 29 + 3.6 * (S.rk || 0) + 2.2 * (S.la || 0);   /* v421 : recale sur le niveau raccourci (~2 min) */ rk.fuelMax = f; rk.fuel = (g.evoAimLast && g.evoAimLast.zone === 'gold') ? f : f * 0.9 + 0.1 * f; }; }
+  { const _ol = EVO.onLaunch; EVO.onLaunch = (g) => { _ol(g); if (!isS4() || (g.evo && g.evo.preview)) return; const S = EVO.save(g), rk = g.rocket, f = EVO.fuel4(S.rk || 0, S.la || 0); rk.fuelMax = f * 1.15; rk.fuel = (g.evoAimLast && g.evoAimLast.zone === 'gold') ? f * 1.15 : f; }; }
+  // v422 : VRAIE PROGRESSION : la sonde de depart n'a que 8 s (elle s'eteint dans la montee) ; chaque palier de fusee donne un gros bond (+4 / +13 / +38 s) :
+  //   on galere au debut, le milieu avance lentement (fusee a boosters, navette), le vaisseau (palier 15) finit presque le niveau. Drones et anneaux ne rendent presque plus rien.
+  EVO.fuel4 = (rk, la) => 8 + 1.4 * rk + 0.9 * la + [0, 4, 13, 38][Math.min(3, Math.floor(rk / 5))];
+  // les pieces de distance : moins par metre qu'au niveau 1 (le niveau est long et on y va loin), mais le metre vaut de plus en plus cher en avancant (x3 a l'arrivee)
+  EVO.distPay = (g, dist) => (isS4() ? (0.15 / (8450 / 6910)) * (1 + 2 * Math.min(1, dist / 6550)) : 1);
   let L = null;   // l'etat du niveau 4 (voie, decor, pilotage), refait a chaque partie
 
   // ============================== LA VOIE 3D ==============================
@@ -410,7 +415,7 @@
     for (const d of L.sent) { if (!d.alive) continue; const ds = d.s - L.s;
       if (ds > (d.small ? 50 : 40) && ds < (d.small ? 150 : 200)) { d.fT -= dt; if (d.fT <= 0) { d.fT = d.small ? 2.8 : 1.9; fire(g, d.s, d.x, d.y); } }
       if (d.s >= s0 - 2 && d.s <= L.s + 2.5 && Math.hypot(L.x - d.x, L.y - d.y) < (d.small ? 3.6 : 4.4)) { d.alive = false; d.m.visible = false; const p = d.m.position.clone(); g.effects.explosion(p, null, false, 'orange'); g.audio.play('target'); g.rig.shake = Math.max(g.rig.shake, 0.7); g.flash = 0.2; g.flashColor = '#ffb070';
-        const ev = g.evo, S = EVO.save(g), c = Math.round((d.small ? 90 : 200) * EVO.mult(S.cm) * (EVO.COIN_K || 1)); if (ev) { ev.kills++; ev.coins += c; } rk.fuel = Math.min(rk.fuelMax, rk.fuel + (d.small ? 3 : 4));
+        const ev = g.evo, S = EVO.save(g), c = Math.round((d.small ? 90 : 200) * EVO.mult(S.cm) * (EVO.COIN_K || 1)); if (ev) { ev.kills++; ev.coins += c; } if (rk.fuel > 0) rk.fuel = Math.min(rk.fuelMax, rk.fuel + (d.small ? 0.3 : 0.8));   // v422 : une goutte seulement (avant 3-4 s : on ne tombait jamais en panne)
         (g.killPops = g.killPops || []).push({ p: p.clone(), t0: performance.now(), txt: '+' + c }); } }
     // la premiere fois qu'on voit une epreuve : une consigne courte (lisible en une seconde)
     { const HINT = { shutter: 'PASSE PAR LE COTE VERT', fan: 'PASSE ENTRE LES PALES', laser: 'PASSE QUAND LE LASER S ECARTE', piston: 'RESTE AU CENTRE', mine: 'EVITE LES MINES', mat: 'EVITE LES ANTENNES', ast: 'PASSE DU COTE LIBRE' }; L.seen = L.seen || {};
@@ -428,7 +433,7 @@
       if (Math.abs(b.s - L.s) < 2 && Math.hypot(b.x - L.x, b.y - L.y) < 1.3 && L.inv <= 0) { b.on = false; b.m.visible = false; missileHit(g, rk); continue; }
       b.smT -= dt; if (b.smT <= 0) { b.smT = 0.05; g.effects.smokePuff(b.m.position.clone(), new V(0, 0, 0), 0.9, 0.7); } }
     // anneaux d'acceleration
-    for (const B of L.boostR) { if (B.done || B.s < s0 - 1 || B.s > L.s + 1) continue; B.done = true; if (Math.hypot(L.x - B.x, L.y - B.y) < 5) { L.boostT = 2.6; rk.fuel = Math.min(rk.fuelMax, rk.fuel + 3); g.audio.play('boostOn'); g.audio.play('whoosh'); if (g.feed) g.feed('BOOST !', '#ffc23a'); g.flash = 0.15; g.flashColor = '#ffe08a'; } }
+    for (const B of L.boostR) { if (B.done || B.s < s0 - 1 || B.s > L.s + 1) continue; B.done = true; if (Math.hypot(L.x - B.x, L.y - B.y) < 5) { L.boostT = 2.6; if (rk.fuel > 0) rk.fuel = Math.min(rk.fuelMax, rk.fuel + 1); g.audio.play('boostOn'); g.audio.play('whoosh'); if (g.feed) g.feed('BOOST !', '#ffc23a'); g.flash = 0.15; g.flashColor = '#ffe08a'; } }
   }
   // l'animation de tout ce qui bouge (chaque image, meme au menu)
   const _o4 = new T3.Object3D(), _ec = new T3.Color(), _zA = new V(0, 0, 1);
@@ -611,7 +616,7 @@
     if (dry && !L.dry) { L.dry = 1; if (CC.L1) CC.L1.msg(g, 'PLUS DE CARBURANT !', 2, '#ff6a5a'); g.audio.play('warnFuel'); } if (!dry) L.dry = 0;
     const vMax = L.boostT > 0 ? 96 : boostZ ? 80 : 47 + 9 * ss(500, 1000, alt);   // v419 : retour a la vitesse de la v417 (la vitesse qui grandit rendait l'esquive trop dure) ; accelerateurs et anneaux : on file
     L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
-    if (dry) { L.v -= (9 + 10 * up * atmo) * dt; if (L.v < 14 && this.active) { g.onRocketCrash('stalled', this.pos.clone(), null); return; } }   // a sec : la fusee ralentit puis s'arrete
+    if (dry) { L.v -= (11 + 12 * up * atmo) * dt; L.y -= (3 + 9 * U.clamp(1 - L.v / 50, 0, 1)) * dt; L.rp = Math.min(L.rp, -0.15); if (L.v < 14 && this.active) { g.onRocketCrash('stalled', this.pos.clone(), null); return; } }   // a sec : la fusee ralentit, pique du nez et tombe vers le bas de la voie, puis s'arrete (v422 : plus vite qu'avant)
     else { L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.7) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)) - 6 * up * atmo * dt; L.v = Math.max(24, L.v); }   // la pesanteur freine un peu la montee verticale
     const vx = -L.v * Math.sin(L.ry) * 0.85, vy = L.v * Math.sin(L.rp) * 0.85, lat = Math.min(1, 52 / L.v); L.x += vx * lat * dt; L.y += vy * lat * dt; L.s += L.v * dt; if (PA.cut(L.s)) L.s = PA.toOld(PA.toNew(L.s));   // a grande vitesse, le deplacement de cote reste le meme (pas de glissade incontrolable)
     // le tube retient la fusee (on glisse sur la paroi, etincelles) ; a decouvert, une limite douce plus large
