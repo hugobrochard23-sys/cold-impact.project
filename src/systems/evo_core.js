@@ -145,7 +145,7 @@
   const rockM = (c, e) => new T3.MeshLambertMaterial({ color: c, emissive: e || '#140c06', flatShading: true, side: T3.DoubleSide });   // [moitie de largeur, moitie de longueur] : elle s'evase sur la geode
   const WALLS = [[2600, 3587, RSH], [4327, 5417, R]];   // puits et tunnels (paroi proche) : [debut, fin, rayon]
   // l'ambiance le long de la voie : [s, ciel haut, horizon, brume, brume proche, brume loin, lumiere]
-  const MOOD = [[0, '#000000', '#04060c', '#020308', 280, 680, 1], [600, '#020308', '#0a1030', '#020308', 280, 680, 1], [700, '#3a1004', '#ff7a2a', '#7a2a0a', 60, 520, 1.1], [1060, '#4a1a08', '#ff9a4a', '#8a3a14', 60, 520, 1.1],
+  const MOOD = [[0, '#000000', '#04060c', '#020308', 280, 680, 1], [600, '#020308', '#0a1030', '#020308', 280, 680, 1], [700, '#3a1004', '#ff7a2a', '#7a2a0a', 60, 520, 1.1], [900, '#3a1a10', '#d8884a', '#9a6a50', 80, 640, 1.1], [1060, '#5a6a8a', '#c8d0dc', '#b8c0cc', 110, 900, 1.0],
     [1200, '#2a5cb8', '#9cbedc', '#a4c2dc', 260, 2400, 0.85], [2560, '#2e64c0', '#a8c8e2', '#aac6de', 260, 2400, 0.88],
     [2707, '#120a04', '#2a1a0c', '#1a1008', 25, 360, 0.9], [3527, '#120a04', '#2a1a0c', '#1a1008', 25, 360, 0.9], [3647, '#0c0418', '#1e0a34', '#1e0a34', 40, 480, 0.9], [4267, '#0c0418', '#1e0a34', '#1e0a34', 40, 480, 0.9],
     [4387, '#180402', '#3a0c04', '#2a0804', 30, 420, 0.95], [5367, '#180402', '#3a0c04', '#2a0804', 30, 420, 0.95], [5507, '#3a1004', '#ff6a1a', '#5a1806', 60, 700, 1.1], [1e9, '#3a1004', '#ff6a1a', '#5a1806', 60, 700, 1.1]];
@@ -237,28 +237,47 @@
     // trois couches clairsemees (des trous partout : on voit le sol et les helicopteres), quelques tours de cumulus sur les cotes
     for (const [n, hy, dh, s0, s1] of [[150, 330, 30, 90, 210], [110, 170, 20, 70, 170], [40, 560, 40, 120, 260]]) for (let i = 0; i < n; i++) { const a = rr(0, 6.28), d = 1900 * Math.sqrt(Math.random()); P.push([C.x + Math.cos(a) * d, gy + hy + rr(-dh, dh), C.z + Math.sin(a) * d, rr(s0, s1)]); }
     for (let k = 0; k < 14; k++) { const s = rr(1150, 2550), F = PA.fr(Math.min(s, 2500)), sd = Math.random() < 0.5 ? -1 : 1, d = rr(320, 1100), bx = F.p.x + F.r.x * sd * d, bz = F.p.z + F.r.z * sd * d; for (let j = 0; j < 7; j++) P.push([bx + rr(-40, 40), gy + 120 + j * rr(38, 55), bz + rr(-40, 40), rr(110, 170) * (1 - j * 0.07)]); }
+    for (let k = 0; k < 240; k++) { const F = PA.fr(rr(560, 1160)), a = rr(0, 6.283), d = rr(60, 430); P.push([F.p.x + (F.r.x * Math.cos(a) + F.u.x * Math.sin(a)) * d, F.p.y + (F.r.y * Math.cos(a) + F.u.y * Math.sin(a)) * d, F.p.z + (F.r.z * Math.cos(a) + F.u.z * Math.sin(a)) * d, rr(110, 230)]); }   // la rentree traverse deja les nuages : on les voit tout autour
     const im = new T3.InstancedMesh(new T3.PlaneGeometry(1, 1), M, P.length), o = new T3.Object3D();
     P.forEach((q, i) => { o.position.set(q[0], q[1], q[2]); o.scale.setScalar(q[3]); o.updateMatrix(); im.setMatrixAt(i, o.matrix); });
     im.frustumCulled = false; im.renderOrder = 4; grp.add(im); L.cloudM = M; L.cloudIM = im;
   }
 
+  // LA COUPE DU SOL : on coupe le maillage de la paroi par le plan du sol (y = gy) et on chaine les segments : le trou du sol EST exactement la bouche de la faille
+  function riftSlice(geo, gy, H, rX, Dn) {
+    const P = geo.attributes.position, I = geo.index.array, pts = new Map(), adj = new Map(), kf = (x, z) => Math.round(x * 10) + ',' + Math.round(z * 10);
+    const cross = (a, b) => { const ya = P.getY(a) - gy, yb = P.getY(b) - gy, t = ya / (ya - yb), x = P.getX(a) + (P.getX(b) - P.getX(a)) * t, z = P.getZ(a) + (P.getZ(b) - P.getZ(a)) * t, k = kf(x, z); if (!pts.has(k)) pts.set(k, [x, z]); return k; };
+    const link = (a, b) => { if (a === b) return; if (!adj.has(a)) adj.set(a, []); if (!adj.has(b)) adj.set(b, []); adj.get(a).push(b); adj.get(b).push(a); };
+    for (let i = 0; i < I.length; i += 3) { const a = I[i], b = I[i + 1], c = I[i + 2], A = P.getY(a) > gy, B = P.getY(b) > gy, C = P.getY(c) > gy; if (A === B && B === C) continue; const k = []; if (A !== B) k.push(cross(a, b)); if (B !== C) k.push(cross(b, c)); if (C !== A) k.push(cross(c, a)); if (k.length === 2) link(k[0], k[1]); }
+    const seen = new Set(); let best = null;
+    for (const k0 of adj.keys()) { if (seen.has(k0)) continue; const loop = []; let cur = k0, prev = null; while (cur && !seen.has(cur)) { seen.add(cur); loop.push(pts.get(cur)); const nb = adj.get(cur).filter((q) => q !== prev && !seen.has(q)); prev = cur; cur = nb.length ? nb[0] : null; } if (!best || loop.length > best.length) best = loop; }
+    if (!best || best.length < 20) { best = []; for (let j = 0; j < 96; j++) { const a = j / 96 * 6.2832; best.push([H.x + rX.x * Math.cos(a) * 30 + Dn.x * Math.sin(a) * 100, H.z + rX.z * Math.cos(a) * 30 + Dn.z * Math.sin(a) * 100]); } }
+    const m = best.length, cum = [0]; for (let i = 0; i < m; i++) cum.push(cum[i] + Math.hypot(best[(i + 1) % m][0] - best[i][0], best[(i + 1) % m][1] - best[i][1])); const tot = cum[m], N = Math.max(48, Math.round(tot / 4)), out = []; let j = 0;
+    for (let i = 0; i < N; i++) { const d = tot * i / N; while (j < m - 1 && cum[j + 1] < d) j++; const a = best[j], b = best[(j + 1) % m], t = (d - cum[j]) / Math.max(1e-6, cum[j + 1] - cum[j]); out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); }
+    return out;
+  }
+  const inPoly = (poly, x, z) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const a = poly[i], b = poly[j]; if ((a[1] > z) !== (b[1] > z) && x < (b[0] - a[0]) * (z - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
+
   // ============================== LA CAMPAGNE : des champs a perte de vue, des bosquets, des fermes, une base, le derrick du puits ==============================
   function countryside(g, PA, grp) { { const lg = new T3.Group(); grp.add(lg); L.landG = lg; grp = lg; }   // tout ce qui est au sol : cache tant qu'on est dans l'espace
     const X = textures(), gy = L.gy = PA.O.y + GY, sH = PA.sBelow(gy, 2400), FH = PA.fr(sH), H = FH.p.clone(); L.holeS = sH;
-    // la FENTE : l'ellipse que la faille decoupe dans le sol (grand axe = la direction du « haut » de la voie, a plat)
-    const rX = new V(FH.r.x, 0, FH.r.z).normalize(), Dv = new V().copy(FH.u).addScaledVector(FH.t, -FH.u.y / (FH.t.y || -0.9)), halfL = 170 * Dv.length() + 6, Dn = new V(-rX.z, 0, rX.x), halfW = RSH + 8 + 3;
-    L.slit = { H, rX, Dn, halfL, halfW };
-    const gnd = new T3.Mesh(new T3.PlaneGeometry(12000, 12000), new T3.MeshLambertMaterial({ map: X.fields, color: '#8a9682' })); gnd.rotation.x = -Math.PI / 2; gnd.position.set(H.x, gy, H.z);
-    gnd.material.onBeforeCompile = (sh) => { sh.uniforms.uH0 = { value: H }; sh.uniforms.uRX = { value: new T3.Vector2(rX.x, rX.z) }; sh.uniforms.uDN = { value: new T3.Vector2(Dn.x, Dn.z) }; sh.uniforms.uAB = { value: new T3.Vector2(halfW, halfL) }; sh.vertexShader = 'varying vec3 vHW;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n vHW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-      sh.fragmentShader = 'uniform vec3 uH0; uniform vec2 uRX; uniform vec2 uDN; uniform vec2 uAB; varying vec3 vHW;\n' + sh.fragmentShader.replace('void main() {', 'void main() {\n { vec2 d = vHW.xz - uH0.xz; float a = dot(d, uRX) / uAB.x, b = dot(d, uDN) / uAB.y; if (a * a + b * b < 1.0) discard; }'); };
+    // la FENTE : le trou du sol est la COUPE EXACTE de la paroi par le plan du sol (aucun vide, rien en l'air)
+    const rX = new V(FH.r.x, 0, FH.r.z).normalize(), Dn = new V(-rX.z, 0, rX.x), poly = riftSlice(L.riftGeo, gy, H, rX, Dn);
+    L.slit = { H, rX, Dn, poly };
+    const gsh = new T3.Shape(); gsh.moveTo(-6000, -6000); gsh.lineTo(6000, -6000); gsh.lineTo(6000, 6000); gsh.lineTo(-6000, 6000); gsh.lineTo(-6000, -6000);
+    { const hp = new T3.Path(); poly.forEach((q, i) => { const x = q[0] - H.x, y = -(q[1] - H.z); if (i) hp.lineTo(x, y); else hp.moveTo(x, y); }); gsh.holes.push(hp); }
+    const gg = new T3.ShapeGeometry(gsh); { const Pp = gg.attributes.position, UV = gg.attributes.uv; for (let i = 0; i < Pp.count; i++) UV.setXY(i, Pp.getX(i) / 12000 + 0.5, Pp.getY(i) / 12000 + 0.5); }
+    const gnd = new T3.Mesh(gg, new T3.MeshLambertMaterial({ map: X.fields, color: '#8a9682' })); gnd.rotation.x = -Math.PI / 2; gnd.position.set(H.x, gy, H.z);
     grp.add(gnd); L.gnd = gnd;
     // le bord de la faille : de la terre arrachee tout autour, des feux d'alerte qui clignotent, le chantier de secours (derrick) un peu plus loin
-    { const sh = new T3.Shape(); for (let j = 0; j < 90; j++) { const th = j / 90 * 6.2832, ob = 6 + 10 * (0.5 + 0.5 * Math.sin(3 * th + 1)) + 6 * (0.5 + 0.5 * Math.sin(7 * th + 2)) + 3 * Math.sin(13 * th); const x = Math.cos(th) * (halfW + ob), y = Math.sin(th) * (halfL + ob); if (j) sh.lineTo(x, y); else sh.moveTo(x, y); } const hole = new T3.Path(); hole.absellipse(0, 0, halfW - 0.5, halfL - 0.5, 0, 6.2832, true, 0); sh.holes.push(hole);
-      const dirt = new T3.Mesh(new T3.ShapeGeometry(sh, 40), lam('#5a3e22')); const ang = Math.atan2(-rX.z, rX.x); dirt.rotation.set(-Math.PI / 2, 0, 0); const dg = new T3.Group(); dg.add(dirt); dg.rotation.y = ang; dg.position.set(H.x, gy + 0.1, H.z); grp.add(dg);
+    { const N = poly.length, ccw = poly.reduce((a, q, i) => { const r = poly[(i + 1) % N]; return a + (q[0] * r[1] - r[0] * q[1]); }, 0) > 0, nrm = poly.map((q, i) => { const a = poly[(i + N - 1) % N], b = poly[(i + 1) % N]; let tx = b[0] - a[0], tz = b[1] - a[1]; const l = Math.hypot(tx, tz) || 1; tx /= l; tz /= l; return ccw ? [tz, -tx] : [-tz, tx]; });
+      const ob = poly.map((q, i) => { const a = nrm[(i + N - 3) % N], b = nrm[(i + 3) % N], turn = Math.acos(Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1]))); return (5 + 9 * (0.5 + 0.5 * Math.sin(i * 0.21 + 1)) + 5 * (0.5 + 0.5 * Math.sin(i * 0.53 + 2)) + 2 * Math.sin(i * 1.3)) * (1 - 0.65 * Math.min(1, turn / 0.9)); }), pos = [], idx = [];
+      poly.forEach((q, i) => { pos.push(q[0], gy + 0.1, q[1], q[0] + nrm[i][0] * ob[i], gy + 0.1, q[1] + nrm[i][1] * ob[i]); }); for (let i = 0; i < N; i++) { const a = i * 2, b = ((i + 1) % N) * 2; idx.push(a, a + 1, b, b, a + 1, b + 1); }
+      const dg = new T3.BufferGeometry(); dg.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); dg.setIndex(idx); dg.computeVertexNormals(); grp.add(new T3.Mesh(dg, new T3.MeshLambertMaterial({ color: '#6e5030', side: T3.DoubleSide })));
       { const gs = [0, 1, 2, 3].map((i) => lumpGeo(1, 0.62, 1, i * 1.9 + 1, 1, 0.3)), cs = ['#7a6a52', '#6a5a46', '#8a7a62', '#5e5040'];
-        for (let k = 0; k < 54; k++) { const th = k / 54 * 6.283 + rr(-0.05, 0.05), ob = rr(1, 15), sz = rr(1.6, 5.2), p = new V().copy(H).addScaledVector(rX, Math.cos(th) * (halfW + ob)).addScaledVector(Dn, Math.sin(th) * (halfL + ob)); p.y = gy + sz * 0.15;
-          const m = new T3.Mesh(gs[k % 4], rockM(cs[(k >> 2) % 4])); m.scale.setScalar(sz); m.position.copy(p); m.rotation.y = rr(0, 6); grp.add(m); blob(grp, new V(p.x + sz * 0.3, gy, p.z + sz * 0.3), sz * 1.5, sz * 1.5); } }
-      for (let k = 0; k < 22; k++) { const a = k / 22 * 6.283, l = new T3.Mesh(new T3.SphereGeometry(0.9, 8, 6), bas(k % 2 ? '#ffb84a' : '#ff3a2a', { fog: false })); l.position.copy(H).addScaledVector(rX, Math.cos(a) * (halfW + 2)).addScaledVector(Dn, Math.sin(a) * (halfL + 2)).setY(gy + 2.4); grp.add(l); (L.blinks = L.blinks || []).push(l); }
+        for (let k = 0; k < 54; k++) { const i = (Math.floor(k / 54 * N + rr(-1, 1)) + N) % N, o = rr(0.5, ob[i] + 4), sz = rr(1.6, 5.2), px = poly[i][0] + nrm[i][0] * o, pz = poly[i][1] + nrm[i][1] * o;
+          const m = new T3.Mesh(gs[k % 4], rockM(cs[(k >> 2) % 4])); m.scale.setScalar(sz); m.position.set(px, gy + sz * 0.15, pz); m.rotation.y = rr(0, 6); grp.add(m); blob(grp, new V(px + sz * 0.3, gy, pz + sz * 0.3), sz * 1.5, sz * 1.5); } }
+      for (let k = 0; k < 22; k++) { const i = Math.floor(k * N / 22), l = new T3.Mesh(new T3.SphereGeometry(0.9, 8, 6), bas(k % 2 ? '#ffb84a' : '#ff3a2a', { fog: false })); l.position.set(poly[i][0] + nrm[i][0] * 1.5, gy + 2.4, poly[i][1] + nrm[i][1] * 1.5); grp.add(l); (L.blinks = L.blinks || []).push(l); }
       const DO = new V().copy(H).addScaledVector(rX, -130).setY(gy); L.derrickAt = DO;
       const DP = [], hgt = 90, w = 44; for (const [cx, cz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { DP.push({ s: [1.8, hgt, 1.8], c: '#c8352a', p: [cx * w, hgt / 2, cz * w], r: [cz * 0.13, 0, -cx * 0.13] }); blob(grp, new V(DO.x + cx * w, gy, DO.z + cz * w), 5, 5); }
       for (let y = 28; y < hgt; y += 13) { const k = 1 - y / hgt * 0.26; DP.push({ s: [2 * w * k, 0.8, 0.8], c: '#e8ecf0', p: [0, y, -w * k] }, { s: [2 * w * k, 0.8, 0.8], c: '#e8ecf0', p: [0, y, w * k] }, { s: [0.8, 0.8, 2 * w * k], c: '#e8ecf0', p: [-w * k, y, 0] }, { s: [0.8, 0.8, 2 * w * k], c: '#e8ecf0', p: [w * k, y, 0] }); }
@@ -284,7 +303,7 @@
       put(o, p, yawAt(s) + Math.PI, 8, 8); L.windR.push({ r: rot, w: rr(0.6, 0.9) * (k % 3 ? 1 : -1) }); }
     // les BOSQUETS : des groupes d'arbres (jamais sur la voie ni sur un batiment), chacun avec son ombre
     { const low = []; for (let s = 1560; s < sH; s += 20) { const p = PA.fr(s).p; low.push([p.x, p.z]); }
-      const free = (x, z) => { for (const q of low) if ((q[0] - x) ** 2 + (q[1] - z) ** 2 < 38 * 38) return false; { const dx = x - H.x, dz = z - H.z, a = (dx * rX.x + dz * rX.z) / (halfW + 22), b = (dx * Dn.x + dz * Dn.z) / (halfL + 24); if (a * a + b * b < 1) return false; } if ((L.derrickAt.x - x) ** 2 + (L.derrickAt.z - z) ** 2 < 75 * 75) return false; for (const q of keep) if ((q[0] - x) ** 2 + (q[1] - z) ** 2 < q[2] * q[2]) return false; return true; };
+      const free = (x, z) => { for (const q of low) if ((q[0] - x) ** 2 + (q[1] - z) ** 2 < 38 * 38) return false; for (const q of poly) if ((q[0] - x) ** 2 + (q[1] - z) ** 2 < 30 * 30) return false; if ((L.derrickAt.x - x) ** 2 + (L.derrickAt.z - z) ** 2 < 75 * 75) return false; for (const q of keep) if ((q[0] - x) ** 2 + (q[1] - z) ** 2 < q[2] * q[2]) return false; return true; };
       const T = []; const C0 = PA.fr(2150).p;
       for (let c = 0; c < 190; c++) { let cx, cz; if (c < 110) { const s = rr(1560, sH), F = PA.fr(Math.min(s, sH - 60)), sd = Math.random() < 0.5 ? -1 : 1, d = rr(42, 380); cx = F.p.x + F.r.x * sd * d; cz = F.p.z + F.r.z * sd * d; } else { const a = rr(0, 6.28), d = rr(200, 2200); cx = C0.x + Math.cos(a) * d; cz = C0.z + Math.sin(a) * d; }
         const n = 4 + Math.floor(Math.random() * 7); for (let k = 0; k < n; k++) { const x = cx + rr(-22, 22), z = cz + rr(-22, 22); if (free(x, z)) T.push([x, z, rr(0.8, 1.35)]); } }
@@ -304,8 +323,8 @@
     const gyW = PA.O.y + GY, nzR = noise2(31337), nzf = (s, a, sc) => nzR(Math.cos(a) * 1.3 * sc + s * 0.011 * sc + 20, Math.sin(a) * 1.3 * sc + s * 0.007 * sc + 33);
     const riftK = (s, a, y) => { const dep = gyW - y, fade = ss(0, 40, dep) * (1 - ss(3420, 3560, s)); if (fade <= 0) return 0; const big = nzf(s, a, 0.5), mid = nzf(s, a, 1.6), sm = nzf(s, a, 5), tr = (((dep / 46 + 1.4 * big) % 1) + 1) % 1;
       return fade * (Math.max(0, 1.2 * (big - 0.32)) + 0.2 * Math.max(0, mid - 0.3) + 0.09 * tr * tr + 0.05 * sm); };
-    const ptf = L.riftPt = (s, a, F, out) => { const rd = faille(s), c = Math.cos(a), sn = Math.sin(a); out.set(F.r.x * c * rd[0] + F.u.x * sn * rd[1], F.r.y * c * rd[0] + F.u.y * sn * rd[1], F.r.z * c * rd[0] + F.u.z * sn * rd[1]); out.multiplyScalar(1 + riftK(s, a, F.p.y + out.y)).add(F.p); };
-    { const M = strataMat(gyW), m = new T3.Mesh(sweep(PA, L.holeS - 90, 3587, faille, 72, 3, ptf), M); m.frustumCulled = false; grp.add(m); L.cMats.push(M); }
+    const ptf = L.riftPt = (s, a, F, out) => { const sc = ss(L.holeS - 260, L.holeS - 90, s), r0 = faille(s), rd = [r0[0] * sc, r0[1] * sc], c = Math.cos(a), sn = Math.sin(a); out.set(F.r.x * c * rd[0] + F.u.x * sn * rd[1], F.r.y * c * rd[0] + F.u.y * sn * rd[1], F.r.z * c * rd[0] + F.u.z * sn * rd[1]); out.multiplyScalar(1 + riftK(s, a, F.p.y + out.y)).add(F.p); };
+    { const M = strataMat(gyW), rg = L.riftGeo = sweep(PA, L.holeS - 260, 3587, faille, 72, 3, ptf), m = new T3.Mesh(rg, M); m.frustumCulled = false; grp.add(m); L.cMats.push(M); }
     // des pointes et des eclats de roche plantes dans les parois (decor, jamais dans la zone de vol)
     { const N = 320, im = new T3.InstancedMesh(new T3.ConeGeometry(1, 1, 5, 1).translate(0, 0.5, 0), rockM('#ffffff'), N), o = new T3.Object3D(), F = {}, q = new V(), dr = new V(), col = new T3.Color(); let cnt = 0;
       for (let i = 0; i < N * 4 && cnt < N; i++) { const s = rr(L.holeS + 20, 3500), a = rr(0, 6.283); PA.fr(s, F); ptf(s, a, F, q); const dd = gyW - q.y; if (dd < 25) continue; dr.copy(F.p).sub(q); const dist = dr.length(); dr.normalize(); const len = Math.min(rr(4, 20), dist - 27); if (len < 3.5) continue;
@@ -383,7 +402,7 @@
     const xwAt = (s, y) => { const rd = faille(s); return rd[0] * Math.sqrt(Math.max(0, 1 - (y / rd[1]) ** 2)); };
     const wallX = (s, a) => { const fp = PA.fr(s, {}); L.riftPt(s, a, fp, _b); return _b.distanceTo(fp.p); };
     // SAILLIE : un grand pan de roche qui sort d'une paroi (sd = -1 gauche, 1 droite), bord dechiquete ; on passe du cote libre
-    const ledge = (s, sd, off0, d, amp) => { const h = hold(s), rd = faille(s), p1 = rr(0, 6), p2 = rr(0, 6), f1 = rr(0.05, 0.09), f2 = rr(0.15, 0.25), A = amp || 1, off = (y) => off0 + A * (3.2 * Math.sin(y * f1 + p1) + 1.6 * Math.sin(y * f2 + p2));
+    const ledge = (s, sd, off0, d, amp) => { const h = hold(s), rd = faille(s), p1 = rr(0, 6), p2 = rr(0, 6), f1 = rr(0.05, 0.09), f2 = rr(0.15, 0.25), A = amp || 0.6, off = (y) => off0 + A * (3.2 * Math.sin(y * f1 + p1) + 1.6 * Math.sin(y * f2 + p2));
       let Ym = 0; while (Ym < rd[1] * 0.97 && off(Ym) < xwAt(s, Ym) - 1.5 && off(-Ym) < xwAt(s, -Ym) - 1.5) Ym += 4;
       const ys = []; for (let y = -Ym; y <= Ym + 0.01; y += 5) ys.push(y);
       const sh = new T3.Shape(); ys.forEach((y, i) => i ? sh.lineTo(y, off(y)) : sh.moveTo(y, off(y))); for (let i = ys.length - 1; i >= 0; i--) sh.lineTo(ys[i], xwAt(s, ys[i]) * 1.8 + 8);
@@ -405,12 +424,12 @@
       g2.rotation.z = k; g2.position.set(0, d0, 0); h.add(g2);
       OB.push({ s, th: w * 1.6 + 0.8, kind: 'racine', hit: (x, y) => Math.abs(-x * Math.sin(k) + (y - d0) * Math.cos(k)) < w * 1.15 + RK }); };
     root(atDepth(12), -0.22, 5, 1.4); root(atDepth(30), 0.2, -5, 1.5); root(atDepth(48), -0.15, 4, 1.2);
-    ledge(atDepth(88), 1, -4, 88); ledge(atDepth(128), -1, -3, 128);
-    pinch(atDepth(172), -6, 172);
+    ledge(atDepth(88), 1, 6, 88); ledge(atDepth(128), -1, 6, 128);
+    pinch(atDepth(172), -4, 172);
     bridge(atDepth(218), 0.15, -4, 4.2, 218);
     { const s = L.nappeS = atDepth(270), h = hold(s), wm = new T3.Mesh(new T3.CircleGeometry(1, 48), M.water); wm.scale.set(RSH + 10, 200, 1); h.add(wm); L.nappeM = wm; }
-    bridge(atDepth(322), -0.2, 5, 4.2, 322); ledge(atDepth(368), 1, -3, 368); pinch(atDepth(412), 7, 412); ledge(atDepth(455), -1, -4, 455);
-    bridge(atDepth(500), 0.18, -6, 4.2, 500); ledge(atDepth(545), 1, -5, 545); pinch(atDepth(592), -5, 592); bridge(atDepth(635), -0.12, 2, 4.2, 635);
+    bridge(atDepth(322), -0.2, 5, 4.2, 322); ledge(atDepth(368), 1, 5, 368); pinch(atDepth(412), 4, 412); ledge(atDepth(455), -1, 6, 455);
+    bridge(atDepth(500), 0.18, -6, 4.2, 500); ledge(atDepth(545), 1, 5, 545); pinch(atDepth(592), -3, 592); bridge(atDepth(635), -0.12, 2, 4.2, 635);
     // 5. LA GEODE : de grands prismes en travers
     [[3715, 0.3, -6, 2.4], [3817, 1.9, 7, 2.4], [3919, -0.6, 0, 2.2], [4021, 1.2, -8, 2.6], [4110, 2.6, 5, 2.4], [4212, 0.9, 9, 2.4], [4219, 0.9, -9, 2.4]].forEach(([s, a, d, w]) => beam(s, a, d, w, 140, new T3.MeshLambertMaterial({ color: '#8a5ad0', emissive: '#3a1478', transparent: true, opacity: 0.9 }), 'xtal'));
     // 6. LE MANTEAU : des veines a forer et des jets de magma
@@ -504,7 +523,7 @@
     const PA = L.PA, t = L.t;
     for (const o of L.OB) if (o.upd && Math.abs(o.s - L.s) < 700) o.upd(t);
     for (const A of L.AV) { let i = 0; for (const a of A.list) { const F = PA.fr(a.s, _PF); _o5.position.copy(F.p).addScaledVector(F.r, a.x).addScaledVector(F.u, a.y); _o5.quaternion.setFromAxisAngle(a.rs, t * a.rw + a.ph); _o5.scale.setScalar(a.rad); _o5.updateMatrix(); A.im.setMatrixAt(i++, _o5.matrix); } A.im.instanceMatrix.needsUpdate = true; }
-    for (const d of L.sent) { const near = d.alive && Math.abs(d.s - L.s) < 900; d.m.visible = near; if (!near) continue; const U2 = d.m.userData; if (U2.heli) { heliPose(d.m, d.s, d.x, d.y + Math.sin(t * 1.4 + d.ph) * 0.8, Math.sin(t * 0.9 + d.ph) * 0.08); if (U2.rotor) U2.rotor.rotation.y += dt * 22; if (U2.tail) U2.tail.rotation.x += dt * 40; U2.tg.scale.setScalar(1 + 0.12 * Math.sin(t * 6)); } else { placeAt(PA, d.m, d.s, d.x, d.y + Math.sin(t * 1.4 + d.ph) * 0.8); d.m.rotateZ(Math.sin(t * 0.8 + d.ph) * 0.3); for (const l of U2.lt) l.visible = Math.sin(t * 8 + d.ph) > 0; } }
+    for (const d of L.sent) { const near = d.alive && d.s - L.s < 330 && d.s - L.s > -80; d.m.visible = near; if (!near) continue; const U2 = d.m.userData; if (U2.heli) { heliPose(d.m, d.s, d.x, d.y + Math.sin(t * 1.4 + d.ph) * 0.8, Math.sin(t * 0.9 + d.ph) * 0.08); if (U2.rotor) U2.rotor.rotation.y += dt * 22; if (U2.tail) U2.tail.rotation.x += dt * 40; U2.tg.scale.setScalar(1 + 0.12 * Math.sin(t * 6)); } else { placeAt(PA, d.m, d.s, d.x, d.y + Math.sin(t * 1.4 + d.ph) * 0.8); d.m.rotateZ(Math.sin(t * 0.8 + d.ph) * 0.3); for (const l of U2.lt) l.visible = Math.sin(t * 8 + d.ph) > 0; } }
     for (const c of L.chase) if (c.on) { const U2 = c.m.userData; if (U2.heli) { heliPose(c.m, L.s + c.ds, c.x, c.y, Math.sin(t * 1.1 + c.ph) * 0.18); if (U2.rotor) U2.rotor.rotation.y += dt * 22; } else { placeAt(PA, c.m, L.s + c.ds, c.x, c.y); c.m.rotateZ(Math.sin(t * 1.2 + c.ph) * 0.5); } }
     for (const b of L.bul) if (b.on) { placeAt(PA, b.m, b.s, b.x, b.y); b.body.quaternion.setFromUnitVectors(_zA, _d.set(b.vx, b.vy, -b.vs).normalize()); b.body.rotateZ(L.t * 6); }
     for (const B of L.boostR) B.m.rotation.z = t * 1.5;
@@ -578,7 +597,7 @@
     L = EVO.core = { t: 0, s: 0, x: 0, y: 0, v: 0, started: false, cam: null, inv: 0, boostT: 0, bk: 0, zi: 0, tubeMats: [] };
     L.rkL = (EVO.rocketLen && EVO.rocketLen(g)) || 2.4; O.y += 60;   // l'orbite : un peu au-dessus du hangar du niveau 1 (qui est cache)
     const PA = L.PA = buildPath(O, F0), grp = L.grp = new T3.Group(); g.scene.add(grp);
-    L.deepG = new T3.Group(); grp.add(L.deepG); dock(g, PA, grp); buildSky(g); clouds(PA, grp); countryside(g, PA, grp); caverns(PA, L.deepG); obstacles(g, PA, grp); enemies(g, PA, grp); coreWorld(PA, L.deepG); bossBuild(g, PA, grp);
+    L.deepG = new T3.Group(); grp.add(L.deepG); dock(g, PA, grp); buildSky(g); clouds(PA, grp); L.gy = PA.O.y + GY; L.holeS = PA.sBelow(L.gy, 2400); caverns(PA, L.deepG); countryside(g, PA, grp); obstacles(g, PA, grp); enemies(g, PA, grp); coreWorld(PA, L.deepG); bossBuild(g, PA, grp);
     grp.traverse((o) => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) if (!m.isShaderMaterial && !m.fog) { m.fog = true; m.needsUpdate = true; } });
     // la poussiere / les braises / la neige qui defilent pres de la fusee
     { const n = 140, pos = new Float32Array(n * 3), geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(pos, 3)); const p = new T3.Points(geo, new T3.PointsMaterial({ color: '#cfe8ff', size: 0.5, map: dotTex(), transparent: true, opacity: 0, depthWrite: false, fog: false })); p.frustumCulled = false; g.scene.add(p); L.dust = p; L.dustInit = false; }
@@ -591,7 +610,7 @@
   const inWall = (s) => { for (const [a, b, r] of WALLS) if (s >= a && s <= b) return r; return 0; };
   // le sol qu'on rase (la campagne) : hauteur dans la section a ne pas franchir
   const floorAt = (s, F) => { if (s < 1560 || s > L.holeS - 25 || F.u.y < 0.3) return -1e9; const fl = (L.gy + 2.2 - F.p.y) / F.u.y;
-    if (L.slit && s > L.holeS - 260) { const q = _c.copy(F.p).addScaledVector(F.r, L.x).addScaledVector(F.u, fl), S = L.slit, dx = q.x - S.H.x, dz = q.z - S.H.z, a = (dx * S.rX.x + dz * S.rX.z) / (S.halfW - 4), b = (dx * S.Dn.x + dz * S.Dn.z) / (S.halfL - 4); if (a * a + b * b < 1) return -1e9; }   // au-dessus de la fente, plus de sol : on peut plonger
+    if (L.slit && s > L.holeS - 70) { const q = _c.copy(F.p).addScaledVector(F.r, L.x).addScaledVector(F.u, fl); if (inPoly(L.slit.poly, q.x, q.z)) return -1e9; }   // au-dessus de la fente, plus de sol : on peut plonger
     return fl; };
 
   const _step = CC.Rocket.prototype.step;
@@ -684,7 +703,7 @@
     if (!on5(g) || !g.endlessRun || !g.endlessRun.T) return;
     if (!L) { try { build(g); } catch (e) { console.warn('core', e); L = null; return; } }
     const PA = L.PA, rk = g.rocket, cam = g.camera, s = L.started ? L.s : 0, fx = g.effects; L.t += dt;
-    if (L.cloudM) { L.cloudM.uniforms.uFar.value = Math.max(600, g.scene.fog.far * 1.3); L.cloudIM.visible = s > 1080 && s < 2727; }
+    if (L.cloudM) { L.cloudM.uniforms.uFar.value = Math.max(600, g.scene.fog.far * 1.3); L.cloudIM.visible = s > 520 && s < 2727; }
     for (const M of L.cMats) { M.uniforms.uT.value = L.t; M.uniforms.uFar.value = g.scene.fog.far; if (M.uniforms.uFog) M.uniforms.uFog.value.copy(g.scene.fog.color); }
     if (L.water) L.water.uniforms.uT.value = L.t; if (L.core) L.core.material.uniforms.uT.value = L.t; if (L.coreRings) L.coreRings.forEach((o, i) => o.rotateZ(dt * (i % 2 ? -0.5 : 0.4))); if (L.blinks) for (const b of L.blinks) b.visible = Math.sin(L.t * 5) > 0;
     bossAnim(g, dt);
@@ -702,7 +721,7 @@
       for (const p of L.stars) p.material.color.setScalar(p.userData.op * (1 - ss(380, 640, s))); L.sky.visible = s < 1080;
       if (L.sun) { _b.copy(PA.R0).multiplyScalar(0.75).addScaledVector(PA.F0, 0.5); _b.y = 0.28; _b.normalize(); L.sun.position.copy(_b).multiplyScalar(2800); } }
     // la boule de feu de la rentree
-    { const k = L.started ? ss(600, 700, s) * (1 - ss(1060, 1160, s)) : 0; L.plasma.visible = k > 0.01 && rk.active; if (L.plasma.visible) { L.plasma.position.copy(rk.pos).addScaledVector(rk.fwd, L.rkL * 0.45); L.plasma.quaternion.setFromUnitVectors(_zA, rk.fwd); L.plasma.scale.setScalar(L.rkL * 0.75 * (1 + 0.06 * Math.sin(L.t * 30))); L.plasmaM[0].opacity = 0.55 * k; L.plasmaM[1].opacity = 0.3 * k; if (Math.random() < dt * 30 * k) fx.sparks.emit({ pos: rk.pos.clone().addScaledVector(rk.fwd, L.rkL * 0.4), vel: rk.fwd.clone().multiplyScalar(-rr(20, 40)).add(new V(rr(-4, 4), rr(-4, 4), rr(-4, 4))), life: 0.5, s0: 0.5, s1: 0.6, s2: 0.1, cols: fx.pal.ember, drag: 1, grav: 0, a: 1, fout: 0.5 }); } }
+    { const k = L.started ? ss(600, 700, s) * (1 - ss(880, 1020, s)) : 0; L.plasma.visible = k > 0.01 && rk.active; if (L.plasma.visible) { L.plasma.position.copy(rk.pos).addScaledVector(rk.fwd, L.rkL * 0.45); L.plasma.quaternion.setFromUnitVectors(_zA, rk.fwd); L.plasma.scale.setScalar(L.rkL * 0.75 * (1 + 0.06 * Math.sin(L.t * 30))); L.plasmaM[0].opacity = 0.55 * k; L.plasmaM[1].opacity = 0.3 * k; if (Math.random() < dt * 30 * k) fx.sparks.emit({ pos: rk.pos.clone().addScaledVector(rk.fwd, L.rkL * 0.4), vel: rk.fwd.clone().multiplyScalar(-rr(20, 40)).add(new V(rr(-4, 4), rr(-4, 4), rr(-4, 4))), life: 0.5, s0: 0.5, s1: 0.6, s2: 0.1, cols: fx.pal.ember, drag: 1, grav: 0, a: 1, fout: 0.5 }); } }
     // poussiere : etoiles filantes (espace), braises (rentree), brume (nuages), pollen (campagne), terre (puits), eclats violets (geode), braises (manteau)
     if (L.dust && L.started) { const P = L.dust.geometry.attributes.position, F = PA.fr(L.s), n = P.count, D = L.dust.material;
       const col = s < 640 ? '#cfe8ff' : s < 1120 ? '#ffb05a' : s < 1680 ? '#ffffff' : s < 2657 ? '#f4f0c0' : s < 3587 ? '#c89a6a' : s < 4327 ? '#d0a8ff' : '#ff8a3a'; D.color.set(col); D.opacity = Math.max(s < 640 ? 0.4 : s > 1120 && s < 2657 ? 0.3 : 0.6, 0.7 * L.bk); D.size = 0.5 + 0.7 * L.bk;
