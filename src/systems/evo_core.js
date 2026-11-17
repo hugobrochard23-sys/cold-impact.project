@@ -140,7 +140,7 @@
   const WALLS = [[2600, 3587, RSH], [4327, 5417, R]];   // puits et tunnels (paroi proche) : [debut, fin, rayon]
   // l'ambiance le long de la voie : [s, ciel haut, horizon, brume, brume proche, brume loin, lumiere]
   const MOOD = [[0, '#000000', '#04060c', '#020308', 280, 680, 1], [600, '#020308', '#0a1030', '#020308', 280, 680, 1], [700, '#3a1004', '#ff7a2a', '#7a2a0a', 60, 520, 1.1], [1060, '#4a1a08', '#ff9a4a', '#8a3a14', 60, 520, 1.1],
-    [1200, '#2a68d0', '#cfe4f6', '#d2e4f2', 320, 2800, 1.15], [2560, '#3478d8', '#d8ecf8', '#d6e8f4', 320, 2800, 1.2],
+    [1200, '#2a5cb8', '#9cbedc', '#a4c2dc', 260, 2400, 0.85], [2560, '#2e64c0', '#a8c8e2', '#aac6de', 260, 2400, 0.88],
     [2707, '#120a04', '#2a1a0c', '#1a1008', 25, 360, 0.9], [3527, '#120a04', '#2a1a0c', '#1a1008', 25, 360, 0.9], [3647, '#0c0418', '#1e0a34', '#1e0a34', 40, 480, 0.9], [4267, '#0c0418', '#1e0a34', '#1e0a34', 40, 480, 0.9],
     [4387, '#180402', '#3a0c04', '#2a0804', 30, 420, 0.95], [5367, '#180402', '#3a0c04', '#2a0804', 30, 420, 0.95], [5507, '#3a1004', '#ff6a1a', '#5a1806', 60, 700, 1.1], [1e9, '#3a1004', '#ff6a1a', '#5a1806', 60, 700, 1.1]];
   const _c1 = new T3.Color(), _c2 = new T3.Color(), _c3 = new T3.Color(), _c4 = new T3.Color();
@@ -154,11 +154,17 @@
   let TEX = null;
   function textures() {
     if (TEX) return TEX; const W = 512, H = 256, mk = (w, h) => { const c = document.createElement('canvas'); c.width = w || W; c.height = h || H; return c; };
-    const e = mk(), ex = e.getContext('2d'), ei = ex.createImageData(W, H), n1 = noise2(12345), n2 = noise2(777), cl = mk(), cx = cl.getContext('2d'), ci = cx.createImageData(W, H), n3 = noise2(4242);
-    for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) { const u = i / W, w = j / H, lat = Math.abs(w - 0.5) * 2, h = n1(u * 2, w * 2) + 0.12 * Math.cos(u * 12.57) - 0.08, k = (j * W + i) * 4;
-      let r, g, b; if (lat > 0.8) { r = g = b = 238; } else if (h > 0.53) { const dsr = n2(u * 3, w * 3); r = 70 + 40 * dsr; g = 120 + 30 * dsr; b = 60; if (h > 0.66) { r = g = b = 150 + 40 * dsr; } } else { const dp = U.clamp((0.53 - h) * 4, 0, 1); r = 20 + 30 * (1 - dp); g = 70 + 80 * (1 - dp); b = 150 + 60 * (1 - dp); }
-      ei.data[k] = r; ei.data[k + 1] = g; ei.data[k + 2] = b; ei.data[k + 3] = 255;
-      const c2 = n3(u * 3 + 0.3 * Math.sin(w * 9), w * 5), al = U.clamp((c2 - 0.55) * 3.2, 0, 1); ci.data[k] = ci.data[k + 1] = ci.data[k + 2] = 255; ci.data[k + 3] = al * 220; }
+    // LA TERRE : de vrais continents (cotes, plaines vertes, deserts, montagnes, banquises), un grand continent juste SOUS la chute (u 0.75, v 0.39)
+    const EW = 1536, EH = 768, e = mk(EW, EH), ex = e.getContext('2d'), ei = ex.createImageData(EW, EH), n1 = noise2(12345), n2 = noise2(777), n6 = noise2(901), cl = mk(), cx = cl.getContext('2d'), ci = cx.createImageData(W, H), n3 = noise2(4242);
+    const land = (u, w) => { let du = u - 0.75; du -= Math.round(du); const dw = w - 0.39; return n1(u * 3, w * 3) * 0.7 + n6(u * 9, w * 9) * 0.3 + 0.34 * Math.exp(-(du * du * 30 + dw * dw * 48)) + 0.1 * Math.cos(u * 12.57 + 1) - 0.12; };
+    for (let j = 0; j < EH; j++) for (let i = 0; i < EW; i++) { const u = i / EW, w = j / EH, lat = Math.abs(w - 0.5) * 2, h = land(u, w), k = (j * EW + i) * 4;
+      let r, g, b; const dsr = n2(u * 6, w * 6), dry = U.clamp((0.3 - lat) * 2.5 + (dsr - 0.6) * 2.5, 0, 1);
+      if (lat > 0.84 - 0.05 * dsr) { r = 235; g = 240; b = 246; }
+      else if (h > 0.5) { const up = U.clamp((h - 0.5) * 5, 0, 1); r = 52 + 120 * dry; g = 104 + 52 * dry - 20 * up; b = 40 + 50 * dry; if (h > 0.68) { const m = U.clamp((h - 0.68) * 8, 0, 1); r = r + (120 - r) * m; g = g + (110 - g) * m; b = b + (100 - b) * m; } if (h > 0.76 && lat > 0.3) { r = g = b = 230; } }
+      else { const dp = U.clamp((0.5 - h) * 6, 0, 1); r = 30 * (1 - dp) + 12; g = 120 * (1 - dp) + 48; b = 150 * (1 - dp) + 110; }
+      ei.data[k] = r; ei.data[k + 1] = g; ei.data[k + 2] = b; ei.data[k + 3] = 255; }
+    for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) { const u = i / W, w = j / H, k = (j * W + i) * 4; let du = u - 0.75; du -= Math.round(du);
+      const c2 = n3(u * 4 + 0.3 * Math.sin(w * 9), w * 6), hole = 1 - 0.75 * Math.exp(-(du * du * 120 + (w - 0.39) * (w - 0.39) * 160)), al = U.clamp((c2 - 0.56) * 3.2, 0, 1) * hole; ci.data[k] = ci.data[k + 1] = ci.data[k + 2] = 255; ci.data[k + 3] = al * 210; }
     ex.putImageData(ei, 0, 0); cx.putImageData(ci, 0, 0);
     // LA CAMPAGNE vue d'avion : un patchwork de champs (pres, ble, labours en sillons), des haies, des chemins ; un carreau = 400 m
     const FW = 1024, fd = mk(FW, FW), fx = fd.getContext('2d'); let sd = 99; const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
@@ -183,7 +189,7 @@
     for (const [n, sz, op] of [[1100, 1.5, 0.8], [160, 2.6, 1]]) { const pos = new Float32Array(n * 3), col = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const u = rr(-0.2, 1), a = rr(0, 6.283), q = Math.sqrt(1 - u * u); pos[i * 3] = Math.cos(a) * q * 3000; pos[i * 3 + 1] = u * 3000; pos[i * 3 + 2] = Math.sin(a) * q * 3000; const t = Math.random(); col[i * 3] = 0.8 + 0.2 * t; col[i * 3 + 1] = 0.85 + 0.1 * t; col[i * 3 + 2] = 1; }
       const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(pos, 3)); geo.setAttribute('color', new T3.BufferAttribute(col, 3)); const p = new T3.Points(geo, new T3.PointsMaterial({ size: sz, sizeAttenuation: false, vertexColors: true, transparent: false, blending: T3.AdditiveBlending, depthWrite: false, fog: false })); p.renderOrder = -10; p.userData.op = op; sky.add(p); L.stars.push(p); }
     const earth = new T3.Group(); sky.add(earth); L.earth = earth;
-    const em = new T3.Mesh(new T3.SphereGeometry(RS, 96, 64), new T3.MeshBasicMaterial({ map: X.earth, color: '#c8d4e4', fog: false, depthWrite: false })); em.renderOrder = -9; earth.add(em);
+    const em = new T3.Mesh(new T3.SphereGeometry(RS, 96, 64), new T3.MeshBasicMaterial({ map: X.earth, color: '#ffffff', fog: false, depthWrite: false })); em.renderOrder = -9; earth.add(em);
     const cm = new T3.Mesh(new T3.SphereGeometry(RS * 1.006, 96, 64), new T3.MeshBasicMaterial({ map: X.clouds, transparent: true, opacity: 0.9, fog: false, depthWrite: false })); cm.renderOrder = -8; earth.add(cm); L.cloudSphere = cm;
     const atm = new T3.Mesh(new T3.SphereGeometry(RS * 1.04, 64, 48), new T3.ShaderMaterial({ uniforms: { uC: { value: new T3.Color('#5ab0ff') } }, vertexShader: 'varying vec3 vN; varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * viewMatrix * w; }',
       fragmentShader: 'uniform vec3 uC; varying vec3 vN; varying vec3 vW; void main(){ vec3 V = normalize(cameraPosition - vW); float f = 1.0 - abs(dot(vN, V)); gl_FragColor = vec4(uC, pow(f, 2.2) * 0.9); }', transparent: true, depthWrite: false, side: T3.BackSide, blending: T3.AdditiveBlending, fog: false })); atm.renderOrder = -8; earth.add(atm);
@@ -201,10 +207,8 @@
   function dock(g, PA, grp) {
     const root = new T3.Group(); root.position.copy(PA.O); root.quaternion.setFromRotationMatrix(_m.makeBasis(PA.R0, new V(0, 1, 0), _d.copy(PA.F0).negate())); grp.add(root);   // x droite, y haut, -z avant
     const yb = -(L.rkL * 0.5 + 0.5), P = [], WH = '#e8ecf0', GR = '#8a929c', DK = '#2a2e36', OR = '#e8622a';
-    // la catapulte : deux rails, un berceau sous la fusee, des portiques tous les 30 m (on sort par devant)
-    for (const x of [-1.6, 1.6]) P.push({ s: [0.3, 0.3, 170], c: GR, p: [x, yb, -70] }, { s: [0.12, 0.08, 170], c: '#ffd23a', p: [x, yb + 0.19, -70] });
-    P.push({ s: [1.4, 0.3, 2.2], c: '#3a3e46', p: [0, yb + 0.1, 0] }); for (let z = -4; z > -160; z -= 6) P.push({ s: [4, 0.25, 0.4], c: GR, p: [0, yb - 0.3, z] });
-    for (let k = 1; k < 6; k++) { const z = 10 - k * 30; P.push({ s: [0.8, 14, 0.8], c: WH, p: [-7, yb + 6, z] }, { s: [0.8, 14, 0.8], c: WH, p: [7, yb + 6, z] }, { s: [14.8, 0.9, 0.9], c: WH, p: [0, yb + 13, z] }, { s: [14.8, 0.3, 0.3], c: OR, p: [0, yb + 12.4, z] }); }
+    // le PYLONE D'ARRIMAGE : la fusee est tenue au-dessus de la station par deux pinces (elles s'ouvrent au largage) ; pas de rail, pas de piste
+    P.push({ s: [1.6, -5 - yb + 0.2, 1.6], c: GR, p: [0, (yb - 5) / 2, 0] }, { s: [3.2, 0.5, 3.2], c: DK, p: [0, -5.1, 0] }, { s: [0.5, 0.25, L.rkL * 0.7], c: DK, p: [0, yb + 0.1, 0] });
     // la station : un long module en travers, des modules habites, un bras robot replie, deux grandes ailes solaires
     P.push({ cyl: [4, 4, 70, 18], c: WH, p: [0, -9, 30], r: [0, 0, Math.PI / 2] }, { cyl: [5, 5, 16, 18], c: '#dfe3e8', p: [-26, -9, 30], r: [Math.PI / 2, 0, 0] }, { cyl: [5, 5, 16, 18], c: '#dfe3e8', p: [26, -9, 30], r: [Math.PI / 2, 0, 0] });
     P.push({ cyl: [3, 3, 30, 14], c: '#dfe3e8', p: [0, -9, 46], r: [Math.PI / 2, 0, 0] }, { s: [1.2, 1.2, 20], c: GR, p: [12, 2, 18], r: [0.6, 0, 0] }, { s: [1, 1, 14], c: GR, p: [12, 9, 6], r: [-0.4, 0, 0] });
@@ -212,8 +216,8 @@
     root.add(bakeBox(P));
     const pm = lam('#1e3a8a', { emissive: '#0a1a50' }), frm = lam('#cfd4da');
     for (const x of [-60, 60]) { const w = new T3.Group(); w.position.set(x, -9, 30); root.add(w); for (const z of [-9, 9]) { const p = new T3.Mesh(new T3.BoxGeometry(34, 0.3, 14), pm); p.position.z = z; w.add(p); for (let k = 0; k < 5; k++) { const l = new T3.Mesh(new T3.BoxGeometry(0.2, 0.4, 14.2), frm); l.position.set(-14 + k * 7, 0, z); w.add(l); } } (L.wings = L.wings || []).push(w); }
-    // feux de piste le long de la catapulte (ils s'allument en sequence au lancement)
-    L.runway = []; for (let k = 0; k < 16; k++) for (const x of [-2.6, 2.6]) { const l = new T3.Mesh(new T3.SphereGeometry(0.28, 8, 6), bas('#7af0ff', { fog: false })); l.position.set(x, yb + 0.35, -4 - k * 9.5); root.add(l); L.runway.push(l); }
+    // les deux pinces autour de la fusee (elles s'ecartent au largage)
+    L.runway = []; L.clamps = []; { const cr = L.rkL * 0.12 + 0.08, cm = lam('#d8dce2', { emissive: '#22252a' }); for (const z of [-L.rkL * 0.28, L.rkL * 0.28]) { const c = new T3.Group(); c.position.set(0, 0, z); root.add(c); const ring = new T3.Mesh(new T3.TorusGeometry(cr, 0.05, 8, 24, Math.PI * 1.5), cm); ring.rotation.z = -Math.PI * 1.25; c.add(ring); const arm = new T3.Mesh(new T3.BoxGeometry(0.1, -yb - cr, 0.1), cm); arm.position.y = (yb - cr) / 2; c.add(arm); const l = new T3.Mesh(new T3.SphereGeometry(0.1, 8, 6), bas('#ff3a2a', { fog: false })); l.position.set(0, cr + 0.05, 0); c.add(l); L.clamps.push(c); } }
     // quelques satellites autour, loin
     for (let k = 0; k < 6; k++) { const s = satellite(rr(1, 2)), a = rr(0, 6.28); s.position.set(Math.cos(a) * rr(120, 260), rr(-60, 80), -rr(0, 700)); s.rotation.set(rr(0, 6), rr(0, 6), rr(0, 6)); root.add(s); const w = rr(0.05, 0.2); EVO.addDyn(s, (t, dt) => s.rotateY(w * dt), [], { near: 1e5 }); }
     L.dock = root;
@@ -233,7 +237,7 @@
   // ============================== LA CAMPAGNE : des champs a perte de vue, des bosquets, des fermes, une base, le derrick du puits ==============================
   function countryside(g, PA, grp) { { const lg = new T3.Group(); grp.add(lg); L.landG = lg; grp = lg; }   // tout ce qui est au sol : cache tant qu'on est dans l'espace
     const X = textures(), gy = L.gy = PA.O.y + GY, sH = PA.sBelow(gy, 2400), H = PA.fr(sH).p.clone(), HR = 36; L.holeS = sH;
-    const gnd = new T3.Mesh(new T3.PlaneGeometry(12000, 12000), new T3.MeshLambertMaterial({ map: X.fields, color: '#aab4a0' })); gnd.rotation.x = -Math.PI / 2; gnd.position.set(H.x, gy, H.z);
+    const gnd = new T3.Mesh(new T3.PlaneGeometry(12000, 12000), new T3.MeshLambertMaterial({ map: X.fields, color: '#8a9682' })); gnd.rotation.x = -Math.PI / 2; gnd.position.set(H.x, gy, H.z);
     gnd.material.onBeforeCompile = (sh) => { sh.uniforms.uH0 = { value: H }; sh.uniforms.uHR = { value: HR }; sh.vertexShader = 'varying vec3 vHW;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n vHW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
       sh.fragmentShader = 'uniform vec3 uH0; uniform float uHR; varying vec3 vHW;\n' + sh.fragmentShader.replace('void main() {', 'void main() {\n if (distance(vHW.xz, uH0.xz) < uHR) discard;'); };
     grp.add(gnd); L.gnd = gnd;
@@ -343,7 +347,7 @@
     // 1. LA CHUTE LIBRE : des debris de satellites (une moitie bouchee) ; des anneaux de lumiere montrent le cote libre
     half('junk', 300, 0, 24); half('junk', 420, H, 24); half('junk', 540, Math.PI, 24);
     L.gates = []; { const GG = new T3.TorusGeometry(5, 0.32, 8, 40), GM = bas('#7af0ff', { fog: false });
-      for (const [s, x, y] of [[160, 0, 0], [205, -5, 0], [250, -10, 0], [345, -6, -6], [380, 0, -10], [465, 4, -6], [500, 10, 0], [580, 8, 4], [620, 0, 6]]) { const h = hold(s), m = new T3.Group(); m.position.set(x, y, 0); h.add(m); m.add(new T3.Mesh(GG, GM)); m.add(glowS(12, '#7af0ff', 0.45)); L.gates.push({ s, x, y, m, done: false }); } }
+      for (const [s, x, y] of []) { const h = hold(s), m = new T3.Group(); m.position.set(x, y, 0); h.add(m); m.add(new T3.Mesh(GG, GM)); m.add(glowS(12, '#7af0ff', 0.45)); L.gates.push({ s, x, y, m, done: false }); } }
     // 2. LA RENTREE : des debris en feu
     { const SD = [Math.PI, 0, H, -H]; let k = 0; for (let s = 720; s < 1080; s += 110) half('hot', s, SD[k++ % 4], 26); }
     // 3. LA CAMPAGNE : des eoliennes dont les pales balaient la voie, des lignes a haute tension
@@ -423,7 +427,6 @@
         (g.killPops = g.killPops || []).push({ p: p.clone(), t0: performance.now(), txt: '+' + c }); } }
     // les consignes, la premiere fois
     { const HINT = { debris: 'PASSE DU COTE LIBRE', eol: 'PASSE ENTRE LES PALES', ligne: 'ATTENTION AUX CABLES !', racine: 'EVITE LES RACINES', tuyau: 'EVITE LES TUYAUX', poutre: 'EVITE LES ETAIS DE LA MINE', xtal: 'PASSE A COTE DES CRISTAUX', vein: 'FORE LA VEINE ORANGE !', magma: 'EVITE LE MAGMA' }; L.seen = L.seen || {};
-      if (!L.seen.gate && L.s > 40) { L.seen.gate = 1; L.hintT = L.t + 2.4; if (CC.L1) CC.L1.msg(g, 'SUIS LES ANNEAUX DE LUMIERE', 2.2, '#7af0ff'); }
       if (!L.hintT || L.t > L.hintT) { for (const o of L.O) { const ds = o.s - L.s; if (ds > 60 && ds < 170 && HINT[o.kind] && !L.seen[o.kind]) { L.seen[o.kind] = 1; L.hintT = L.t + 2.4; if (CC.L1) CC.L1.msg(g, HINT[o.kind], 2.2, o.kind === 'vein' ? '#ffb03a' : '#ffffff'); break; } }
         if (!L.seen.drone) { const d = L.sent.find((q) => q.alive && q.s - L.s > 50 && q.s - L.s < 200); if (d) { L.seen.drone = 1; L.hintT = L.t + 2.4; if (CC.L1) CC.L1.msg(g, d.heli ? 'HELICOPTERE : FONCE DEDANS !' : 'CIBLE ROUGE : FONCE DEDANS !', 2.4, '#ff6a5a'); } } } }
     // les veines forees : un boost, des eclats de roche ; les eclairs : un flash
@@ -637,12 +640,12 @@
     for (const o of g.scene.children) if (o.name === 'level') o.visible = false; if (g.pad && g.pad.evoL) g.pad.evoL.visible = false; if (g.pad && g.pad.hangar) g.pad.hangar.visible = false;
     if (L.dock) L.dock.visible = s < 800; if (L.landG) L.landG.visible = s > 1060 && s < 2827;
     // feux de la catapulte : ils filent vers l'avant
-    if (L.runway) for (let i = 0; i < L.runway.length; i++) L.runway[i].visible = ((Math.floor(i / 2) - L.t * 12) % 16 + 16) % 16 < 3 || (L.started && L.s < 160);
+    if (L.clamps && L.started) for (const c of L.clamps) { c.position.y = Math.max(-3, c.position.y - dt * 4); c.rotation.x = Math.min(1.2, c.rotation.x + dt * 3); }
     if (L.started && !L.boomed) { L.boomed = 1; g.audio.play('boom'); g.audio.play('rumble'); g.flash = 0.3; g.flashColor = '#bfe8ff'; if (CC.L1) CC.L1.msg(g, 'LARGAGE !', 1.8, '#bfe8ff'); }
     animate(g, dt);
     L.flashK = Math.max(0, (L.flashK || 0) - dt * 3);
     // le ciel : etoiles et Terre pendant la chute ; la Terre grossit tres vite, puis on est dedans
-    if (L.sky) { L.sky.position.copy(cam.position); const E = L.earth, hv = U.lerp(320, 110, ss(0, 820, s)); E.visible = s < 1080; E.position.set(0, -(RS + hv), 0); E.rotation.set(Math.PI / 2 - 0.35, 0, L.t * 0.004); L.cloudSphere.rotation.y = L.t * 0.002;
+    if (L.sky) { L.sky.position.copy(cam.position); const E = L.earth, hv = U.lerp(900, 120, ss(0, 900, s)); E.visible = s < 1080; E.position.set(0, -(RS + hv), 0); E.rotation.set(Math.PI / 2 - 0.35, 0, L.t * 0.004); L.cloudSphere.rotation.y = L.t * 0.002;
       for (const p of L.stars) p.material.color.setScalar(p.userData.op * (1 - ss(380, 640, s))); L.sky.visible = s < 1080;
       if (L.sun) { _b.copy(PA.R0).multiplyScalar(0.75).addScaledVector(PA.F0, 0.5); _b.y = 0.28; _b.normalize(); L.sun.position.copy(_b).multiplyScalar(2800); } }
     // la boule de feu de la rentree
