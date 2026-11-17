@@ -67,17 +67,18 @@
       '  vec3 c;',
       '  if (d < 40.0) { c = mix(vec3(0.16, 0.10, 0.05), vec3(0.27, 0.17, 0.08), r); float rt = 1.0 - smoothstep(0.0, 0.035, abs(n(vec2(vUv.y * 40.0, vW.y * 0.25)) - 0.5)); c = mix(c, vec3(0.42, 0.30, 0.16), rt * 0.8); }',
       '  else if (d < 140.0) c = mix(vec3(0.48, 0.24, 0.11), vec3(0.64, 0.33, 0.15), r);',
-      '  else if (d < 250.0) c = mix(vec3(0.70, 0.54, 0.30), vec3(0.84, 0.68, 0.42), r);',
-      '  else if (d < 290.0) { float w = sin(uT * 2.0 + vUv.y * 50.0 + vW.y * 0.4) * 0.5 + 0.5; c = vec3(0.08, 0.30, 0.55) + vec3(0.35, 0.75, 1.0) * w * 0.35; }',
+      '  else if (d < 250.0) c = mix(vec3(0.48, 0.36, 0.20), vec3(0.60, 0.47, 0.28), r);',
+      '  else if (d < 290.0) { float w = sin(uT * 2.0 + vUv.y * 50.0 + vW.y * 0.4) * 0.5 + 0.5; c = vec3(0.05, 0.20, 0.38) + vec3(0.25, 0.55, 0.8) * w * 0.3; }',
       '  else if (d < 480.0) c = mix(vec3(0.30, 0.30, 0.33), vec3(0.44, 0.44, 0.47), r) * (0.82 + 0.18 * step(0.5, fract(d / 7.0)));',
       '  else if (d < 640.0) c = mix(vec3(0.05, 0.045, 0.04), vec3(0.12, 0.11, 0.10), r) + vec3(0.9) * step(0.992, h(floor(vec2(vUv.y * 300.0, vW.y * 2.0))));',
       '  else { c = mix(vec3(0.15, 0.08, 0.06), vec3(0.25, 0.12, 0.08), r); float cr = 1.0 - smoothstep(0.0, 0.05, abs(n(p * 0.8 + 7.0) - 0.5)); c += vec3(1.0, 0.35, 0.08) * cr * smoothstep(640.0, 860.0, d); }',
       '  float e = min(min(abs(d - 40.0), abs(d - 140.0)), min(min(abs(d - 250.0), abs(d - 290.0)), min(abs(d - 480.0), abs(d - 640.0)))); c *= 0.55 + 0.45 * smoothstep(0.6, 2.2, e);',
       '  c *= 0.72 + 0.38 * (0.5 + 0.5 * cos(a - 1.2));',
-      '  float dist = length(cameraPosition - vW); c *= 1.0 + 0.45 * (1.0 - smoothstep(0.0, 70.0, dist));',
+      '  vec3 N = normalize(cross(dFdx(vW), dFdy(vW))); if (dot(N, cameraPosition - vW) < 0.0) N = -N; c *= 0.3 + 0.62 * max(0.0, dot(N, normalize(vec3(0.3, 0.8, 0.35))));',
+      '  float dist = length(cameraPosition - vW); c *= 1.0 + 0.18 * (1.0 - smoothstep(0.0, 70.0, dist));',
       '  c = mix(c, uFog, smoothstep(uFar * 0.35, uFar, dist));',
       '  gl_FragColor = vec4(c, 1.0);',
-      '}'].join('\n'), side: T3.DoubleSide });
+      '}'].join('\n'), side: T3.DoubleSide, extensions: { derivatives: true } });
   // LES NUAGES : de grosses bouffees douces toujours tournees vers la camera, FINES (on voit a travers) et qui s'effacent quand on passe dedans
   const cloudMat = (tex) => new T3.ShaderMaterial({
     uniforms: { uMap: { value: tex }, uOp: { value: 0.5 }, uFar: { value: 3600 } },
@@ -108,10 +109,11 @@
     fragmentShader: 'uniform float uT; varying vec3 vP; void main(){ float a = sin(vP.x * 7.0 + uT * 0.6) * sin(vP.y * 9.0 - uT * 0.4) * sin(vP.z * 6.0 + uT * 0.3); float b = sin(vP.y * 30.0 + a * 4.0 + uT * 1.5); vec3 c = mix(vec3(0.45, 0.08, 0.02), vec3(1.0, 0.62, 0.18), smoothstep(-0.3, 0.8, a)); c = mix(c, vec3(1.0, 0.95, 0.75), smoothstep(0.85, 1.0, b) * 0.6); gl_FragColor = vec4(c, 1.0); }' });
 
   // balaye un cercle le long de la voie ; uv = (distance, angle / 2 pi)
-  function sweep(PA, s0, s1, radIn, seg, dS) {
+  function sweep(PA, s0, s1, radIn, seg, dS, pf) {
     const n = Math.max(2, Math.ceil((s1 - s0) / dS)), pos = [], nor = [], uv = [], idx = [], F = {};
     for (let i = 0; i <= n; i++) { const s = s0 + (s1 - s0) * i / n; PA.fr(s, F); const rd = typeof radIn === 'function' ? radIn(s) : [radIn, radIn];
       for (let j = 0; j <= seg; j++) { const a = j / seg * Math.PI * 2, c = Math.cos(a), sn = Math.sin(a); _a.copy(F.r).multiplyScalar(c).addScaledVector(F.u, sn);
+        if (pf) { pf(s, a, F, _d); pos.push(_d.x, _d.y, _d.z); nor.push(_a.x, _a.y, _a.z); uv.push(s, j / seg); continue; }
         pos.push(F.p.x + F.r.x * c * rd[0] + F.u.x * sn * rd[1], F.p.y + F.r.y * c * rd[0] + F.u.y * sn * rd[1], F.p.z + F.r.z * c * rd[0] + F.u.z * sn * rd[1]); nor.push(_a.x, _a.y, _a.z); uv.push(s, j / seg); } }
     for (let i = 0; i < n; i++) for (let j = 0; j < seg; j++) { const a = i * (seg + 1) + j, b = a + seg + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
     const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('normal', new T3.Float32BufferAttribute(nor, 3)); geo.setAttribute('uv', new T3.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeBoundingSphere(); return geo;
@@ -136,8 +138,11 @@
     [1120, 1680, 'cciel', 'LES NUAGES', '#cfe8ff', 'open'], [1680, 2657, 'ccampagne', 'LA CAMPAGNE', '#9aff6a', 'low'], [2657, 3587, 'ccouches', 'LES COUCHES DE LA TERRE', '#e8a060', 'shaft'],
     [3587, 4327, 'cgeode', 'LA GEODE', '#c08aff', 'open'], [4327, 5087, 'cmanteau', 'LE MANTEAU', '#ff6a2a', 'rock'], [5087, 5417, 'cdescente', 'LA DESCENTE', '#ffc23a', 'boostrock'], [5417, 1e9, 'cnoyau', 'LE NOYAU', '#ff4a3a', 'open']];
   const zoneAt = (s) => { for (let i = ZN.length - 1; i >= 0; i--) if (s >= ZN[i][0]) return i; return 0; };
-  const RSH = 22;   // la largeur utile de la faille (la paroi est a RSH + 4)
-  const faille = (s) => [RSH + 4 + 36 * ss(3400, 3587, s), 170 - 108 * ss(3300, 3587, s)];   // [moitie de largeur, moitie de longueur] : elle s'evase sur la geode
+  const RSH = 22;   // la largeur utile de la faille (la paroi est a RSH + 8, plus les bosses de roche)
+  const faille = (s) => [RSH + 8 + 32 * ss(3400, 3587, s), 170 - 108 * ss(3300, 3587, s)];
+  // un bloc de roche irregulier (ellipsoide deforme) : rochers du bord, ponts naturels
+  const lumpGeo = (sx, sy, sz, seed, det, amp) => { const g = new T3.IcosahedronGeometry(1, det || 2), P = g.attributes.position, q = new V(); for (let i = 0; i < P.count; i++) { q.fromBufferAttribute(P, i).normalize(); const w = 1 + amp * (Math.sin(q.x * 3.1 + seed) * Math.cos(q.y * 2.7 + seed * 1.7) + 0.6 * Math.sin(q.z * 5.3 + seed * 2.3) * Math.cos(q.x * 4.1 + seed) + 0.35 * Math.sin((q.x + q.y + q.z) * 9 + seed)); P.setXYZ(i, q.x * w * sx, q.y * w * sy, q.z * w * sz); } g.computeVertexNormals(); return g; };
+  const rockM = (c, e) => new T3.MeshLambertMaterial({ color: c, emissive: e || '#140c06', flatShading: true, side: T3.DoubleSide });   // [moitie de largeur, moitie de longueur] : elle s'evase sur la geode
   const WALLS = [[2600, 3587, RSH], [4327, 5417, R]];   // puits et tunnels (paroi proche) : [debut, fin, rayon]
   // l'ambiance le long de la voie : [s, ciel haut, horizon, brume, brume proche, brume loin, lumiere]
   const MOOD = [[0, '#000000', '#04060c', '#020308', 280, 680, 1], [600, '#020308', '#0a1030', '#020308', 280, 680, 1], [700, '#3a1004', '#ff7a2a', '#7a2a0a', 60, 520, 1.1], [1060, '#4a1a08', '#ff9a4a', '#8a3a14', 60, 520, 1.1],
@@ -241,15 +246,18 @@
   function countryside(g, PA, grp) { { const lg = new T3.Group(); grp.add(lg); L.landG = lg; grp = lg; }   // tout ce qui est au sol : cache tant qu'on est dans l'espace
     const X = textures(), gy = L.gy = PA.O.y + GY, sH = PA.sBelow(gy, 2400), FH = PA.fr(sH), H = FH.p.clone(); L.holeS = sH;
     // la FENTE : l'ellipse que la faille decoupe dans le sol (grand axe = la direction du « haut » de la voie, a plat)
-    const rX = new V(FH.r.x, 0, FH.r.z).normalize(), Dv = new V().copy(FH.u).addScaledVector(FH.t, -FH.u.y / (FH.t.y || -0.9)), halfL = 170 * Dv.length() + 6, Dn = new V(-rX.z, 0, rX.x), halfW = RSH + 4 + 3;
+    const rX = new V(FH.r.x, 0, FH.r.z).normalize(), Dv = new V().copy(FH.u).addScaledVector(FH.t, -FH.u.y / (FH.t.y || -0.9)), halfL = 170 * Dv.length() + 6, Dn = new V(-rX.z, 0, rX.x), halfW = RSH + 8 + 3;
     L.slit = { H, rX, Dn, halfL, halfW };
     const gnd = new T3.Mesh(new T3.PlaneGeometry(12000, 12000), new T3.MeshLambertMaterial({ map: X.fields, color: '#8a9682' })); gnd.rotation.x = -Math.PI / 2; gnd.position.set(H.x, gy, H.z);
     gnd.material.onBeforeCompile = (sh) => { sh.uniforms.uH0 = { value: H }; sh.uniforms.uRX = { value: new T3.Vector2(rX.x, rX.z) }; sh.uniforms.uDN = { value: new T3.Vector2(Dn.x, Dn.z) }; sh.uniforms.uAB = { value: new T3.Vector2(halfW, halfL) }; sh.vertexShader = 'varying vec3 vHW;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n vHW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
       sh.fragmentShader = 'uniform vec3 uH0; uniform vec2 uRX; uniform vec2 uDN; uniform vec2 uAB; varying vec3 vHW;\n' + sh.fragmentShader.replace('void main() {', 'void main() {\n { vec2 d = vHW.xz - uH0.xz; float a = dot(d, uRX) / uAB.x, b = dot(d, uDN) / uAB.y; if (a * a + b * b < 1.0) discard; }'); };
     grp.add(gnd); L.gnd = gnd;
     // le bord de la faille : de la terre arrachee tout autour, des feux d'alerte qui clignotent, le chantier de secours (derrick) un peu plus loin
-    { const sh = new T3.Shape(); sh.absellipse(0, 0, halfW + 16, halfL + 14, 0, 6.2832, false, 0); const hole = new T3.Path(); hole.absellipse(0, 0, halfW - 0.5, halfL - 0.5, 0, 6.2832, true, 0); sh.holes.push(hole);
+    { const sh = new T3.Shape(); for (let j = 0; j < 90; j++) { const th = j / 90 * 6.2832, ob = 6 + 10 * (0.5 + 0.5 * Math.sin(3 * th + 1)) + 6 * (0.5 + 0.5 * Math.sin(7 * th + 2)) + 3 * Math.sin(13 * th); const x = Math.cos(th) * (halfW + ob), y = Math.sin(th) * (halfL + ob); if (j) sh.lineTo(x, y); else sh.moveTo(x, y); } const hole = new T3.Path(); hole.absellipse(0, 0, halfW - 0.5, halfL - 0.5, 0, 6.2832, true, 0); sh.holes.push(hole);
       const dirt = new T3.Mesh(new T3.ShapeGeometry(sh, 40), lam('#5a3e22')); const ang = Math.atan2(-rX.z, rX.x); dirt.rotation.set(-Math.PI / 2, 0, 0); const dg = new T3.Group(); dg.add(dirt); dg.rotation.y = ang; dg.position.set(H.x, gy + 0.1, H.z); grp.add(dg);
+      { const gs = [0, 1, 2, 3].map((i) => lumpGeo(1, 0.62, 1, i * 1.9 + 1, 1, 0.3)), cs = ['#7a6a52', '#6a5a46', '#8a7a62', '#5e5040'];
+        for (let k = 0; k < 54; k++) { const th = k / 54 * 6.283 + rr(-0.05, 0.05), ob = rr(1, 15), sz = rr(1.6, 5.2), p = new V().copy(H).addScaledVector(rX, Math.cos(th) * (halfW + ob)).addScaledVector(Dn, Math.sin(th) * (halfL + ob)); p.y = gy + sz * 0.15;
+          const m = new T3.Mesh(gs[k % 4], rockM(cs[(k >> 2) % 4])); m.scale.setScalar(sz); m.position.copy(p); m.rotation.y = rr(0, 6); grp.add(m); blob(grp, new V(p.x + sz * 0.3, gy, p.z + sz * 0.3), sz * 1.5, sz * 1.5); } }
       for (let k = 0; k < 22; k++) { const a = k / 22 * 6.283, l = new T3.Mesh(new T3.SphereGeometry(0.9, 8, 6), bas(k % 2 ? '#ffb84a' : '#ff3a2a', { fog: false })); l.position.copy(H).addScaledVector(rX, Math.cos(a) * (halfW + 2)).addScaledVector(Dn, Math.sin(a) * (halfL + 2)).setY(gy + 2.4); grp.add(l); (L.blinks = L.blinks || []).push(l); }
       const DO = new V().copy(H).addScaledVector(rX, -130).setY(gy); L.derrickAt = DO;
       const DP = [], hgt = 90, w = 44; for (const [cx, cz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { DP.push({ s: [1.8, hgt, 1.8], c: '#c8352a', p: [cx * w, hgt / 2, cz * w], r: [cz * 0.13, 0, -cx * 0.13] }); blob(grp, new V(DO.x + cx * w, gy, DO.z + cz * w), 5, 5); }
@@ -292,7 +300,18 @@
   function caverns(PA, grp) {
     L.cMats = [];
     const add = (s0, s1, rad, M) => { const m = new T3.Mesh(sweep(PA, s0, s1, rad, 48, 4), M); m.frustumCulled = false; grp.add(m); L.cMats.push(M); return m; };
-    add(L.holeS - 90, 3587, faille, strataMat(PA.O.y + GY));   // la faille : les couches de la Terre
+    // LA FAILLE : une vraie fissure rocheuse, parois bosselees (grosses bosses, terrasses de strates, aretes), facettes eclairees ; relief nul au bord du sol et a la geode
+    const gyW = PA.O.y + GY, nzR = noise2(31337), nzf = (s, a, sc) => nzR(Math.cos(a) * 1.3 * sc + s * 0.011 * sc + 20, Math.sin(a) * 1.3 * sc + s * 0.007 * sc + 33);
+    const riftK = (s, a, y) => { const dep = gyW - y, fade = ss(0, 40, dep) * (1 - ss(3420, 3560, s)); if (fade <= 0) return 0; const big = nzf(s, a, 0.5), mid = nzf(s, a, 1.6), sm = nzf(s, a, 5), tr = (((dep / 46 + 1.4 * big) % 1) + 1) % 1;
+      return fade * (Math.max(0, 1.2 * (big - 0.32)) + 0.2 * Math.max(0, mid - 0.3) + 0.09 * tr * tr + 0.05 * sm); };
+    const ptf = L.riftPt = (s, a, F, out) => { const rd = faille(s), c = Math.cos(a), sn = Math.sin(a); out.set(F.r.x * c * rd[0] + F.u.x * sn * rd[1], F.r.y * c * rd[0] + F.u.y * sn * rd[1], F.r.z * c * rd[0] + F.u.z * sn * rd[1]); out.multiplyScalar(1 + riftK(s, a, F.p.y + out.y)).add(F.p); };
+    { const M = strataMat(gyW), m = new T3.Mesh(sweep(PA, L.holeS - 90, 3587, faille, 72, 3, ptf), M); m.frustumCulled = false; grp.add(m); L.cMats.push(M); }
+    // des pointes et des eclats de roche plantes dans les parois (decor, jamais dans la zone de vol)
+    { const N = 320, im = new T3.InstancedMesh(new T3.ConeGeometry(1, 1, 5, 1).translate(0, 0.5, 0), rockM('#ffffff'), N), o = new T3.Object3D(), F = {}, q = new V(), dr = new V(), col = new T3.Color(); let cnt = 0;
+      for (let i = 0; i < N * 4 && cnt < N; i++) { const s = rr(L.holeS + 20, 3500), a = rr(0, 6.283); PA.fr(s, F); ptf(s, a, F, q); const dd = gyW - q.y; if (dd < 25) continue; dr.copy(F.p).sub(q); const dist = dr.length(); dr.normalize(); const len = Math.min(rr(4, 20), dist - 27); if (len < 3.5) continue;
+        dr.x += rr(-0.35, 0.35); dr.y += rr(-0.35, 0.35); dr.z += rr(-0.35, 0.35); dr.normalize(); o.position.copy(q).addScaledVector(dr, -2.5); o.quaternion.setFromUnitVectors(_b.set(0, 1, 0), dr); const rd2 = len * rr(0.22, 0.34); o.scale.set(rd2, len + 2.5, rd2); o.updateMatrix(); im.setMatrixAt(cnt, o.matrix);
+        im.setColorAt(cnt, col.set(dd < 140 ? '#7a5a3a' : dd < 290 ? '#a08a64' : dd < 480 ? '#6a6a72' : '#3e3836')); cnt++; }
+      im.count = cnt; im.frustumCulled = false; grp.add(im); }
     add(3587, 4327, 62, caveMat('#140a22', '#3a2a50', '#c08aff', 1.0, 3, 0));   // la geode
     add(4327, 5087, R, caveMat('#140806', '#4a3028', '#ff6a1a', 1.3, 1, 1));   // le manteau
     add(5087, 5417, R, caveMat('#2a0a04', '#6a2a14', '#ffb03a', 1.6, 1, 1));   // la descente
@@ -307,7 +326,7 @@
   // ============================== LES EPREUVES (testees dans la section de la voie : exactes et sans surprise) ==============================
   function obstacles(g, PA, grp) {
     const OB = L.O = [], M = { dark: lam('#2a2e36'), white: lam('#eef0f2'), red: lam('#e8322a', { emissive: '#5a0a06' }), cable: lam('#1c1e22'), ball: bas('#ff7a2a', { fog: false }), steel: lam('#9aa2ac', { emissive: '#1a1c20' }),
-      rock: new T3.MeshLambertMaterial({ color: '#2e2622', emissive: '#120604', side: T3.DoubleSide }), root: new T3.MeshLambertMaterial({ color: '#6a4626', emissive: '#1e1006', flatShading: true }), wood: lam('#7a5a32', { emissive: '#1a1006' }),
+      rock: new T3.MeshLambertMaterial({ color: '#2e2622', emissive: '#120604', side: T3.DoubleSide }), root: new T3.MeshLambertMaterial({ color: '#4a3220', emissive: '#100804', flatShading: true }), wood: lam('#7a5a32', { emissive: '#1a1006' }),
       water: new T3.MeshBasicMaterial({ color: '#3aa8ff', transparent: true, opacity: 0.35, side: T3.DoubleSide, depthWrite: false, fog: false }),
       steam: [bas('#ffffff', { fog: false, transparent: true, opacity: 0.8 }), bas('#dfe8ff', { fog: false, transparent: true, opacity: 0.3, blending: T3.AdditiveBlending, depthWrite: false })], vein: bas('#ffa030', { fog: false, side: T3.DoubleSide }), lava: [bas('#ffb03a', { fog: false }), bas('#ff5a10', { fog: false, transparent: true, opacity: 0.35, blending: T3.AdditiveBlending, depthWrite: false })] };
     const hold = (s) => holder(PA, s > 2600 ? L.deepG : grp, s), holdL = (s) => holder(PA, L.landG, s), gyAt = (s) => { const F = PA.fr(s); return (L.gy - F.p.y) / Math.max(0.3, F.u.y); }, atDepth = (d) => PA.sBelow(L.gy - d, L.holeS);
@@ -326,8 +345,9 @@
       const gl = glowS(14, '#ff8a2a', 0.8); gl.position.set(Math.cos(c) * R * 0.55, Math.sin(c) * R * 0.55, 0.4); rot.add(gl);
       OB.push({ s, th: 1.4, kind: 'vein', vein: true, vm, rot, hit: (x, y, t) => { const r = Math.hypot(x, y); if (r < 0.8) return false; let d = Math.atan2(y, x) - (c + w * t); d = Math.atan2(Math.sin(d), Math.cos(d)); return Math.abs(d) > sp / 2 - Math.asin(Math.min(1, RK / Math.max(r, RK))); }, upd: (t) => { rot.rotation.z = w * t; } }); };
     // EOLIENNE sur la voie : le rotor tourne DANS la section (moyeu en x0, y0) ; on passe entre les pales, ou a cote
-    const eol = (s, x0, y0, w, ph) => { const h = holdL(s), gl = gyAt(s), Lb = 16, ht = y0 - gl;
-      h.add(bakeBox([{ cyl: [0.9, 1.5, ht, 10], c: '#eef0f2', p: [x0, gl + ht / 2, -1.6] }, { s: [2.6, 2.6, 7], c: '#e4e6e8', p: [x0, y0, -3.2] }]));
+    const eol = (s, x0, y0, w, ph) => { const h = holdL(s), F0 = PA.fr(s), Lb = 18, hp = _a.copy(F0.p).addScaledVector(F0.r, x0).addScaledVector(F0.u, y0).addScaledVector(F0.t, -2.4), ht = hp.y - L.gy - 1;
+      h.add(bakeBox([{ s: [2.6, 2.6, 7], c: '#e4e6e8', p: [x0, y0, -3.2] }]));
+      { const tw = new T3.Mesh(new T3.CylinderGeometry(0.9, 1.8, ht, 12), lam('#eef0f2')); tw.position.set(hp.x, L.gy + ht / 2, hp.z); L.landG.add(tw); const fd = new T3.Mesh(new T3.CylinderGeometry(3.4, 3.8, 1.2, 14), lam('#9aa0a6')); fd.position.set(hp.x, L.gy + 0.5, hp.z); L.landG.add(fd); }
       const hub = new T3.Mesh(new T3.SphereGeometry(1.5, 12, 8), M.white); hub.position.set(x0, y0, 0.6); h.add(hub);
       const rot = new T3.Group(); rot.position.set(x0, y0, 0.8); h.add(rot);
       for (let b = 0; b < 3; b++) { const arm = new T3.Group(); arm.rotation.z = b * 2.0944; rot.add(arm); const bl = new T3.Mesh(new T3.BoxGeometry(Lb, 1.5, 0.35), M.white); bl.position.x = Lb / 2 + 0.8; arm.add(bl); const tp = new T3.Mesh(new T3.BoxGeometry(2.4, 1.55, 0.4), M.red); tp.position.x = Lb - 0.4; arm.add(tp); }
@@ -335,10 +355,11 @@
       OB.push({ s, th: 2.6, kind: 'eol', hit: (x, y, t) => { const px = x - x0, py = y - y0; if (Math.hypot(px, py) < 1.7 + RK) return true; if (Math.abs(px) < 1.4 + RK && y < y0) return true;
         for (let b = 0; b < 3; b++) { const a = w * t + ph + b * 2.0944, c = Math.cos(a), sn = Math.sin(a), pr = px * c + py * sn; if (pr > 0 && pr < Lb + 1 && Math.abs(-px * sn + py * c) < 0.8 + RK) return true; } return false; }, upd: (t) => { rot.rotation.z = w * t + ph; } }); };
     // LIGNE A HAUTE TENSION en travers des champs : des pylones de chaque cote, les cables aux hauteurs ys (passer dessous, dessus ou entre)
-    const ligne = (s, ys) => { const h = holdL(s), gl = gyAt(s), F = PA.fr(s), top = Math.max(...ys) + 8, ht = top - gl, P = [];
-      for (const x of [-34, 34, -250, 250, -470, 470]) { P.push({ s: [1.4, ht, 1.4], c: '#8a929c', p: [x - 1.6, gl + ht / 2, 0], r: [0, 0, -0.05] }, { s: [1.4, ht, 1.4], c: '#8a929c', p: [x + 1.6, gl + ht / 2, 0], r: [0, 0, 0.05] });
-        for (const yc of ys) P.push({ s: [14, 0.7, 0.7], c: '#8a929c', p: [x, yc + 0.6, 0] }); P.push({ s: [0.4, ht * 0.9, 0.4], c: '#8a929c', p: [x, gl + ht * 0.45, 0], r: [0, 0, 0.12] }, { s: [5, 3, 0.4], c: '#8a929c', p: [x, top + 1, 0] });
-        blob(L.landG, _a.copy(F.p).addScaledVector(F.r, x).setY(L.gy), 5, 5); }
+    const ligne = (s, ys) => { const h = holdL(s), F = PA.fr(s), top = Math.max(...ys) + 8, P = [];
+      for (const x of [-34, 34, -250, 250, -470, 470]) { const bp = new V().copy(F.p).addScaledVector(F.r, x), hw = bp.y + F.u.y * top - L.gy;   // pylone VERTICAL, du sol jusqu'aux bras
+        for (const sx of [-1.6, 1.6]) { const lg = new T3.Mesh(new T3.BoxGeometry(1.4, hw, 1.4), lam('#8a929c')); lg.position.set(bp.x + F.r.x * sx, L.gy + hw / 2, bp.z + F.r.z * sx); L.landG.add(lg); }
+        for (const yc of ys) P.push({ s: [14, 0.7, 0.7], c: '#8a929c', p: [x, yc + 0.6, 0] }); P.push({ s: [5, 3, 0.4], c: '#8a929c', p: [x, top + 1, 0] });
+        blob(L.landG, _a.copy(bp).setY(L.gy), 5, 5); }
       for (const yc of ys) for (const dz of [-0.9, 0.9]) P.push({ s: [940, 0.22, 0.22], c: '#1c1e22', p: [0, yc, dz] });
       h.add(bakeBox(P)); for (const yc of ys) for (const x of [-14, -4, 6, 16]) { const b = new T3.Mesh(new T3.SphereGeometry(0.75, 10, 8), M.ball); b.position.set(x, yc, 0); h.add(b); }
       OB.push({ s, th: 1.4, kind: 'ligne', hit: (x, y) => ys.some((yc) => Math.abs(y - yc) < 0.5 + RK) }); };
@@ -355,16 +376,41 @@
     // 2. LA RENTREE : des debris en feu
     { const SD = [Math.PI, 0, H, -H]; let k = 0; for (let s = 720; s < 1080; s += 110) half('hot', s, SD[k++ % 4], 26); }
     // 3. LA CAMPAGNE : des eoliennes dont les pales balaient la voie, des lignes a haute tension
-    eol(1790, 8, 5, 0.75, 0); eol(1890, -9, 6, -0.7, 1); ligne(1990, [-1]); eol(2100, 0, 6, 0.6, 0.5); ligne(2220, [-5, 6]); eol(2330, -7, 5, 0.8, 2); ligne(2450, [2]);
+    eol(1790, 8, 9, 0.75, 0); eol(1890, -9, 10, -0.7, 1); ligne(1990, [-1]); eol(2100, 0, 10, 0.6, 0.5); ligne(2220, [-5, 6]); eol(2330, -7, 9, 0.8, 2); ligne(2450, [2]);
     // 4. LES COUCHES : des racines, des eboulis, des tuyaux de gaz, la nappe d'eau (elle accelere), des etais de la vieille mine de charbon
-    // des traverses accrochees aux deux falaises (une racine, un pont, un tuyau, un etai) : on passe AU-DESSUS ou EN DESSOUS
-    const RL = 2 * (RSH + 4) + 8, PH = Math.PI / 2, tl = (k) => PH + k;   // a = PH : la poutre court de gauche a droite ; k l'incline
-    beam(atDepth(10), tl(-0.22), 5, 1.3, RL, M.root, 'racine', 5); beam(atDepth(26), tl(0.2), -5, 1.4, RL, M.root, 'racine', 5); beam(atDepth(42), tl(-0.15), 4, 1.2, RL, M.root, 'racine', 5);
-    half('rock', atDepth(80), 0, RSH - 3); half('rock', atDepth(125), Math.PI, RSH - 3);
-    beam(atDepth(180), tl(0.18), -6, 1.6, RL, M.steel, 'tuyau', 12); beam(atDepth(225), tl(-0.2), 6, 1.6, RL, M.steel, 'tuyau', 12);
-    { const s = L.nappeS = atDepth(270), h = hold(s), wm = new T3.Mesh(new T3.CircleGeometry(1, 48), M.water); wm.scale.set(RSH + 3.6, 170, 1); h.add(wm); L.nappeM = wm; }
-    bar(atDepth(330), 'h', 10, 1.0, 0, M.steam, 'vapeur'); half('rock', atDepth(395), PH, RSH - 3); half('rock', atDepth(440), -PH, RSH - 3); bar(atDepth(495), 'v', 10, 0.9, 1, M.steam, 'vapeur');
-    beam(atDepth(545), tl(0.2), 5, 1.1, RL, M.wood, 'poutre', 4); beam(atDepth(585), tl(-0.2), -6, 1.1, RL, M.wood, 'poutre', 4); beam(atDepth(625), tl(0.1), 0, 1.1, RL, M.wood, 'poutre', 4);
+    // LA FAILLE : que de la roche, de la terre et des racines, ACCROCHEES aux parois : saillies, ponts naturels, passages etroits
+    const PH = Math.PI / 2, RKM = [rockM('#7a5a3a'), rockM('#86724e', '#0e0a05'), rockM('#6a6a72', '#0c0c10'), rockM('#3e3836', '#100808')], rockAt = (d) => RKM[d < 140 ? 0 : d < 290 ? 1 : d < 480 ? 2 : 3];
+    const xwAt = (s, y) => { const rd = faille(s); return rd[0] * Math.sqrt(Math.max(0, 1 - (y / rd[1]) ** 2)); };
+    const wallX = (s, a) => { const fp = PA.fr(s, {}); L.riftPt(s, a, fp, _b); return _b.distanceTo(fp.p); };
+    // SAILLIE : un grand pan de roche qui sort d'une paroi (sd = -1 gauche, 1 droite), bord dechiquete ; on passe du cote libre
+    const ledge = (s, sd, off0, d, amp) => { const h = hold(s), rd = faille(s), p1 = rr(0, 6), p2 = rr(0, 6), f1 = rr(0.05, 0.09), f2 = rr(0.15, 0.25), A = amp || 1, off = (y) => off0 + A * (3.2 * Math.sin(y * f1 + p1) + 1.6 * Math.sin(y * f2 + p2));
+      let Ym = 0; while (Ym < rd[1] * 0.97 && off(Ym) < xwAt(s, Ym) - 1.5 && off(-Ym) < xwAt(s, -Ym) - 1.5) Ym += 4;
+      const ys = []; for (let y = -Ym; y <= Ym + 0.01; y += 5) ys.push(y);
+      const sh = new T3.Shape(); ys.forEach((y, i) => i ? sh.lineTo(y, off(y)) : sh.moveTo(y, off(y))); for (let i = ys.length - 1; i >= 0; i--) sh.lineTo(ys[i], xwAt(s, ys[i]) * 1.8 + 8);
+      const th = rr(9, 14), geo = new T3.ExtrudeGeometry(sh, { depth: th, bevelEnabled: true, bevelSize: 1.4, bevelThickness: 1.6, bevelSegments: 1, curveSegments: 1, steps: 2 }), P = geo.attributes.position;
+      for (let i = 0; i < P.count; i++) { const px = P.getX(i), py = P.getY(i), pz = P.getZ(i), j = 1.3 * Math.sin(px * 0.6 + pz * 0.9) * Math.cos(py * 0.7 + p1) + 0.8 * Math.sin(px * 1.7 + py * 1.3 + pz); P.setXYZ(i, sd * (py + j), px, pz - th / 2 + 0.6 * Math.sin(px * 0.3 + py)); }
+      geo.computeVertexNormals(); h.add(new T3.Mesh(geo, rockAt(d)));
+      OB.push({ s, th: th / 2 + 1.4, kind: 'saillie', hit: (x, y) => Math.abs(y) < Ym && sd * x > off(y) - 1.4 - RK }); };
+    // PASSAGE ETROIT : deux saillies face a face, il reste une porte de 14 m centree en gc
+    const pinch = (s, gc, d) => { ledge(s, 1, gc + 7, d, 0.45); ledge(s + 0.01, -1, 7 - gc, d, 0.45); };
+    // PONT NATUREL : une arete de roche d'une paroi a l'autre, un peu penchee (k), a la hauteur d0 ; on passe dessus ou dessous
+    const bridge = (s, k, d0, w, d) => { const h = hold(s), lR = wallX(s, 0), lL = wallX(s, Math.PI), len = lR + lL + 10, cx = (lR - lL) / 2, m = new T3.Mesh(lumpGeo(len / 2, w * 1.15, w * 2, rr(0, 9), 3, 0.16), rockAt(d)); m.rotation.z = k; m.position.set(cx, d0, 0); h.add(m);
+      OB.push({ s, th: w * 1.5 + 0.8, kind: 'pont', hit: (x, y) => Math.abs(-(x - cx) * Math.sin(k) + (y - d0) * Math.cos(k)) < w * 1.05 + RK }); };
+    // RACINE geante : un tronc noueux d'une paroi a l'autre, epais aux deux bouts, avec ses radicelles
+    const root = (s, k, d0, w) => { const h = hold(s), lR = wallX(s, 0), lL = wallX(s, Math.PI), x0 = -lL - 4, x1 = lR + 4, pts = []; for (let i = 0; i <= 8; i++) { const u = i / 8; pts.push(new V(x0 + (x1 - x0) * u, Math.sin(u * 7 + s) * 2.2, Math.sin(u * 5 + s * 2) * 1.6)); }
+      const cv = new T3.CatmullRomCurve3(pts), ts = 44, geo = new T3.TubeGeometry(cv, ts, 1, 7, false), P = geo.attributes.position, c = new V(), q = new V();
+      for (let i = 0; i < P.count; i++) { const u = Math.floor(i / 8) / ts; cv.getPointAt(Math.min(1, u), c); q.fromBufferAttribute(P, i).sub(c); const fk = w * (0.7 + 0.9 * Math.pow(Math.abs(u - 0.5) * 2, 2) + 0.22 * Math.sin(u * 23 + s)); P.setXYZ(i, c.x + q.x * fk, c.y + q.y * fk, c.z + q.z * fk); }
+      geo.computeVertexNormals(); const g2 = new T3.Group(), m = new T3.Mesh(geo, M.root); g2.add(m);
+      for (let b = 0; b < 7; b++) { const u = rr(0.1, 0.9), p0 = cv.getPointAt(u), br = new T3.Mesh(new T3.CylinderGeometry(w * 0.1, w * 0.4, 8, 5), M.root); br.position.set(p0.x, p0.y + (b % 2 ? 4 : -4) * 0.9, p0.z); br.rotation.z = (b % 2 ? 1 : -1) * rr(0.2, 0.7); g2.add(br); }
+      g2.rotation.z = k; g2.position.set(0, d0, 0); h.add(g2);
+      OB.push({ s, th: w * 1.6 + 0.8, kind: 'racine', hit: (x, y) => Math.abs(-x * Math.sin(k) + (y - d0) * Math.cos(k)) < w * 1.15 + RK }); };
+    root(atDepth(12), -0.22, 5, 1.4); root(atDepth(30), 0.2, -5, 1.5); root(atDepth(48), -0.15, 4, 1.2);
+    ledge(atDepth(88), 1, -4, 88); ledge(atDepth(128), -1, -3, 128);
+    pinch(atDepth(172), -6, 172);
+    bridge(atDepth(218), 0.15, -4, 4.2, 218);
+    { const s = L.nappeS = atDepth(270), h = hold(s), wm = new T3.Mesh(new T3.CircleGeometry(1, 48), M.water); wm.scale.set(RSH + 10, 200, 1); h.add(wm); L.nappeM = wm; }
+    bridge(atDepth(322), -0.2, 5, 4.2, 322); ledge(atDepth(368), 1, -3, 368); pinch(atDepth(412), 7, 412); ledge(atDepth(455), -1, -4, 455);
+    bridge(atDepth(500), 0.18, -6, 4.2, 500); ledge(atDepth(545), 1, -5, 545); pinch(atDepth(592), -5, 592); bridge(atDepth(635), -0.12, 2, 4.2, 635);
     // 5. LA GEODE : de grands prismes en travers
     [[3715, 0.3, -6, 2.4], [3817, 1.9, 7, 2.4], [3919, -0.6, 0, 2.2], [4021, 1.2, -8, 2.6], [4110, 2.6, 5, 2.4], [4212, 0.9, 9, 2.4], [4219, 0.9, -9, 2.4]].forEach(([s, a, d, w]) => beam(s, a, d, w, 140, new T3.MeshLambertMaterial({ color: '#8a5ad0', emissive: '#3a1478', transparent: true, opacity: 0.9 }), 'xtal'));
     // 6. LE MANTEAU : des veines a forer et des jets de magma
@@ -431,7 +477,7 @@
         const ev = g.evo, S = EVO.save(g), c = Math.round((d.small ? 90 : d.heli ? 260 : 200) * EVO.mult(S.cm) * (EVO.COIN_K || 1)); if (ev) { ev.kills++; ev.coins += c; } if (rk.fuel > 0) rk.fuel = Math.min(rk.fuelMax, rk.fuel + (d.small ? 0.3 : 0.8));
         (g.killPops = g.killPops || []).push({ p: p.clone(), t0: performance.now(), txt: '+' + c }); } }
     // les consignes, la premiere fois
-    { const HINT = { debris: 'PASSE DU COTE LIBRE', eol: 'PASSE ENTRE LES PALES', ligne: 'ATTENTION AUX CABLES !', racine: 'PASSE AU-DESSUS OU EN DESSOUS', tuyau: 'PASSE AU-DESSUS OU EN DESSOUS', poutre: 'PASSE AU-DESSUS OU EN DESSOUS', vapeur: 'ATTENTION : GEYSER DE VAPEUR', xtal: 'PASSE A COTE DES CRISTAUX', vein: 'FORE LA VEINE ORANGE !', magma: 'EVITE LE MAGMA' }; L.seen = L.seen || {};
+    { const HINT = { debris: 'PASSE DU COTE LIBRE', eol: 'PASSE ENTRE LES PALES', ligne: 'ATTENTION AUX CABLES !', racine: 'PASSE AU-DESSUS OU EN DESSOUS', tuyau: 'PASSE AU-DESSUS OU EN DESSOUS', poutre: 'PASSE AU-DESSUS OU EN DESSOUS', saillie: 'PASSE DU COTE LIBRE', pont: 'PASSE AU-DESSUS OU EN DESSOUS', xtal: 'PASSE A COTE DES CRISTAUX', vein: 'FORE LA VEINE ORANGE !', magma: 'EVITE LE MAGMA' }; L.seen = L.seen || {};
       if (!L.hintT || L.t > L.hintT) { for (const o of L.O) { const ds = o.s - L.s; if (ds > 60 && ds < 170 && HINT[o.kind] && !L.seen[o.kind]) { L.seen[o.kind] = 1; L.hintT = L.t + 2.4; if (CC.L1) CC.L1.msg(g, HINT[o.kind], 2.2, o.kind === 'vein' ? '#ffb03a' : '#ffffff'); break; } }
         if (!L.seen.drone) { const d = L.sent.find((q) => q.alive && q.s - L.s > 50 && q.s - L.s < 200); if (d) { L.seen.drone = 1; L.hintT = L.t + 2.4; if (CC.L1) CC.L1.msg(g, d.heli ? 'HELICOPTERE : FONCE DEDANS !' : 'CIBLE ROUGE : FONCE DEDANS !', 2.4, '#ff6a5a'); } } } }
     // les veines forees : un boost, des eclats de roche ; les eclairs : un flash
@@ -544,7 +590,9 @@
   }
   const inWall = (s) => { for (const [a, b, r] of WALLS) if (s >= a && s <= b) return r; return 0; };
   // le sol qu'on rase (la campagne) : hauteur dans la section a ne pas franchir
-  const floorAt = (s, F) => { if (s < 1560 || s > L.holeS - 25 || F.u.y < 0.3) return -1e9; return (L.gy + 2.2 - F.p.y) / F.u.y; };
+  const floorAt = (s, F) => { if (s < 1560 || s > L.holeS - 25 || F.u.y < 0.3) return -1e9; const fl = (L.gy + 2.2 - F.p.y) / F.u.y;
+    if (L.slit && s > L.holeS - 260) { const q = _c.copy(F.p).addScaledVector(F.r, L.x).addScaledVector(F.u, fl), S = L.slit, dx = q.x - S.H.x, dz = q.z - S.H.z, a = (dx * S.rX.x + dz * S.rX.z) / (S.halfW - 4), b = (dx * S.Dn.x + dz * S.Dn.z) / (S.halfL - 4); if (a * a + b * b < 1) return -1e9; }   // au-dessus de la fente, plus de sol : on peut plonger
+    return fl; };
 
   const _step = CC.Rocket.prototype.step;
   CC.Rocket.prototype.step = function (dt, input) {
