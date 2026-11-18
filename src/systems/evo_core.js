@@ -65,7 +65,7 @@
       '  if (vW.y > uGY) discard;', '  float a = vUv.y * 6.2832; vec2 p = vec2(vUv.y * 22.0, vW.y * 0.12); float r = n(p) * 0.6 + n(p * 2.7) * 0.3 + n(p * 6.1) * 0.1;',
       '  float d = uGY - vW.y + (n(vec2(vUv.y * 9.0, 3.0)) - 0.5) * 10.0;',
       '  vec3 c;',
-      '  if (d < 40.0) { c = mix(vec3(0.16, 0.10, 0.05), vec3(0.27, 0.17, 0.08), r); float rt = 1.0 - smoothstep(0.0, 0.035, abs(n(vec2(vUv.y * 40.0, vW.y * 0.25)) - 0.5)); c = mix(c, vec3(0.42, 0.30, 0.16), rt * 0.8); }',
+      '  if (d < 40.0) { c = mix(vec3(0.36, 0.25, 0.13), vec3(0.50, 0.36, 0.19), r); c = mix(vec3(0.28, 0.44, 0.15), c, smoothstep(0.4, 2.6, uGY - vW.y)); float rt = 1.0 - smoothstep(0.0, 0.035, abs(n(vec2(vUv.y * 40.0, vW.y * 0.25)) - 0.5)); c = mix(c, vec3(0.42, 0.30, 0.16), rt * 0.8); }',
       '  else if (d < 140.0) c = mix(vec3(0.48, 0.24, 0.11), vec3(0.64, 0.33, 0.15), r);',
       '  else if (d < 250.0) c = mix(vec3(0.48, 0.36, 0.20), vec3(0.60, 0.47, 0.28), r);',
       '  else if (d < 290.0) { float w = sin(uT * 2.0 + vUv.y * 50.0 + vW.y * 0.4) * 0.5 + 0.5; c = vec3(0.05, 0.20, 0.38) + vec3(0.25, 0.55, 0.8) * w * 0.3; }',
@@ -74,7 +74,7 @@
       '  else { c = mix(vec3(0.15, 0.08, 0.06), vec3(0.25, 0.12, 0.08), r); float cr = 1.0 - smoothstep(0.0, 0.05, abs(n(p * 0.8 + 7.0) - 0.5)); c += vec3(1.0, 0.35, 0.08) * cr * smoothstep(640.0, 860.0, d); }',
       '  float e = min(min(abs(d - 40.0), abs(d - 140.0)), min(min(abs(d - 250.0), abs(d - 290.0)), min(abs(d - 480.0), abs(d - 640.0)))); c *= 0.55 + 0.45 * smoothstep(0.6, 2.2, e);',
       '  c *= 0.72 + 0.38 * (0.5 + 0.5 * cos(a - 1.2));',
-      '  vec3 N = normalize(cross(dFdx(vW), dFdy(vW))); if (dot(N, cameraPosition - vW) < 0.0) N = -N; c *= 0.3 + 0.62 * max(0.0, dot(N, normalize(vec3(0.3, 0.8, 0.35))));',
+      '  vec3 N = normalize(cross(dFdx(vW), dFdy(vW))); if (dot(N, cameraPosition - vW) < 0.0) N = -N; c *= 0.5 + 0.55 * max(0.0, dot(N, normalize(vec3(0.3, 0.8, 0.35))));',
       '  float dist = length(cameraPosition - vW); c *= 1.0 + 0.18 * (1.0 - smoothstep(0.0, 70.0, dist));',
       '  c = mix(c, uFog, smoothstep(uFar * 0.35, uFar, dist));',
       '  gl_FragColor = vec4(c, 1.0);',
@@ -289,7 +289,9 @@
     // le bord de la faille : de la terre arrachee tout autour, des feux d'alerte qui clignotent, le chantier de secours (derrick) un peu plus loin
     { const wd = (x, z) => 6 + 9 * (0.5 + 0.5 * Math.sin(x * 0.07 + 1) * Math.cos(z * 0.05)) + 5 * (0.5 + 0.5 * Math.sin(x * 0.19 + z * 0.13 + 2));
       const ringT = (i, j) => { const k = j * G.nx + i; return !G.mask[k] && G.D[k] * G.cs < wd(G.x0 + (i + 0.5) * G.cs, G.z0 + (j + 0.5) * G.cs); };
-      { const dm = new T3.Mesh(gridMesh(G, gy + 0.1, ringT, () => [0, 0]), new T3.MeshLambertMaterial({ color: '#6e5030' })); dm.frustumCulled = false; grp.add(dm); }
+      const ringT2 = (i, j) => { const k = j * G.nx + i; return !G.mask[k] && G.D[k] * G.cs < wd(G.x0 + (i + 0.5) * G.cs, G.z0 + (j + 0.5) * G.cs) + 9; };
+      { const d2 = new T3.Mesh(gridMesh(G, gy + 0.05, ringT2, () => [0, 0]), new T3.MeshLambertMaterial({ color: '#62702f' })); d2.frustumCulled = false; grp.add(d2); }   // transition herbe seche -> terre
+      { const dm = new T3.Mesh(gridMesh(G, gy + 0.1, ringT, () => [0, 0]), new T3.MeshLambertMaterial({ color: '#7e6238' })); dm.frustumCulled = false; grp.add(dm); }
       const ringCells = []; for (let j = 0; j < G.nz; j++) for (let i = 0; i < G.nx; i++) if (ringT(i, j) && G.D[j * G.nx + i] * G.cs > 1) ringCells.push([G.x0 + (i + 0.5) * G.cs, G.z0 + (j + 0.5) * G.cs]);
       { const gs = [0, 1, 2, 3].map((i) => lumpGeo(1, 0.62, 1, i * 1.9 + 1, 1, 0.3)), cs = ['#7a6a52', '#6a5a46', '#8a7a62', '#5e5040'];
         for (let k = 0; k < 54 && ringCells.length; k++) { const c = ringCells[Math.floor(Math.random() * ringCells.length)], sz = rr(1.6, 5.2), m = new T3.Mesh(gs[k % 4], rockM(cs[(k >> 2) % 4])); m.scale.setScalar(sz); m.position.set(c[0], gy + sz * 0.15, c[1]); m.rotation.y = rr(0, 6); grp.add(m); blob(grp, new V(c[0] + sz * 0.3, gy, c[1] + sz * 0.3), sz * 1.5, sz * 1.5); } }
@@ -450,7 +452,7 @@
     // 5. LA GEODE : de grands prismes en travers
     [[3715, 0.3, -6, 2.4], [3817, 1.9, 7, 2.4], [3919, -0.6, 0, 2.2], [4021, 1.2, -8, 2.6], [4110, 2.6, 5, 2.4], [4212, 0.9, 9, 2.4], [4219, 0.9, -9, 2.4]].forEach(([s, a, d, w]) => beam(s, a, d, w, 140, new T3.MeshLambertMaterial({ color: '#8a5ad0', emissive: '#3a1478', transparent: true, opacity: 0.9 }), 'xtal'));
     // 6. LE MANTEAU : des veines a forer et des jets de magma
-    vein(4422, Math.PI, 1.6, 0); bar(4517, 'h', 10, 0.9, 0, M.lava); vein(4612, 0.4, 1.4, 0.3); bar(4707, 'v', 10, 1.0, 1, M.lava); vein(4802, -H, 1.3, -0.35); bar(4897, 'h', 10, 1.1, 2, M.lava); vein(4992, 2.4, 1.2, 0.45);
+    vein(4422, Math.PI, 3.0, 0); bar(4517, 'h', 10, 0.8, 0, M.lava); vein(4612, 0.4, 2.7, 0.12); bar(4707, 'v', 10, 0.9, 1, M.lava); vein(4802, -H, 2.5, -0.15); bar(4897, 'h', 10, 1.0, 2, M.lava); vein(4992, 2.4, 2.3, 0.18);
     for (const A of AV) { const im = new T3.InstancedMesh(A.gm, mats[A.mk], Math.max(1, A.list.length)); im.count = A.list.length; im.frustumCulled = false; (A.mk === 'rock' ? L.deepG : grp).add(im); A.im = im; }
     L.AV = AV; L.OB = OB;
     // les anneaux d'acceleration (pendant la rentree et la descente)
