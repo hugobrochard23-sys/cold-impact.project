@@ -271,10 +271,18 @@
     // la FENTE : le trou du sol est la COUPE EXACTE de la paroi par le plan du sol (grille de cases : aucun vide, rien en l'air)
     const rX = new V(FH.r.x, 0, FH.r.z).normalize(), Dn = new V(-rX.z, 0, rX.x), G = riftGrid(L.riftGeo, gy);
     L.slit = { H, rX, Dn, G, hole: G.hole, dist: G.dist };
-    const gsh = new T3.Shape(); gsh.moveTo(-6000, -6000); gsh.lineTo(6000, -6000); gsh.lineTo(6000, 6000); gsh.lineTo(-6000, 6000); gsh.lineTo(-6000, -6000);
-    { const hp = new T3.Path(), xa = G.x0 - H.x, xb = G.x0 + G.nx * G.cs - H.x, ya = -(G.z0 + G.nz * G.cs - H.z), yb = -(G.z0 - H.z); hp.moveTo(xa, ya); hp.lineTo(xb, ya); hp.lineTo(xb, yb); hp.lineTo(xa, yb); hp.lineTo(xa, ya); gsh.holes.push(hp); }
-    const gg = new T3.ShapeGeometry(gsh); { const Pp = gg.attributes.position, UV = gg.attributes.uv; for (let i = 0; i < Pp.count; i++) UV.setXY(i, Pp.getX(i) / 12000 + 0.5, Pp.getY(i) / 12000 + 0.5); }
-    const gmat = new T3.MeshLambertMaterial({ map: X.fields, color: '#8a9682' }), gnd = new T3.Mesh(gg, gmat); gnd.rotation.x = -Math.PI / 2; gnd.position.set(H.x, gy, H.z);
+    // LE SOL : un maillage FIN. Le jeu courbe le monde sommet par sommet (curve.js : un sommet a d m de la camera est abaisse de 0,00026 x (d-25)^2, jusqu'a 64 m) :
+    // un sol fait de quelques immenses triangles etait donc abaisse de dizaines de metres au milieu pendant que les arbres, fermes et eoliennes (petits maillages) restaient en place -> ils flottaient.
+    // Avec des cases de 20 m pres de la voie le sol subit la meme courbure que les objets qui s'y posent.
+    const gmat = new T3.MeshLambertMaterial({ map: X.fields, color: '#8a9682' });
+    { let bx0 = 1e9, bx1 = -1e9, bz0 = 1e9, bz1 = -1e9; for (let ss0 = 900; ss0 <= sH + 200; ss0 += 20) { const p = PA.fr(Math.min(ss0, PA.len - 1)).p; bx0 = Math.min(bx0, p.x); bx1 = Math.max(bx1, p.x); bz0 = Math.min(bz0, p.z); bz1 = Math.max(bz1, p.z); }
+      const axis = (c0, c1, g0, g1) => { const a0 = c0 - 1100, a1 = c1 + 1100, v = [g0, g1]; for (let x = a0; x <= a1; x += 20) v.push(x); let st = 20, x = a1; while (x < 9000) { st *= 1.3; x += st; v.push(x); } st = 20; x = a0; while (x > -9000) { st *= 1.3; x -= st; v.push(x); } v.sort((p, q) => p - q); const o = [v[0]]; for (const q of v) if (q - o[o.length - 1] > 1.2) o.push(q); return o; };
+      const gx = axis(bx0, bx1, G.x0, G.x0 + G.nx * G.cs), gz = axis(bz0, bz1, G.z0, G.z0 + G.nz * G.cs), nx = gx.length, pos = new Float32Array(nx * gz.length * 3), uv = new Float32Array(nx * gz.length * 2), idx = [];
+      for (let j = 0; j < gz.length; j++) for (let i = 0; i < nx; i++) { const k = j * nx + i; pos[k * 3] = gx[i]; pos[k * 3 + 1] = gy; pos[k * 3 + 2] = gz[j]; uv[k * 2] = (gx[i] - H.x) / 12000 + 0.5; uv[k * 2 + 1] = -(gz[j] - H.z) / 12000 + 0.5; }
+      const gxa = G.x0, gxb = G.x0 + G.nx * G.cs, gza = G.z0, gzb = G.z0 + G.nz * G.cs;
+      for (let j = 0; j + 1 < gz.length; j++) for (let i = 0; i + 1 < nx; i++) { const cx2 = (gx[i] + gx[i + 1]) / 2, cz2 = (gz[j] + gz[j + 1]) / 2; if (cx2 > gxa && cx2 < gxb && cz2 > gza && cz2 < gzb) continue; const a0 = j * nx + i, a1 = a0 + 1, a2 = a0 + nx, a3 = a2 + 1; idx.push(a0, a2, a1, a1, a2, a3); }
+      const gg = new T3.BufferGeometry(); gg.setAttribute('position', new T3.BufferAttribute(pos, 3)); gg.setAttribute('uv', new T3.BufferAttribute(uv, 2)); const nor = new Float32Array(pos.length); for (let i = 1; i < nor.length; i += 3) nor[i] = 1; gg.setAttribute('normal', new T3.BufferAttribute(nor, 3)); gg.setIndex(idx);
+      var gnd = new T3.Mesh(gg, gmat); gnd.frustumCulled = false; }
     { const inner = new T3.Mesh(gridMesh(G, gy, (i, j) => !G.mask[j * G.nx + i], (x, z) => [(x - H.x) / 12000 + 0.5, -(z - H.z) / 12000 + 0.5]), gmat); inner.frustumCulled = false; grp.add(inner); }
     grp.add(gnd); L.gnd = gnd;
     { const sh = new T3.Mesh(new T3.PlaneGeometry(2, 2), new T3.MeshBasicMaterial({ map: shadowTex(), transparent: true, depthWrite: false, color: '#06100a' })); sh.rotation.x = -Math.PI / 2; sh.renderOrder = 2; sh.visible = false; grp.add(sh); L.rkSh = sh; }   // l'ombre de la fusee : suit la fusee sur le sol
