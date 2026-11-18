@@ -22,9 +22,9 @@
   { const _as = EVO.applySkin; EVO.applySkin = (g) => { if (!isS5()) return _as(g); const r = EVO.rocket(EVO.save(g).rk); g.rocket.setSkin(CC.Skins.get('evoD' + r.tier)); EVO.attachParts(g); }; }
   { const RK5 = ['POINTE DE FORAGE', 'FOREUSE A VIS', 'TORPILLE THERMIQUE', 'FOREUSE A PLASMA'], _rk = EVO.rocket; EVO.rocket = (n) => { const r = _rk(n); if (isS5()) r.name = RK5[r.tier]; return r; }; }
   // meme courbe que le niveau 4 (v422) : la pointe de depart s'eteint pendant le plongeon, chaque palier donne un gros bond
-  EVO.fuel5 = (rk, la) => 8 + 1.4 * rk + 0.9 * la + [0, 4, 13, 38][Math.min(3, Math.floor(rk / 5))];
+  EVO.fuel5 = (rk, la) => 32 + 2 * rk + 1.2 * la + [0, 6, 18, 45][Math.min(3, Math.floor(rk / 5))];
   { const _ol = EVO.onLaunch; EVO.onLaunch = (g) => { _ol(g); if (!isS5() || (g.evo && g.evo.preview)) return; const S = EVO.save(g), rk = g.rocket, f = EVO.fuel5(S.rk || 0, S.la || 0); rk.fuelMax = f * 1.15; rk.fuel = (g.evoAimLast && g.evoAimLast.zone === 'gold') ? f * 1.15 : f; }; }
-  { const _dp = EVO.distPay; EVO.distPay = (g, dist) => (isS5() ? (0.15 / (8450 / 6910)) * (1 + 2 * Math.min(1, dist / 6100)) : _dp ? _dp(g, dist) : 1); }
+  { const _dp = EVO.distPay; EVO.distPay = (g, dist) => (isS5() ? (0.38 / (8450 / 6910)) * (1 + 2 * Math.min(1, dist / 6100)) : _dp ? _dp(g, dist) : 1); }
   let L = null;
   EVO.noKill = (g) => on5(g);   // la voie descend a 2 km sous le sol du niveau 1 : pas de « chute » hors du monde
 
@@ -428,10 +428,10 @@
       geo.computeVertexNormals(); h.add(new T3.Mesh(geo, rockAt(d)));
       OB.push({ s, th: th / 2 + 1.4, kind: 'saillie', hit: (x, y) => Math.abs(y) < Ym && sd * x > off(y) - 1.4 - RK }); };
     // PASSAGE ETROIT : deux saillies face a face, il reste une porte de 14 m centree en gc
-    const pinch = (s, gc, d) => { ledge(s, 1, gc + 7, d, 0.45); ledge(s + 0.01, -1, 7 - gc, d, 0.45); };
+    const pinch = (s, gc, d) => { ledge(s, 1, gc + 9, d, 0.4); ledge(s + 0.01, -1, 9 - gc, d, 0.4); };
     // PONT NATUREL : une arete de roche d'une paroi a l'autre, un peu penchee (k), a la hauteur d0 ; on passe dessus ou dessous
     const bridge = (s, k, d0, w, d) => { const h = hold(s), lR = wallX(s, 0), lL = wallX(s, Math.PI), len = lR + lL + 10, cx = (lR - lL) / 2, m = new T3.Mesh(lumpGeo(len / 2, w * 1.15, w * 2, rr(0, 9), 3, 0.16), rockAt(d)); m.rotation.z = k; m.position.set(cx, d0, 0); h.add(m);
-      OB.push({ s, th: w * 1.5 + 0.8, kind: 'pont', hit: (x, y) => Math.abs(-(x - cx) * Math.sin(k) + (y - d0) * Math.cos(k)) < w * 1.05 + RK }); };
+      OB.push({ s, th: w * 1.5 + 0.8, kind: 'pont', hit: (x, y) => Math.abs(-(x - cx) * Math.sin(k) + (y - d0) * Math.cos(k)) < w * 0.9 + RK }); };
     // RACINE geante : un tronc noueux d'une paroi a l'autre, epais aux deux bouts, avec ses radicelles
     const root = (s, k, d0, w) => { const h = hold(s), lR = wallX(s, 0), lL = wallX(s, Math.PI), x0 = -lL - 4, x1 = lR + 4, pts = []; for (let i = 0; i <= 8; i++) { const u = i / 8; pts.push(new V(x0 + (x1 - x0) * u, Math.sin(u * 7 + s) * 2.2, Math.sin(u * 5 + s * 2) * 1.6)); }
       const cv = new T3.CatmullRomCurve3(pts), ts = 44, geo = new T3.TubeGeometry(cv, ts, 1, 7, false), P = geo.attributes.position, c = new V(), q = new V();
@@ -439,14 +439,14 @@
       geo.computeVertexNormals(); const g2 = new T3.Group(), m = new T3.Mesh(geo, M.root); g2.add(m);
       for (let b = 0; b < 7; b++) { const u = rr(0.1, 0.9), p0 = cv.getPointAt(u), br = new T3.Mesh(new T3.CylinderGeometry(w * 0.1, w * 0.4, 8, 5), M.root); br.position.set(p0.x, p0.y + (b % 2 ? 4 : -4) * 0.9, p0.z); br.rotation.z = (b % 2 ? 1 : -1) * rr(0.2, 0.7); g2.add(br); }
       g2.rotation.z = k; g2.position.set(0, d0, 0); h.add(g2);
-      OB.push({ s, th: w * 1.6 + 0.8, kind: 'racine', hit: (x, y) => Math.abs(-x * Math.sin(k) + (y - d0) * Math.cos(k)) < w * 1.15 + RK }); };
-    root(atDepth(12), -0.22, 5, 1.4); root(atDepth(30), 0.2, -5, 1.5); root(atDepth(48), -0.15, 4, 1.2);
-    ledge(atDepth(88), 1, 6, 88); ledge(atDepth(128), -1, 6, 128);
-    pinch(atDepth(172), -4, 172);
-    bridge(atDepth(218), 0.15, -4, 4.2, 218);
+      OB.push({ s, th: w * 1.6 + 0.8, kind: 'racine', hit: (x, y) => Math.abs(-x * Math.sin(k) + (y - d0) * Math.cos(k)) < w * 0.95 + RK }); };
+    root(atDepth(14), -0.22, 5, 1.3); root(atDepth(44), 0.2, -5, 1.3);
+    ledge(atDepth(90), 1, 7, 88);
+    pinch(atDepth(150), -4, 150);
+    bridge(atDepth(200), 0.15, -4, 3.6, 200);
     { const s = L.nappeS = atDepth(270), h = hold(s), wm = new T3.Mesh(new T3.CircleGeometry(1, 48), M.water); wm.scale.set(RSH + 10, 200, 1); h.add(wm); L.nappeM = wm; }
-    bridge(atDepth(322), -0.2, 5, 4.2, 322); ledge(atDepth(368), 1, 5, 368); pinch(atDepth(412), 4, 412); ledge(atDepth(455), -1, 6, 455);
-    bridge(atDepth(500), 0.18, -6, 4.2, 500); ledge(atDepth(545), 1, 5, 545); pinch(atDepth(592), -3, 592); bridge(atDepth(635), -0.12, 2, 4.2, 635);
+    ledge(atDepth(335), 1, 6, 335); pinch(atDepth(400), 4, 400); bridge(atDepth(470), -0.2, 5, 3.6, 470);
+    ledge(atDepth(540), -1, 7, 540); pinch(atDepth(610), -3, 610);
     // 5. LA GEODE : de grands prismes en travers
     [[3715, 0.3, -6, 2.4], [3817, 1.9, 7, 2.4], [3919, -0.6, 0, 2.2], [4021, 1.2, -8, 2.6], [4110, 2.6, 5, 2.4], [4212, 0.9, 9, 2.4], [4219, 0.9, -9, 2.4]].forEach(([s, a, d, w]) => beam(s, a, d, w, 140, new T3.MeshLambertMaterial({ color: '#8a5ad0', emissive: '#3a1478', transparent: true, opacity: 0.9 }), 'xtal'));
     // 6. LE MANTEAU : des veines a forer et des jets de magma
@@ -639,7 +639,8 @@
     const s0 = L.s, zi = zoneAt(L.s), Z = ZN[zi], boostZ = /boost/.test(Z[5]);
     if (zi !== L.zi) { L.zi = zi; if (CC.L1) CC.L1.msg(g, Z[3] + (boostZ ? ' !' : ''), 2.2, Z[4]); if (boostZ) { g.audio.play('boostOn'); g.audio.play('whoosh'); } else g.audio.play(Z[5] === 'open' || Z[5] === 'low' ? 'jetPass' : 'alarm'); }
     if (L.boostT > 0) L.boostT -= dt; if (L.inv > 0) L.inv -= dt;
-    if (!(boostZ || L.boostT > 0)) this.fuel = Math.max(0, this.fuel - dt); const dry = this.fuel <= 0;
+    if (!(boostZ || L.boostT > 0 || Z[5] === 'fall' || Z[5] === 'shaft')) this.fuel = Math.max(0, this.fuel - dt);   // en chute libre et en plongeant dans la faille, la gravite travaille : pas de carburant brule
+    const dry = this.fuel <= 0;
     if (dry && !L.dry) { L.dry = 1; if (CC.L1) CC.L1.msg(g, 'PLUS DE CARBURANT !', 2, '#ff6a5a'); g.audio.play('warnFuel'); } if (!dry) L.dry = 0;
     const vMax = L.boostT > 0 ? 96 : boostZ ? 82 : Z[5] === 'fall' ? 66 : 50;   // en chute libre, on tombe vite
     L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
