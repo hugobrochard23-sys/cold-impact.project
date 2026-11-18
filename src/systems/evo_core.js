@@ -243,41 +243,50 @@
     im.frustumCulled = false; im.renderOrder = 4; grp.add(im); L.cloudM = M; L.cloudIM = im;
   }
 
-  // LA COUPE DU SOL : on coupe le maillage de la paroi par le plan du sol (y = gy) et on chaine les segments : le trou du sol EST exactement la bouche de la faille
-  function riftSlice(geo, gy, H, rX, Dn) {
-    const P = geo.attributes.position, I = geo.index.array, pts = new Map(), adj = new Map(), kf = (x, z) => Math.round(x * 10) + ',' + Math.round(z * 10);
-    const cross = (a, b) => { const ya = P.getY(a) - gy, yb = P.getY(b) - gy, t = ya / (ya - yb), x = P.getX(a) + (P.getX(b) - P.getX(a)) * t, z = P.getZ(a) + (P.getZ(b) - P.getZ(a)) * t, k = kf(x, z); if (!pts.has(k)) pts.set(k, [x, z]); return k; };
-    const link = (a, b) => { if (a === b) return; if (!adj.has(a)) adj.set(a, []); if (!adj.has(b)) adj.set(b, []); adj.get(a).push(b); adj.get(b).push(a); };
-    for (let i = 0; i < I.length; i += 3) { const a = I[i], b = I[i + 1], c = I[i + 2], A = P.getY(a) > gy, B = P.getY(b) > gy, C = P.getY(c) > gy; if (A === B && B === C) continue; const k = []; if (A !== B) k.push(cross(a, b)); if (B !== C) k.push(cross(b, c)); if (C !== A) k.push(cross(c, a)); if (k.length === 2) link(k[0], k[1]); }
-    const seen = new Set(); let best = null;
-    for (const k0 of adj.keys()) { if (seen.has(k0)) continue; const loop = []; let cur = k0, prev = null; while (cur && !seen.has(cur)) { seen.add(cur); loop.push(pts.get(cur)); const nb = adj.get(cur).filter((q) => q !== prev && !seen.has(q)); prev = cur; cur = nb.length ? nb[0] : null; } if (!best || loop.length > best.length) best = loop; }
-    if (!best || best.length < 20) { best = []; for (let j = 0; j < 96; j++) { const a = j / 96 * 6.2832; best.push([H.x + rX.x * Math.cos(a) * 30 + Dn.x * Math.sin(a) * 100, H.z + rX.z * Math.cos(a) * 30 + Dn.z * Math.sin(a) * 100]); } }
-    const m = best.length, cum = [0]; for (let i = 0; i < m; i++) cum.push(cum[i] + Math.hypot(best[(i + 1) % m][0] - best[i][0], best[(i + 1) % m][1] - best[i][1])); const tot = cum[m], N = Math.max(48, Math.round(tot / 4)), out = []; let j = 0;
-    for (let i = 0; i < N; i++) { const d = tot * i / N; while (j < m - 1 && cum[j + 1] < d) j++; const a = best[j], b = best[(j + 1) % m], t = (d - cum[j]) / Math.max(1e-6, cum[j + 1] - cum[j]); out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); }
-    return out;
+  // LA COUPE DU SOL : on coupe le maillage de la paroi par le plan du sol (y = gy), on garde les segments, et une grille (1,5 m) dit pour chaque case si elle est DANS la bouche (regle pair/impair)
+  function riftGrid(geo, gy) {
+    const P = geo.attributes.position, I = geo.index.array, seg = []; let X0 = 1e9, X1 = -1e9, Z0 = 1e9, Z1 = -1e9;
+    const cr = (a, b) => { const ya = P.getY(a) - gy, yb = P.getY(b) - gy, t = ya / (ya - yb); return [P.getX(a) + (P.getX(b) - P.getX(a)) * t, P.getZ(a) + (P.getZ(b) - P.getZ(a)) * t]; };
+    for (let i = 0; i < I.length; i += 3) { const a = I[i], b = I[i + 1], c = I[i + 2], A = P.getY(a) > gy, B = P.getY(b) > gy, C = P.getY(c) > gy; if (A === B && B === C) continue; const k = []; if (A !== B) k.push(cr(a, b)); if (B !== C) k.push(cr(b, c)); if (C !== A) k.push(cr(c, a)); if (k.length !== 2) continue; seg.push([k[0][0], k[0][1], k[1][0], k[1][1]]); for (const q of k) { X0 = Math.min(X0, q[0]); X1 = Math.max(X1, q[0]); Z0 = Math.min(Z0, q[1]); Z1 = Math.max(Z1, q[1]); } }
+    const cs = 1.5, M = 60; if (!seg.length) { X0 = Z0 = -30; X1 = Z1 = 30; }
+    const x0 = X0 - M, z0 = Z0 - M, nx = Math.ceil((X1 + M - x0) / cs), nz = Math.ceil((Z1 + M - z0) / cs), mask = new Uint8Array(nx * nz), rows = []; for (let j = 0; j < nz; j++) rows.push([]);
+    for (const q of seg) { const za = q[1], zb = q[3]; if (za === zb) continue; const lo = Math.min(za, zb), hi = Math.max(za, zb); for (let j = Math.max(0, Math.ceil((lo - z0) / cs - 0.5)); j < nz; j++) { const zc = z0 + (j + 0.5) * cs; if (zc > hi) break; if (zc <= lo) continue; rows[j].push(q[0] + (zc - za) * (q[2] - q[0]) / (zb - za)); } }
+    for (let j = 0; j < nz; j++) { const r = rows[j].sort((a, b) => a - b); for (let k = 0; k + 1 < r.length; k += 2) for (let i = Math.max(0, Math.ceil((r[k] - x0) / cs - 0.5)); i <= Math.min(nx - 1, Math.floor((r[k + 1] - x0) / cs - 0.5)); i++) mask[j * nx + i] = 1; }
+    // distance (m) au trou le plus proche : deux passes
+    const D = new Float32Array(nx * nz); for (let i = 0; i < D.length; i++) D[i] = mask[i] ? 0 : 1e4;
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { let d = D[j * nx + i]; if (i) d = Math.min(d, D[j * nx + i - 1] + 1); if (j) { d = Math.min(d, D[(j - 1) * nx + i] + 1); if (i) d = Math.min(d, D[(j - 1) * nx + i - 1] + 1.414); if (i < nx - 1) d = Math.min(d, D[(j - 1) * nx + i + 1] + 1.414); } D[j * nx + i] = d; }
+    for (let j = nz - 1; j >= 0; j--) for (let i = nx - 1; i >= 0; i--) { let d = D[j * nx + i]; if (i < nx - 1) d = Math.min(d, D[j * nx + i + 1] + 1); if (j < nz - 1) { d = Math.min(d, D[(j + 1) * nx + i] + 1); if (i < nx - 1) d = Math.min(d, D[(j + 1) * nx + i + 1] + 1.414); if (i) d = Math.min(d, D[(j + 1) * nx + i - 1] + 1.414); } D[j * nx + i] = d; }
+    const at = (x, z) => { const i = Math.floor((x - x0) / cs), j = Math.floor((z - z0) / cs); return i >= 0 && j >= 0 && i < nx && j < nz ? j * nx + i : -1; };
+    return { x0, z0, cs, nx, nz, mask, D, X1, Z1, nSeg: seg.length, hole: (x, z) => { const k = at(x, z); return k >= 0 && mask[k] === 1; }, dist: (x, z) => { const k = at(x, z); return k < 0 ? 1e4 : D[k] * cs; } };
   }
-  const inPoly = (poly, x, z) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const a = poly[i], b = poly[j]; if ((a[1] > z) !== (b[1] > z) && x < (b[0] - a[0]) * (z - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
+  // les cases d'une grille regroupees en bandes (une bande = une suite de cases d'une meme ligne) : sert au sol et a la couronne de terre
+  function gridMesh(G, y, test, uvOf) { const pos = [], uv = [], idx = []; let v = 0;
+    for (let j = 0; j < G.nz; j++) { let i = 0; while (i < G.nx) { if (!test(i, j)) { i++; continue; } let e = i; while (e + 1 < G.nx && test(e + 1, j)) e++; const xa = G.x0 + i * G.cs, xb = G.x0 + (e + 1) * G.cs, za = G.z0 + j * G.cs, zb = za + G.cs;
+        pos.push(xa, y, za, xa, y, zb, xb, y, za, xb, y, zb); for (const q of [[xa, za], [xa, zb], [xb, za], [xb, zb]]) uv.push(...uvOf(q[0], q[1])); idx.push(v, v + 1, v + 2, v + 1, v + 3, v + 2); v += 4; i = e + 1; } }
+    const g = new T3.BufferGeometry(); g.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new T3.Float32BufferAttribute(uv, 2)); const nor = []; for (let i = 0; i < v; i++) nor.push(0, 1, 0); g.setAttribute('normal', new T3.Float32BufferAttribute(nor, 3)); g.setIndex(idx); return g; }
 
   // ============================== LA CAMPAGNE : des champs a perte de vue, des bosquets, des fermes, une base, le derrick du puits ==============================
   function countryside(g, PA, grp) { { const lg = new T3.Group(); grp.add(lg); L.landG = lg; grp = lg; }   // tout ce qui est au sol : cache tant qu'on est dans l'espace
     const X = textures(), gy = L.gy = PA.O.y + GY, sH = PA.sBelow(gy, 2400), FH = PA.fr(sH), H = FH.p.clone(); L.holeS = sH;
-    // la FENTE : le trou du sol est la COUPE EXACTE de la paroi par le plan du sol (aucun vide, rien en l'air)
-    const rX = new V(FH.r.x, 0, FH.r.z).normalize(), Dn = new V(-rX.z, 0, rX.x), poly = riftSlice(L.riftGeo, gy, H, rX, Dn);
-    L.slit = { H, rX, Dn, poly };
+    // la FENTE : le trou du sol est la COUPE EXACTE de la paroi par le plan du sol (grille de cases : aucun vide, rien en l'air)
+    const rX = new V(FH.r.x, 0, FH.r.z).normalize(), Dn = new V(-rX.z, 0, rX.x), G = riftGrid(L.riftGeo, gy);
+    L.slit = { H, rX, Dn, G, hole: G.hole, dist: G.dist };
     const gsh = new T3.Shape(); gsh.moveTo(-6000, -6000); gsh.lineTo(6000, -6000); gsh.lineTo(6000, 6000); gsh.lineTo(-6000, 6000); gsh.lineTo(-6000, -6000);
-    { const hp = new T3.Path(); poly.forEach((q, i) => { const x = q[0] - H.x, y = -(q[1] - H.z); if (i) hp.lineTo(x, y); else hp.moveTo(x, y); }); gsh.holes.push(hp); }
+    { const hp = new T3.Path(), xa = G.x0 - H.x, xb = G.x0 + G.nx * G.cs - H.x, ya = -(G.z0 + G.nz * G.cs - H.z), yb = -(G.z0 - H.z); hp.moveTo(xa, ya); hp.lineTo(xb, ya); hp.lineTo(xb, yb); hp.lineTo(xa, yb); hp.lineTo(xa, ya); gsh.holes.push(hp); }
     const gg = new T3.ShapeGeometry(gsh); { const Pp = gg.attributes.position, UV = gg.attributes.uv; for (let i = 0; i < Pp.count; i++) UV.setXY(i, Pp.getX(i) / 12000 + 0.5, Pp.getY(i) / 12000 + 0.5); }
-    const gnd = new T3.Mesh(gg, new T3.MeshLambertMaterial({ map: X.fields, color: '#8a9682' })); gnd.rotation.x = -Math.PI / 2; gnd.position.set(H.x, gy, H.z);
+    const gmat = new T3.MeshLambertMaterial({ map: X.fields, color: '#8a9682' }), gnd = new T3.Mesh(gg, gmat); gnd.rotation.x = -Math.PI / 2; gnd.position.set(H.x, gy, H.z);
+    { const inner = new T3.Mesh(gridMesh(G, gy, (i, j) => !G.mask[j * G.nx + i], (x, z) => [(x - H.x) / 12000 + 0.5, -(z - H.z) / 12000 + 0.5]), gmat); inner.frustumCulled = false; grp.add(inner); }
     grp.add(gnd); L.gnd = gnd;
+    { const sh = new T3.Mesh(new T3.PlaneGeometry(2, 2), new T3.MeshBasicMaterial({ map: shadowTex(), transparent: true, depthWrite: false, color: '#06100a' })); sh.rotation.x = -Math.PI / 2; sh.renderOrder = 2; sh.visible = false; grp.add(sh); L.rkSh = sh; }   // l'ombre de la fusee : suit la fusee sur le sol
     // le bord de la faille : de la terre arrachee tout autour, des feux d'alerte qui clignotent, le chantier de secours (derrick) un peu plus loin
-    { const N = poly.length, ccw = poly.reduce((a, q, i) => { const r = poly[(i + 1) % N]; return a + (q[0] * r[1] - r[0] * q[1]); }, 0) > 0, nrm = poly.map((q, i) => { const a = poly[(i + N - 1) % N], b = poly[(i + 1) % N]; let tx = b[0] - a[0], tz = b[1] - a[1]; const l = Math.hypot(tx, tz) || 1; tx /= l; tz /= l; return ccw ? [tz, -tx] : [-tz, tx]; });
-      const ob = poly.map((q, i) => { const a = nrm[(i + N - 3) % N], b = nrm[(i + 3) % N], turn = Math.acos(Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1]))); return (5 + 9 * (0.5 + 0.5 * Math.sin(i * 0.21 + 1)) + 5 * (0.5 + 0.5 * Math.sin(i * 0.53 + 2)) + 2 * Math.sin(i * 1.3)) * (1 - 0.65 * Math.min(1, turn / 0.9)); }), pos = [], idx = [];
-      poly.forEach((q, i) => { pos.push(q[0], gy + 0.1, q[1], q[0] + nrm[i][0] * ob[i], gy + 0.1, q[1] + nrm[i][1] * ob[i]); }); for (let i = 0; i < N; i++) { const a = i * 2, b = ((i + 1) % N) * 2; idx.push(a, a + 1, b, b, a + 1, b + 1); }
-      const dg = new T3.BufferGeometry(); dg.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); dg.setIndex(idx); dg.computeVertexNormals(); grp.add(new T3.Mesh(dg, new T3.MeshLambertMaterial({ color: '#6e5030', side: T3.DoubleSide })));
+    { const wd = (x, z) => 6 + 9 * (0.5 + 0.5 * Math.sin(x * 0.07 + 1) * Math.cos(z * 0.05)) + 5 * (0.5 + 0.5 * Math.sin(x * 0.19 + z * 0.13 + 2));
+      const ringT = (i, j) => { const k = j * G.nx + i; return !G.mask[k] && G.D[k] * G.cs < wd(G.x0 + (i + 0.5) * G.cs, G.z0 + (j + 0.5) * G.cs); };
+      { const dm = new T3.Mesh(gridMesh(G, gy + 0.1, ringT, () => [0, 0]), new T3.MeshLambertMaterial({ color: '#6e5030' })); dm.frustumCulled = false; grp.add(dm); }
+      const ringCells = []; for (let j = 0; j < G.nz; j++) for (let i = 0; i < G.nx; i++) if (ringT(i, j) && G.D[j * G.nx + i] * G.cs > 1) ringCells.push([G.x0 + (i + 0.5) * G.cs, G.z0 + (j + 0.5) * G.cs]);
       { const gs = [0, 1, 2, 3].map((i) => lumpGeo(1, 0.62, 1, i * 1.9 + 1, 1, 0.3)), cs = ['#7a6a52', '#6a5a46', '#8a7a62', '#5e5040'];
-        for (let k = 0; k < 54; k++) { const i = (Math.floor(k / 54 * N + rr(-1, 1)) + N) % N, o = rr(0.5, ob[i] + 4), sz = rr(1.6, 5.2), px = poly[i][0] + nrm[i][0] * o, pz = poly[i][1] + nrm[i][1] * o;
-          const m = new T3.Mesh(gs[k % 4], rockM(cs[(k >> 2) % 4])); m.scale.setScalar(sz); m.position.set(px, gy + sz * 0.15, pz); m.rotation.y = rr(0, 6); grp.add(m); blob(grp, new V(px + sz * 0.3, gy, pz + sz * 0.3), sz * 1.5, sz * 1.5); } }
-      for (let k = 0; k < 22; k++) { const i = Math.floor(k * N / 22), l = new T3.Mesh(new T3.SphereGeometry(0.9, 8, 6), bas(k % 2 ? '#ffb84a' : '#ff3a2a', { fog: false })); l.position.set(poly[i][0] + nrm[i][0] * 1.5, gy + 2.4, poly[i][1] + nrm[i][1] * 1.5); grp.add(l); (L.blinks = L.blinks || []).push(l); }
+        for (let k = 0; k < 54 && ringCells.length; k++) { const c = ringCells[Math.floor(Math.random() * ringCells.length)], sz = rr(1.6, 5.2), m = new T3.Mesh(gs[k % 4], rockM(cs[(k >> 2) % 4])); m.scale.setScalar(sz); m.position.set(c[0], gy + sz * 0.15, c[1]); m.rotation.y = rr(0, 6); grp.add(m); blob(grp, new V(c[0] + sz * 0.3, gy, c[1] + sz * 0.3), sz * 1.5, sz * 1.5); } }
+      { const edge = ringCells.filter((c) => G.dist(c[0], c[1]) < 3), put2 = []; for (let t = 0; t < edge.length * 3 && put2.length < 22; t++) { const c = edge[Math.floor(Math.random() * edge.length)]; if (put2.some((q) => (q[0] - c[0]) ** 2 + (q[1] - c[1]) ** 2 < 16 * 16)) continue; put2.push(c); }
+        put2.forEach((c, k) => { const l = new T3.Mesh(new T3.SphereGeometry(0.9, 8, 6), bas(k % 2 ? '#ffb84a' : '#ff3a2a', { fog: false })); l.position.set(c[0], gy + 2.4, c[1]); grp.add(l); (L.blinks = L.blinks || []).push(l); }); }
       const DO = new V().copy(H).addScaledVector(rX, -130).setY(gy); L.derrickAt = DO;
       const DP = [], hgt = 90, w = 44; for (const [cx, cz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { DP.push({ s: [1.8, hgt, 1.8], c: '#c8352a', p: [cx * w, hgt / 2, cz * w], r: [cz * 0.13, 0, -cx * 0.13] }); blob(grp, new V(DO.x + cx * w, gy, DO.z + cz * w), 5, 5); }
       for (let y = 28; y < hgt; y += 13) { const k = 1 - y / hgt * 0.26; DP.push({ s: [2 * w * k, 0.8, 0.8], c: '#e8ecf0', p: [0, y, -w * k] }, { s: [2 * w * k, 0.8, 0.8], c: '#e8ecf0', p: [0, y, w * k] }, { s: [0.8, 0.8, 2 * w * k], c: '#e8ecf0', p: [-w * k, y, 0] }, { s: [0.8, 0.8, 2 * w * k], c: '#e8ecf0', p: [w * k, y, 0] }); }
@@ -303,7 +312,7 @@
       put(o, p, yawAt(s) + Math.PI, 8, 8); L.windR.push({ r: rot, w: rr(0.6, 0.9) * (k % 3 ? 1 : -1) }); }
     // les BOSQUETS : des groupes d'arbres (jamais sur la voie ni sur un batiment), chacun avec son ombre
     { const low = []; for (let s = 1560; s < sH; s += 20) { const p = PA.fr(s).p; low.push([p.x, p.z]); }
-      const free = (x, z) => { for (const q of low) if ((q[0] - x) ** 2 + (q[1] - z) ** 2 < 38 * 38) return false; for (const q of poly) if ((q[0] - x) ** 2 + (q[1] - z) ** 2 < 30 * 30) return false; if ((L.derrickAt.x - x) ** 2 + (L.derrickAt.z - z) ** 2 < 75 * 75) return false; for (const q of keep) if ((q[0] - x) ** 2 + (q[1] - z) ** 2 < q[2] * q[2]) return false; return true; };
+      const free = (x, z) => { for (const q of low) if ((q[0] - x) ** 2 + (q[1] - z) ** 2 < 38 * 38) return false; if (G.dist(x, z) < 30) return false; if ((L.derrickAt.x - x) ** 2 + (L.derrickAt.z - z) ** 2 < 75 * 75) return false; for (const q of keep) if ((q[0] - x) ** 2 + (q[1] - z) ** 2 < q[2] * q[2]) return false; return true; };
       const T = []; const C0 = PA.fr(2150).p;
       for (let c = 0; c < 190; c++) { let cx, cz; if (c < 110) { const s = rr(1560, sH), F = PA.fr(Math.min(s, sH - 60)), sd = Math.random() < 0.5 ? -1 : 1, d = rr(42, 380); cx = F.p.x + F.r.x * sd * d; cz = F.p.z + F.r.z * sd * d; } else { const a = rr(0, 6.28), d = rr(200, 2200); cx = C0.x + Math.cos(a) * d; cz = C0.z + Math.sin(a) * d; }
         const n = 4 + Math.floor(Math.random() * 7); for (let k = 0; k < n; k++) { const x = cx + rr(-22, 22), z = cz + rr(-22, 22); if (free(x, z)) T.push([x, z, rr(0.8, 1.35)]); } }
@@ -455,10 +464,10 @@
     g.userData.lt = lt; return g;
   }
   // l'helicoptere de combat (modele du jeu) en GEANT (x2,7), toujours droit dans le ciel, avec la cible rouge a percuter
-  const HELI_K = 1.7, HELI_HIT = 9;
+  const HELI_K = 2.8, HELI_HIT = 12;
   function heliMesh() {
     const o = new T3.Group(), h = CC.Models.helicopter(true); h.scale.setScalar(HELI_K); h.rotation.y = Math.PI; o.add(h);   // le nez vers la fusee
-    const tg = new T3.Group(); tg.add(new T3.Mesh(new T3.TorusGeometry(7.5, 0.4, 6, 48), bas('#ff3a2a', { fog: false }))); tg.add(new T3.Mesh(new T3.TorusGeometry(3.6, 0.3, 6, 32), bas('#ff3a2a', { fog: false }))); o.add(tg);
+    const tg = new T3.Group(); o.add(tg);
     o.userData = { rotor: h.userData.rotor, tail: h.userData.tailRotor, tg, lt: [], heli: true }; return o;
   }
   function enemies(g, PA, grp) {
@@ -610,7 +619,7 @@
   const inWall = (s) => { for (const [a, b, r] of WALLS) if (s >= a && s <= b) return r; return 0; };
   // le sol qu'on rase (la campagne) : hauteur dans la section a ne pas franchir
   const floorAt = (s, F) => { if (s < 1560 || s > L.holeS - 25 || F.u.y < 0.3) return -1e9; const fl = (L.gy + 2.2 - F.p.y) / F.u.y;
-    if (L.slit && s > L.holeS - 70) { const q = _c.copy(F.p).addScaledVector(F.r, L.x).addScaledVector(F.u, fl); if (inPoly(L.slit.poly, q.x, q.z)) return -1e9; }   // au-dessus de la fente, plus de sol : on peut plonger
+    if (L.slit && s > L.holeS - 70) { const q = _c.copy(F.p).addScaledVector(F.r, L.x).addScaledVector(F.u, fl); if (L.slit.hole(q.x, q.z)) return -1e9; }   // au-dessus de la fente, plus de sol : on peut plonger
     return fl; };
 
   const _step = CC.Rocket.prototype.step;
@@ -691,7 +700,8 @@
     const s = L.started ? L.s : 0, M = moodAt(s), fl = L.flashK || 0;
     if (fl > 0) { M.fog.lerp(_c4.set('#c8d8ff'), fl * 0.6); M.top.lerp(_c4, fl * 0.6); M.hor.lerp(_c4, fl * 0.6); }
     if (g.skyMat) { const u = g.skyMat.uniforms; u.top.value.copy(M.top); u.horizon.value.copy(M.hor); u.bottom.value.copy(M.fog); u.cloud.value = 0; }
-    g.scene.fog.color.copy(M.fog); g.scene.fog.near = M.near; g.scene.fog.far = M.far;
+    g.scene.fog.color.copy(M.fog); g.scene.fog.near = M.near; g.scene.fog.far = M.far;   // le jeu relit g.fogBase a chaque image (distance du niveau 1 : 150/310) : sans ceci notre brume etait ecrasee
+    if (g.fogBase) { g.fogBase.near = M.near; g.fogBase.far = M.far; g.fogBase.color.copy(M.fog); }
     g.renderer.setClearColor(M.fog); if (g.stars) g.stars.visible = false;
     const sp = s < 640 ? 1 : 0; g.nightK = sp * 0.8; if (g.postParams) { g.postParams.bloomStrength = 0.25 + 0.15 * (s > 5087 ? 1 : 0); g.postParams.bloomThreshold = 0.8; g.postParams.vignette = 0.3; g.postParams.saturation = 1.05; g.postParams.contrast = 1.06; }
     g.ambient.intensity = 0.32 * M.li + 0.1; g.sun.intensity = 0.95 * M.li; g.sun.color.set(s > 640 && s < 1150 ? '#ffb070' : s > 4327 ? '#ff9a5a' : s > 1150 && s < 2657 ? '#fff4e0' : '#ffffff');
@@ -710,6 +720,7 @@
     // le decor du niveau 1 n'a rien a faire ici (sol, hangar, rampe)
     for (const c of g.endlessRun.chunks.values()) if (c.builder && c.builder.root) c.builder.root.visible = false;
     for (const o of g.scene.children) if (o.name === 'level') o.visible = false; if (g.pad && g.pad.evoL) g.pad.evoL.visible = false; if (g.pad && g.pad.hangar) g.pad.hangar.visible = false;
+    if (L.rkSh) { const on = L.started && rk.active && s > 1060 && s < L.holeS + 12 && !(L.slit && L.slit.hole(rk.pos.x, rk.pos.z)); L.rkSh.visible = on; if (on) { const alt = Math.max(0, rk.pos.y - L.gy); L.rkSh.position.set(rk.pos.x, L.gy + 0.3, rk.pos.z); L.rkSh.scale.setScalar(L.rkL * (1.5 + alt * 0.05)); L.rkSh.material.opacity = U.clamp(1.2 - alt / 70, 0.45, 1); } }
     if (L.dock) L.dock.visible = s < 800; if (L.landG) L.landG.visible = s > 1060 && s < 2827; if (L.deepG) L.deepG.visible = s > 1500;
     // feux de la catapulte : ils filent vers l'avant
     if (L.clamps && L.started) for (const c of L.clamps) { c.position.y = Math.max(-3, c.position.y - dt * 4); c.rotation.x = Math.min(1.2, c.rotation.x + dt * 3); }
