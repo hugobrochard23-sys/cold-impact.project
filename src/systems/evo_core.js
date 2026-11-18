@@ -17,6 +17,7 @@
 
   // ============================== L'OGIVE FOREUSE, le carburant, les pieces ==============================
   const isS5 = EVO.isS5 = () => !!(EVO.stage && CC.game && EVO.stage(CC.game) === 5);
+  (EVO.terrain = EVO.terrain || []).push((g, x, z) => { if (!isS5() || !L || !L.started || L.gy === undefined || !(L.s > 1060 && L.s < L.holeS + 12)) return null; if (L.slit && L.slit.hole(x, z)) return null; return L.gy; });   // sol du niveau 5 pour l'ombre de la fusee (meme ombre que les autres niveaux)
   for (let i = 0; i < 4; i++) CC.Skins.byId['evoD' + i] = { id: 'evoD' + i, name: 'evoD' + i, short: 'evoD' + i, tier: 'base', price: 0, tierLabel: '', c: { body: '#8a9098', nose: '#c8ccd2', tip: '#e8b020', band: '#1c1f24', fin: '#1c1f24', nozzle: '#4a4f58' }, flame: ['#ffd27a', '#ffc23a', '#ff8a3a', '#7af0ff'][i], build: 'drill', stage: i, dims: { r: 0.1, len: 1, noseLen: 0.3, noseR: 0.02, fins: 0, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 }, parts: [] };
   { const _ob = EVO.ownBody; EVO.ownBody = () => _ob() || isS5(); }
   { const _as = EVO.applySkin; EVO.applySkin = (g) => { if (!isS5()) return _as(g); const r = EVO.rocket(EVO.save(g).rk); g.rocket.setSkin(CC.Skins.get('evoD' + r.tier)); EVO.attachParts(g); }; }
@@ -24,7 +25,7 @@
   // meme courbe que le niveau 4 (v422) : la pointe de depart s'eteint pendant le plongeon, chaque palier donne un gros bond
   EVO.fuel5 = (rk, la) => 32 + 2 * rk + 1.2 * la + [0, 6, 18, 45][Math.min(3, Math.floor(rk / 5))];
   { const _ol = EVO.onLaunch; EVO.onLaunch = (g) => { _ol(g); if (!isS5() || (g.evo && g.evo.preview)) return; const S = EVO.save(g), rk = g.rocket, f = EVO.fuel5(S.rk || 0, S.la || 0); rk.fuelMax = f * 1.15; rk.fuel = (g.evoAimLast && g.evoAimLast.zone === 'gold') ? f * 1.15 : f; }; }
-  { const _dp = EVO.distPay; EVO.distPay = (g, dist) => (isS5() ? (0.38 / (8450 / 6910)) * (1 + 2 * Math.min(1, dist / 6100)) : _dp ? _dp(g, dist) : 1); }
+  { const _dp = EVO.distPay; EVO.distPay = (g, dist) => (isS5() ? (0.15 / (8450 / 6910)) * (1 + 2 * Math.min(1, dist / 6100)) : _dp ? _dp(g, dist) : 1); }
   let L = null;
   EVO.noKill = (g) => on5(g);   // la voie descend a 2 km sous le sol du niveau 1 : pas de « chute » hors du monde
 
@@ -511,7 +512,7 @@
     const PA = L.PA, t = L.t;
     for (const d of L.sent) { if (!d.alive) continue; const ds = d.s - L.s;
       if (ds > (d.small ? 50 : 40) && ds < (d.small ? 150 : 220)) { d.fT -= dt; if (d.fT <= 0) { d.fT = d.small ? 2.8 : d.heli ? 1.6 : 1.9; fire(g, d.s, d.x, d.y); } }
-      if (d.s >= s0 - (d.heli ? 6 : 2) && d.s <= L.s + (d.heli ? 6 : 2.5) && Math.hypot(L.x - d.x, L.y - d.y) < (d.small ? 3.6 : d.heli ? HELI_HIT : 4.4)) { d.alive = false; d.m.visible = false; const p = d.m.position.clone(); g.effects.explosion(p, null, false, 'orange'); if (d.heli) { g.effects.explosion(p.clone().add(_b.set(0, 2, 0)), null, false, 'orange'); g.audio.play('boom'); } g.audio.play('target'); g.rig.shake = Math.max(g.rig.shake, d.heli ? 1 : 0.7); g.flash = 0.2; g.flashColor = '#ffb070';
+      if (d.s >= s0 - (d.heli ? 6 : 2) && d.s <= L.s + (d.heli ? 6 : 2.5) && Math.hypot(L.x - d.x, L.y - d.y) < (d.small ? 3.6 : d.heli ? HELI_HIT : 4.4)) { d.alive = false; d.m.visible = false; const p = d.m.position.clone(); g.effects.explosion(p, null, false, 'orange'); if (d.heli) { g.effects.explosion(p.clone().add(_b.set(0, 2, 0)), null, false, 'orange'); g.audio.play('boom'); } g.audio.play('target'); g.rig.shake = Math.max(g.rig.shake, d.heli ? 1 : 0.7); g.flash = 0.2; g.flashColor = '#ffb070'; if (d.heli) { const fx = g.effects, up = new V(0, 1, 0), vel = rk.vel ? rk.vel.clone() : new V(0, 0, -30), c = p.clone(); fx.ring(c, up, 2, 30, 0.6, '#ffd060', 0.95); fx.ring(c, vel.clone().normalize(), 1, 22, 0.5, '#ffffff', 0.85); fx.flash(c, '#ffb040', 8, 90, 0.35, '#ff5020'); g.hitStop = 0.09; g.hitScale = 0.18; const sz = new V(14, 6, 14); fx.shatter(c, sz, vel, 'brick'); fx.shatter(c, sz.clone().multiplyScalar(0.7), vel, 'glass'); fx.shatter(c, sz.clone().multiplyScalar(1.2), vel.clone().multiplyScalar(1.4), 'planks'); for (let k = 0; k < 3; k++) fx.addSmoker(c.clone().add(new V((Math.random() - 0.5) * 3, 0.5, (Math.random() - 0.5) * 3)), new V((Math.random() - 0.5) * 3, 5 + Math.random() * 3, (Math.random() - 0.5) * 3), 2.4, -1.5, 0.5, true); setTimeout(() => { try { fx.explosion(c.clone().add(new V((Math.random() - 0.5) * 6, 2 + Math.random() * 3, (Math.random() - 0.5) * 6)), null, true, 'orange'); } catch (e) { /* ignore */ } }, 140); }
         const ev = g.evo, S = EVO.save(g), c = Math.round((d.small ? 90 : d.heli ? 260 : 200) * EVO.mult(S.cm) * (EVO.COIN_K || 1)); if (ev) { ev.kills++; ev.coins += c; } if (rk.fuel > 0) rk.fuel = Math.min(rk.fuelMax, rk.fuel + (d.small ? 0.3 : 0.8));
         (g.killPops = g.killPops || []).push({ p: p.clone(), t0: performance.now(), txt: '+' + c }); } }
     // les consignes, la premiere fois
@@ -574,7 +575,7 @@
     const tg = new T3.Group(); tg.position.set(0, 0, 21.4); m.add(tg); tg.add(new T3.Mesh(new T3.TorusGeometry(5.4, 0.45, 8, 48), bas('#ff3a2a', { fog: false }))); tg.add(new T3.Mesh(new T3.TorusGeometry(2.6, 0.35, 8, 32), bas('#ff3a2a', { fog: false }))); tg.add(new T3.Mesh(new T3.CircleGeometry(1, 16), bas('#ff3a2a', { fog: false })));
     for (const x of [-4, 4]) { const gw = glowS(10, '#ff8a3a', 0.9); gw.position.set(x, 0, -41); m.add(gw); }
     { const cv = document.createElement('canvas'); cv.width = 512; cv.height = 192; const x = cv.getContext('2d'); x.fillStyle = 'rgba(20,6,6,0.85)'; x.fillRect(0, 0, 512, 192); x.strokeStyle = '#ff3a2a'; x.lineWidth = 10; x.strokeRect(5, 5, 502, 182); x.fillStyle = '#ff3a2a'; x.font = '900 64px Arial Black, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('BOSS', 256, 56); x.fillStyle = '#ffffff'; x.font = '900 52px Arial Black, Arial, sans-serif'; x.fillText('LE TUNNELIER', 256, 134);
-      const sp = new T3.Sprite(new T3.SpriteMaterial({ map: new T3.CanvasTexture(cv), transparent: true, fog: false, depthTest: false })); sp.scale.set(26, 9.75, 1); sp.position.set(0, 18, 0); sp.renderOrder = 20; m.add(sp); }
+      const sp = new T3.Sprite(new T3.SpriteMaterial({ map: new T3.CanvasTexture(cv), transparent: true, fog: false, depthTest: false })); sp.scale.set(26, 9.75, 1); sp.position.set(0, 18, 0); sp.renderOrder = 20; }
     m.visible = false; grp.add(m);
     L.boss = { m, tg, head, s: 5657, sT: 5657, x: 0, y: 0, hp: 3, on: false, dead: false, deadT: 0, hitT: 0, fT: 2, cap: PA.len - 300, boomT: 0 };
   }
@@ -629,7 +630,7 @@
   const inWall = (s) => { for (const [a, b, r] of WALLS) if (s >= a && s <= b) return r; return 0; };
   // le sol qu'on rase (la campagne) : hauteur dans la section a ne pas franchir
   const floorAt = (s, F) => { if (s < 1560 || s > L.holeS - 25 || F.u.y < 0.3) return -1e9; const fl = (L.gy + 2.2 - F.p.y) / F.u.y;
-    if (L.slit && s > L.holeS - 70) { const q = _c.copy(F.p).addScaledVector(F.r, L.x).addScaledVector(F.u, fl); if (L.slit.hole(q.x, q.z)) return -1e9; }   // au-dessus de la fente, plus de sol : on peut plonger
+    if (L.slit && s > L.holeS - 270) { const q = _c.copy(F.p).addScaledVector(F.r, L.x).addScaledVector(F.u, fl); if (L.slit.hole(q.x, q.z)) return -1e9; }   // au-dessus de la fente, plus de sol : on peut plonger
     return fl; };
 
   const _step = CC.Rocket.prototype.step;
@@ -644,10 +645,10 @@
     if (!(boostZ || L.boostT > 0 || Z[5] === 'fall' || Z[5] === 'shaft')) this.fuel = Math.max(0, this.fuel - dt);   // en chute libre et en plongeant dans la faille, la gravite travaille : pas de carburant brule
     const dry = this.fuel <= 0;
     if (dry && !L.dry) { L.dry = 1; if (CC.L1) CC.L1.msg(g, 'PLUS DE CARBURANT !', 2, '#ff6a5a'); g.audio.play('warnFuel'); } if (!dry) L.dry = 0;
-    const vMax = L.boostT > 0 ? 96 : boostZ ? 82 : Z[5] === 'fall' ? 66 : 50;   // en chute libre, on tombe vite
+    const vMax = L.boostT > 0 ? 106 : boostZ ? 92 : Z[5] === 'fall' ? 76 : 60;   // en chute libre, on tombe vite
     L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
     if (dry) { L.v -= 13 * dt; L.y -= (3 + 9 * U.clamp(1 - L.v / 50, 0, 1)) * dt; L.rp = Math.min(L.rp, -0.15); if (L.v < 14 && this.active) { g.onRocketCrash('stalled', this.pos.clone(), null); return; } }
-    else { L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.7) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)); L.v = Math.max(24, L.v); }
+    else { L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.8) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)); L.v = Math.max(24, L.v); }
     const vx = -L.v * Math.sin(L.ry) * 0.85, vy = L.v * Math.sin(L.rp) * 0.85, lat = Math.min(1, 52 / L.v); L.x += vx * lat * dt; L.y += vy * lat * dt; L.s += L.v * dt;
     const wr = inWall(L.s), lim = wr ? wr - 2.2 : Z[5] === 'low' ? 22 : ROPEN - 2, rr2 = Math.hypot(L.x, L.y);
     if (rr2 > lim) { L.x *= lim / rr2; L.y *= lim / rr2; L.v *= 1 - dt * 0.6; if (wr && Math.random() < dt * 14) { const F2 = PA.fr(L.s); _a.copy(F2.p).addScaledVector(F2.r, L.x * 1.12).addScaledVector(F2.u, L.y * 1.12); g.effects.sparks.emit({ pos: _a.clone(), vel: new V(rr(-1, 1), rr(-1, 1), rr(-1, 1)).multiplyScalar(10), life: 0.4, s0: 0.3, s1: 0.4, s2: 0.1, cols: g.effects.pal.cyan, drag: 1, grav: 0, a: 1, fout: 0.5 }); if (Math.random() < 0.15) g.audio.play('clank'); } }
@@ -731,7 +732,7 @@
     // le decor du niveau 1 n'a rien a faire ici (sol, hangar, rampe)
     for (const c of g.endlessRun.chunks.values()) if (c.builder && c.builder.root) c.builder.root.visible = false;
     for (const o of g.scene.children) if (o.name === 'level') o.visible = false; if (g.pad && g.pad.evoL) g.pad.evoL.visible = false; if (g.pad && g.pad.hangar) g.pad.hangar.visible = false;
-    if (L.rkSh) { const on = L.started && rk.active && s > 1060 && s < L.holeS + 12 && !(L.slit && L.slit.hole(rk.pos.x, rk.pos.z)); L.rkSh.visible = on; if (on) { const alt = Math.max(0, rk.pos.y - L.gy); L.rkSh.position.set(rk.pos.x, L.gy + 0.3, rk.pos.z); L.rkSh.scale.setScalar(L.rkL * (1.5 + alt * 0.05)); L.rkSh.material.opacity = U.clamp(1.2 - alt / 70, 0.45, 1); } }
+    if (L.rkSh) { const on = false; L.rkSh.visible = on; if (on) { const alt = Math.max(0, rk.pos.y - L.gy); L.rkSh.position.set(rk.pos.x, L.gy + 0.3, rk.pos.z); L.rkSh.scale.setScalar(L.rkL * (1.5 + alt * 0.05)); L.rkSh.material.opacity = U.clamp(1.2 - alt / 70, 0.45, 1); } }
     if (L.dock) L.dock.visible = s < 800; if (L.landG) L.landG.visible = s > 1060 && s < 2827; if (L.deepG) L.deepG.visible = s > 1500;
     // feux de la catapulte : ils filent vers l'avant
     if (L.clamps && L.started) for (const c of L.clamps) { c.position.y = Math.max(-3, c.position.y - dt * 4); c.rotation.x = Math.min(1.2, c.rotation.x + dt * 3); }

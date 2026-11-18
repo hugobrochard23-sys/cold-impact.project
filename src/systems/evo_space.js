@@ -536,7 +536,7 @@
     const tg = new T3.Group(); tg.position.set(0, 2, 34); m.add(tg); tg.add(new T3.Mesh(new T3.TorusGeometry(13, 0.5, 8, 64), bas('#ff3a2a', { fog: false }))); tg.add(new T3.Mesh(new T3.TorusGeometry(7, 0.35, 8, 48), bas('#ff3a2a', { fog: false })));
     for (let k = 0; k < 4; k++) { const t2 = new T3.Mesh(new T3.BoxGeometry(0.6, 4, 0.3), bas('#ff3a2a', { fog: false })), a = k / 4 * Math.PI * 2; t2.position.set(Math.cos(a) * 13, Math.sin(a) * 13, 0); t2.rotation.z = a + Math.PI / 2; tg.add(t2); }
     { const cv = document.createElement('canvas'); cv.width = 512; cv.height = 192; const x = cv.getContext('2d'); x.fillStyle = 'rgba(20,6,6,0.85)'; x.fillRect(0, 0, 512, 192); x.strokeStyle = '#ff3a2a'; x.lineWidth = 10; x.strokeRect(5, 5, 502, 182); x.fillStyle = '#ff3a2a'; x.font = '900 64px Arial Black, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('BOSS', 256, 56); x.fillStyle = '#ffffff'; x.font = '900 46px Arial Black, Arial, sans-serif'; x.fillText('CROISEUR LUNAIRE', 256, 134);
-      const sp = new T3.Sprite(new T3.SpriteMaterial({ map: new T3.CanvasTexture(cv), transparent: true, fog: false, depthTest: false })); sp.scale.set(26, 9.75, 1); sp.position.set(0, 26, 0); sp.renderOrder = 20; m.add(sp); }
+      const sp = new T3.Sprite(new T3.SpriteMaterial({ map: new T3.CanvasTexture(cv), transparent: true, fog: false, depthTest: false })); sp.scale.set(26, 9.75, 1); sp.position.set(0, 26, 0); sp.renderOrder = 20; }
     m.visible = false; grp.add(m);
     L.boss = { m, tg, beacon, s: 7800, sT: 7800, x: 0, y: 0, hp: 3, on: false, dead: false, deadT: 0, hitT: 0, fT: 2, cap: PA.len - 420, boomT: 0 };
   }

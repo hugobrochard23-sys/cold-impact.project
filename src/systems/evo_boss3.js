@@ -65,7 +65,7 @@
       for (const o of [r1, r2, ...ticks.children]) o.renderOrder = 10; tgt.userData = { r1, r2, ticks }; }
     const tag = (() => { const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 256; const x = cv.getContext('2d'); x.fillStyle = 'rgba(120,10,10,0.85)'; x.fillRect(40, 40, 944, 176); x.strokeStyle = '#ffd23a'; x.lineWidth = 10; x.strokeRect(40, 40, 944, 176);
       x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#ffd23a'; x.font = '900 64px Rajdhani, Arial Black, Arial, sans-serif'; x.fillText('BOSS', 512, 84); x.fillStyle = '#ffffff'; x.font = '900 88px Rajdhani, Arial Black, Arial, sans-serif'; x.fillText('MANEGE DE GUERRE', 512, 160);
-      const t = new T3.CanvasTexture(cv); if (T3.SRGBColorSpace) t.colorSpace = T3.SRGBColorSpace; const s = new T3.Sprite(new T3.SpriteMaterial({ map: t, transparent: true, depthTest: false, depthWrite: false, fog: false })); s.scale.set(120, 30, 1); s.position.y = 122; s.renderOrder = 11; W.add(s); return s; })();
+      const t = new T3.CanvasTexture(cv); if (T3.SRGBColorSpace) t.colorSpace = T3.SRGBColorSpace; const s = new T3.Sprite(new T3.SpriteMaterial({ map: t, transparent: true, depthTest: false, depthWrite: false, fog: false })); s.scale.set(120, 30, 1); s.position.y = 122; s.renderOrder = 11; return s; })();
     const beacon = new T3.Mesh(new T3.CylinderGeometry(7, 7, 900, 12, 1, true), new T3.MeshBasicMaterial({ color: '#ff2a2a', transparent: true, opacity: 0.22, blending: T3.AdditiveBlending, depthWrite: false, side: T3.DoubleSide, fog: false })); beacon.position.y = 470; W.add(beacon);
     return { W, base: baseM, deck, deckM, roof, beams, weapons, glows, tgt, tag, beacon };
   }
@@ -222,7 +222,7 @@
     if (B && B.mode !== 'sleep' && g.endlessRun && !(B.mode === 'dead' && B.disp < 0.01)) {
       const w = u * 0.5, h = S(24), x = ox + (u - w) / 2, y = H * 0.1, f = B.hp / HP; B.disp += (f - B.disp) * 0.12;
       ctx.save(); ctx.globalAlpha = B.mode === 'dead' || B.mode === 'dying' ? U.clamp(B.disp * 10, 0, 1) : 1; rrect(ctx, x, y, w, h, h / 2); ctx.clip(); ctx.fillStyle = 'rgba(8,12,18,0.5)'; ctx.fillRect(x, y, w, h); ctx.fillStyle = '#E8433A'; ctx.fillRect(x, y, w * Math.max(0, B.disp), h); ctx.restore();
-      if (B.mode !== 'dead' && B.mode !== 'dying') { ctx.save(); ctx.font = '700 ' + Math.round(S(26)) + 'px Rajdhani, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.lineWidth = S(5); ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.strokeText('BOSS · MANEGE DE GUERRE', ox + u / 2, y - S(6)); ctx.fillStyle = '#ffe9a0'; ctx.fillText('BOSS · MANEGE DE GUERRE', ox + u / 2, y - S(6)); ctx.restore(); }   // v413 : le nom au-dessus de la jauge
+      if (false) { ctx.save(); ctx.font = '700 ' + Math.round(S(26)) + 'px Rajdhani, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.lineWidth = S(5); ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.strokeText('BOSS · MANEGE DE GUERRE', ox + u / 2, y - S(6)); ctx.fillStyle = '#ffe9a0'; ctx.fillText('BOSS · MANEGE DE GUERRE', ox + u / 2, y - S(6)); ctx.restore(); }   // v413 : le nom au-dessus de la jauge
       return;
     }
     if (_th) _th(ctx, g, ox, u, H, UI, S);
