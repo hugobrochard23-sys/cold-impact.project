@@ -41,8 +41,8 @@
   // on plonge du bureau, on rase le tapis, on passe sous le lit, on remonte vers le ventilateur ; on fait des S entre les boucles, on monte a la regle qui tourne,
   // on replonge au train ; le couloir ondule de haut en bas ; on rase le carrelage sous la table, on saute sur le plan de travail, on monte a la fenetre, on plonge dans l'herbe
   const KEY = (K, w) => { if (w <= K[0][0]) return K[0][1]; for (let i = 0; i < K.length - 1; i++) if (w <= K[i + 1][0]) return K[i][1] + (K[i + 1][1] - K[i][1]) * ss(K[i][0], K[i + 1][0], w); return K[K.length - 1][1]; };
-  const KU = [[0, 0], [300, 0], [450, -70], [620, 30], [700, 0], [1130, 0], [1260, 140], [1450, 40], [1600, -80], [1700, 0], [1800, 0], [1960, -160], [2060, 0], [2150, 150], [2290, 60], [2420, -100], [2530, -30], [2620, 40], [2760, 110], [2900, 0],
-    [3000, 25], [3150, -25], [3300, 25], [3450, -25], [3600, 20], [3700, 0], [3790, 0], [4300, 0], [4500, 362], [4860, 362], [4990, 0], [5450, 0], [5600, -120], [5760, 60], [5900, -40], [6050, 40], [6400, 0]];
+  const KU = [[0, 0], [300, 0], [450, -70], [620, 30], [700, 0], [1130, 0], [1260, 95], [1450, 40], [1600, -80], [1700, 0], [1800, 0], [1960, -110], [2060, 0], [2150, 100], [2290, 60], [2420, -80], [2530, -30], [2620, 40], [2760, 110], [2900, 0],
+    [3000, 25], [3150, -25], [3300, 25], [3450, -25], [3600, 20], [3700, 0], [3790, 0], [4300, 0], [4500, 362], [4860, 362], [4990, 0], [5450, 0], [5600, -90], [5760, 50], [5900, -40], [6050, 40], [6400, 0]];
   const KY = [[0, DESK + 2.2], [140, DESK + 8], [300, DESK + 12], [560, 40], [620, 30], [700, 18], [1130, 18], [1260, 70], [1450, 150], [1600, 140], [1700, 150], [1800, 120], [1960, 34], [2150, 34], [2290, 110], [2420, 190], [2530, 70], [2620, 34], [2760, 90], [2900, 150],
     [3000, 60], [3150, 190], [3300, 60], [3450, 190], [3600, 90], [3700, 150], [3790, 60], [3860, 18], [4300, 18], [4500, CNT + 32], [4860, CNT + 32], [4990, 175], [5390, 240], [5450, 240], [5650, 75], [6400, 75]];
   const pathU = (w) => KEY(KU, w), pathY = (w) => KEY(KY, w);
@@ -614,8 +614,10 @@
     _rup.call(this, dt); const g = this.game, rk = g.rocket;
     if (L && L.PA && on7(g) && !rk.active && (g.state === 'MENU' || g.state === 'AIM' || g.state === 'LAUNCH')) { menuView(g, this, dt); return; }
     if (!L || !L.PA || !on7(g) || !rk.active || g.state !== 'FLIGHT' || !L.started || (g.evoFinish && g.evoFinish.hold)) return;
-    const PA = L.PA, cam = this.cam, F = PA.fr(L.s + 6), Fq = frameQ(F, _q2.clone());
-    if (!L.camQ) L.camQ = Fq.clone(); L.camQ.slerp(Fq, 1 - Math.exp(-dt * 3.2));
+    const PA = L.PA, cam = this.cam;
+    // v440 : la camera suit la direction MOYENNE de la voie (corde de -20 m a +110 m), jamais la tangente du moment : plus de coups de camera dans les virages serres
+    const ca = PA.fr(Math.max(0, L.s - 20)).p.clone(), cb = PA.fr(L.s + 110).p, ct = _b.subVectors(cb, ca).normalize(), cy = new V(0, 1, 0).addScaledVector(ct, -ct.y).normalize(), Fq = _q2.setFromRotationMatrix(_m.makeBasis(new V().crossVectors(ct, cy).normalize(), cy, ct.clone().negate()));
+    if (!L.camQ) L.camQ = Fq.clone(); L.camQ.slerp(Fq, 1 - Math.exp(-dt * 1.3));
     const cr = new V(1, 0, 0).applyQuaternion(L.camQ), cu = new V(0, 1, 0).applyQuaternion(L.camQ), cf = new V(0, 0, -1).applyQuaternion(L.camQ);
     const F0 = PA.fr(L.s), ctr = _d.copy(F0.p).addScaledVector(F0.r, L.x * 0.94).addScaledVector(F0.u, L.y * 0.94), bkD = U.clamp(1.5 * L.rkL, 3.6, 7.5);
     cam.position.copy(ctr).addScaledVector(cf, -bkD).addScaledVector(cu, 0.47 * bkD);
