@@ -298,6 +298,56 @@
       put(g, cylZ(0.08, 0.1, 0.08, 20), DK, { p: [0, 0, -0.62] });
       tips.push([0.36, 0, -0.6], [-0.36, 0, -0.6]); return { tail: -0.66, jr: 0.08, noseZ: 0.78, tips };
     },
+    // v446 : NIVEAU 8 « LE FAR WEST » : 4 etats (st 0..3) : 0 tonneau de dynamite (tonneau cercle de fer, batons rouges ficeles, meche)
+    //   -> 1 fusee diligence (bois peint rouge, liseres jaunes, fenetres, lanterne, roues a rayons en guise d'ailerons) -> 2 locomotive-fusee (chaudiere noire,
+    //   cheminee, chasse-pierres, phare, cerclages de laiton) -> 3 fusee cuivree du chercheur d'or (cuivre, or, rivets, hublot, etoile de sherif)
+    ouest(g, st) {
+      const WD = '#a8723a', WD2 = '#7a4e26', IR = '#3a3a40', RD = '#c8302a', YL = '#f2c41a', GD = '#e8b030', BR = '#c89a40', BK = '#2a2a30', CU = '#c8743a', CU2 = '#9a5228', WH = '#f4ecd8';
+      const band = (z, r, c, w) => put(g, cylZ(r * 1.02, r * 1.02, w || 0.03, 24), c, { p: [0, 0, z] });
+      const cone = (z0, len, r, c, x, y) => put(g, cylZ(r, 0.004, len, 24), c, { p: [x || 0, y || 0, z0 + len / 2] });
+      const fins = (n, z0, z1, r, h, c, rot, th) => { for (let k = 0; k < n; k++) { const f = new T3.Group(); f.rotation.z = k * Math.PI * 2 / n + (rot || 0); g.add(f); put(g, fin([[z1, r], [z0, r], [z0 - 0.06, r + h], [z0 + (z1 - z0) * 0.35, r + h]], th || 0.014), c, { parent: f }); } };
+      const wheel = (z, r, c, rot) => { const f = new T3.Group(); f.rotation.z = rot; g.add(f); put(g, ringG(r, 0.012), c, { parent: f, p: [0, r + 0.1, z], r: [0, Math.PI / 2, 0] }); for (let k = 0; k < 6; k++) put(g, box(0.008, r * 2, 0.008), c, { parent: f, p: [0, r + 0.1, z], r: [k * Math.PI / 6, 0, 0] }); };
+      const tips = [];
+      if (st === 0) {   // TONNEAU DE DYNAMITE
+        put(g, lathe([[0.1, -0.34], [0.135, -0.2], [0.145, 0], [0.135, 0.2], [0.1, 0.34]], 22), WD);
+        for (const z of [-0.28, -0.12, 0.12, 0.28]) band(z, z * z > 0.05 ? 0.118 : 0.142, IR, 0.025);
+        for (let k = 0; k < 18; k++) { const a = k / 18 * Math.PI * 2; put(g, box(0.004, 0.004, 0.62), WD2, { p: [Math.cos(a) * 0.143, Math.sin(a) * 0.143, 0] }); }   // les douelles
+        for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4, x = Math.cos(a) * 0.17, y = Math.sin(a) * 0.17; put(g, cylZ(0.03, 0.03, 0.42, 12), RD, { p: [x, y, -0.04] }); put(g, box(0.004, 0.004, 0.08), '#e8d8b0', { p: [x, y, 0.2] }); }   // les batons de dynamite
+        band(-0.04, 0.2, '#c8a870', 0.02);   // la ficelle
+        cone(0.34, 0.16, 0.1, IR); put(g, sph(0.02), '#ffe08a', { p: [0, 0, 0.52], basic: true });
+        fins(3, -0.22, -0.4, 0.12, 0.13, WD2, 0, 0.016);
+        tips.push([0.25, 0, -0.4], [-0.25, 0, -0.4]); return { tail: -0.42, jr: 0.06, noseZ: 0.52, tips };
+      }
+      if (st === 1) {   // FUSEE DILIGENCE
+        put(g, cylZ(0.1, 0.1, 0.86, 8), RD, { p: [0, 0, -0.03] }); for (const z of [-0.38, 0.32]) band(z, 0.102, YL, 0.04); band(-0.03, 0.103, YL, 0.012);
+        for (const sx of [-1, 1]) { put(g, box(0.006, 0.06, 0.12), BK, { p: [sx * 0.1, 0.02, 0.08] }); put(g, box(0.008, 0.07, 0.13), YL, { p: [sx * 0.099, 0.02, 0.08] }); }   // les fenetres
+        put(g, box(0.04, 0.05, 0.04), BR, { p: [0.08, 0.08, 0.24] }); put(g, sph(0.018), '#ffd060', { p: [0.08, 0.08, 0.27], basic: true });   // la lanterne
+        put(g, cylZ(0.1, 0.07, 0.08, 8), WD2, { p: [0, 0, 0.44] }); cone(0.48, 0.24, 0.07, BR); put(g, sph(0.018), GD, { p: [0, 0, 0.72] });
+        for (let k = 0; k < 4; k++) wheel(-0.32, 0.075, WD2, k * Math.PI / 2 + Math.PI / 4);
+        tips.push([0.3, 0, -0.32], [-0.3, 0, -0.32]); return { tail: -0.48, jr: 0.07, noseZ: 0.72, tips };
+      }
+      if (st === 2) {   // LOCOMOTIVE-FUSEE
+        put(g, lathe([[0.08, -0.56], [0.115, -0.5], [0.12, -0.3], [0.12, 0.38], [0.11, 0.44], [0.0, 0.46]], 24), BK);
+        for (const z of [-0.36, -0.1, 0.16]) band(z, 0.122, BR, 0.022); band(0.38, 0.122, RD, 0.05);
+        put(g, sph(0.035), '#fff4c0', { p: [0, 0.04, 0.47], basic: true }); put(g, cylZ(0.05, 0.05, 0.04, 16), BR, { p: [0, 0.04, 0.44] });   // le phare
+        put(g, cylZ(0.035, 0.05, 0.16, 14), BK, { p: [0, 0.16, 0.26], r: [Math.PI / 2, 0, 0] }); put(g, cylZ(0.06, 0.06, 0.03, 14), BR, { p: [0, 0.24, 0.26], r: [Math.PI / 2, 0, 0] });   // la cheminee
+        put(g, cylZ(0.03, 0.03, 0.06, 12), BR, { p: [0, 0.13, 0.0], r: [Math.PI / 2, 0, 0] });   // le dome
+        for (let k = -2; k <= 2; k++) put(g, box(0.012, 0.012, 0.16), RD, { p: [k * 0.03, -0.1 - Math.abs(k) * 0.008, 0.5], r: [0.5, k * 0.25, 0] });   // le chasse-pierres
+        fins(4, -0.3, -0.56, 0.11, 0.17, RD, Math.PI / 4, 0.018);
+        tips.push([0.3, 0, -0.56], [-0.3, 0, -0.56]); return { tail: -0.58, jr: 0.075, noseZ: 0.56, tips };
+      }
+      // FUSEE CUIVREE DU CHERCHEUR D'OR
+      put(g, lathe([[0.07, -0.6], [0.12, -0.54], [0.135, -0.3], [0.135, 0.26], [0.12, 0.44], [0.07, 0.62], [0.0, 0.78]], 26), CU);
+      for (const z of [-0.44, -0.08, 0.28]) band(z, 0.137, GD, 0.03); band(0.1, 0.137, CU2, 0.01);
+      for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; for (const z of [-0.26, 0.1]) put(g, sph(0.008), CU2, { p: [Math.cos(a) * 0.137, Math.sin(a) * 0.137, z] }); }   // rivets
+      put(g, cylZ(0.05, 0.05, 0.014, 20), GD, { p: [0, 0.134, 0.16], r: [Math.PI / 2, 0, 0] }); put(g, cylZ(0.038, 0.038, 0.016, 20), '#7ad0f0', { p: [0, 0.136, 0.16], r: [Math.PI / 2, 0, 0] });   // le hublot
+      { const sh = new T3.Shape(); for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2 + Math.PI / 2, r = k % 2 ? 0.022 : 0.05; if (k) sh.lineTo(Math.cos(a) * r, Math.sin(a) * r); else sh.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
+        for (const sx of [-1, 1]) { const geo = new T3.ExtrudeGeometry(sh, { depth: 0.008, bevelEnabled: false }); geo.rotateY(sx * Math.PI / 2); put(g, geo, GD, { p: [sx * 0.137, 0, -0.08] }); } }   // l'etoile de sherif
+      put(g, sph(0.03), GD, { p: [0, 0, 0.78] });
+      fins(4, -0.3, -0.66, 0.125, 0.25, CU2, Math.PI / 4, 0.018); for (const z of [-0.62]) band(z, 0.1, GD, 0.03);
+      put(g, cylZ(0.08, 0.1, 0.08, 20), BK, { p: [0, 0, -0.62] });
+      tips.push([0.37, 0, -0.6], [-0.37, 0, -0.6]); return { tail: -0.66, jr: 0.08, noseZ: 0.78, tips };
+    },
   };
 
   // jet de la tuyere : meme mecanique que M.rocket (allumage / vacillement animes par Rocket.updateMesh)
