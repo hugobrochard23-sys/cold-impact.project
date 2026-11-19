@@ -28,6 +28,25 @@
   { const _ol = EVO.onLaunch; EVO.onLaunch = (g) => { _ol(g); if (!isS7() || (g.evo && g.evo.preview)) return; const S = EVO.save(g), rk = g.rocket, f = EVO.fuel7(S.rk || 0, S.la || 0); rk.fuelMax = f * 1.15; rk.fuel = (g.evoAimLast && g.evoAimLast.zone === 'gold') ? f * 1.15 : f; }; }
   { const _dp = EVO.distPay; EVO.distPay = (g, dist) => (isS7() ? 0.45 * (0.15 / (8450 / 6910)) * (1 + 2 * Math.min(1, dist / 6400)) : _dp ? _dp(g, dist) : 1); }
   { const _nk = EVO.noKill; EVO.noKill = (g) => on7(g) || (_nk ? _nk(g) : false); }
+  // v443 : au niveau 7, le monde physique du niveau 1 (son sol, ses decors caches sous la maison) est coupe : seule la maison compte
+  if (CC.World) { const _sw = CC.World.prototype.sweep; CC.World.prototype.sweep = function (p0, p1, r, filter) { if (L && L.PA && CC.game && on7(CC.game)) return null; return _sw.call(this, p0, p1, r, filter); }; }
+  // v443 : LES COLLISIONS AVEC LA MAISON : chaque piece visible du decor (murs, plafonds, portes, fenetre, meubles, jouets) arrete la fusee, rien d'invisible.
+  // On glisse quand on la frole, on s'ecrase quand on la prend de face (comme au niveau 1).
+  const _cv = new V(), _cw = new V(), _cn = new V();
+  const colAdd = (mesh, parts) => { if (L) (L.colPend = L.colPend || []).push([mesh, parts]); };
+  function colBuild() { const C = 40, HS = new Map(); L.grp.updateMatrixWorld(true);
+    for (const [m, parts] of L.colPend || []) for (const q of parts) { if (!q.g.boundingBox) q.g.computeBoundingBox(); const bb0 = q.g.boundingBox, sz = bb0.getSize(_cv); if (Math.max(sz.x, sz.y, sz.z) < 3) continue;
+      const M = new T3.Matrix4().compose(new V().fromArray(q.p), new T3.Quaternion().setFromEuler(new T3.Euler().fromArray(q.r ? [q.r[0], q.r[1], q.r[2]] : [0, 0, 0])), new V().fromArray(q.s || [1, 1, 1])), W = new T3.Matrix4().multiplyMatrices(m.matrixWorld, M);
+      const P = { W, inv: W.clone().invert(), bb: bb0.clone().expandByScalar(-0.3) }; if (P.bb.isEmpty()) continue; const wb = bb0.clone().applyMatrix4(W);
+      for (let i = Math.floor(wb.min.x / C); i <= Math.floor(wb.max.x / C); i++) for (let k = Math.floor(wb.min.z / C); k <= Math.floor(wb.max.z / C); k++) { const kk = i + ',' + k; let a = HS.get(kk); if (!a) HS.set(kk, a = []); a.push(P); } }
+    L.colH = HS; L.colC = C; L.colPend = null; }
+  // la piece touchee : on renvoie le point ressorti par la face la plus proche et la normale de cette face (ou null)
+  function colAt(p) { if (!L.colH) return null; const C = L.colC, a = L.colH.get(Math.floor(p.x / C) + ',' + Math.floor(p.z / C)); if (!a) return null;
+    for (const P of a) { _cv.copy(p).applyMatrix4(P.inv); const b = P.bb; if (!b.containsPoint(_cv)) continue;
+      const d = [_cv.x - b.min.x, b.max.x - _cv.x, _cv.y - b.min.y, b.max.y - _cv.y, _cv.z - b.min.z, b.max.z - _cv.z]; let i = 0; for (let k = 1; k < 6; k++) if (d[k] < d[i]) i = k;
+      const ax = i >> 1, sg = i & 1 ? 1 : -1; _cw.copy(_cv); if (ax === 0) _cw.x = sg > 0 ? b.max.x + 0.6 : b.min.x - 0.6; else if (ax === 1) _cw.y = sg > 0 ? b.max.y + 0.6 : b.min.y - 0.6; else _cw.z = sg > 0 ? b.max.z + 0.6 : b.min.z - 0.6;
+      _cn.set(ax === 0 ? sg : 0, ax === 1 ? sg : 0, ax === 2 ? sg : 0).transformDirection(P.W); return { out: _cw.clone().applyMatrix4(P.W), n: _cn.clone() }; }
+    return null; }
 
   // ============================== LA MAISON : les pieces, le relief, la voie ==============================
   const DESK = 112, CEIL = 375, CNT = 135, IL0 = 4560, IL1 = 4910, ILW = 72;   // v441 : l'ilot de cuisine (w de IL0 a IL1, u de -ILW a ILW)
@@ -279,7 +298,7 @@
     for (const sd of [-1, 1]) { for (let w = WF; w < WE + 1100; w += 36) put(sd * 950, 90, w, 8, 180, 30, '#c8a070'); for (const y of [40, 140]) put(sd * 945, y, (WF + WE + 1100) / 2, 6, 10, WE + 1100 - WF, '#a88050'); }
     for (let u = -950; u <= 950; u += 36) put(u, 90, WE + 1100, 30, 180, 8, '#c8a070');
     { const u = -230, w = 5900, y = H(u, w); pC(P, u, y + 60, -w, 50, 60, 120, '#2a9a4a', 24); pC(P, u + 75, y + 90, -w, 6, 10, 130, '#2a9a4a', 10, [0, 0, -1.0]); P.push({ g: new T3.TorusGeometry(40, 5, 8, 24, Math.PI), c: '#2a9a4a', p: [u, y + 120, -w], r: [0, Math.PI / 2, 0] }); shUW(u, w, 60); }   // l'arrosoir
-    HG.add(bake(P)); for (const q of PL) HG.add(q);
+    { const hm = bake(P); HG.add(hm); colAdd(hm, P); } for (const q of PL) HG.add(q);
   }
 
   // les nuages du jardin (bouffees douces tournees vers la camera)
@@ -320,7 +339,12 @@
     const brickWall = (w, gx, gy, gw, gh, c1, c2, X, Y) => { const s = sAt(w), h = hold(s), G0 = ground(s, 0), base = G0.gy - G0.F.p.y, P = [], BR = [], BW = 19.2, BH = 5.8;
       for (let r = 0; base + r * BH < Y + 6; r++) { const y0 = base + r * BH; for (let x = -X - 14 - (r % 2) * BW / 2; x < X + 14; x += BW) { const x0 = x, x1 = x + BW; if (x1 > gx - gw / 2 && x0 < gx + gw / 2 && y0 + BH > gy - gh / 2 && y0 < gy + gh / 2) continue;
         const c = (r + Math.round(x / BW)) % 2 ? c1 : c2; P.push({ g: new T3.BoxGeometry(BW - 0.3, BH - 0.2, 9.6), c, p: [(x0 + x1) / 2, y0 + BH / 2, 0] }); for (const dx of [-BW / 4, BW / 4]) P.push({ g: new T3.CylinderGeometry(2.6, 2.6, 2, 12), c, p: [(x0 + x1) / 2 + dx, y0 + BH + 1, 0] }); BR.push([x0, x1, y0, y0 + BH]); } }
-      h.add(bake(P)); let hx0 = 1e9, hx1 = -1e9, hy0 = 1e9, hy1 = -1e9; for (let r = 0; base + r * BH < Y + 6; r++) { const y0 = base + r * BH; for (let x = -X - 14 - (r % 2) * BW / 2; x < X + 14; x += BW) if (x + BW > gx - gw / 2 && x < gx + gw / 2 && y0 + BH > gy - gh / 2 && y0 < gy + gh / 2) { hx0 = Math.min(hx0, x); hx1 = Math.max(hx1, x + BW); hy0 = Math.min(hy0, y0); hy1 = Math.max(hy1, y0 + BH); } }
+      h.add(bake(P));
+      { const F = PA.fr(s), hw = (ROOMS.find((q) => w >= q[0] && w < q[1]) || ROOMS[0])[2], pu = pathU(w), xl = -hw - pu - 8, xr = hw - pu + 8, top = PA.O.y + CEIL - F.p.y + 8, by = base + Math.ceil((Y + 6 - base) / BH) * BH, xa = -X - 14, xb = X + 14, Q = [];
+        Q.push({ g: SB(xa - xl, top - base + 2, 9.6), c: c2, p: [(xl + xa) / 2, (top + base - 2) / 2, 0] }, { g: SB(xr - xb, top - base + 2, 9.6), c: c2, p: [(xb + xr) / 2, (top + base - 2) / 2, 0] }, { g: SB(xb - xa, top - by, 9.6), c: c2, p: [0, (top + by) / 2, 0] });
+        for (let y = base + BH; y < top - 4; y += BH) for (const [x0, x1] of [[xl, xa], [xb, xr], [xa, xb]]) { if (x0 === xa && y < by) continue; Q.push({ g: SB(x1 - x0, 0.5, 10.2), c: c1, p: [(x0 + x1) / 2, y, 0] }); }   // les joints du mur
+        const qm = bake(Q); h.add(qm); colAdd(qm, Q.slice(0, 3)); }
+      let hx0 = 1e9, hx1 = -1e9, hy0 = 1e9, hy1 = -1e9; for (let r = 0; base + r * BH < Y + 6; r++) { const y0 = base + r * BH; for (let x = -X - 14 - (r % 2) * BW / 2; x < X + 14; x += BW) if (x + BW > gx - gw / 2 && x < gx + gw / 2 && y0 + BH > gy - gh / 2 && y0 < gy + gh / 2) { hx0 = Math.min(hx0, x); hx1 = Math.max(hx1, x + BW); hy0 = Math.min(hy0, y0); hy1 = Math.max(hy1, y0 + BH); } }
       frameAt(h, Math.max(hx0, -X - 14), Math.min(hx1, X + 14), hy0, hy1); for (const sd of [-1, 0, 1]) { const q = ground(s, sd * X); shad(new V(q.p.x, q.gy, q.p.z), 30); }
       OB.push({ s, th: 5, kind: 'brique', hit: (x, y) => BR.some((b) => x > b[0] - RKF && x < b[1] + RKF && y > b[2] - RKF && y < b[3] + RKF) }); };
     // DES PILES DE LIVRES ETROITES sous le lit (livres de chant, 22 m de large) : on passe dans le vide entre elles, balise par des veilleuses au sol
@@ -371,8 +395,8 @@
       OB.push({ s, th: 3, kind: 'balancier', upd: (t) => { pv.rotation.z = ang(t); }, hit: (x, y, t) => { const a = ang(t), cx = bx + Math.sin(a) * Lr, cy = top - Math.cos(a) * Lr; if (Math.hypot(x - cx, y - cy) < 14 + RKF) return true; return y > cy && Math.abs(x - (bx + Math.sin(a) * (top - y))) < 0.7 + RKF; } }); };
     // UNE BARRIERE D'ENFANT (barreaux blancs serres) du sol au plafond du couloir, un seul battant ouvert (encadre)
     const gate = (w, gx, gap, top) => { const s = sAt(w), h = hold(s), G0 = ground(s, 0), b = G0.gy - G0.F.p.y, P = [];
-      for (let x = -60; x <= 60; x += 3.4) { if (Math.abs(x - gx) < gap / 2 + 1) continue; P.push({ g: CYG(0.8, 0.8, top - b, 8), c: '#f6f6f2', p: [x, (top + b) / 2, 0] }); }
-      for (const y of [b + 2, top]) P.push({ g: SB(120, 2.4, 2.4), c: '#f6f6f2', p: [0, y, 0] }); h.add(bake(P)); frameAt(h, gx - gap / 2, gx + gap / 2, b + 3.2, top - 1.2); shad(new V().copy(G0.p).setY(G0.gy), 20);
+      for (let x = -110; x <= 110; x += 3.4) { if (Math.abs(x - gx) < gap / 2 + 1) continue; P.push({ g: CYG(0.8, 0.8, top - b, 8), c: '#f6f6f2', p: [x, (top + b) / 2, 0] }); }
+      for (const y of [b + 2, top]) P.push({ g: SB(220, 2.4, 2.4), c: '#f6f6f2', p: [0, y, 0] }); h.add(bake(P)); frameAt(h, gx - gap / 2, gx + gap / 2, b + 3.2, top - 1.2); shad(new V().copy(G0.p).setY(G0.gy), 20);
       OB.push({ s, th: 1.4, kind: 'barriere', hit: (x, y) => !(Math.abs(x - gx) < gap / 2 - RKF) && y < top + 1 }); };
     // UNE CHAISE de cuisine (sous la table) : pieds en x0 et x1, profondeur 60 m, un barreau bas devant (hauteur rh au-dessus du sol), un dossier
     const leg = (P, x, b, top, r) => { P.push({ g: SB(r * 2, top - b, r * 2), c: '#9a6a40', p: [x, (top + b) / 2, 0] }); };
@@ -413,7 +437,7 @@
     brickWall(1600, 22, 30, 30, 26, '#2a6ad8', '#1e4ea8', 60, 66);
     // la salle de jeux : les boucles en S au ras du tapis, le diable a ressort, la regle qui tourne, le train, les tours de cubes qui oscillent
     loop(1960, 0, 0, 20); loop(2010, -10, 4, 20); loop(2060, 0, 0, 20); loop(2110, 10, 4, 20); loop(2150, 0, 0, 20);
-    { const s = sAt(1108), h = hold(s), G = ground(s, 0), b = G.gy - G.F.p.y; frameAt(h, -60, 60, b + 1.5, b + 56); OB.push({ s, th: 6, kind: 'tete', upd: null, hit: (x, y) => y > b + 58 - RKF }); }
+    { const s = sAt(1108), h = hold(s), G = ground(s, 0), b = G.gy - G.F.p.y; frameAt(h, -60, 60, b + 1.5, b + 56); }
     piston(2290, -14, 15, 30, 120, 2.2, 0, 'diable', ['#e8302a', '#f2c41a', '#2a6ad8']); piston(2290, 26, 15, 30, 120, 2.2, 1.1, 'diable', ['#2a9a4a', '#ff7a1a', '#9a4ad8']);
     rotor(2420, 0, 0, 170, 9, 0.75, 0.6, 'regle', ruler);
     train(2620, 8);
@@ -423,7 +447,6 @@
     gate(3300, -20, 18, 150); pendulum(3450, 0, 0.15, 1.4, 1.5); ball(3520, 0, 12, 140, 1.7, 0.6); door(3600, -18, 24, 30, 34, '#e6d8bc');
     // la cuisine : sous la table entre les chaises ; le plan de travail (grille-pain, fouet du batteur, pots d'epices)
     chair(3880, -16, 15, 8, 1); chair(4010, -6, 26, 16, 0); chair(4140, -26, 4, 0, 0); chair(4250, -14, 17, 6, -1);
-    { const s = sAt(IL0), G = ground(s + 4, 0), b = G.gy - G.F.p.y; OB.push({ s, th: 3, kind: 'ilot', upd: null, hit: (x, y) => Math.abs(x) < ILW && y < b - 0.5 }); }
     piston(4640, 6, 10, 22, 34, 1.9, 0, 'tartine', ['#c8d0d8']); rotor(4740, 0, 4, 54, 4, 2.2, 0, 'fouet', whisk);
     posts(4840, [[-12, 4.5, 30], [14, 4.5, 24]], 'pot', (P, x, b, top, r) => { P.push({ g: CYG(r, r, top - 4, 16), c: '#f4f0e4', p: [x, (top - 4) / 2, 0] }, { g: CYG(r * 1.05, r * 1.05, 4, 16), c: '#e8302a', p: [x, top - 2, 0] }); });
     // le jardin : les jets d'arrosage, le moulin a vent, les tiges de tournesol qui ondulent
@@ -571,7 +594,7 @@
     L.rkL = (EVO.rocketLen && EVO.rocketLen(g)) || 2.4;
     SHAD.length = GRASS.length = 0;
     const PA = L.PA = buildPath(P0, F0), grp = L.grp = new T3.Group(); g.scene.add(grp); L.HGry = Math.atan2(-PA.F0.x, -PA.F0.z); L.dbg = { ZN, zoneAt, LIMS: () => LIMS, gH, pathU, pathY };
-    terrain(PA, grp); obstacles(g, PA, grp); house(PA, grp); sky(g, PA, grp); enemies(g, PA, grp); bossBuild(g, PA, grp); fwPool(grp); batches(grp);
+    terrain(PA, grp); obstacles(g, PA, grp); house(PA, grp); sky(g, PA, grp); enemies(g, PA, grp); bossBuild(g, PA, grp); fwPool(grp); batches(grp); colBuild();
     grp.traverse((o) => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) if (!m.isShaderMaterial && !m.fog && !(m.blending === T3.AdditiveBlending) && !(o.isPoints)) { m.fog = true; m.needsUpdate = true; } });
     // les poussieres dorees dans la lumiere (dedans), les aigrettes qui volent (dehors)
     { const n = 420, pos = new Float32Array(n * 3), geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(pos, 3)); const p = new T3.Points(geo, new T3.PointsMaterial({ color: '#fff0c0', size: 0.35, map: dotTex(), transparent: true, opacity: 0, depthWrite: false, fog: false })); p.frustumCulled = false; g.scene.add(p); L.dust = p; L.dustInit = false; L.dph = new Float32Array(n); for (let i = 0; i < n; i++) L.dph[i] = rr(0, 6.28); }
@@ -600,14 +623,19 @@
     const vMax = L.boostT > 0 ? 106 : boostZ ? 92 : 60; L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
     { const sp = this.vel.length(); if (sp > 1e-3) { const want = dry ? Math.max(0, sp - 13 * dt) : sp + (vMax - sp) * Math.min(1, dt * (sp < vMax ? 1.4 : 0.9)); this.vel.multiplyScalar(want / sp); } if (dry && this.vel.length() < 14) { g.onRocketCrash('stalled', this.pos.clone(), null); return; } }
     // ou en est-on sur la voie
-    for (let k = 0; k < 3; k++) { const F = PA.fr(L.s); L.s = U.clamp(L.s + _st.subVectors(this.pos, F.p).dot(F.t), 0, PA.len); }
+    for (let k = 0; k < 3; k++) { const F = PA.fr(L.s); L.s = U.clamp(L.s + U.clamp(_st.subVectors(this.pos, F.p).dot(F.t), -40, 40), 0, PA.len); }
     const F2 = PA.fr(L.s); _st.subVectors(this.pos, F2.p); L.x = _st.dot(F2.r); L.y = _st.dot(F2.u); L.v = this.vel.length();
     // les murs, le plafond et le sol de la maison : on glisse dessus
-    { const T = LIMS[Z[5]] || LIMS.open; if (L.hx === undefined) { L.hx = T[0]; L.hy = T[1]; } const k = Math.min(1, dt * 1.6); L.hx += (T[0] - L.hx) * k; L.hy += (T[1] - L.hy) * k;
-      if (Math.abs(L.x) > L.hx) { L.x = Math.sign(L.x) * L.hx; const vr = this.vel.dot(F2.r); if (vr * L.x > 0) this.vel.addScaledVector(F2.r, -vr); }
-      if (Math.abs(L.y) > L.hy) { L.y = Math.sign(L.y) * L.hy; const vu = this.vel.dot(F2.u); if (vu * L.y > 0) this.vel.addScaledVector(F2.u, -vu); } }
+    // dehors (le jardin), une limite tres large : la palissade est a 950 m, le ciel a 520 m
+    if (Math.abs(L.x) > 900) { L.x = Math.sign(L.x) * 900; const vr = this.vel.dot(F2.r); if (vr * L.x > 0) this.vel.addScaledVector(F2.r, -vr); }
+    if (L.y > 520) { L.y = 520; const vu = this.vel.dot(F2.u); if (vu > 0) this.vel.addScaledVector(F2.u, -vu); }
     { const fl = floorAt(L.s, F2); if (L.y < fl) { L.y = fl; const vu = this.vel.dot(F2.u); if (vu < 0) this.vel.addScaledVector(F2.u, -vu); if (Math.random() < dt * 8) g.effects.smokePuff(_a.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y - 1).clone(), new V(rr(-2, 2), rr(1, 3), rr(-2, 2)), 1.4, 0.9); } }
-    this.pos.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y); this.speed = this.vel.length();
+    this.pos.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y);
+    { const H2 = colAt(this.pos); if (H2) { const vd = _a.copy(this.vel).normalize(), imp = Math.asin(U.clamp(-vd.dot(H2.n), -1, 1)) * 57.3;
+        if (imp < 28 || L.inv > 0) { this.pos.copy(H2.out); const vn = this.vel.dot(H2.n); if (vn < 0) this.vel.addScaledVector(H2.n, -vn * 1.05); if (Math.random() < dt * 10) g.effects.smokePuff(this.pos.clone(), H2.n.clone().multiplyScalar(3), 1.2, 0.7); }
+        else { this.pos.copy(H2.out); g.onRocketCrash('wall', this.pos.clone(), H2.n.clone()); if (this.active) { L.inv = 0.8; const vn = this.vel.dot(H2.n); if (vn < 0) this.vel.addScaledVector(H2.n, -vn * 1.5); this.vel.multiplyScalar(0.5); g.rig.shake = Math.max(g.rig.shake, 1); } }
+        for (let k = 0; k < 2; k++) { const F = PA.fr(L.s); L.s = U.clamp(L.s + _st.subVectors(this.pos, F.p).dot(F.t), 0, PA.len); } const F3 = PA.fr(L.s); _st.subVectors(this.pos, F3.p); L.x = _st.dot(F3.r); L.y = _st.dot(F3.u); } }
+    this.speed = this.vel.length();
     if (g.endlessRun) g.endlessRun.dist = Math.max(g.endlessRun.dist, L.s);
     if (L.inv <= 0 && L.OB && L.s > s0) for (const o of L.OB) { if (o.s + o.th < s0 || o.s - o.th > L.s) continue; if (o.hit(L.x, L.y, L.t)) { g.onRocketCrash('wall', this.pos.clone(), F2.t.clone().negate()); if (this.active) { L.inv = 0.8; this.vel.multiplyScalar(0.5); g.rig.shake = Math.max(g.rig.shake, 1); } break; } }
     if (this.active && L.sent) play(g, this, dt, s0);
