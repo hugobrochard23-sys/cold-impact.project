@@ -248,6 +248,56 @@
       fan(-0.42, -0.64, 0.12, 0.2, RD, GD, Math.PI / 4); fuse(-0.6, 0.11);
       tips.push([0.32, 0, -0.56], [-0.32, 0, -0.56]); return { tail: -0.68, jr: 0.09, noseZ: 0.9, tips };
     },
+    // v438 : NIVEAU 7 « LA MAISON GEANTE » : LA FUSEE JOUET, 4 etats (st 0..3) : 0 bouteille a eau (bouteille bleutee la tete en bas, eau, ailerons de carton scotches, cone de papier)
+    //   -> 1 fusee en carton (tube peint a la main, hublot dessine, rubans adhesifs, cone de papier) -> 2 fusee telecommandee (plastique blanc et orange, antenne, autocollants, propulseurs)
+    //   -> 3 fusee en fer blanc (jouet mecanique chrome, rivets, grands ailerons rouges, cle de remontage)
+    jouet(g, st) {
+      const CB = '#b88a54', CB2 = '#8e6638', TP = '#c8c8be', OR = '#ff7a1a', WH = '#f4f2ec', RD = '#d8302a', BL = '#2a6ad0', YL = '#f2c41a', CH = '#a8b4c0', CH2 = '#7a8692', DK = '#1e2026';
+      const band = (z, r, c, w) => put(g, cylZ(r * 1.02, r * 1.02, w || 0.03, 24), c, { p: [0, 0, z] });
+      const cone = (z0, len, r, c, x, y) => put(g, cylZ(r, 0.004, len, 24), c, { p: [x || 0, y || 0, z0 + len / 2] });
+      const fins = (n, z0, z1, r, h, c, rot, th) => { for (let k = 0; k < n; k++) { const f = new T3.Group(); f.rotation.z = k * Math.PI * 2 / n + (rot || 0); g.add(f); put(g, fin([[z1, r], [z0, r], [z0 - 0.06, r + h], [z0 + (z1 - z0) * 0.35, r + h]], th || 0.012), c, { parent: f }); } };
+      const tips = [];
+      if (st === 0) {   // BOUTEILLE A EAU : le goulot (bouchon) en arriere, le fond de la bouteille vers l'avant, coiffe d'un cone de papier
+        const B = [[0.03, -0.42], [0.034, -0.4], [0.036, -0.36], [0.05, -0.32], [0.085, -0.25], [0.1, -0.2], [0.1, 0.18], [0.095, 0.22], [0.08, 0.24], [0.0, 0.245]];
+        const bm = new T3.Mesh(lathe(B, 22), new T3.MeshLambertMaterial({ color: '#a8d8f0', transparent: true, opacity: 0.55, depthWrite: false })); g.add(bm);
+        put(g, lathe([[0.0, -0.18], [0.09, -0.18], [0.09, 0.02], [0.0, 0.02]], 18), '#3a8ad8', { p: [0, 0, 0] });   // l'eau dedans
+        for (const z of [-0.1, 0.06]) band(z, 0.1, '#e8e8e0', 0.012);
+        put(g, cylZ(0.04, 0.04, 0.05, 16), '#2a9a4a', { p: [0, 0, -0.43] });   // le bouchon
+        put(g, cylZ(0.098, 0.098, 0.08, 22), '#e83a2a', { p: [0, 0, 0.06] });   // l'etiquette
+        cone(0.24, 0.2, 0.1, OR); put(g, sph(0.02), '#fff0b0', { p: [0, 0, 0.45] });
+        fins(4, -0.18, -0.36, 0.06, 0.13, CB, Math.PI / 4, 0.014);
+        for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4; put(g, box(0.03, 0.03, 0.05), TP, { p: [Math.cos(a) * 0.085, Math.sin(a) * 0.085, -0.22] }); }   // le scotch
+        tips.push([0.14, 0, -0.36], [-0.14, 0, -0.36]); return { tail: -0.46, jr: 0.035, noseZ: 0.46, tips };
+      }
+      if (st === 1) {   // FUSEE EN CARTON
+        put(g, cylZ(0.09, 0.09, 0.8, 22), CB, { p: [0, 0, -0.04] }); for (const z of [-0.36, 0.2]) band(z, 0.09, RD, 0.05); band(-0.08, 0.09, BL, 0.04);
+        put(g, cylZ(0.035, 0.035, 0.012, 20), WH, { p: [0, 0.09, 0.08], r: [Math.PI / 2, 0, 0] }); put(g, cylZ(0.026, 0.026, 0.014, 20), '#7ac8f0', { p: [0, 0.092, 0.08], r: [Math.PI / 2, 0, 0] });   // hublot dessine
+        for (let k = 0; k < 5; k++) put(g, box(0.012, 0.01, 0.012), YL, { p: [Math.cos(k * 1.3) * 0.091, Math.sin(k * 1.3) * 0.091, -0.2 + k * 0.05] });   // etoiles dessinees
+        band(0.34, 0.09, TP, 0.03); cone(0.36, 0.28, 0.095, RD); put(g, sph(0.018), YL, { p: [0, 0, 0.64] });
+        fins(3, -0.24, -0.44, 0.09, 0.15, CB2, 0, 0.014); band(-0.44, 0.09, DK, 0.03);
+        tips.push([0.22, 0, -0.44], [-0.22, 0, -0.44]); return { tail: -0.48, jr: 0.065, noseZ: 0.65, tips };
+      }
+      if (st === 2) {   // FUSEE TELECOMMANDEE
+        put(g, lathe([[0.06, -0.5], [0.1, -0.46], [0.11, -0.3], [0.11, 0.3], [0.1, 0.4], [0.06, 0.6], [0.0, 0.7]], 24), WH);
+        for (const z of [-0.3, 0.1]) band(z, 0.111, OR, 0.06); band(0.36, 0.104, DK, 0.02);
+        put(g, sph(0.05), '#3ab0ff', { p: [0, 0.075, 0.24], s: [1, 0.7, 1.4] });   // la verriere
+        for (const sx of [-1, 1]) { put(g, cylZ(0.04, 0.04, 0.42, 14), OR, { p: [sx * 0.15, -0.02, -0.22] }); cone(-0.01, 0.1, 0.04, WH, sx * 0.15, -0.02); put(g, box(0.06, 0.012, 0.06), DK, { p: [sx * 0.12, -0.02, -0.2] }); }
+        put(g, box(0.006, 0.18, 0.006), DK, { p: [0.05, 0.18, -0.2] }); put(g, sph(0.014), RD, { p: [0.05, 0.27, -0.2], basic: true });   // l'antenne
+        for (let k = 0; k < 4; k++) put(g, box(0.03, 0.006, 0.03), [YL, BL, RD, YL][k], { p: [Math.cos(k * 1.57 + 0.8) * 0.111, Math.sin(k * 1.57 + 0.8) * 0.111, -0.05], r: [0, 0, k * 1.57 + 0.8] });   // autocollants
+        fins(4, -0.3, -0.52, 0.1, 0.16, OR, Math.PI / 4, 0.016);
+        tips.push([0.28, 0, -0.5], [-0.28, 0, -0.5]); return { tail: -0.54, jr: 0.07, noseZ: 0.7, tips };
+      }
+      // FUSEE EN FER BLANC
+      put(g, lathe([[0.07, -0.6], [0.115, -0.55], [0.13, -0.35], [0.13, 0.25], [0.115, 0.42], [0.07, 0.62], [0.0, 0.76]], 26), CH);
+      for (const z of [-0.45, -0.1, 0.25]) band(z, 0.132, RD, 0.035); band(-0.28, 0.133, CH2, 0.012); band(0.08, 0.133, CH2, 0.012);
+      for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; for (const z of [-0.28, 0.08]) put(g, sph(0.008), CH2, { p: [Math.cos(a) * 0.134, Math.sin(a) * 0.134, z] }); }   // rivets
+      for (const z of [0.14, -0.02]) { put(g, cylZ(0.04, 0.04, 0.012, 20), YL, { p: [0, 0.13, z], r: [Math.PI / 2, 0, 0] }); put(g, cylZ(0.03, 0.03, 0.014, 20), '#3a5ad0', { p: [0, 0.132, z], r: [Math.PI / 2, 0, 0] }); }   // hublots
+      put(g, sph(0.03), RD, { p: [0, 0, 0.76] });
+      fins(4, -0.3, -0.66, 0.12, 0.24, RD, Math.PI / 4, 0.018);
+      put(g, cylZ(0.02, 0.02, 0.08, 10), CH2, { p: [0, -0.15, -0.1], r: [Math.PI / 2, 0, 0] }); for (const sx of [-1, 1]) put(g, box(0.09, 0.012, 0.03), YL, { p: [sx * 0.04, -0.2, -0.1], r: [0, 0, sx * 0.4] });   // la cle de remontage
+      put(g, cylZ(0.08, 0.1, 0.08, 20), DK, { p: [0, 0, -0.62] });
+      tips.push([0.36, 0, -0.6], [-0.36, 0, -0.6]); return { tail: -0.66, jr: 0.08, noseZ: 0.78, tips };
+    },
   };
 
   // jet de la tuyere : meme mecanique que M.rocket (allumage / vacillement animes par Rocket.updateMesh)

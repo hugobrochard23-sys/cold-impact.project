@@ -20,7 +20,7 @@
   const bas = (c, o) => new T3.MeshBasicMaterial(Object.assign({ color: c }, o || {}));
   // ============================== v417 : LA FUSEE SPATIALE (4 etats : sonde, fusee a boosters, navette, vaisseau ; voir rocket_w.js « spatial ») ==============================
   const isS4 = EVO.isS4 = () => !!(EVO.stage && CC.game && EVO.stage(CC.game) === 4);
-  EVO.isTube = () => isS4() || !!(EVO.isS5 && EVO.isS5()) || !!(EVO.isS6 && EVO.isS6());   // v423 : niveaux sur voie 3D (4 et 5) : panne = plus de carburant
+  EVO.isTube = () => isS4() || !!(EVO.isS5 && EVO.isS5()) || !!(EVO.isS6 && EVO.isS6()) || !!(EVO.isS7 && EVO.isS7());   // v423 : niveaux sur voie 3D (4 et 5) : panne = plus de carburant
   for (let i = 0; i < 4; i++) CC.Skins.byId['evoS' + i] = { id: 'evoS' + i, name: 'evoS' + i, short: 'evoS' + i, tier: 'base', price: 0, tierLabel: '', c: { body: '#f2f4f6', nose: '#1c1f24', tip: '#e8622a', band: '#e8622a', fin: '#1c1f24', nozzle: '#23262c' }, flame: ['#ffd27a', '#ffb84a', '#9fd8ff', '#7af0ff'][i], build: 'spatial', stage: i, dims: { r: 0.1, len: 1, noseLen: 0.3, noseR: 0.02, fins: 0, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 }, parts: [] };
   { const _ob = EVO.ownBody; EVO.ownBody = () => _ob() || isS4(); }
   { const _as = EVO.applySkin; EVO.applySkin = (g) => { if (!isS4()) return _as(g); const r = EVO.rocket(EVO.save(g).rk); g.rocket.setSkin(CC.Skins.get('evoS' + r.tier)); EVO.attachParts(g); }; }
