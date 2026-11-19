@@ -502,17 +502,17 @@
   const _step = CC.Rocket.prototype.step;
   CC.Rocket.prototype.step = function (dt, input) {
     const g = this.game; if (!L || !on8(g) || !L.PA) return _step.call(this, dt, input);
-    const PA = L.PA; if (!L.started) { L.started = true; L.s = 0; L.x = 0; L.y = 0; }
+    const PA = L.PA; if (!L.started) { L.started = true; L.K = CC.EVO.spdK ? CC.EVO.spdK(this.game) : 1; L.s = 0; L.x = 0; L.y = 0; }
     const s0 = L.s, zi = zoneAt(L.s), Z = ZN[zi], boostZ = /boost/.test(Z[5]);
     if (zi !== L.zi) { L.zi = zi; if (CC.L1) CC.L1.msg(g, Z[3] + (boostZ ? ' !' : ''), 2.2, Z[4]); if (boostZ) { g.audio.play('boostOn'); g.audio.play('whoosh'); } else g.audio.play('jetPass'); }
     if (L.boostT > 0) L.boostT -= dt; if (L.inv > 0) L.inv -= dt;
     let inp = input; if (input && input.aimDir) { const Ft = PA.fr(L.s + 12).t, d = input.aimDir.dot(Ft); if (d < 0.34) inp = Object.assign({}, input, { aimDir: _sa.copy(input.aimDir).addScaledVector(Ft, 0.34 - d).normalize() }); }
-    if (!(boostZ || L.boostT > 0)) this.fuel = Math.max(0, this.fuel - dt);
+    if (!(boostZ || L.boostT > 0)) this.fuel = Math.max(0, this.fuel - dt * (L.K || 1));
     const dry = this.fuel <= 0; if (dry && !L.dry) { L.dry = 1; if (CC.L1) CC.L1.msg(g, 'PLUS DE CARBURANT !', 2, '#ff6a5a'); g.audio.play('warnFuel'); } if (!dry) L.dry = 0;
     if (dry) inp = Object.assign({}, inp, { aimDir: new V().copy(this.fwd).setY(Math.min(this.fwd.y - 0.35, -0.65)).normalize() });   // v448 : a sec, le nez pique vers le sol (plus de long vol plane)
     const fu = this.fuel; if (dry) this.fuel = 0; _p0.copy(this.pos);
     _step.call(this, dt, inp); this.fuel = fu; if (!this.active) return;
-    const vMax = L.boostT > 0 ? 150 : boostZ ? 130 : 90; L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
+    const vMax0 = L.boostT > 0 ? 150 : boostZ ? 130 : 90; const vMax = vMax0 * (L.K || 1);   // v449 : la vitesse monte avec la fusee L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
     if (!dry) { const sp = this.vel.length(); if (sp > 1e-3) { const want = sp + (vMax - sp) * Math.min(1, dt * (sp < vMax ? 1.4 : 0.9)); this.vel.multiplyScalar(want / sp); } } else this.vel.y -= 14 * dt;   // v448 : a sec, plus de frein : la fusee pique et tombe (elle meurt au sol, jamais en l'air)
     // le ciel a une limite (on peut survoler les plateaux, pas s'envoler)
     if (this.pos.y > PA.O.y + 560) { this.pos.y = PA.O.y + 560; if (this.vel.y > 0) this.vel.y = 0; }

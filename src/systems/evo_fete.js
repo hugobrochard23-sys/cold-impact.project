@@ -556,19 +556,19 @@
   CC.Rocket.prototype.step = function (dt, input) {
     const g = this.game; if (!L || !on6(g) || !L.PA) return _step.call(this, dt, input);
     const PA = L.PA, inp = g.input; this.age += dt; if (!this.ignited && this.age >= this.cfg.ignitionDelay) { this.ignited = true; g.audio.play('ignite', this.pos); }
-    if (!L.started) { L.started = true; L.s = 0; L.x = 0; L.y = 0; L.v = Math.max(30, this.vel.length()); const e = new T3.Euler().setFromQuaternion(inp.aimQ, 'YXZ'); L.yaw0 = e.y; L.pit0 = e.x; L.ry = 0; L.rp = 0; }
+    if (!L.started) { L.started = true; L.K = CC.EVO.spdK ? CC.EVO.spdK(this.game) : 1; L.s = 0; L.x = 0; L.y = 0; L.v = Math.max(30, this.vel.length()); const e = new T3.Euler().setFromQuaternion(inp.aimQ, 'YXZ'); L.yaw0 = e.y; L.pit0 = e.x; L.ry = 0; L.rp = 0; }
     { const e = new T3.Euler().setFromQuaternion(inp.aimQ, 'YXZ'); let dy = e.y - L.yaw0; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); L.ry = U.clamp(dy, -0.62, 0.62) * Math.exp(-dt * 0.9); L.rp = U.clamp(e.x - L.pit0, -0.62, 0.62) * Math.exp(-dt * 0.9); inp.setAim(L.yaw0 + L.ry, L.pit0 + L.rp); }
     const s0 = L.s, zi = zoneAt(L.s), Z = ZN[zi], boostZ = /boost/.test(Z[5]);
     if (zi !== L.zi) { L.zi = zi; if (CC.L1) CC.L1.msg(g, Z[3] + (boostZ ? ' !' : ''), 2.2, Z[4]); if (boostZ) { g.audio.play('boostOn'); g.audio.play('whoosh'); } else g.audio.play('jetPass'); }
     if (L.boostT > 0) L.boostT -= dt; if (L.inv > 0) L.inv -= dt;
-    if (!(boostZ || L.boostT > 0)) this.fuel = Math.max(0, this.fuel - dt);
+    if (!(boostZ || L.boostT > 0)) this.fuel = Math.max(0, this.fuel - dt * (L.K || 1));
     const dry = this.fuel <= 0;
     if (dry && !L.dry) { L.dry = 1; if (CC.L1) CC.L1.msg(g, 'PLUS DE POUDRE !', 2, '#ff6a5a'); g.audio.play('warnFuel'); } if (!dry) L.dry = 0;
-    const vMax = L.boostT > 0 ? 106 : boostZ ? 92 : 60;
+    const vMax0 = L.boostT > 0 ? 106 : boostZ ? 92 : 60; const vMax = vMax0 * (L.K || 1);   // v449 : la vitesse monte avec la fusee
     L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
     if (dry) { L.fall = (L.fall || 0) + 22 * dt; L.v = Math.max(26, L.v - 6 * dt); L.y -= L.fall * dt; L.rp = Math.min(L.rp, -0.3); L.dryT = (L.dryT || 0) + dt; }   // v448 : a sec, la fusee tombe (elle ne s'ecrase plus en plein vol)
     else { L.fall = 0; L.dryT = 0; L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.8) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)); L.v = Math.max(24, L.v); }
-    const vx = -L.v * Math.sin(L.ry) * 0.85, vy = L.v * Math.sin(L.rp) * 0.85, lat = Math.min(1, 52 / L.v); L.x += vx * lat * dt; L.y += vy * lat * dt; L.s += L.v * dt;
+    const vx = -L.v * Math.sin(L.ry) * 0.85, vy = L.v * Math.sin(L.rp) * 0.85, lat = Math.min(1, 52 * (L.K || 1) / L.v); L.x += vx * lat * dt; L.y += vy * lat * dt; L.s += L.v * dt;
     const lm = lim(Z[5]), rr2 = Math.hypot(L.x, L.y);
     if (dry && this.active && L.dryT > 3.2) { g.onRocketCrash('stalled', this.pos.clone(), null); return; }
     if (rr2 > lm && !dry) { L.x *= lm / rr2; L.y *= lm / rr2; L.v *= 1 - dt * 0.4; }

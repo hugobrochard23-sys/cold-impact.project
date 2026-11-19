@@ -4,6 +4,7 @@
   const U = CC.U, EVO = CC.EVO;
   if (!EVO || !EVO.on) return;
   EVO.stage = (g) => { const m = /[?&]lv=(\d)/.exec(location.search); return m ? +m[1] : (EVO.saveBase(g).stage || 1); };
+  EVO.spdK = (g) => { const K = { 4: 1.7, 5: 1.35, 6: 1.55, 7: 1.1, 8: 1.17 }[EVO.stage(g)]; if (!K) return 1; const n = EVO.rocket(EVO.save(g).rk).n; return 1 + (K - 1) * Math.max(0, Math.min(1, n / 20)); };   // v449 : niveaux 4-8 : la vitesse monte avec la fusee (fusee max : environ 60-75 s de vol) ; le carburant brule d'autant plus vite (meme portee)
   EVO.setStage = (g, n) => { const S = EVO.save(g), old = S.stage || 1; if (old === n) return; if (n >= 3 || old >= 3) { EVO.saveBase(g).stage = n; g.writeSave(); return; }   /* v413 : le niveau 3 garde son record dans sa propre sauvegarde (s3) */ S['best' + old] = S.best || 0; S.best = S['best' + n] || 0; S.stage = n; g.writeSave(); };
   // --- écran d'accueil : cinématique d'intro la toute première fois, ou la suite programmée (victoire, niveau suivant)
   EVO.showHome = (g) => {
