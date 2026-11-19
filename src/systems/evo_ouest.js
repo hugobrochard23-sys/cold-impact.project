@@ -18,9 +18,9 @@
   let L = null;
 
   // ============================== LA FUSEE DU FAR WEST, le carburant, les pieces ==============================
-  for (let i = 0; i < 4; i++) CC.Skins.byId['evoW' + i] = { id: 'evoW' + i, name: 'evoW' + i, short: 'evoW' + i, tier: 'base', price: 0, tierLabel: '', c: { body: '#a8723a', nose: '#c8302a', tip: '#f2c41a', band: '#3a3a40', fin: '#7a4e26', nozzle: '#3a3a3a' }, flame: ['#ffb04a', '#ffc04a', '#ff9a3a', '#ffe08a'][i], build: 'ouest', stage: i, dims: { r: 0.1, len: 1, noseLen: 0.3, noseR: 0.02, fins: 0, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 }, parts: [] };
+  for (let i = 0; i < 4; i++) CC.Skins.byId['evoO' + i] = { id: 'evoO' + i, name: 'evoO' + i, short: 'evoO' + i, tier: 'base', price: 0, tierLabel: '', c: { body: '#a8723a', nose: '#c8302a', tip: '#f2c41a', band: '#3a3a40', fin: '#7a4e26', nozzle: '#3a3a3a' }, flame: ['#ffb04a', '#ffc04a', '#ff9a3a', '#ffe08a'][i], build: 'ouest', stage: i, dims: { r: 0.1, len: 1, noseLen: 0.3, noseR: 0.02, fins: 0, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 }, parts: [] };
   { const _ob = EVO.ownBody; EVO.ownBody = () => _ob() || isS8(); }
-  { const _as = EVO.applySkin; EVO.applySkin = (g) => { if (!isS8()) return _as(g); const r = EVO.rocket(EVO.save(g).rk); g.rocket.setSkin(CC.Skins.get('evoW' + r.tier)); EVO.attachParts(g); }; }
+  { const _as = EVO.applySkin; EVO.applySkin = (g) => { if (!isS8()) return _as(g); const r = EVO.rocket(EVO.save(g).rk); g.rocket.setSkin(CC.Skins.get('evoO' + r.tier)); EVO.attachParts(g); }; }
   { const RK8 = ['TONNEAU DE DYNAMITE', 'FUSEE DILIGENCE', 'LOCOMOTIVE-FUSEE', 'FUSEE DU CHERCHEUR D OR'], _rk = EVO.rocket; EVO.rocket = (n) => { const r = _rk(n); if (isS8()) r.name = RK8[r.tier]; return r; }; }
   EVO.fuel8 = (rk, la) => 28 + 1.6 * rk + 1.2 * la + [0, 16, 48, 115][Math.min(3, Math.floor(rk / 5))];
   { const _ol = EVO.onLaunch; EVO.onLaunch = (g) => { _ol(g); if (!isS8() || (g.evo && g.evo.preview)) return; const S = EVO.save(g), rk = g.rocket, f = EVO.fuel8(S.rk || 0, S.la || 0); rk.fuelMax = f * 1.15; rk.fuel = (g.evoAimLast && g.evoAimLast.zone === 'gold') ? f * 1.15 : f; }; }
