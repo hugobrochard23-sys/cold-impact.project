@@ -580,33 +580,37 @@
   const LIMS = { pad: [30, 16], low: [22, 13], open: [55, 60], corr: [42, 60], counter: [24, 26], boost: [40, 40] };
   const floorAt = (s, F) => { if (F.u.y < 0.3) return -1e9; let y = L.y; for (let k = 0; k < 3; k++) { const q = _c.copy(F.p).addScaledVector(F.r, L.x).addScaledVector(F.u, y); y = (gH(q.x, q.z) + 2.0 - F.p.y - F.r.y * L.x) / F.u.y; } return y; };
 
+  // v442 : LE PILOTAGE DU NIVEAU 1 : la fusee vole librement (vraie physique, on vise ou on veut, la camera de poursuite d'origine).
+  // La voie ne sert plus qu'a savoir ou on en est (on projette la fusee dessus) : les zones, les obstacles, l'arrivee.
+  const _st = new V(), _sa = new V();
   const _step = CC.Rocket.prototype.step;
   CC.Rocket.prototype.step = function (dt, input) {
     const g = this.game; if (!L || !on7(g) || !L.PA) return _step.call(this, dt, input);
-    const PA = L.PA, inp = g.input; this.age += dt; if (!this.ignited && this.age >= this.cfg.ignitionDelay) { this.ignited = true; g.audio.play('ignite', this.pos); }
-    if (!L.started) { L.started = true; L.s = 0; L.x = 0; L.y = 0; L.v = Math.max(30, this.vel.length()); const e = new T3.Euler().setFromQuaternion(inp.aimQ, 'YXZ'); L.yaw0 = e.y; L.pit0 = e.x; L.ry = 0; L.rp = 0; }
-    { const e = new T3.Euler().setFromQuaternion(inp.aimQ, 'YXZ'); let dy = e.y - L.yaw0; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); L.ry = U.clamp(dy, -0.62, 0.62) * Math.exp(-dt * 0.9); L.rp = U.clamp(e.x - L.pit0, -0.62, 0.62) * Math.exp(-dt * 0.9); inp.setAim(L.yaw0 + L.ry, L.pit0 + L.rp); }
+    const PA = L.PA; if (!L.started) { L.started = true; L.s = 0; L.x = 0; L.y = 0; }
     const s0 = L.s, zi = zoneAt(L.s), Z = ZN[zi], boostZ = /boost/.test(Z[5]);
     if (zi !== L.zi) { L.zi = zi; if (CC.L1) CC.L1.msg(g, Z[3] + (boostZ ? ' !' : ''), 2.2, Z[4]); if (boostZ) { g.audio.play('boostOn'); g.audio.play('whoosh'); } else g.audio.play('jetPass'); }
     if (L.boostT > 0) L.boostT -= dt; if (L.inv > 0) L.inv -= dt;
+    // on ne peut pas faire demi-tour : la visee reste tournee vers l'avant de la maison (a plus de 70 degres, elle est ramenee)
+    let inp = input; if (input && input.aimDir) { const Ft = PA.fr(L.s + 12).t, d = input.aimDir.dot(Ft); if (d < 0.34) inp = Object.assign({}, input, { aimDir: _sa.copy(input.aimDir).addScaledVector(Ft, 0.34 - d).normalize() }); }
     if (!(boostZ || L.boostT > 0)) this.fuel = Math.max(0, this.fuel - dt);
-    const dry = this.fuel <= 0;
-    if (dry && !L.dry) { L.dry = 1; if (CC.L1) CC.L1.msg(g, 'PLUS DE CARBURANT !', 2, '#ff6a5a'); g.audio.play('warnFuel'); } if (!dry) L.dry = 0;
-    const vMax = L.boostT > 0 ? 106 : boostZ ? 92 : 60;
-    L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
-    if (dry) { L.v -= 13 * dt; L.y -= (3 + 9 * U.clamp(1 - L.v / 50, 0, 1)) * dt; L.rp = Math.min(L.rp, -0.15); if (L.v < 14 && this.active) { g.onRocketCrash('stalled', this.pos.clone(), null); return; } }
-    else { L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.8) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)); L.v = Math.max(24, L.v); }
-    const vx = -L.v * Math.sin(L.ry) * 0.85, vy = L.v * Math.sin(L.rp) * 0.85, lat = Math.min(1.35, 72 / L.v); L.x += vx * lat * dt; L.y += vy * lat * dt; L.s += L.v * dt;
+    const dry = this.fuel <= 0; if (dry && !L.dry) { L.dry = 1; if (CC.L1) CC.L1.msg(g, 'PLUS DE CARBURANT !', 2, '#ff6a5a'); g.audio.play('warnFuel'); } if (!dry) L.dry = 0;
+    const fu = this.fuel; if (dry) this.fuel = 0;
+    _step.call(this, dt, inp); this.fuel = fu; if (!this.active) return;
+    // la vitesse : celle du niveau (plus vite dans la fenetre et apres une boucle) ; sans carburant, on ralentit et on tombe
+    const vMax = L.boostT > 0 ? 106 : boostZ ? 92 : 60; L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
+    { const sp = this.vel.length(); if (sp > 1e-3) { const want = dry ? Math.max(0, sp - 13 * dt) : sp + (vMax - sp) * Math.min(1, dt * (sp < vMax ? 1.4 : 0.9)); this.vel.multiplyScalar(want / sp); } if (dry && this.vel.length() < 14) { g.onRocketCrash('stalled', this.pos.clone(), null); return; } }
+    // ou en est-on sur la voie
+    for (let k = 0; k < 3; k++) { const F = PA.fr(L.s); L.s = U.clamp(L.s + _st.subVectors(this.pos, F.p).dot(F.t), 0, PA.len); }
+    const F2 = PA.fr(L.s); _st.subVectors(this.pos, F2.p); L.x = _st.dot(F2.r); L.y = _st.dot(F2.u); L.v = this.vel.length();
+    // les murs, le plafond et le sol de la maison : on glisse dessus
     { const T = LIMS[Z[5]] || LIMS.open; if (L.hx === undefined) { L.hx = T[0]; L.hy = T[1]; } const k = Math.min(1, dt * 1.6); L.hx += (T[0] - L.hx) * k; L.hy += (T[1] - L.hy) * k;
-      const ox = Math.abs(L.x) > L.hx, oy = Math.abs(L.y) > L.hy; if (ox) L.x = Math.sign(L.x) * L.hx; if (oy) L.y = Math.sign(L.y) * L.hy; if (ox || oy) L.v *= 1 - dt * 0.25; }
-    const F2 = PA.fr(L.s), fl = floorAt(L.s, F2); if (L.y < fl) { L.y = fl; if (Math.random() < dt * 8) g.effects.smokePuff(_a.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y - 1).clone(), new V(rr(-2, 2), rr(1, 3), rr(-2, 2)), 1.4, 0.9); }
-    this.pos.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y);
-    this.vel.copy(F2.t).multiplyScalar(L.v).addScaledVector(F2.r, vx * lat).addScaledVector(F2.u, vy * lat); this.speed = this.vel.length(); this.fwd.copy(this.vel).normalize(); this.flightDist += L.v * dt;
+      if (Math.abs(L.x) > L.hx) { L.x = Math.sign(L.x) * L.hx; const vr = this.vel.dot(F2.r); if (vr * L.x > 0) this.vel.addScaledVector(F2.r, -vr); }
+      if (Math.abs(L.y) > L.hy) { L.y = Math.sign(L.y) * L.hy; const vu = this.vel.dot(F2.u); if (vu * L.y > 0) this.vel.addScaledVector(F2.u, -vu); } }
+    { const fl = floorAt(L.s, F2); if (L.y < fl) { L.y = fl; const vu = this.vel.dot(F2.u); if (vu < 0) this.vel.addScaledVector(F2.u, -vu); if (Math.random() < dt * 8) g.effects.smokePuff(_a.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y - 1).clone(), new V(rr(-2, 2), rr(1, 3), rr(-2, 2)), 1.4, 0.9); } }
+    this.pos.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y); this.speed = this.vel.length();
     if (g.endlessRun) g.endlessRun.dist = Math.max(g.endlessRun.dist, L.s);
-    this.thrustK = 1;
-    if (L.inv <= 0 && L.OB) for (const o of L.OB) { if (o.s + o.th < s0 || o.s - o.th > L.s) continue; if (o.hit(L.x, L.y, L.t)) { g.onRocketCrash('wall', this.pos.clone(), F2.t.clone().negate()); if (this.active) { L.inv = 0.8; L.v *= 0.5; g.rig.shake = Math.max(g.rig.shake, 1); } break; } }
+    if (L.inv <= 0 && L.OB && L.s > s0) for (const o of L.OB) { if (o.s + o.th < s0 || o.s - o.th > L.s) continue; if (o.hit(L.x, L.y, L.t)) { g.onRocketCrash('wall', this.pos.clone(), F2.t.clone().negate()); if (this.active) { L.inv = 0.8; this.vel.multiplyScalar(0.5); g.rig.shake = Math.max(g.rig.shake, 1); } break; } }
     if (this.active && L.sent) play(g, this, dt, s0);
-    // la bouteille a eau laisse une gerbe d'eau, les autres une trainee de fumee claire
     if (this.active && !dry && Math.random() < dt * 30) { const tier = EVO.rocket(EVO.save(g).rk).tier; g.effects.smokePuff(this.pos.clone().addScaledVector(this.fwd, -L.rkL * 0.6), this.fwd.clone().multiplyScalar(-rr(3, 8)).add(new V(rr(-1, 1), rr(-1, 1), rr(-1, 1))), tier === 0 ? 0.6 : 0.9, 0.6); }
     if (this.active && L.s > PA.len - 60 && (!L.boss || L.boss.dead) && !g.evoFinish && EVO.finishRun) { if (CC.L1) CC.L1.msg(g, 'ARRIVEE !', 2.6, '#ffe9a0'); for (let k = 0; k < 6; k++) burst(this.pos.clone().addScaledVector(this.fwd, 60).add(new V(rr(-40, 40), rr(10, 50), rr(-40, 40))), FWC[k % FWC.length], 1.4, k % 2 ? 'ring' : null); EVO.finishRun(g); }
   };
@@ -627,24 +631,9 @@
     _rup.call(this, dt); const g = this.game, rk = g.rocket;
     if (L && L.PA && on7(g) && !rk.active && (g.state === 'MENU' || g.state === 'AIM' || g.state === 'LAUNCH')) { menuView(g, this, dt); return; }
     if (!L || !L.PA || !on7(g) || !rk.active || g.state !== 'FLIGHT' || !L.started || (g.evoFinish && g.evoFinish.hold)) return;
-    const PA = L.PA, cam = this.cam;
-    // v441 : la camera regarde dans le CAP DE LA FUSEE (la voie juste devant + une partie du pilotage), toujours placee juste derriere elle :
-    // la fusee reste au centre de l'ecran et on la voit de dos (la voie lissee ne tourne plus assez fort pour faire pivoter la camera d'un coup)
-    const Fc = PA.fr(L.s), Fa = PA.fr(L.s + 14), ex = rk.vel.dot(Fc.r) / Math.max(20, L.v), ey = rk.vel.dot(Fc.u) / Math.max(20, L.v);
-    const ct = _b.copy(Fa.t).addScaledVector(Fc.r, ex * 0.7).addScaledVector(Fc.u, ey * 0.7).normalize(), cy = new V(0, 1, 0).addScaledVector(ct, -ct.y).normalize(), Fq = _q2.setFromRotationMatrix(_m.makeBasis(new V().crossVectors(ct, cy).normalize(), cy, ct.clone().negate()));
-    if (!L.camQ) L.camQ = Fq.clone(); L.camQ.slerp(Fq, 1 - Math.exp(-dt * 3.5)); L.camEx = ex; L.camEy = ey;
-    const cr = new V(1, 0, 0).applyQuaternion(L.camQ), cu = new V(0, 1, 0).applyQuaternion(L.camQ), cf = new V(0, 0, -1).applyQuaternion(L.camQ);
-    const ctr = _d.copy(rk.pos), bkD = U.clamp(1.5 * L.rkL, 3.6, 7.5);
-    cam.position.copy(ctr).addScaledVector(cf, -bkD).addScaledVector(cu, 0.47 * bkD);
-    { const gy = gH(cam.position.x, cam.position.z) + 1.2; if (cam.position.y < gy) cam.position.y = gy; }
-    cam.up.copy(cu); cam.lookAt(_a.copy(rk.pos).addScaledVector(cf, 4).addScaledVector(cu, 0.3));
-    { const b = ss(5, 90, L.s); if (b < 1 && L.mc) { const qC = _q.copy(cam.quaternion), pC = _c.copy(cam.position); cam.position.copy(L.mc).addScaledVector(PA.F0, L.s * 0.85); cam.up.set(0, 1, 0); cam.lookAt(rk.pos); const qL = _q2.copy(cam.quaternion), pL = cam.position.clone();
-      cam.position.lerpVectors(pL, pC, b); cam.quaternion.copy(qL).slerp(qC, b); cam.up.set(0, 1, 0).applyQuaternion(cam.quaternion); } }
-    { const f0 = cam.fov, fw = f0 + 16 * L.bk; if (Math.abs(fw - f0) > 0.01) { cam.fov = fw; cam.updateProjectionMatrix(); } }
-    if (this.shake > 0) cam.position.addScaledVector(cr, (U.fx() - 0.5) * this.shake * 0.5).addScaledVector(cu, (U.fx() - 0.5) * this.shake * 0.5);
+    // v442 : la camera de poursuite du niveau 1 (rien d'autre) ; seulement : jamais sous le sol, et assez loin pour voir loin dans la maison
+    const cam = this.cam; { const gy = gH(cam.position.x, cam.position.z) + 1.2; if (cam.position.y < gy) { cam.position.y = gy; cam.updateMatrixWorld(); } }
     if (cam.far < 7000) { cam.far = 7000; cam.updateProjectionMatrix(); }
-    cam.updateMatrixWorld();
-    { const fz = _c.copy(cf).addScaledVector(cr, (L.camEx || 0) * 0.3).addScaledVector(cu, (L.camEy || 0) * 0.3).normalize(), fx = _a.crossVectors(cu, fz).normalize(), fy = _b.crossVectors(fz, fx); rk.mesh.quaternion.setFromRotationMatrix(_m.makeBasis(fx, fy, fz)); rk.mesh.position.copy(rk.pos); }
   };
   if (CC.Horizon) { const _hu = CC.Horizon.prototype.update; CC.Horizon.prototype.update = function (g) { if (L && on7(g)) { for (const m of [this.ring, this.glow, this.mtn]) if (m) m.visible = false; return; } return _hu.call(this, g); }; }
   const _tf = EVO.tumbleFrame;
