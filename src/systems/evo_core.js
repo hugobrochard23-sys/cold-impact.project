@@ -17,7 +17,7 @@
 
   // ============================== L'OGIVE FOREUSE, le carburant, les pieces ==============================
   const isS5 = EVO.isS5 = () => !!(EVO.stage && CC.game && EVO.stage(CC.game) === 5);
-  (EVO.terrain = EVO.terrain || []).push((g, x, z) => { if (!isS5() || !L || !L.started || L.gy === undefined || !(L.s > 1060 && L.s < L.holeS + 12)) return null; if (L.slit && L.slit.hole(x, z)) return null; return L.gy; });   // sol du niveau 5 pour l'ombre de la fusee (meme ombre que les autres niveaux)
+  (EVO.terrain = EVO.terrain || []).push((g, x, z) => { if (!isS5() || !L || !L.started || L.gy === undefined || !(L.s > 1060)) return null; if (L.s >= L.holeS + 12) return L.PA.fr(L.s).p.y - 24; if (L.slit && L.slit.hole(x, z)) return null; return L.gy; });   // sol du niveau 5 pour l'ombre de la fusee (meme ombre que les autres niveaux)
   for (let i = 0; i < 4; i++) CC.Skins.byId['evoD' + i] = { id: 'evoD' + i, name: 'evoD' + i, short: 'evoD' + i, tier: 'base', price: 0, tierLabel: '', c: { body: '#8a9098', nose: '#c8ccd2', tip: '#e8b020', band: '#1c1f24', fin: '#1c1f24', nozzle: '#4a4f58' }, flame: ['#ffd27a', '#ffc23a', '#ff8a3a', '#7af0ff'][i], build: 'drill', stage: i, dims: { r: 0.1, len: 1, noseLen: 0.3, noseR: 0.02, fins: 0, finH: 0.2, finW: 0.02, finPos: -0.33, scale: 1 }, parts: [] };
   { const _ob = EVO.ownBody; EVO.ownBody = () => _ob() || isS5(); }
   { const _as = EVO.applySkin; EVO.applySkin = (g) => { if (!isS5()) return _as(g); const r = EVO.rocket(EVO.save(g).rk); g.rocket.setSkin(CC.Skins.get('evoD' + r.tier)); EVO.attachParts(g); }; }
@@ -27,7 +27,7 @@
   { const _ol = EVO.onLaunch; EVO.onLaunch = (g) => { _ol(g); if (!isS5() || (g.evo && g.evo.preview)) return; const S = EVO.save(g), rk = g.rocket, f = EVO.fuel5(S.rk || 0, S.la || 0); rk.fuelMax = f * 1.15; rk.fuel = (g.evoAimLast && g.evoAimLast.zone === 'gold') ? f * 1.15 : f; }; }
   { const _dp = EVO.distPay; EVO.distPay = (g, dist) => (isS5() ? (0.15 / (8450 / 6910)) * (1 + 2 * Math.min(1, dist / 6100)) : _dp ? _dp(g, dist) : 1); }
   let L = null;
-  EVO.noKill = (g) => on5(g);   // la voie descend a 2 km sous le sol du niveau 1 : pas de « chute » hors du monde
+  { const _nk = EVO.noKill; EVO.noKill = (g) => on5(g) || (_nk ? _nk(g) : false); }   // v448 : chaine (ne remplace plus les regles des autres niveaux)   // la voie descend a 2 km sous le sol du niveau 1 : pas de « chute » hors du monde
 
   // ============================== LA VOIE 3D ==============================
   // points de controle dans le repere du depart : [droite, haut, avant] (m). Largage a l'horizontale, chute VERTICALE, on se redresse au ras des champs, on plonge dans le puits.
@@ -647,16 +647,17 @@
     if (dry && !L.dry) { L.dry = 1; if (CC.L1) CC.L1.msg(g, 'PLUS DE CARBURANT !', 2, '#ff6a5a'); g.audio.play('warnFuel'); } if (!dry) L.dry = 0;
     const vMax = L.boostT > 0 ? 106 : boostZ ? 92 : Z[5] === 'fall' ? 76 : 60;   // en chute libre, on tombe vite
     L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
-    if (dry) { L.v -= 13 * dt; L.y -= (3 + 9 * U.clamp(1 - L.v / 50, 0, 1)) * dt; L.rp = Math.min(L.rp, -0.15); if (L.v < 14 && this.active) { g.onRocketCrash('stalled', this.pos.clone(), null); return; } }
-    else { L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.8) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)); L.v = Math.max(24, L.v); }
+    if (dry) { L.fall = (L.fall || 0) + 22 * dt; L.v = Math.max(26, L.v - 6 * dt); L.y -= L.fall * dt; L.rp = Math.min(L.rp, -0.3); L.dryT = (L.dryT || 0) + dt; }   // v448 : a sec, la fusee tombe (elle ne s'ecrase plus en plein vol)
+    else { L.fall = 0; L.dryT = 0; L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.8) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)); L.v = Math.max(24, L.v); }
     const vx = -L.v * Math.sin(L.ry) * 0.85, vy = L.v * Math.sin(L.rp) * 0.85, lat = Math.min(1, 52 / L.v); L.x += vx * lat * dt; L.y += vy * lat * dt; L.s += L.v * dt;
     const wr = inWall(L.s), lim = wr ? wr - 2.2 : Z[5] === 'low' ? 22 : ROPEN - 2, rr2 = Math.hypot(L.x, L.y);
-    if (rr2 > lim) { L.x *= lim / rr2; L.y *= lim / rr2; L.v *= 1 - dt * 0.6; if (wr && Math.random() < dt * 14) { const F2 = PA.fr(L.s); _a.copy(F2.p).addScaledVector(F2.r, L.x * 1.12).addScaledVector(F2.u, L.y * 1.12); g.effects.sparks.emit({ pos: _a.clone(), vel: new V(rr(-1, 1), rr(-1, 1), rr(-1, 1)).multiplyScalar(10), life: 0.4, s0: 0.3, s1: 0.4, s2: 0.1, cols: g.effects.pal.cyan, drag: 1, grav: 0, a: 1, fout: 0.5 }); if (Math.random() < 0.15) g.audio.play('clank'); } }
-    const F2 = PA.fr(L.s), fl = floorAt(L.s, F2); if (L.y < fl) { L.y = fl; if (Math.random() < dt * 8) g.effects.smokePuff(_a.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y - 1).clone(), new V(rr(-2, 2), rr(1, 3), rr(-2, 2)), 1.4, 0.9); }   // on rase les champs sans passer dessous
+    if (dry && this.active && ((rr2 > lim && wr) || L.dryT > 3.2)) { g.onRocketCrash('stalled', this.pos.clone(), null); return; }
+    if (rr2 > lim && !(dry && !wr)) { L.x *= lim / rr2; L.y *= lim / rr2; L.v *= 1 - dt * 0.6; if (wr && Math.random() < dt * 14) { const F2 = PA.fr(L.s); _a.copy(F2.p).addScaledVector(F2.r, L.x * 1.12).addScaledVector(F2.u, L.y * 1.12); g.effects.sparks.emit({ pos: _a.clone(), vel: new V(rr(-1, 1), rr(-1, 1), rr(-1, 1)).multiplyScalar(10), life: 0.4, s0: 0.3, s1: 0.4, s2: 0.1, cols: g.effects.pal.cyan, drag: 1, grav: 0, a: 1, fout: 0.5 }); if (Math.random() < 0.15) g.audio.play('clank'); } }
+    const F2 = PA.fr(L.s), fl = floorAt(L.s, F2); if (dry && L.y < fl + 0.3 && this.active) { g.onRocketCrash('stalled', this.pos.clone(), null); return; } if (L.y < fl) { L.y = fl; if (Math.random() < dt * 8) g.effects.smokePuff(_a.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y - 1).clone(), new V(rr(-2, 2), rr(1, 3), rr(-2, 2)), 1.4, 0.9); }   // on rase les champs sans passer dessous
     this.pos.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y);
     this.vel.copy(F2.t).multiplyScalar(L.v).addScaledVector(F2.r, vx * lat).addScaledVector(F2.u, vy * lat); this.speed = this.vel.length(); this.fwd.copy(this.vel).normalize(); this.flightDist += L.v * dt;
     if (g.endlessRun) g.endlessRun.dist = Math.max(g.endlessRun.dist, L.s);
-    this.thrustK = 1;
+    this.thrustK = dry ? Math.max(0, (this.thrustK || 0) - dt * 4) : 1;
     if (L.inv <= 0 && L.OB) for (const o of L.OB) { if (o.s + o.th < s0 || o.s - o.th > L.s) continue; if (o.hit(L.x, L.y, L.t)) { g.onRocketCrash('wall', this.pos.clone(), F2.t.clone().negate()); if (this.active) { L.inv = 0.8; L.v *= 0.5; g.rig.shake = Math.max(g.rig.shake, 1); } break; } }
     if (this.active && L.sent) play(g, this, dt, s0);
     // on plonge dans le puits : une gerbe de terre
@@ -697,14 +698,7 @@
   };
   if (CC.Horizon) { const _hu = CC.Horizon.prototype.update; CC.Horizon.prototype.update = function (g) { if (L && on5(g)) { for (const m of [this.ring, this.glow, this.mtn]) if (m) m.visible = false; return; } return _hu.call(this, g); }; }
   // l'epave ne tombe pas vers un sol a des kilometres : elle s'arrete en tournant, le drapeau se plante en l'air a cote d'elle
-  const _tf = EVO.tumbleFrame;
-  EVO.tumbleFrame = (g, dt) => {
-    const Tm = g.evoTumble; if (!Tm || !L || !L.PA || !on5(g)) return _tf(g, dt); Tm.space = true;
-    for (const q of Tm.P) { q.v.y += 16 * dt; q.v.multiplyScalar(Math.exp(-1.8 * dt)); q.w.multiplyScalar(Math.exp(-0.7 * dt)); }
-    const had = !!Tm.flag; _tf(g, dt);
-    if (Tm.flag && !had) { const F = Tm.flag; F.position.copy(Tm.body.m.position).add(new V(0, -2.2, 0)); F.children[F.children.length - 1].visible = false; const ring = new T3.Mesh(new T3.TorusGeometry(0.9, 0.08, 6, 32), bas('#ffe28a', { fog: false })); ring.rotation.x = Math.PI / 2; F.add(ring); F.userData.ring = ring; }
-    if (Tm.flag) { const F = Tm.flag; F.position.y += Math.sin(Tm.t * 1.6) * 0.004; if (F.userData.ring) F.userData.ring.scale.setScalar(1 + 0.15 * Math.sin(Tm.t * 4)); }
-  };
+  // v448 : l'epave retombe (gravite normale) et se pose sur le relief du niveau (EVO.terrain) : plus d'epave qui flotte
   // --- l'ambiance le long de la voie ---
   const _am = EVO.applyMood;
   EVO.applyMood = (g, m) => {

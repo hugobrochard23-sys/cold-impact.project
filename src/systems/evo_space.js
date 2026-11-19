@@ -591,7 +591,7 @@
     L.sent = L.sent.filter((d) => { if (PA.cut(d.s)) { d.m.visible = false; return false; } return true; }); L.boostR = L.boostR.filter((B) => { if (PA.cut(B.s)) { B.m.visible = false; return false; } return true; }); L.O = L.OB = L.O.filter((o) => !PA.cut(o.s));
     grp.traverse((o) => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) if (!m.isShaderMaterial && !m.fog) { m.fog = true; m.needsUpdate = true; } });   // v418 : tout s'efface dans la brume au loin
     // poussiere d'espace : des points qui defilent pres de la fusee (on sent la vitesse dans le vide)
-    { const n = 120, pos = new Float32Array(n * 3), geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(pos, 3)); const p = new T3.Points(geo, new T3.PointsMaterial({ color: '#cfe8ff', size: 0.5, transparent: true, opacity: 0, depthWrite: false, fog: false })); p.frustumCulled = false; g.scene.add(p); L.dust = p; L.dustInit = false; }
+    { const n = 120, pos = new Float32Array(n * 3), geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(pos, 3)); const p = new T3.Points(geo, new T3.PointsMaterial({ color: '#cfe8ff', size: 0.5, transparent: true, opacity: 0, depthWrite: false, fog: false })); p.frustumCulled = false; p.visible = false; g.scene.add(p); L.dust = p; L.dustInit = false; }
     L.far0 = g.camera.far;
   }
   const inTube = (s) => { for (const [a, b] of L.tubeSecs) if (s >= a && s <= b) return true; for (const [a, b] of ROCK) if (s >= a && s <= b) return true; return false; };
@@ -617,16 +617,17 @@
     if (dry && !L.dry) { L.dry = 1; if (CC.L1) CC.L1.msg(g, 'PLUS DE CARBURANT !', 2, '#ff6a5a'); g.audio.play('warnFuel'); } if (!dry) L.dry = 0;
     const vMax = L.boostT > 0 ? 96 : boostZ ? 80 : 47 + 9 * ss(500, 1000, alt);   // v419 : retour a la vitesse de la v417 (la vitesse qui grandit rendait l'esquive trop dure) ; accelerateurs et anneaux : on file
     L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
-    if (dry) { L.v -= (11 + 12 * up * atmo) * dt; L.y -= (3 + 9 * U.clamp(1 - L.v / 50, 0, 1)) * dt; L.rp = Math.min(L.rp, -0.15); if (L.v < 14 && this.active) { g.onRocketCrash('stalled', this.pos.clone(), null); return; } }   // a sec : la fusee ralentit, pique du nez et tombe vers le bas de la voie, puis s'arrete (v422 : plus vite qu'avant)
-    else { L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.7) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)) - 6 * up * atmo * dt; L.v = Math.max(24, L.v); }   // la pesanteur freine un peu la montee verticale
+    if (dry) { L.fall = (L.fall || 0) + 22 * dt; L.v = Math.max(26, L.v - 6 * dt); L.y -= L.fall * dt; L.rp = Math.min(L.rp, -0.3); L.dryT = (L.dryT || 0) + dt; }   // v448 : a sec, la fusee tombe (elle ne s'ecrase plus en plein vol)   // a sec : la fusee ralentit, pique du nez et tombe vers le bas de la voie, puis s'arrete (v422 : plus vite qu'avant)
+    else { L.fall = 0; L.dryT = 0; L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.7) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)) - 6 * up * atmo * dt; L.v = Math.max(24, L.v); }   // la pesanteur freine un peu la montee verticale
     const vx = -L.v * Math.sin(L.ry) * 0.85, vy = L.v * Math.sin(L.rp) * 0.85, lat = Math.min(1, 52 / L.v); L.x += vx * lat * dt; L.y += vy * lat * dt; L.s += L.v * dt; if (PA.cut(L.s)) L.s = PA.toOld(PA.toNew(L.s));   // a grande vitesse, le deplacement de cote reste le meme (pas de glissade incontrolable)
     // le tube retient la fusee (on glisse sur la paroi, etincelles) ; a decouvert, une limite douce plus large
     const lim = inTube(L.s) ? R - 2.2 : Z[2] === 'lsurface' ? 22 : ROPEN - 2, rr2 = Math.hypot(L.x, L.y);
-    if (rr2 > lim) { L.x *= lim / rr2; L.y *= lim / rr2; L.v *= 1 - dt * 0.6; if (inTube(L.s) && Math.random() < dt * 14) { const F2 = PA.fr(L.s); _a.copy(F2.p).addScaledVector(F2.r, L.x * 1.12).addScaledVector(F2.u, L.y * 1.12); g.effects.sparks.emit({ pos: _a.clone(), vel: new V(rr(-1, 1), rr(-1, 1), rr(-1, 1)).multiplyScalar(10), life: 0.4, s0: 0.3, s1: 0.4, s2: 0.1, cols: g.effects.pal.cyan, drag: 1, grav: 0, a: 1, fout: 0.5 }); if (Math.random() < 0.15) g.audio.play('clank'); } }
+    if (dry && this.active && ((rr2 > lim && inTube(L.s)) || L.dryT > 3.2)) { g.onRocketCrash('stalled', this.pos.clone(), null); return; }   // v448 : contact a sec = crash ; dans le vide : la sonde derive puis explose
+    if (rr2 > lim && !(dry && !inTube(L.s))) { L.x *= lim / rr2; L.y *= lim / rr2; L.v *= 1 - dt * 0.6; if (inTube(L.s) && Math.random() < dt * 14) { const F2 = PA.fr(L.s); _a.copy(F2.p).addScaledVector(F2.r, L.x * 1.12).addScaledVector(F2.u, L.y * 1.12); g.effects.sparks.emit({ pos: _a.clone(), vel: new V(rr(-1, 1), rr(-1, 1), rr(-1, 1)).multiplyScalar(10), life: 0.4, s0: 0.3, s1: 0.4, s2: 0.1, cols: g.effects.pal.cyan, drag: 1, grav: 0, a: 1, fout: 0.5 }); if (Math.random() < 0.15) g.audio.play('clank'); } }
     const F2 = PA.fr(L.s); this.pos.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y);
     this.vel.copy(F2.t).multiplyScalar(L.v).addScaledVector(F2.r, vx * lat).addScaledVector(F2.u, vy * lat); this.speed = this.vel.length(); this.fwd.copy(this.vel).normalize(); this.flightDist += L.v * dt;
     if (g.endlessRun) g.endlessRun.dist = Math.max(g.endlessRun.dist, PA.toNew(L.s));   // v421 : la distance affichee = la voie raccourcie
-    this.thrustK = 1;
+    this.thrustK = dry ? Math.max(0, (this.thrustK || 0) - dt * 4) : 1;
     // les obstacles du programme (teste dans la section du tube, sur tout le trajet de l'image : rien ne passe au travers)
     if (L.inv <= 0 && L.OB) for (const o of L.OB) { if (o.s + o.th < s0 || o.s - o.th > L.s) continue; if (o.hit(L.x, L.y, L.t)) { g.onRocketCrash('wall', this.pos.clone(), F2.t.clone().negate()); if (this.active) { L.inv = 0.8; L.v *= 0.5; g.rig.shake = Math.max(g.rig.shake, 1); } break; } }
     if (this.active && L.sent) play(g, this, dt, s0);

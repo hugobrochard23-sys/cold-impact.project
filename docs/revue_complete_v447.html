@@ -1,0 +1,311 @@
+<title>Revue COLD IMPACT v447</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Mise en page : une colonne de lecture, chaque theme = un bloc avec constat, cause, correction ; tableaux defilables */
+:root {
+  --bg: #f4f6f8; --panel: #ffffff; --fg: #18202a; --muted: #5a6676; --line: #d8dee6;
+  --accent: #e8822a; --accent2: #2a6ad8; --bad: #c8302a; --warn: #c88a10; --ok: #2a8a4a;
+  --badbg: #fbe9e7; --warnbg: #fdf3dc; --okbg: #e6f4ea;
+  --display: 'Rajdhani', 'Arial Narrow', sans-serif; --body: 'Inter', system-ui, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #10151c; --panel: #18202a; --fg: #e6ebf2; --muted: #9aa6b8; --line: #2c3644;
+  --accent: #f29a4a; --accent2: #6aa0ff; --bad: #ff7a6a; --warn: #f2c45a; --ok: #6ad08a;
+  --badbg: #3a1e1c; --warnbg: #3a3018; --okbg: #183a24; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #10151c; --panel: #18202a; --fg: #e6ebf2; --muted: #9aa6b8; --line: #2c3644;
+  --accent: #f29a4a; --accent2: #6aa0ff; --bad: #ff7a6a; --warn: #f2c45a; --ok: #6ad08a;
+  --badbg: #3a1e1c; --warnbg: #3a3018; --okbg: #183a24; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 920px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 28px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; text-wrap: balance; margin: 0; letter-spacing: 0.01em; }
+h1 { font-size: 2.3rem; line-height: 1.05; }
+h2 { font-size: 1.6rem; border-bottom: 2px solid var(--accent); padding-bottom: 4px; }
+h3 { font-size: 1.2rem; }
+p { margin: 0; max-width: 68ch; }
+.lead { color: var(--muted); font-size: 1.02rem; }
+.eyebrow { font-family: var(--display); text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.85rem; color: var(--accent); font-weight: 600; }
+section { display: flex; flex-direction: column; gap: 14px; }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+li { max-width: 72ch; }
+code { font-family: var(--mono); font-size: 0.82em; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; overflow-wrap: anywhere; }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; font-size: 0.88rem; font-variant-numeric: tabular-nums; }
+th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--display); font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); background: var(--bg); white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+.pill { display: inline-block; font-family: var(--display); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 99px; padding: 1px 9px; white-space: nowrap; }
+.p-bad { background: var(--badbg); color: var(--bad); } .p-warn { background: var(--warnbg); color: var(--warn); } .p-ok { background: var(--okbg); color: var(--ok); }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.lot { border-left: 4px solid var(--accent2); }
+.lot h3 { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.lot .meta { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
+.q { border-left: 4px solid var(--accent); }
+.self { border-left: 4px solid var(--bad); }
+.small { font-size: 0.85rem; color: var(--muted); }
+a { color: var(--accent2); }
+:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:8px">
+    <div class="eyebrow">COLD IMPACT · mode évolution · version 447 · 19/11/2026</div>
+    <h1>Revue complète des 8 niveaux</h1>
+    <p class="lead">Six audits menés en parallèle sur le code (fin de vol et collisions, boss, pilotage et vitesse, fusées et effets, décor et lumière, ennemis et rétention), plus mes mesures au banc de test. Chaque constat ci-dessous est relié à une ligne de code ; ce qui reste une estimation est marqué comme tel. Rien n'a été modifié sauf un correctif urgent (v447).</p>
+  </header>
+
+  <section>
+    <h2>En une minute</h2>
+    <div class="box">
+      <ul>
+        <li><b>La règle « plus de carburant = on tombe, le sol tue » n'est pas respectée aux niveaux 4 à 8.</b> La fusée s'écrase en plein vol dès que sa vitesse passe sous 14 m/s, puis l'épave flotte en l'air. C'est l'« explosion en vol » que tu as vue.</li>
+        <li><b>Le bouton « appuyer » ne fait rien dans le mode évolution, à aucun niveau.</b> La poussée est forcée en permanence (<code>game.js:1038</code>), donc l'effet de boost du jeu d'origine (caméra qui recule, champ de vision qui s'ouvre, onde de choc, son) ne se déclenche jamais.</li>
+        <li><b>Tous les messages en vol sont coupés en mode évolution</b> (<code>evo_ui.js:527</code>) : noms de zones, consignes (« passe par le trou jaune »…), « ARRIVEE ». Toutes les explications des nouvelles mécaniques depuis le niveau 4 n'ont jamais été vues par un joueur.</li>
+        <li><b>Les boss 4 à 8 se tuent presque tout seuls.</b> Arrivé au bout de son arène (170 à 380 m), le boss meurt au prochain passage, même sans viser. Ils sont aussi petits (36 à 70 m contre 123 m pour le Titan et 346 m pour l'Abyssal) et ne bloquent jamais le passage.</li>
+        <li><b>La flamme et la fumée ne partent pas de la tuyère.</b> Elles partent d'un point fixe à 0,55 m du centre, à l'intérieur de la fusée. Le cône de flamme est monté à l'envers, d'où le « cylindre qui flotte ». Les traînées d'ailes des fusées 5 à 8 sont placées entre les ailerons, dans le vide.</li>
+        <li><b>La lumière est trop forte et contradictoire aux niveaux 4 à 8.</b> Il y a deux soleils : la vraie lumière éclaire par derrière, le soleil dessiné est devant. Cela donne un désert et un jardin délavés et des ombres du mauvais côté.</li>
+        <li><b>La vitesse ne monte plus après le niveau 1.</b> Les améliorations ne donnent que du carburant aux niveaux 4 à 8. La vitesse reste fixe, entre 170 et 320 km/h, alors que le turbo du niveau 1 atteint 390 km/h.</li>
+        <li><b>Rétention :</b> les niveaux 5, 7 et 8 se finissent en 7 à 10 vols, alors que le niveau 4 en demande environ 62. Il n'y a rien à rejouer après une victoire et rien après le niveau 8. Le bonus de victoire du niveau 8 (20 000) est dérisoire : la première amélioration coûte 58 millions.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Mon auto-analyse</h2>
+    <div class="box self">
+      <ul>
+        <li><b>J'ai construit chaque niveau comme un moteur à part</b>, en copiant le précédent (voie 3D aux niveaux 4 à 6, vol libre aux niveaux 7 et 8). Chaque copie a dérivé : fin de carburant, collisions, caméra, messages, boss. C'est la cause de fond du manque d'harmonie que tu ressens.</li>
+        <li><b>Mes tests ne regardaient pas ce qu'un joueur vit.</b> Le pilote automatique volait au centre de la voie avec le plein illimité. Je n'ai jamais testé la panne sèche, la mort au sol, le contournement du boss, ni vérifié que mes consignes s'affichaient (elles étaient coupées).</li>
+        <li><b>J'ai mesuré des chiffres faciles</b> (vitesse de rotation de la caméra, marge sous la voie), mais pas le ressenti : rythme, zones vides, durée réelle, lisibilité de la fusée.</li>
+        <li><b>J'ai ajouté des effets sans raison de jeu</b> : poussières, pétales et graines devant la caméra à chaque niveau.</li>
+        <li><b>J'ai copié le « boss à 3 coups » du niveau 4 sans voir qu'il meurt automatiquement</b> au bout de l'arène, ni qu'il ne bloque pas le passage.</li>
+        <li><b>J'ai introduit un bug au niveau 8</b> : ses fusées avaient le même nom interne que celles du niveau 2, qui affichait donc le tonneau du Far West. C'est corrigé dans la v447.</li>
+      </ul>
+      <p class="small">Ce qui marche bien et que je garde : le niveau 1 comme référence (ennemis militaires, boss Titan, herbe, densité), les niveaux 2 et 3 (boss intenses, monde fermé), la règle « ce qui touche = ce qu'on voit » des niveaux 7 et 8, et la variété des thèmes.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Tableau par niveau</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Niv.</th><th>Thème</th><th>Longueur</th><th>Vitesse</th><th>Panne sèche</th><th>Boss</th><th>Ennemis</th><th>Lumière / décor</th><th>Vols pour finir*</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Campagne militaire</td><td>6,85 km</td><td>170-390 km/h</td><td><span class="pill p-ok">chute, sol</span></td><td><span class="pill p-ok">Titan 123 m, bloque</span></td><td>Véhicules militaires variés</td><td><span class="pill p-ok">référence</span></td><td>≈ 22-31</td></tr>
+        <tr><td>2</td><td>Fleuve</td><td>7,45 km</td><td>110-280 km/h</td><td><span class="pill p-ok">coule / pique</span></td><td><span class="pill p-warn">Abyssal 346 m, contournable ?</span></td><td>Militaires</td><td><span class="pill p-ok">bon</span></td><td>≈ 44</td></tr>
+        <tr><td>3</td><td>Fête foraine</td><td>6,88 km</td><td>comme niv. 1</td><td><span class="pill p-ok">chute, sol</span></td><td><span class="pill p-ok">Manège 100 m, bloque</span></td><td>Militaires ×1,45</td><td><span class="pill p-warn">sols trop clairs</span></td><td>≈ 31</td></tr>
+        <tr><td>4</td><td>Espace</td><td>6,6 km</td><td>170-200 km/h</td><td><span class="pill p-bad">s'écrase en vol</span></td><td><span class="pill p-bad">46 m, mort auto</span></td><td>Drones simples</td><td><span class="pill p-bad">surexposé</span></td><td><b>≈ 62</b></td></tr>
+        <tr><td>5</td><td>Noyau</td><td>6,1 km</td><td>215 km/h</td><td><span class="pill p-bad">s'écrase en vol</span></td><td><span class="pill p-bad">60 m, mort auto</span></td><td>Hélico réel + drones</td><td><span class="pill p-warn">prairie vide</span></td><td><b>≈ 7</b></td></tr>
+        <tr><td>6</td><td>Lanternes</td><td>6,5 km</td><td>215 km/h</td><td><span class="pill p-bad">s'écrase en vol</span></td><td><span class="pill p-bad">47 m, mort auto</span></td><td>Cerfs-volants plats</td><td><span class="pill p-warn">herbe en éclats</span></td><td>≈ 17</td></tr>
+        <tr><td>7</td><td>Maison géante</td><td>6,8 km</td><td>255-325 km/h</td><td><span class="pill p-bad">s'écrase en vol</span></td><td><span class="pill p-bad">robot, 2 passages</span></td><td>Avions en papier</td><td><span class="pill p-bad">jardin fluo</span></td><td><b>≈ 7</b></td></tr>
+        <tr><td>8</td><td>Far West</td><td>7,4 km</td><td>255-325 km/h</td><td><span class="pill p-bad">s'écrase en vol</span></td><td><span class="pill p-bad">loco 36 m, mort auto</span></td><td>Ballons</td><td><span class="pill p-bad">délavé, pas de bord</span></td><td><b>≈ 10</b></td></tr>
+      </tbody>
+    </table></div>
+    <p class="small">* Estimation par modèle simplifié (carburant × vitesse, achats au mieux). Ordre de grandeur fiable, valeur exacte non. Le niveau 1 réel mesuré sur un enregistrement : 22 vols, 19 min.</p>
+  </section>
+
+  <section>
+    <h2>1. Fin de vol et collisions</h2>
+    <div class="box">
+      <h3>Ce qui se passe</h3>
+      <ul>
+        <li><b>Niveaux 1 à 3 :</b> c'est conforme. Sans carburant, on pique, on décroche, et on ne meurt qu'en touchant le sol.</li>
+        <li><b>Niveaux 4 à 8 :</b> le crash « décrochage » se déclenche quand la vitesse passe sous 14 m/s, où que l'on soit (<code>evo_space.js:620</code>, <code>evo_core.js:650</code>, <code>evo_fete.js:569</code>, <code>evo_maison.js:634</code>, <code>evo_ouest.js:515</code>). Ensuite, l'épave flotte parce que chaque niveau annule la gravité des débris (<code>evo_ouest.js:560</code>…).</li>
+        <li><b>Niveaux 7 et 8 :</b> on freine de 13 m/s² même en piqué, ce qui annule la chute libre du jeu de base.</li>
+        <li><b>Limites invisibles :</b> des cylindres invisibles aux niveaux 4, 5 et 6, un plafond invisible aux niveaux 7 et 8, des boîtes invisibles sous les manèges du niveau 3. Le niveau 8 n'a aucune limite de côté : à 90 m/s, on sort du décor en 30 s.</li>
+        <li><b>Obstacles :</b> tous les obstacles des niveaux 4 à 8 tuent au moindre contact, même en les frôlant. Le décor des niveaux 7 et 8 fait glisser. Ce n'est pas cohérent.</li>
+        <li><b>Bugs :</b>
+          <ul>
+            <li>au niveau 7, un tir ennemi ne ralentit pas (<code>evo_maison.js:500</code>) ;</li>
+            <li>« l'invulnérabilité après un choc » ne s'active jamais, la fusée est déjà détruite (code mort) ;</li>
+            <li>la règle de fin du niveau 5 écrase celles des autres niveaux ;</li>
+            <li>certains messages de panne s'affichent en double.</li>
+          </ul></li>
+      </ul>
+      <h3>La règle unique proposée (tous les niveaux)</h3>
+      <ul>
+        <li><b>Sans carburant :</b> la poussée s'arrête, la fusée pique et accélère vers le sol. Elle meurt <b>au contact du sol</b>, jamais en l'air. Dans l'espace (niveau 4, haute altitude) : la sonde dérive puis explose, comme tu l'acceptes.</li>
+        <li><b>Contact avec le sol, une paroi ou un obstacle :</b> on glisse si on le frôle (moins de 28°), on s'écrase si on le prend de face. C'est la même règle partout, obstacles compris.</li>
+        <li><b>Épave :</b> elle tombe et roule au sol au lieu de flotter.</li>
+        <li><b>Limites :</b> plus aucun mur invisible. Les bords du jeu sont des choses visibles (paroi du tube, montagnes, palissade).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. Les boss</h2>
+    <div class="box">
+      <h3>Pourquoi les niveaux 1 et 2 sont « fous furieux »</h3>
+      <ul>
+        <li><b>Échelle écrasante :</b> le Titan mesure 123 m (51 fois la fusée), l'Abyssal 346 m.</li>
+        <li><b>Mise en scène :</b> on les voit à 1,3-1,5 km. Le Titan a un prélude (des tours abattues qui basculent), l'Abyssal un réveil avec explosion.</li>
+        <li><b>Sensation du combat :</b> les obus sifflent à 150 m/s, chaque coup fait reculer le boss de 150 à 190 m dans la poussière, les secousses sont fortes. Il y a une barre de vie et une mort de 3 s avec épave fumante.</li>
+        <li><b>Blocage :</b> le passage est bloqué tant que le boss vit (« DÉTRUIS LE TITAN »).</li>
+      </ul>
+      <h3>Ce qui ne va pas aux niveaux 4 à 8</h3>
+      <ul>
+        <li><b>Mort automatique :</b> dès que le boss atteint le bout d'une arène trop courte (170 à 380 m), le prochain passage le tue, que l'on vise ou non. Le « 3 coups » affiché est donc faux.</li>
+        <li><b>Taille :</b> le boss est petit (36 à 70 m) et n'apparaît qu'à 320-520 m, dans la brume.</li>
+        <li><b>Visée :</b> la zone qui touche est bien plus large que la cible dessinée. La locomotive touche à 7,5 m pour une cible de 3,6 m.</li>
+        <li><b>Combat :</b> il n'y a ni barre de vie ni blocage. Les tirs sont toujours identiques et inoffensifs.</li>
+        <li><b>Niveau 2 :</b> les deux plus beaux boss du jeu, BEHEMOTH et AEGIS, sont codés mais ne sont plus joués depuis que le niveau 2 est devenu le fleuve.</li>
+      </ul>
+      <h3>Proposition : un cadre de boss commun</h3>
+      <ul>
+        <li><b>Gros :</b> au moins 150 m. Il bouche le passage, avec 2 ou 3 trouées étroites.</li>
+        <li><b>Blocage :</b> le passage reste fermé tant que le boss vit. S'il est acculé, il charge au lieu de mourir.</li>
+        <li><b>Combat :</b> 3 phases, 2 ou 3 points faibles chacune, une barre de vie graduée, des attaques variées (obus frôleurs, missiles lents, mur de tirs avec trouée annoncée), réutilisées du niveau 1 et du niveau 2.</li>
+        <li><b>Arrivée :</b> visible de loin avec un réveil scripté et la musique de boss.</li>
+        <li><b>Mort :</b> longue, avec épave et pluie de pièces.</li>
+        <li><b>Style :</b> un vieil engin militaire, habillé au thème du niveau. Par exemple au niveau 8, un train blindé à canons qui bouche le canyon ; au niveau 7, un char jouet géant.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. Vitesse, boost, caméra, mécaniques</h2>
+    <div class="box">
+      <ul>
+        <li><b>« Appuyer » est mort en mode évolution.</b> Tout l'effet de boost du jeu d'origine existe mais ne se déclenche jamais : <code>onBoostStart</code>, recul de caméra, ouverture du champ, onde de choc, vibration, son.</li>
+        <li><b>Vitesse :</b> elle est fixe aux niveaux 4 à 8, et les améliorations ne la font pas monter (au niveau 1, chaque palier accélère). Aux niveaux 7 et 8, les boucles et fers à cheval accélèrent sans aucun retour visuel.</li>
+        <li><b>Durée :</b> 1,5 à 2 min de vol pur, plus le lancement, le boss qui recule et l'écran de fin. Ça fait bien environ 3 min par tentative.</li>
+        <li><b>Caméra :</b> ce n'est pas la même partout. Les niveaux 1, 2, 3, 7 et 8 utilisent la caméra d'origine. Les niveaux 4 à 6 utilisent la mienne, qui tourne avec la voie, avec d'autres distances et sans réaction au boost.</li>
+        <li><b>Compteur de vitesse :</b> il est faux aux niveaux 4 à 8, car il est calibré sur le niveau 1.</li>
+        <li><b>Mécaniques :</b> depuis le niveau 4, c'est toujours « éviter des obstacles, prendre des anneaux, taper un boss ». Les niveaux 2 (eau : flotter, plonger, couler) et 3 (choix de portes, tunnels) avaient une vraie nouveauté.</li>
+      </ul>
+      <h3>Proposition</h3>
+      <ul>
+        <li><b>Un vrai bouton BOOST pour tous les niveaux :</b> appuyer donne +35 % de vitesse, consomme le carburant deux fois plus vite, et déclenche l'effet de boost d'origine (caméra, onde, son).</li>
+        <li><b>La vitesse monte avec la fusée</b> (paliers), comme au niveau 1. On vise environ 60 à 75 s de vol par niveau, avec des obstacles recalibrés pour rester passables.</li>
+        <li><b>Une seule caméra</b> (celle d'origine) partout, avec sa réaction au boost.</li>
+        <li><b>Une mécanique signature par niveau, nouvelle et expliquée.</b> Exemples :
+          <ul>
+            <li>niveau 4 : zones sans gravité où l'élan se garde ;</li>
+            <li>niveau 5 : forer une paroi en la prenant pile en face ;</li>
+            <li>niveau 6 : allumer les lanternes en passant pour ouvrir la porte du ciel ;</li>
+            <li>niveau 7 : rétrécir ou grandir en passant par les jouets ;</li>
+            <li>niveau 8 : s'accrocher au train (grappin, qui existe déjà dans le code) pour traverser la gorge.</li>
+          </ul></li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. Fusée, flamme, traînées, particules</h2>
+    <div class="cards">
+      <div class="box"><span class="pill p-bad">cause 1</span><p><b>La flamme et la fumée partent d'un point fixe</b> à 0,55 m (<code>rocket.js:87</code>), à l'intérieur de la fusée : la tuyère réelle est à 0,8 à 1,1 m. La position de la tuyère est calculée mais jamais lue.</p></div>
+      <div class="box"><span class="pill p-bad">cause 2</span><p><b>Le cône de flamme est monté à l'envers</b> (<code>rocket_w.js:359</code>, <code>models.js:112</code>) : la pointe est à la tuyère et le bout large brille au loin. C'est le « cylindre qui flotte ». Il est aussi décalé de 0,1 m derrière la tuyère et trop lisse pour le style cubique du jeu.</p></div>
+      <div class="box"><span class="pill p-bad">cause 3</span><p><b>Les traînées d'ailerons sont dans le vide</b> sur les fusées 5 à 8 (13 à 26 cm du bout des ailerons) : les points sont posés entre les ailerons. Les fusées 2 et 4 sont justes.</p></div>
+      <div class="box"><span class="pill p-warn">cause 4</span><p><b>Les fumées en plus des niveaux 6 à 8</b> partent 1 à 2 m derrière la fusée, car elles se basent sur la longueur totale avec la flamme.</p></div>
+      <div class="box"><span class="pill p-warn">cause 5</span><p><b>Les particules d'ambiance</b> (120 à 520 points, niveaux 4 à 8) sont toujours devant la caméra, en gros disques flous. Elles n'ont aucun rôle de jeu.</p></div>
+      <div class="box"><span class="pill p-ok">corrigé v447</span><p><b>Le niveau 2 affichait la fusée du niveau 8</b> (même nom interne). C'est réparé.</p></div>
+    </div>
+    <div class="box"><p><b>Correction :</b> la flamme, la fumée et les traînées partent de la vraie tuyère et du vrai bout des ailerons, calculés à partir de chaque modèle. La flamme est refaite en cônes à facettes dans le style du jeu, collée à la tuyère. Les particules d'ambiance sont supprimées, sauf là où elles ont un sens (braises dans la mine, écume de la cascade). Ensuite, je fais une passe de lisibilité des fusées vues de la caméra de jeu : pièces trop fines, silhouettes.</p></div>
+  </section>
+
+  <section>
+    <h2>5. Décor, lumière, herbe, monde</h2>
+    <div class="box">
+      <ul>
+        <li><b>Deux soleils contradictoires</b> (niveaux 4 à 8) : la vraie lumière vient de derrière à droite, le soleil dessiné est devant, et les ombres sont décalées du mauvais côté.</li>
+        <li><b>Lumière trop forte :</b> elle est 1,75 à 2,1 fois plus forte au niveau 8, au jardin du niveau 7 et au niveau 4 qu'au niveau 1, d'où le sable et la pelouse délavés. Les objets non « cuits » sont 20 à 40 % plus clairs que leur sol. Le dessous des plafonds et la mine sont teintés de vert par la lumière du ciel.</li>
+        <li><b>Herbe :</b>
+          <ul>
+            <li>au niveau 6, des cônes de 1 à 3 m (des « éclats de cristal ») ;</li>
+            <li>au niveau 7, 9 000 lames de 5 à 34 m éparpillées sur 2 km².</li>
+          </ul>
+          Le niveau 1 a une vraie herbe en touffes, 100 brins par mètre de voie : il faut la réutiliser.</li>
+        <li><b>Zones vides :</b> la prairie du niveau 5 (texture de 12 km), le jardin du niveau 7 hors du chemin, la vallée du niveau 8 (sable uni).</li>
+        <li><b>Monde non fermé au niveau 8 :</b> pas de montagnes au bord, et la brume va plus loin que le terrain.</li>
+        <li><b>Décor tiré au hasard à chaque partie</b> (niveaux 6 à 8) : impossible de corriger un mauvais placement précis, et rien n'empêche deux objets de se chevaucher.</li>
+        <li><b>Ombres :</b> les ombres-taches de plus de 60 m flottent ou s'enfoncent à cause de la courbure du monde, et clignotent au-delà de 1,5 km.</li>
+      </ul>
+      <p><b>Correction :</b>
+        <ul>
+          <li>un seul réglage de lumière commun, avec un seul soleil par niveau qui pilote la lumière, le ciel, le disque solaire et les ombres ;</li>
+          <li>l'herbe du niveau 1 aux niveaux 6 et 7 ;</li>
+          <li>un couvre-sol le long du chemin (touffes, cailloux, fleurs) ;</li>
+          <li>des montagnes de bord au niveau 8 ;</li>
+          <li>un décor tiré une fois pour toutes (reproductible) avec des zones d'exclusion ;</li>
+          <li>des ombres corrigées.</li>
+        </ul></p>
+    </div>
+  </section>
+
+  <section>
+    <h2>6. Ennemis et défis</h2>
+    <div class="box">
+      <ul>
+        <li><b>Niveau 1 :</b> une vingtaine de véhicules militaires reconnaissables, avec des comportements différents : chars à plusieurs coups, camions qui fuient, hélicos en patrouille, jets, lance-missiles.</li>
+        <li><b>Niveaux 4 à 8 :</b> un seul geste, « foncer dans la cible », sur des formes simples (sphère, losange, avion en papier, ballon). Les ennemis ne gagnent plus de points de vie.</li>
+        <li><b>Grands trous mesurés :</b>
+          <ul>
+            <li>niveau 6 : 680 m (montée au ciel) ;</li>
+            <li>niveau 7 : 840 m (cuisine vers jardin) ;</li>
+            <li>niveau 8 : 1 500 m sans ennemi (mine et cheminée) ;</li>
+            <li>niveau 4 : 400 m sans rien sur chaque accélérateur.</li>
+          </ul></li>
+        <li><b>Contenu codé mais jamais joué :</b>
+          <ul>
+            <li>niveau 1 : 5 scènes finies (vallée, grotte, falaise, entrepôts, base, environ 3,5 km) ;</li>
+            <li>niveau 4 : les lasers et les pistons, retirés par des coupes ;</li>
+            <li>niveau 2 : les boss BEHEMOTH et AEGIS.</li>
+          </ul></li>
+        <li><b>Rareté :</b> le jeu retire au hasard 25 à 48 % des ennemis dans la seconde moitié des niveaux 1 et 3.</li>
+      </ul>
+      <p><b>Correction :</b> des ennemis plus réalistes par thème, avec deux comportements (blindés à plusieurs coups, tireurs qui visent juste). Remplir chaque trou de plus de 300 m. Réintégrer le contenu déjà fait.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>7. Rétention (garder les joueurs longtemps)</h2>
+    <div class="box">
+      <ul>
+        <li><b>Rythme incohérent :</b> 7 vols pour finir les niveaux 5 et 7, 62 pour le niveau 4. À partir du palier 3, le carburant des niveaux 6 à 8 est deux fois trop généreux : améliorer la fusée ne sert plus à rien.</li>
+        <li><b>Rien à rejouer :</b> il n'y a pas d'étoiles, de temps, de défi ni de record autre que la distance (déjà au maximum après la victoire).</li>
+        <li><b>Rien après le niveau 8.</b> Les niveaux 5 à 8 ne s'enchaînent même pas automatiquement : on revient au menu.</li>
+        <li><b>Récompense de victoire :</b> le bonus n'est pas multiplié comme les prix. Au niveau 8, il vaut 20 000 pour des achats à plusieurs dizaines de millions.</li>
+        <li><b>Systèmes déjà codés mais éteints en mode évolution :</b> cadeau de connexion sur 7 jours, 3 missions du jour, étoiles par niveau, mini-jeu « course contre le fantôme ».</li>
+      </ul>
+      <p><b>Proposition, par ordre de rentabilité :</b>
+        <ul>
+          <li>enchaîner tous les niveaux et indexer le bonus de victoire ;</li>
+          <li>viser 25 à 40 vols par niveau en recalant carburant et gains ;</li>
+          <li>3 étoiles par niveau (fini, X % d'ennemis, sans choc ou sous un temps) ;</li>
+          <li>missions et cadeau du jour (déjà codés) ;</li>
+          <li>un « nouveau cycle » après le niveau 8 avec un multiplicateur permanent (progression infinie) ;</li>
+          <li>des livrées de fusée pour tous les niveaux ;</li>
+          <li>un défi du jour fait de scènes mélangées.</li>
+        </ul></p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Plan proposé, en 8 lots</h2>
+    <p class="lead">Chaque lot est livrable seul et testé au banc (y compris panne sèche, contournement de boss et vol hors du chemin) avant d'être publié. Le travail de code des lots indépendants peut être réparti entre plusieurs agents.</p>
+    <div class="cards">
+      <div class="box lot"><h3>Lot 1 · Règles communes <span class="meta">1 session</span></h3><p>Panne sèche qui tombe et meurt au sol, épave qui tombe, même règle de glisse et de choc pour tout, plus de murs invisibles, et les bugs : tir sans effet au niveau 7, invulnérabilité morte, règle de fin écrasée, messages en double.</p></div>
+      <div class="box lot"><h3>Lot 2 · Fusée et flamme <span class="meta">1 session</span></h3><p>Flamme, fumée et traînées attachées à la vraie tuyère et aux vrais ailerons, flamme à facettes dans le style du jeu, suppression des particules inutiles.</p></div>
+      <div class="box lot"><h3>Lot 3 · Vitesse et boost <span class="meta">1 session</span></h3><p>Bouton BOOST réel avec l'effet du jeu d'origine, vitesse qui monte avec la fusée, caméra d'origine partout, compteur juste, obstacles recalibrés, environ 60-75 s par niveau.</p></div>
+      <div class="box lot"><h3>Lot 4 · Lumière et décor <span class="meta">1-2 sessions</span></h3><p>Soleil unique, lumière ramenée au niveau 1, herbe du niveau 1 partout, couvre-sol, bords du monde, décor reproductible, ombres.</p></div>
+      <div class="box lot"><h3>Lot 5 · Boss <span class="meta">2-3 sessions</span></h3><p>Cadre de boss commun, puis un boss énorme et militaire par niveau (4 à 8), BEHEMOTH et AEGIS rendus au jeu.</p></div>
+      <div class="box lot"><h3>Lot 6 · Ennemis et trous <span class="meta">1-2 sessions</span></h3><p>Ennemis réalistes à deux comportements par thème, trous remplis, contenu déjà fait réintégré.</p></div>
+      <div class="box lot"><h3>Lot 7 · Mécaniques signature <span class="meta">1 par niveau</span></h3><p>Une nouveauté de jeu par niveau, expliquée à l'écran.</p></div>
+      <div class="box lot"><h3>Lot 8 · Rétention <span class="meta">2 sessions</span></h3><p>Enchaînement, bonus indexé, équilibre 25-40 vols, étoiles, quotidien, nouveau cycle, livrées.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Questions avant de commencer</h2>
+    <div class="box q">
+      <ul>
+        <li><b>Durée d'un niveau :</b> combien de secondes de vol pur vises-tu quand on a la meilleure fusée ? Je propose 60 à 75 s.</li>
+        <li><b>Bouton BOOST :</b> d'accord pour qu'appuyer donne +35 % de vitesse et consomme le carburant deux fois plus vite ?</li>
+        <li><b>Messages en vol</b> (nom de zone, consigne courte) : je les réactive, sobres, dans le kit d'interface d'origine, ou tu les avais coupés exprès ?</li>
+        <li><b>Boss :</b> un vrai engin militaire partout, habillé au thème (train blindé, char jouet géant), ou un engin du thème mais à l'échelle des boss 1 et 2 ?</li>
+        <li><b>Ordre :</b> je propose de commencer par les lots 1, 2 et 3 (règles, fusée, vitesse), qui touchent tous les niveaux d'un coup, avant les boss. Ça te va ?</li>
+      </ul>
+    </div>
+  </section>
+</div>

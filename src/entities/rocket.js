@@ -18,6 +18,19 @@
     return step;
   }
 
+  // v448 : LES BOUTS D'AILES ET D'AILERONS, calcules sur la forme reelle du modele (repere local) : le coin exterieur arriere de chaque aile ou aileron qui depasse du corps
+  CC.autoTips = (mesh) => {
+    mesh.updateMatrixWorld(true); const inv = new THREE.Matrix4().copy(mesh.matrixWorld).invert(), M = new THREE.Matrix4(), v = new V(), X = [], Y = [], Z = [], J = mesh.userData.jet && mesh.userData.jet.group;
+    mesh.traverse((o) => { if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return; let p = o; while (p && p !== mesh) { if (!p.visible || p === J || p.scale.x < 0.01) return; p = p.parent; } if (o.material && o.material.blending === THREE.AdditiveBlending) return;
+      M.multiplyMatrices(inv, o.matrixWorld); const P = o.geometry.attributes.position, st = Math.max(1, Math.floor(P.count / 6000)); for (let i = 0; i < P.count; i += st) { v.fromBufferAttribute(P, i).applyMatrix4(M); X.push(v.x); Y.push(v.y); Z.push(v.z); } });
+    if (!X.length) return []; let z0 = 1e9, z1 = -1e9; for (const z of Z) { if (z < z0) z0 = z; if (z > z1) z1 = z; } const zr = z0 + 0.72 * (z1 - z0); let rm = 0; for (let i = 0; i < X.length; i++) if (Z[i] < zr) rm = Math.max(rm, Math.hypot(X[i], Y[i]));
+    const NB = 72, best = new Array(NB).fill(-1), sc = new Array(NB).fill(-1e9);
+    for (let i = 0; i < X.length; i++) { if (Z[i] >= zr) continue; const r = Math.hypot(X[i], Y[i]); if (r < 0.78 * rm) continue; const b = Math.min(NB - 1, Math.floor((Math.atan2(Y[i], X[i]) + Math.PI) / (2 * Math.PI) * NB)), q = r - 0.04 * (Z[i] - z0); if (q > sc[b]) { sc[b] = q; best[b] = i; } }
+    const full = best.filter((b) => b >= 0).length; if (full > NB / 2) return [];   // corps rond sans aileron qui depasse : pas de traînee
+    let s0 = best.findIndex((b) => b < 0); if (s0 < 0) return []; const cl = []; let cur = null;
+    for (let k = 1; k <= NB; k++) { const b = (s0 + k) % NB; if (best[b] >= 0) { if (!cur) { cur = { i: best[b], q: sc[b] }; cl.push(cur); } else if (sc[b] > cur.q) { cur.i = best[b]; cur.q = sc[b]; } } else cur = null; }
+    return cl.sort((a, b) => b.q - a.q).slice(0, 4).map((c) => new V(X[c.i], Y[c.i], Z[c.i]));
+  };
   class Rocket {
     constructor(game) {
       this.game = game;
@@ -84,7 +97,8 @@
       this.updateMesh(0);
     }
 
-    nozzle(out) { return out.copy(this.pos).addScaledVector(this.fwd, -0.55); }
+    // v448 : la VRAIE tuyere (le jet de chaque modele, a l'echelle du modele) : la flamme et la fumee en partent, collees a la fusee
+    nozzle(out) { const J = this.mesh && this.mesh.userData.jet, z = J && J.group ? J.group.position.z * this.mesh.scale.z : -0.55; return out.copy(this.pos).addScaledVector(this.fwd, z); }
     // v026 : bouts des ailerons et pointe du nez en coordonnées du monde (départ des traînées)
     // v030 : tableau et vecteurs réutilisés d'une image à l'autre (valables jusqu'à l'appel suivant)
     finTips() {
@@ -374,7 +388,7 @@
         while (this.smokeAcc >= 0.32 && m < 20) {
           this.smokeAcc -= 0.32; m++;
           const f = 1 - this.smokeAcc / Math.max(len, 1e-4);
-          fx.exhaustSmoke(_b.copy(this.lastNozzle).addScaledVector(seg, U.clamp(f, 0, 1)).addScaledVector(this.fwd, -r.range(0.6, 1.2)), this.vel, k);
+          fx.exhaustSmoke(_b.copy(this.lastNozzle).addScaledVector(seg, U.clamp(f, 0, 1)).addScaledVector(this.fwd, -r.range(0.05, 0.35)), this.vel, k);
         }
         // lumière du moteur : vacille, se réchauffe (orange → jaune) avec l'intensité
         this.light.intensity = (1.7 + 0.7 * this.flick + Math.sin(this.age * 53) * 0.15) * k * (this.game.endlessRun ? 0.5 : 1);   // v034c : lumière de la flamme adoucie dans le CLASSIQUE

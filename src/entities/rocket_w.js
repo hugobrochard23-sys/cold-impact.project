@@ -352,16 +352,16 @@
 
   // jet de la tuyere : meme mecanique que M.rocket (allumage / vacillement animes par Rocket.updateMesh)
   const addJet = (g, tailZ, r) => {
-    const jet = new T3.Group(); jet.position.z = tailZ - 0.1; jet.visible = false; g.add(jet);
+    const jet = new T3.Group(); jet.position.z = tailZ;   // v448 : colle a la levre de la tuyere jet.visible = false; g.add(jet);
     const disc = new T3.Mesh(new T3.CircleGeometry(r * 0.8, 12), new T3.MeshBasicMaterial({ color: '#fff2c0', transparent: true, opacity: 1 }));
     disc.rotation.y = Math.PI; disc.position.z = 0.005; jet.add(disc);
     const cone = (rad, h, color, op) => {
-      const geo = new T3.ConeGeometry(rad, h, 12, 4, true); geo.translate(0, -h / 2, 0);
+      const geo = new T3.ConeGeometry(rad, h, 6, 2, true); geo.translate(0, h / 2, 0);   // v448 : base a la tuyere (y = 0), pointe a h
       const P = geo.attributes.position, col = new Float32Array(P.count * 3), c0 = new T3.Color(color);
-      for (let k = 0; k < P.count; k++) { const t = Math.min(1, Math.max(0, -P.getY(k) / h)), f = Math.pow(t, 1.1); col[k * 3] = c0.r * f; col[k * 3 + 1] = c0.g * f; col[k * 3 + 2] = c0.b * f; }
+      for (let k = 0; k < P.count; k++) { const t = Math.min(1, Math.max(0, 1 - P.getY(k) / h)), f = Math.pow(t, 1.1); col[k * 3] = c0.r * f; col[k * 3 + 1] = c0.g * f; col[k * 3 + 2] = c0.b * f; }
       geo.setAttribute('color', new T3.BufferAttribute(col, 3));
       const m = new T3.Mesh(geo, new T3.MeshBasicMaterial({ color: '#ffffff', vertexColors: true, transparent: true, opacity: op, blending: T3.AdditiveBlending, depthWrite: false, side: T3.DoubleSide }));
-      m.rotation.x = Math.PI / 2; m.userData.op = op; jet.add(m); return m;
+      m.rotation.x = -Math.PI / 2; m.userData.op = op; jet.add(m); return m;   // v448 : base a la tuyere, pointe vers l'arriere
     };
     const core = cone(r * 0.62, 0.5, '#fff9d9', 0.95), outer = cone(r * 0.9, 0.9, '#ffae32', 0.55);
     return { group: jet, disc, core, outer };
@@ -371,9 +371,8 @@
     build(skin) {
       const g = new T3.Group(), fn = BUILD[skin.build]; const o = fn(g, skin.stage || 0);
       g.userData.jet = addJet(g, o.tail, o.jr);
-      g.userData.finTips = o.tips.map((q) => new T3.Vector3(q[0], q[1], q[2]));
-      g.userData.noseZ = o.noseZ; g.userData.nozzleZ = o.tail - 0.03;
-      return M.bake(g, [g.userData.jet.group]);
+      g.userData.noseZ = o.noseZ; g.userData.nozzleZ = o.tail;
+      const m = M.bake(g, [g.userData.jet.group]); m.userData.finTips = CC.autoTips ? CC.autoTips(m) : o.tips.map((q) => new T3.Vector3(q[0], q[1], q[2])); return m;   // v448 : bouts d'ailerons calcules sur la forme
     },
   };
 })();

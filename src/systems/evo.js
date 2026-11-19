@@ -194,7 +194,7 @@
     if (rk.mesh.userData.evoParts) rk.mesh.remove(rk.mesh.userData.evoParts);
     const PT = EVO.partTier(), root = EVO.ownBody() ? buildPartsW(r.tier) : buildParts(r.tier); rk.mesh.add(root); rk.mesh.userData.evoParts = root; g.evoParts = root.userData.P;
     for (const k of Object.keys(g.evoParts)) { const on = r.tier >= PT[k]; g.evoParts[k].userData.k = on ? 1 : 0; g.evoParts[k].scale.setScalar(on ? 1 : 0.0001); g.evoParts[k].visible = on; }
-    if (!EVO.ownBody()) rk.mesh.userData.finTips = r.tier >= 3 ? [new V(0.4, 0, -0.62), new V(-0.4, 0, -0.62), new V(0, 0.4, -0.62), new V(0, -0.4, -0.62)] : r.tier >= 1 ? [new V(0.44, 0, -0.18), new V(-0.44, 0, -0.18), new V(0, 0.44, -0.18), new V(0, -0.44, -0.18)] : [];   // bouts d'ailes : traînées de condensation
+    if (CC.autoTips) rk.mesh.userData.finTips = CC.autoTips(rk.mesh);   // v448 : bouts d'ailes et d'ailerons calcules sur la forme reelle (traînees de condensation collees aux ailes)
     rk.mesh.scale.setScalar((1 + 0.012 * r.n) * 1.28);
   };
   // v159 : LIVREES : une fois la fusee au bout de ses ameliorations (niveau 20), on peut en changer l'apparence ; une nouvelle s'ouvre tous les 5 niveaux
@@ -543,10 +543,12 @@
     return null;
   };
   const _fk = { t: 0, normal: new V(0, 1, 0), inside: false, pen: 0 };
-  const floorAt = (g, p) => { const run = g.endlessRun, T = run.T, d = T.project(p, run.dist), q = T.at(d, 0, 0); return q[1]; };
+  const terrAt = (g, x, z) => { if (EVO.terrain) for (const f of EVO.terrain) { const h = f(g, x, z); if (h !== null && h !== undefined) return h; } return null; };   // v448 : sol propre au niveau (relief des niveaux 5 a 8)
+  const tubeW = () => !!(EVO.isTube && EVO.isTube());   // niveaux 4 a 8 : le monde physique du niveau 1 n'existe pas
+  const floorAt = (g, p) => { const th = terrAt(g, p.x, p.z); if (th !== null) return th; const run = g.endlessRun, T = run.T, d = T.project(p, run.dist), q = T.at(d, 0, 0); return q[1]; };
   // hauteur de la surface sous un point (jusqu'a 1,6 m au-dessous) : monde physique, sinon sol visible du couloir ; null s'il n'y a rien
   const surfBelow = (g, p) => { const W = g.world; _pv.set(p.x, p.y + 0.9, p.z); _nx.set(p.x, p.y - 0.8, p.z); const h = W.sweep(_pv, _nx, 0.04); if (h) return _pv.y + (_nx.y - _pv.y) * h.t; const fy = floorAt(g, p); return p.y - fy < 0.8 && p.y - fy > -0.3 ? fy : null; };
-  EVO.groundY = (g, p) => { const W = g.world; _pv.set(p.x, p.y + 6, p.z); _nx.set(p.x, p.y - 80, p.z); const h = W.sweep(_pv, _nx, 0.05); return h ? _pv.y + (_nx.y - _pv.y) * h.t : null; };
+  EVO.groundY = (g, p) => { if (tubeW()) return null; const W = g.world; _pv.set(p.x, p.y + 6, p.z); _nx.set(p.x, p.y - 80, p.z); const h = W.sweep(_pv, _nx, 0.05); return h ? _pv.y + (_nx.y - _pv.y) * h.t : null; };
   const _sh = { t: 0, normal: new V(0, 1, 0), inside: true, pen: 0.4 }, _sn = new V(), _sp = new V(), SD = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
   const solidAt = (g, x, y, z) => { for (const f of EVO.solid) if (f(g, x, y, z)) return true; return false; };
   const solidHit = (g, p, rad) => {   // le point est dans un solide du decor : la normale = les directions libres autour (pas de pas de 1,5 m)
@@ -562,7 +564,7 @@
       const rad = q.isBody ? 0.2 : Math.max(0.07, q.r * 0.8); let ground = false;
       q.v.y -= (EVO.isS2() ? 90 : 16) * h; q.v.multiplyScalar(1 - 0.3 * h);   // niveau 2 : de haut, on tombe vite
       _pv.copy(q.m.position); _nx.copy(_pv).addScaledVector(q.v, h);
-      let hit = W.sweep(_pv, _nx, rad);
+      let hit = tubeW() ? null : W.sweep(_pv, _nx, rad);
       if (!hit && T) { const fy = floorAt(g, _nx); if (_pv.y - rad >= fy - 0.4 && _nx.y - rad < fy) { const den = _pv.y - _nx.y; _fk.t = den > 1e-6 ? Math.max(0, Math.min(1, (_pv.y - rad - fy) / den)) : 0; hit = _fk; } }
       if (!hit && EVO.solid && EVO.solid.length) hit = solidHit(g, _nx, rad);   // v334 : decor du niveau 2 (herbe, falaises, grotte) : l'epave ne le traverse plus
       if (!hit) q.m.position.copy(_nx);
@@ -590,7 +592,7 @@
         if (ground) { _fl.set(_ax.x, 0, _ax.z); if (_fl.lengthSq() < 1e-4) _fl.set(0, 0, 1); _fl.normalize(); _q2.setFromUnitVectors(_ax, _fl); q.m.quaternion.premultiply(_q2.slerp(new THREE.Quaternion(), 1 - Math.min(1, 7 * h))); }
       }
       const dyn = dynPush(g, q, rad); if (dyn) ground = true;
-      if (q.m.position.y < gy - 60) { q.m.position.y = gy + 1; q.v.set(0, 0, 0); }
+      { const tg = terrAt(g, q.m.position.x, q.m.position.z), gb = tg !== null ? tg : gy; if (q.m.position.y < gb - 60 && !(tubeW() && tg === null)) { q.m.position.y = gb + 1; q.v.set(0, 0, 0); } }
       const wl = q.w.length(); if (wl > 0.01) { _ta.copy(q.w).divideScalar(wl); _tq.setFromAxisAngle(_ta, wl * h); q.m.quaternion.premultiply(_tq); }
       if (ground && q.v.lengthSq() < (q.isBody ? 2.2 : 1.2) && q.w.lengthSq() < 9) { q.rest = true; q.v.set(0, 0, 0); q.w.set(0, 0, 0); if (q.isBody) { q.settle = 0; _ax.set(0, 0, 1).applyQuaternion(q.m.quaternion); _fl.set(_ax.x, 0, _ax.z); if (_fl.lengthSq() < 1e-4) _fl.set(0, 0, 1); _fl.normalize(); q.flatQ = new THREE.Quaternion().setFromUnitVectors(_ax, _fl).multiply(q.m.quaternion); q.flatQ.copy(new THREE.Quaternion().setFromUnitVectors(_ax, _fl).multiply(q.m.quaternion)); } }
       else if (ground && Tm.t > 5.5 && q.v.lengthSq() < 12) { q.v.multiplyScalar(0.8); q.w.multiplyScalar(0.8); }

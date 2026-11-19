@@ -101,7 +101,7 @@
     for (let k = 1; k <= ns; k++) {
       const t = k / ns, x = P.x + (C.x - P.x) * t, y = P.y + (C.y - P.y) * t, z = P.z + (C.z - P.z) * t;
       probe(h.H, x, z, i - 90, i + 90);
-      if (out.ok && out.s > S1 && y < out.y + 0.6) { g.onRocketCrash('wall', new T3.Vector3(x, y, z), new T3.Vector3(0, 1, 0)); break; }
+      if (out.ok && out.s > S1 && y < out.y + 0.6) { const sp = rk.vel.length() || 1; if (rk.vel.y / sp > -0.45) { rk.pos.set(x, out.y + 0.7, z); if (rk.vel.y < 0) rk.vel.y = 0; rk.sliding = Math.max(rk.sliding || 0, 0.05); } else g.onRocketCrash('wall', new T3.Vector3(x, y, z), new T3.Vector3(0, 1, 0)); break; }   // v448 : on glisse en frolant
     }
     P.copy(C);
   };

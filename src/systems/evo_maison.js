@@ -497,7 +497,7 @@
   }
   const fire = (g, s, x, y) => { const b = L.bul.find((q) => !q.on); if (!b) return; const vs = -18, tau = Math.max(0.6, (s - L.s) / Math.max(20, L.v - vs)), a = rr(0, 6.28), off = Math.random() < 0.2 ? rr(0.6, 1.6) : rr(2.6, 5);
     Object.assign(b, { on: true, s, x, y, vs, vx: (L.x + Math.cos(a) * off - x) / tau, vy: (L.y + Math.sin(a) * off - y) / tau, t: 0 }); b.m.visible = true; g.audio.play('whoosh'); };
-  const missileHit = (g, rk) => { L.v *= 0.75; L.inv = 0.6; g.effects.explosion(rk.pos.clone(), null, false, 'orange'); burst(rk.pos.clone(), '#ff8a4a', 0.4); g.audio.play('boomSmall', rk.pos); g.rig.shake = Math.max(g.rig.shake, 0.8); g.flash = 0.2; g.flashColor = '#ffb070'; (g.killPops = g.killPops || []).push({ p: rk.pos.clone().add(new V(0, 2.5, 0)), t0: performance.now() - 200, txt: 'TOUCHE !' }); };
+  const missileHit = (g, rk) => { rk.vel.multiplyScalar(0.75); L.inv = 0.6; g.effects.explosion(rk.pos.clone(), null, false, 'orange'); burst(rk.pos.clone(), '#ff8a4a', 0.4); g.audio.play('boomSmall', rk.pos); g.rig.shake = Math.max(g.rig.shake, 0.8); g.flash = 0.2; g.flashColor = '#ffb070'; (g.killPops = g.killPops || []).push({ p: rk.pos.clone().add(new V(0, 2.5, 0)), t0: performance.now() - 200, txt: 'TOUCHE !' }); };
   // un ennemi detruit : comme au niveau 1 (ondes de choc, eclats, fumee, ralenti tres court) + des confettis
   function killFx(g, rk, p, big) { const fx = g.effects, up = new V(0, 1, 0), vel = rk.vel ? rk.vel.clone() : new V(0, 0, -30), c = p.clone();
     fx.explosion(c, null, true, 'orange'); fx.ring(c, up, 2, 26, 0.6, '#ffd060', 0.95); fx.ring(c, vel.clone().normalize(), 1, 20, 0.5, '#ffffff', 0.85); fx.flash(c, '#ffb040', 8, 90, 0.35, '#ff5020');
@@ -573,7 +573,7 @@
     const capped = B.sT >= B.cap - 1, ds = B.s - L.s, ph = 3 - B.hp;
     if (ds > 45 && ds < 280) { B.fT -= dt; if (B.fT <= 0) { B.fT = [1.5, 1.15, 0.9][ph]; fire(g, B.s - 10, B.x + 17, B.y - 6); if (ph >= 1) fire(g, B.s - 10, B.x - 17, B.y - 6); if (ph >= 2) fire(g, B.s - 10, B.x, B.y + 20); } }
     if (B.hitT <= 0 && L.s > B.s - 10 && L.s < B.s + 14 && (capped || Math.hypot(L.x - B.x, L.y - B.y) < 10 + RK)) {
-      B.hp = capped ? 0 : B.hp - 1; B.hitT = 1.6; L.inv = 1.2; L.v *= 0.6; g.rig.shake = 1.2; g.flash = 0.35; g.flashColor = '#ffffff'; g.effects.explosion(rk.pos.clone(), null, false, 'orange'); burst(rk.pos.clone(), '#ffd04a', 0.9, 'ring'); g.audio.play('reactorHit'); g.audio.play('boom');
+      B.hp = capped ? 0 : B.hp - 1; B.hitT = 1.6; L.inv = 1.2; rk.vel.multiplyScalar(0.6); g.rig.shake = 1.2; g.flash = 0.35; g.flashColor = '#ffffff'; g.effects.explosion(rk.pos.clone(), null, false, 'orange'); burst(rk.pos.clone(), '#ffd04a', 0.9, 'ring'); g.audio.play('reactorHit'); g.audio.play('boom');
       if (EVO.onBossHit) EVO.onBossHit(g, null); rk.fuel = Math.min(rk.fuelMax, rk.fuel + 6);
       if (B.hp <= 0) { B.dead = true; B.deadT = 0; if (CC.L1) CC.L1.msg(g, 'ROBOT JOUET DETRUIT !', 3, '#ffe9a0'); g.audio.play('victory'); }
       else { B.sT = Math.min(B.cap, L.s + 300); if (CC.L1) CC.L1.msg(g, B.hp === 2 ? 'TOUCHE !  ENCORE 2 COUPS' : 'ENCORE UN COUP !', 2, '#ff9a5a'); }
@@ -607,7 +607,7 @@
     terrain(PA, grp); obstacles(g, PA, grp); house(PA, grp); sky(g, PA, grp); enemies(g, PA, grp); bossBuild(g, PA, grp); fwPool(grp); batches(grp); colBuild();
     grp.traverse((o) => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) if (!m.isShaderMaterial && !m.fog && !(m.blending === T3.AdditiveBlending) && !(o.isPoints)) { m.fog = true; m.needsUpdate = true; } });
     // les poussieres dorees dans la lumiere (dedans), les aigrettes qui volent (dehors)
-    { const n = 420, pos = new Float32Array(n * 3), geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(pos, 3)); const p = new T3.Points(geo, new T3.PointsMaterial({ color: '#fff0c0', size: 0.35, map: dotTex(), transparent: true, opacity: 0, depthWrite: false, fog: false })); p.frustumCulled = false; g.scene.add(p); L.dust = p; L.dustInit = false; L.dph = new Float32Array(n); for (let i = 0; i < n; i++) L.dph[i] = rr(0, 6.28); }
+    { const n = 420, pos = new Float32Array(n * 3), geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(pos, 3)); const p = new T3.Points(geo, new T3.PointsMaterial({ color: '#fff0c0', size: 0.35, map: dotTex(), transparent: true, opacity: 0, depthWrite: false, fog: false })); p.frustumCulled = false; p.visible = false; g.scene.add(p); L.dust = p; L.dustInit = false; L.dph = new Float32Array(n); for (let i = 0; i < n; i++) L.dph[i] = rr(0, 6.28); }
     L.far0 = g.camera.far;
   }
   const LIMS = { pad: [30, 16], low: [22, 13], open: [55, 60], corr: [42, 60], counter: [24, 26], boost: [40, 40] };
@@ -627,11 +627,12 @@
     let inp = input; if (input && input.aimDir) { const Ft = PA.fr(L.s + 12).t, d = input.aimDir.dot(Ft); if (d < 0.34) inp = Object.assign({}, input, { aimDir: _sa.copy(input.aimDir).addScaledVector(Ft, 0.34 - d).normalize() }); }
     if (!(boostZ || L.boostT > 0)) this.fuel = Math.max(0, this.fuel - dt);
     const dry = this.fuel <= 0; if (dry && !L.dry) { L.dry = 1; if (CC.L1) CC.L1.msg(g, 'PLUS DE CARBURANT !', 2, '#ff6a5a'); g.audio.play('warnFuel'); } if (!dry) L.dry = 0;
+    if (dry) inp = Object.assign({}, inp, { aimDir: new V().copy(this.fwd).setY(Math.min(this.fwd.y - 0.35, -0.65)).normalize() });   // v448 : a sec, le nez pique vers le sol (plus de long vol plane)
     const fu = this.fuel; if (dry) this.fuel = 0;
     _step.call(this, dt, inp); this.fuel = fu; if (!this.active) return;
     // la vitesse : celle du niveau (plus vite dans la fenetre et apres une boucle) ; sans carburant, on ralentit et on tombe
     const vMax = L.boostT > 0 ? 150 : boostZ ? 130 : 90; L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
-    { const sp = this.vel.length(); if (sp > 1e-3) { const want = dry ? Math.max(0, sp - 13 * dt) : sp + (vMax - sp) * Math.min(1, dt * (sp < vMax ? 1.4 : 0.9)); this.vel.multiplyScalar(want / sp); } if (dry && this.vel.length() < 14) { g.onRocketCrash('stalled', this.pos.clone(), null); return; } }
+    if (!dry) { const sp = this.vel.length(); if (sp > 1e-3) { const want = sp + (vMax - sp) * Math.min(1, dt * (sp < vMax ? 1.4 : 0.9)); this.vel.multiplyScalar(want / sp); } } else this.vel.y -= 14 * dt;   // v448 : a sec, plus de frein : la fusee pique et tombe (elle meurt au sol, jamais en l'air)
     // ou en est-on sur la voie
     for (let k = 0; k < 3; k++) { const F = PA.fr(L.s); L.s = U.clamp(L.s + U.clamp(_st.subVectors(this.pos, F.p).dot(F.t), -40, 40), 0, PA.len); }
     const F2 = PA.fr(L.s); _st.subVectors(this.pos, F2.p); L.x = _st.dot(F2.r); L.y = _st.dot(F2.u); L.v = this.vel.length();
@@ -639,17 +640,17 @@
     // dehors (le jardin), une limite tres large : la palissade est a 950 m, le ciel a 520 m
     if (Math.abs(L.x) > 900) { L.x = Math.sign(L.x) * 900; const vr = this.vel.dot(F2.r); if (vr * L.x > 0) this.vel.addScaledVector(F2.r, -vr); }
     if (L.y > 520) { L.y = 520; const vu = this.vel.dot(F2.u); if (vu > 0) this.vel.addScaledVector(F2.u, -vu); }
-    { const fl = floorAt(L.s, F2); if (L.y < fl) { L.y = fl; const vu = this.vel.dot(F2.u); if (vu < 0) this.vel.addScaledVector(F2.u, -vu); if (Math.random() < dt * 8) g.effects.smokePuff(_a.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y - 1).clone(), new V(rr(-2, 2), rr(1, 3), rr(-2, 2)), 1.4, 0.9); } }
+    { const fl = floorAt(L.s, F2); if (L.y < fl && dry && this.active) { g.onRocketCrash('stalled', this.pos.clone(), null); return; } if (L.y < fl) { L.y = fl; const vu = this.vel.dot(F2.u); if (vu < 0) this.vel.addScaledVector(F2.u, -vu); if (Math.random() < dt * 8) g.effects.smokePuff(_a.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y - 1).clone(), new V(rr(-2, 2), rr(1, 3), rr(-2, 2)), 1.4, 0.9); } }
     this.pos.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y);
     { const H2 = colAt(this.pos); if (H2) { const vd = _a.copy(this.vel).normalize(), imp = Math.asin(U.clamp(-vd.dot(H2.n), -1, 1)) * 57.3;
-        if (imp < 28 || L.inv > 0) { this.pos.copy(H2.out); const vn = this.vel.dot(H2.n); if (vn < 0) this.vel.addScaledVector(H2.n, -vn * 1.05); if (Math.random() < dt * 10) g.effects.smokePuff(this.pos.clone(), H2.n.clone().multiplyScalar(3), 1.2, 0.7); }
+        if ((imp < 28 || L.inv > 0) && !dry) { this.pos.copy(H2.out); const vn = this.vel.dot(H2.n); if (vn < 0) this.vel.addScaledVector(H2.n, -vn * 1.05); if (Math.random() < dt * 10) g.effects.smokePuff(this.pos.clone(), H2.n.clone().multiplyScalar(3), 1.2, 0.7); }
         else { this.pos.copy(H2.out); g.onRocketCrash('wall', this.pos.clone(), H2.n.clone()); if (this.active) { L.inv = 0.8; const vn = this.vel.dot(H2.n); if (vn < 0) this.vel.addScaledVector(H2.n, -vn * 1.5); this.vel.multiplyScalar(0.5); g.rig.shake = Math.max(g.rig.shake, 1); } }
         for (let k = 0; k < 2; k++) { const F = PA.fr(L.s); L.s = U.clamp(L.s + _st.subVectors(this.pos, F.p).dot(F.t), 0, PA.len); } const F3 = PA.fr(L.s); _st.subVectors(this.pos, F3.p); L.x = _st.dot(F3.r); L.y = _st.dot(F3.u); } }
     this.speed = this.vel.length();
     if (g.endlessRun) g.endlessRun.dist = Math.max(g.endlessRun.dist, L.s);
     if (L.inv <= 0 && L.OB && L.s > s0) for (const o of L.OB) { if (o.s + o.th < s0 || o.s - o.th > L.s) continue; if (o.hit(L.x, L.y, L.t)) { g.onRocketCrash('wall', this.pos.clone(), F2.t.clone().negate()); if (this.active) { L.inv = 0.8; this.vel.multiplyScalar(0.5); g.rig.shake = Math.max(g.rig.shake, 1); } break; } }
     if (this.active && L.sent) play(g, this, dt, s0);
-    if (this.active && !dry && Math.random() < dt * 30) { const tier = EVO.rocket(EVO.save(g).rk).tier; g.effects.smokePuff(this.pos.clone().addScaledVector(this.fwd, -L.rkL * 0.6), this.fwd.clone().multiplyScalar(-rr(3, 8)).add(new V(rr(-1, 1), rr(-1, 1), rr(-1, 1))), tier === 0 ? 0.6 : 0.9, 0.6); }
+    if (this.active && !dry && Math.random() < dt * 30) { const tier = EVO.rocket(EVO.save(g).rk).tier; g.effects.smokePuff(this.nozzle(new V()), this.fwd.clone().multiplyScalar(-rr(3, 8)).add(new V(rr(-1, 1), rr(-1, 1), rr(-1, 1))), tier === 0 ? 0.6 : 0.9, 0.6); }
     if (this.active && L.s > PA.len - 60 && (!L.boss || L.boss.dead) && !g.evoFinish && EVO.finishRun) { if (CC.L1) CC.L1.msg(g, 'ARRIVEE !', 2.6, '#ffe9a0'); for (let k = 0; k < 6; k++) burst(this.pos.clone().addScaledVector(this.fwd, 60).add(new V(rr(-40, 40), rr(10, 50), rr(-40, 40))), FWC[k % FWC.length], 1.4, k % 2 ? 'ring' : null); EVO.finishRun(g); }
   };
 
@@ -674,14 +675,7 @@
     if (cam.far < 7000) { cam.far = 7000; cam.updateProjectionMatrix(); }
   };
   if (CC.Horizon) { const _hu = CC.Horizon.prototype.update; CC.Horizon.prototype.update = function (g) { if (L && on7(g)) { for (const m of [this.ring, this.glow, this.mtn]) if (m) m.visible = false; return; } return _hu.call(this, g); }; }
-  const _tf = EVO.tumbleFrame;
-  EVO.tumbleFrame = (g, dt) => {
-    const Tm = g.evoTumble; if (!Tm || !L || !L.PA || !on7(g)) return _tf(g, dt); Tm.space = true;
-    for (const q of Tm.P) { q.v.y += 16 * dt; q.v.multiplyScalar(Math.exp(-1.8 * dt)); q.w.multiplyScalar(Math.exp(-0.7 * dt)); }
-    const had = !!Tm.flag; _tf(g, dt);
-    if (Tm.flag && !had) { const F = Tm.flag; F.position.copy(Tm.body.m.position).add(new V(0, -2.2, 0)); F.children[F.children.length - 1].visible = false; const ring = new T3.Mesh(new T3.TorusGeometry(0.9, 0.08, 6, 32), bas('#ffe28a', { fog: false })); ring.rotation.x = Math.PI / 2; F.add(ring); F.userData.ring = ring; }
-    if (Tm.flag) { const F = Tm.flag; F.position.y += Math.sin(Tm.t * 1.6) * 0.004; if (F.userData.ring) F.userData.ring.scale.setScalar(1 + 0.15 * Math.sin(Tm.t * 4)); }
-  };
+  // v448 : l'epave retombe (gravite normale) et se pose sur le relief du niveau (EVO.terrain) : plus d'epave qui flotte
   (EVO.terrain = EVO.terrain || []).push((g, x, z) => (isS7() && L && L.PA ? gH(x, z) : null));
   const wNow = () => { if (!L || !L.started) return 0; const q = L.PA.loc(L.PA.fr(L.s).p); return q[1]; };
   const _am = EVO.applyMood;

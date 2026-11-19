@@ -566,20 +566,21 @@
     if (dry && !L.dry) { L.dry = 1; if (CC.L1) CC.L1.msg(g, 'PLUS DE POUDRE !', 2, '#ff6a5a'); g.audio.play('warnFuel'); } if (!dry) L.dry = 0;
     const vMax = L.boostT > 0 ? 106 : boostZ ? 92 : 60;
     L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
-    if (dry) { L.v -= 13 * dt; L.y -= (3 + 9 * U.clamp(1 - L.v / 50, 0, 1)) * dt; L.rp = Math.min(L.rp, -0.15); if (L.v < 14 && this.active) { g.onRocketCrash('stalled', this.pos.clone(), null); return; } }
-    else { L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.8) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)); L.v = Math.max(24, L.v); }
+    if (dry) { L.fall = (L.fall || 0) + 22 * dt; L.v = Math.max(26, L.v - 6 * dt); L.y -= L.fall * dt; L.rp = Math.min(L.rp, -0.3); L.dryT = (L.dryT || 0) + dt; }   // v448 : a sec, la fusee tombe (elle ne s'ecrase plus en plein vol)
+    else { L.fall = 0; L.dryT = 0; L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.8) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)); L.v = Math.max(24, L.v); }
     const vx = -L.v * Math.sin(L.ry) * 0.85, vy = L.v * Math.sin(L.rp) * 0.85, lat = Math.min(1, 52 / L.v); L.x += vx * lat * dt; L.y += vy * lat * dt; L.s += L.v * dt;
     const lm = lim(Z[5]), rr2 = Math.hypot(L.x, L.y);
-    if (rr2 > lm) { L.x *= lm / rr2; L.y *= lm / rr2; L.v *= 1 - dt * 0.4; }
-    const F2 = PA.fr(L.s), fl = floorAt(L.s, F2); if (L.y < fl) { L.y = fl; if (Math.random() < dt * 8) g.effects.smokePuff(_a.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y - 1).clone(), new V(rr(-2, 2), rr(1, 3), rr(-2, 2)), 1.4, 0.9); }
+    if (dry && this.active && L.dryT > 3.2) { g.onRocketCrash('stalled', this.pos.clone(), null); return; }
+    if (rr2 > lm && !dry) { L.x *= lm / rr2; L.y *= lm / rr2; L.v *= 1 - dt * 0.4; }
+    const F2 = PA.fr(L.s), fl = floorAt(L.s, F2); if (dry && L.y < fl + 0.3 && this.active) { g.onRocketCrash('stalled', this.pos.clone(), null); return; } if (L.y < fl) { L.y = fl; if (Math.random() < dt * 8) g.effects.smokePuff(_a.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y - 1).clone(), new V(rr(-2, 2), rr(1, 3), rr(-2, 2)), 1.4, 0.9); }
     this.pos.copy(F2.p).addScaledVector(F2.r, L.x).addScaledVector(F2.u, L.y);
     this.vel.copy(F2.t).multiplyScalar(L.v).addScaledVector(F2.r, vx * lat).addScaledVector(F2.u, vy * lat); this.speed = this.vel.length(); this.fwd.copy(this.vel).normalize(); this.flightDist += L.v * dt;
     if (g.endlessRun) g.endlessRun.dist = Math.max(g.endlessRun.dist, L.s);
-    this.thrustK = 1;
+    this.thrustK = dry ? Math.max(0, (this.thrustK || 0) - dt * 4) : 1;
     if (L.inv <= 0 && L.OB) for (const o of L.OB) { if (o.s + o.th < s0 || o.s - o.th > L.s) continue; if (o.hit(L.x, L.y, L.t)) { g.onRocketCrash('wall', this.pos.clone(), F2.t.clone().negate()); if (this.active) { L.inv = 0.8; L.v *= 0.5; g.rig.shake = Math.max(g.rig.shake, 1); } break; } }
     if (this.active && L.sent) play(g, this, dt, s0);
     // la trainee d'etincelles de la fusee de feu d'artifice
-    if (this.active && !dry) { const fx = g.effects, n = Math.random() < dt * 50 ? 2 : 1; for (let k = 0; k < n; k++) fx.sparks.emit({ pos: this.pos.clone().addScaledVector(this.fwd, -L.rkL * 0.55), vel: this.fwd.clone().multiplyScalar(-rr(4, 12)).add(new V(rr(-2, 2), rr(-2, 2), rr(-2, 2))), life: rr(0.3, 0.6), s0: 0.09, s1: 0.13, s2: 0.03, cols: fx.pal.ember, drag: 1.2, grav: 5, a: 1, fout: 0.5 }); }
+    if (this.active && !dry) { const fx = g.effects, n = Math.random() < dt * 50 ? 2 : 1; for (let k = 0; k < n; k++) fx.sparks.emit({ pos: this.nozzle(new V()), vel: this.fwd.clone().multiplyScalar(-rr(4, 12)).add(new V(rr(-2, 2), rr(-2, 2), rr(-2, 2))), life: rr(0.3, 0.6), s0: 0.09, s1: 0.13, s2: 0.03, cols: fx.pal.ember, drag: 1.2, grav: 5, a: 1, fout: 0.5 }); }
     if (this.active && L.s > PA.len - 60 && (!L.boss || L.boss.dead) && !g.evoFinish && EVO.finishRun) { if (CC.L1) CC.L1.msg(g, 'ARRIVEE !', 2.6, '#ffe9a0'); for (let k = 0; k < 6; k++) burst(this.pos.clone().addScaledVector(this.fwd, 60).add(new V(rr(-40, 40), rr(10, 50), rr(-40, 40))), FWC[k % FWC.length], 1.4, k % 2 ? 'willow' : null); EVO.finishRun(g); }
   };
 
@@ -616,14 +617,7 @@
   };
   if (CC.Horizon) { const _hu = CC.Horizon.prototype.update; CC.Horizon.prototype.update = function (g) { if (L && on6(g)) { for (const m of [this.ring, this.glow, this.mtn]) if (m) m.visible = false; return; } return _hu.call(this, g); }; }
   // l'epave : elle ne tombe pas vers le sol du niveau 1 (bien plus bas) : elle s'arrete en tournant, le drapeau se plante a cote
-  const _tf = EVO.tumbleFrame;
-  EVO.tumbleFrame = (g, dt) => {
-    const Tm = g.evoTumble; if (!Tm || !L || !L.PA || !on6(g)) return _tf(g, dt); Tm.space = true;
-    for (const q of Tm.P) { q.v.y += 16 * dt; q.v.multiplyScalar(Math.exp(-1.8 * dt)); q.w.multiplyScalar(Math.exp(-0.7 * dt)); }
-    const had = !!Tm.flag; _tf(g, dt);
-    if (Tm.flag && !had) { const F = Tm.flag; F.position.copy(Tm.body.m.position).add(new V(0, -2.2, 0)); F.children[F.children.length - 1].visible = false; const ring = new T3.Mesh(new T3.TorusGeometry(0.9, 0.08, 6, 32), bas('#ffe28a', { fog: false })); ring.rotation.x = Math.PI / 2; F.add(ring); F.userData.ring = ring; }
-    if (Tm.flag) { const F = Tm.flag; F.position.y += Math.sin(Tm.t * 1.6) * 0.004; if (F.userData.ring) F.userData.ring.scale.setScalar(1 + 0.15 * Math.sin(Tm.t * 4)); }
-  };
+  // v448 : l'epave retombe (gravite normale) et se pose sur le relief du niveau (EVO.terrain) : plus d'epave qui flotte
   // l'ombre de la fusee (celle du jeu, sa silhouette) sur notre sol
   (EVO.terrain = EVO.terrain || []).push((g, x, z) => (isS6() && L && L.PA ? gH(x, z) : null));
   // --- l'ambiance le long de la voie ---
@@ -672,7 +666,7 @@
       for (let i = 0; i < n; i++) { _a.set(P.getX(i), P.getY(i), P.getZ(i)); const ph = L.dph[i]; _a.y -= fall * dt; _a.x += Math.sin(L.t * 1.3 + ph) * dt * 1.2; _a.z += Math.cos(L.t * 1.1 + ph) * dt * 1.2;
         if (!L.dustInit || _b.subVectors(_a, ctr).dot(F.t) < -10 || _b.length() > 140) { _a.copy(ctr).addScaledVector(F.t, L.dustInit && L.started ? rr(60, 130) : rr(-10, 130)).addScaledVector(F.r, rr(-45, 45)).addScaledVector(F.u, rr(-15, 35)); }
         P.setXYZ(i, _a.x, _a.y, _a.z); }
-      L.dustInit = true; P.needsUpdate = true;
+      L.dustInit = true; P.needsUpdate = true; L.dust.visible = L.started && ((w > WC && w < WG) || nearFall > 0.3 || w > WM);   // v448 : plus de particules partout
       if (nearFall > 0.2 && Math.random() < dt * 8) g.effects.smokePuff(L.foamAt.clone().add(new V(rr(-20, 20), rr(0, 6), rr(-10, 10))), new V(rr(-2, 2), rr(3, 7), rr(-2, 2)), 6, 2); }
     if (L.villG) L.villG.visible = w < WB + 700;
   };
