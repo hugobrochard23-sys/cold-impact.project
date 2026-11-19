@@ -15,7 +15,7 @@
     5: { k: 'spg', tint: 4, sc: 5.2, rot: Math.PI, keep: 'head', zf: -1.7 },
     6: { k: 'gunship', tint: 5, sc: 10, em: 0.3, rot: Math.PI, lanterns: true },
     7: { k: 'ifv', tint: 0, sc: 12, em: 0.12, rot: Math.PI, plastic: true },
-    8: { k: 'train', tint: 0, sc: 5.5, em: 0.12, rot: 0, cars: 2, ground: true },
+    8: { k: 'train', tint: 0, sc: 7.5, em: 0.12, rot: 0, cars: 2, ground: true },
   };
   const _a = new V(), _q = new T3.Quaternion();
   const glow = (size, col) => { if (EVO.boss2Kit) { const s = EVO.boss2Kit.glow(size, col); return s; } return new T3.Object3D(); };
@@ -44,7 +44,8 @@
       const across = Math.abs(Math.sin(C.rot)) > 0.5 ? sz.z * (C.cars || 1) : sz.x;
       B.hw = Math.max(10, across * C.sc / 2 + 2); B.hh = Math.max(9, sz.y * C.sc * (C.ground ? 0.55 : 0.42));
       if (C.ground) B.hh = sz.y * C.sc + 4;   // au sol : de la voie jusqu'au toit
-      if (lv <= 6) { B.hw = 60; B.hh = 60; }   // niveaux a voie : l'engin barre toute l'arene / tout le tunnel
+      if (lv <= 6) { B.hw = 60; B.hh = 60; }
+      if (lv === 8) B.hw = Math.max(B.hw, 24);   // v452 : le train blinde barre toute la voie (et ses abords)   // niveaux a voie : l'engin barre toute l'arene / tout le tunnel
       // reacteurs (croiseur spatial)
       if (C.jets) for (const x of [-0.9, 0, 0.9]) { const gw = glow(5.5, C.jets); gw.position.set(x, -1.2, sz.z / 2 + 0.6); cars[0].holder.add(gw); }
       // lanternes rouges suspendues (forteresse volante de la fete)

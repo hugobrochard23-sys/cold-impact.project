@@ -373,7 +373,7 @@
     // UNE BARRE QUI TOURNE autour d'un clou (regle, crayon, fouet) : on passe quand elle n'est pas devant soi
     const rotor = (w, cx, cy, len, th, spd, ph, kind, build) => { const s = sAt(w), h = hold(s), pv = new T3.Group(); pv.position.set(cx, cy, 0); h.add(pv); const P = []; build(P, len, th); pv.add(bake(P));
       const pin = new T3.Mesh(new T3.CylinderGeometry(2, 2, 8, 12).rotateX(Math.PI / 2), lam('#e8302a')); pin.position.set(cx, cy, 0); h.add(pin); const ang = (t) => spd * t + ph; L.spin.push({ s, o: pv, ang });
-      OB.push({ s, th: th / 2 + 1.5, kind, hit: (x, y, t) => { const a = ang(t), dx = x - cx, dy = y - cy, al = dx * Math.cos(a) + dy * Math.sin(a), pe = -dx * Math.sin(a) + dy * Math.cos(a); return Math.abs(al) < len / 2 + RKF && Math.abs(pe) < th / 2 + RKF; } }); };
+      OB.push({ s, th: th / 2 + 1.5, kind, hit: (x, y, t) => { const a = ang(t), dx = x - cx, dy = y - cy, al = dx * Math.cos(a) + dy * Math.sin(a), pe = -dx * Math.sin(a) + dy * Math.cos(a); const hw = kind === 'fouet' ? th / 2 * Math.sqrt(Math.max(0, 1 - (al / (len / 2)) ** 2)) : th / 2; return Math.abs(al) < len / 2 - 1 && Math.abs(pe) < hw + RKF * 0.6; } }); };   /* v452 : la zone qui tue suit la forme dessinee (fuseau du fouet, bouts de crayon / regle un peu indulgents) */
     // UNE BOUCLE DE CIRCUIT ORANGE sur son pied : on passe DEDANS (boost) ; l'anneau est dur
     L.loops = []; const loop = (w, gx, gy, R) => { const s = sAt(w), h = hold(s), G = ground(s, gx), b = G.gy - G.F.p.y;
       const m = new T3.Mesh(new T3.TorusGeometry(R, 1.6, 10, 48), lam('#ff7a1a', { emissive: '#4a1a04' })); m.scale.z = 3; m.position.set(gx, gy, 0); h.add(m); if (gy - R > b + 1) { const p = new T3.Mesh(new T3.CylinderGeometry(1.8, 2.4, gy - R - b, 8), lam('#ff7a1a')); p.position.set(gx, (gy - R + b) / 2, 0); h.add(p); }
@@ -436,7 +436,7 @@
       P.push({ g: new T3.CylinderGeometry(15, 15, 4, 24), c: '#5a3a1e', p: [x, top + 6, 0], r: [Math.PI / 2 - 0.3, 0, 0] }); for (let k = 0; k < 14; k++) { const a = k / 14 * 6.283; P.push({ g: new T3.SphereGeometry(5, 8, 6), c: '#f2c41a', p: [x + Math.cos(a) * 20, top + 6 + Math.sin(a) * 19, -Math.sin(a) * 5], s: [1.6, 0.5, 0.25], r: [0.3, 0, a] }); } };
     const ruler = (P, len, th) => { P.push({ g: SB(len, th, 2), c: '#f2d23a', p: [0, 0, 0] }); for (let k = -Math.floor(len / 8); k <= Math.floor(len / 8); k++) P.push({ g: SB(0.5, k % 5 ? th * 0.25 : th * 0.5, 0.3), c: '#1e2026', p: [k * 4, th / 2 - (k % 5 ? th * 0.125 : th * 0.25), 1.1] }); };
     const pencils = (P, len) => { for (const sd of [-1, 1]) pencil(P, sd * len / 4, 0, 0, len / 2, sd > 0 ? '#2a6ad8' : '#e8302a', [0, 0, sd * Math.PI / 2], 2.6); };
-    const whisk = (P, len, th) => { for (const sd of [-1, 1]) for (let k = 0; k < 4; k++) P.push({ g: new T3.TorusGeometry(len / 4, 0.5, 6, 20, Math.PI), c: '#c8d0d8', p: [sd * 0, 0, 0], r: [0, k * Math.PI / 4, sd > 0 ? -Math.PI / 2 : Math.PI / 2], s: [1, 1, 1] }); P.push({ g: SB(len * 0.1, th, th), c: '#e8302a', p: [0, 0, 0] }); };
+    const whisk = (P, len, th) => { for (let k = 0; k < 8; k++) P.push({ g: new T3.TorusGeometry(1, 0.06, 6, 40), c: '#e4e8ee', p: [0, 0, 0], r: [k * Math.PI / 8, 0, 0], s: [len / 2, th / 2, th / 2] }); P.push({ g: new T3.SphereGeometry(1, 24, 12), c: '#9aa4b0', p: [0, 0, 0], s: [len / 2 * 0.97, th / 2 * 0.9, th / 2 * 0.9] });   /* v452 : le fouet = un fuseau de fils aussi long que sa zone qui tue (avant : une boule de 27 m qui ne correspondait pas) */ P.push({ g: SB(len * 0.1, th, th), c: '#e8302a', p: [0, 0, 0] }); };
     const rocketTail = 0;
     // ---------- le parcours ----------
     // la chambre : deux murs de briques a trou, sous le lit (piles etroites), le crayon-helice, LE GRAND VENTILATEUR, un dernier mur
@@ -576,7 +576,7 @@
       B.hp = capped ? 0 : B.hp - 1; B.hitT = 1.6; L.inv = 1.2; rk.vel.multiplyScalar(0.6); g.rig.shake = 1.2; g.flash = 0.35; g.flashColor = '#ffffff'; g.effects.explosion(rk.pos.clone(), null, false, 'orange'); burst(rk.pos.clone(), '#ffd04a', 0.9, 'ring'); g.audio.play('reactorHit'); g.audio.play('boom');
       if (EVO.onBossHit) EVO.onBossHit(g, null); rk.fuel = Math.min(rk.fuelMax, rk.fuel + 6);
       if (B.hp <= 0) { B.dead = true; B.deadT = 0; if (CC.L1) CC.L1.msg(g, 'ROBOT JOUET DETRUIT !', 3, '#ffe9a0'); g.audio.play('victory'); }
-      else { B.sT = Math.min(B.cap, L.s + 300); if (CC.L1) CC.L1.msg(g, B.hp === 2 ? 'TOUCHE !  ENCORE 2 COUPS' : 'ENCORE UN COUP !', 2, '#ff9a5a'); }
+      else { B.sT = Math.min(B.cap, L.s + Math.min(300, Math.max(90, (B.cap - L.s) / B.hp)));   /* v452 : il recule de facon a laisser la place aux coups restants (plus de mort d office au bout de l arene) */ if (CC.L1) CC.L1.msg(g, B.hp === 2 ? 'TOUCHE !  ENCORE 2 COUPS' : 'ENCORE UN COUP !', 2, '#ff9a5a'); }
       (g.killPops = g.killPops || []).push({ p: rk.pos.clone().add(new V(0, 3, 0)), t0: performance.now(), txt: B.hp > 0 ? '-1' : 'BOUM !' }); return; }
     if (L.s > B.s + 14 && !capped) { B.sT = Math.min(B.cap, L.s + 240); B.s = Math.max(B.s, L.s + 110); if (CC.L1) CC.L1.msg(g, 'IL REVIENT !  FONCE DEDANS', 1.6, '#ff6a5a'); }
   }

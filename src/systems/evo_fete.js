@@ -358,12 +358,12 @@
       for (const sd of [-1, 1]) P.push({ s: [3.4, 1.0, 2.0], c: '#1e1a1a', p: [gx + sd * 13.2, Y1 + 2.9, 0], r: [0, 0, sd * 0.28] });
       h.add(bakeBox(P)); for (const sd of [-1, 1]) shad(new V().copy(G.p).addScaledVector(G.F.r, sd * 8.5).setY(gH(G.p.x + G.F.r.x * sd * 8.5, G.p.z + G.F.r.z * sd * 8.5)), 2.6);
       L.torii.push({ s, gx, done: false });
-      OB.push({ s, th: 1.6, kind: 'torii', hit: (x, y) => Math.abs(x - gx - 8.5) < 1.1 + RK || Math.abs(x - gx + 8.5) < 1.1 + RK || (y > Y1 - 0.8 - RK && y < Y1 + 3.2 && Math.abs(x - gx) < 13) }); };
+      OB.push({ s, th: 1.6, kind: 'torii', hit: (x, y) => ((Math.abs(x - gx - 8.5) < 1.1 + RK || Math.abs(x - gx + 8.5) < 1.1 + RK) && y < Y1 + 2) || (y > Y1 - 0.8 - RK && y < Y1 + 3.2 && Math.abs(x - gx) < 13) });   /* v452 : au-dessus des poteaux, on passe (rien n y est dessine) */ };
     // UNE AIGUILLE DE ROCHE (gorge) : des colonnes qui sortent de la riviere, un passage entre elles
     const needles = (w, gx, gap) => { const s = sAt(w), xs = [];
-      for (let x = -22; x <= 22; x += rr(4.6, 6)) { if (Math.abs(x - gx) < gap / 2 + 2.2) continue; const G = ground(s, x), r = rr(2.0, 2.8), top = G.F.p.y + rr(24, 34) - G.gy, m = new T3.Mesh(lumpGeo(r, top / 2, r * 1.1, rr(0, 9), 2, 0.12), M.stone); m.position.set(G.p.x, G.gy + top / 2 - 1, G.p.z); grp.add(m); shad(new V(G.p.x, G.gy, G.p.z), r * 1.5); xs.push([x, r * 1.05]);
+      for (let x = -22; x <= 22; x += rr(4.6, 6)) { if (Math.abs(x - gx) < gap / 2 + 2.2) continue; const G = ground(s, x), r = rr(2.0, 2.8), top = G.F.p.y + rr(24, 34) - G.gy, m = new T3.Mesh(lumpGeo(r, top / 2, r * 1.1, rr(0, 9), 2, 0.12), M.stone); m.position.set(G.p.x, G.gy + top / 2 - 1, G.p.z); grp.add(m); shad(new V(G.p.x, G.gy, G.p.z), r * 1.5); xs.push([x, r * 1.05, G.gy + top - 1 - G.F.p.y]);
         for (let k = 0; k < 2; k++) { PINES.push({ x: G.p.x + rr(-1, 1), y: G.gy + top - 2, z: G.p.z + rr(-1, 1), k: rr(0.5, 0.8), ry: rr(0, 6) }); } }
-      OB.push({ s, th: 2.8, kind: 'aiguille', hit: (x) => xs.some((q) => Math.abs(x - q[0]) < q[1] + RK) }); };
+      OB.push({ s, th: 2.8, kind: 'aiguille', hit: (x, y) => xs.some((q) => Math.abs(x - q[0]) < q[1] + RK && y < q[2]) });   /* v452 : au-dessus de la pointe, on passe */ };
     // UN PONT DE CORDE en travers de la gorge, a la hauteur yb (dessus ou dessous)
     const bridge = (w, yb) => { const s = sAt(w), h = hold(s); const pl = new T3.Mesh(new T3.BoxGeometry(150, 0.35, 2.6), M.plank); pl.position.y = yb; h.add(pl);
       for (let k = -36; k <= 36; k++) { const b = new T3.Mesh(new T3.BoxGeometry(0.2, 0.4, 2.8), lam('#5a4028')); b.position.set(k * 2, yb + 0.15, 0); h.add(b); }
@@ -376,7 +376,7 @@
       const pv = new T3.Group(); pv.position.set(bx, top, 0); h.add(pv); const rope = new T3.Mesh(new T3.CylinderGeometry(0.12, 0.12, Lr - 2, 5), M.rope); rope.position.y = -(Lr - 2) / 2; pv.add(rope);
       const bd = new T3.Group(); bd.position.y = -Lr; pv.add(bd); const bg = new T3.LatheGeometry([[0.3, 2.6], [1.6, 2.4], [2.0, 1.2], [2.3, -0.6], [2.7, -1.6], [2.9, -2.2], [0, -2.2]].map((q) => new T3.Vector2(q[0], q[1])), 18); bd.add(new T3.Mesh(bg, M.bronze)); bd.add(new T3.Mesh(new T3.TorusGeometry(2.6, 0.18, 6, 24).rotateX(Math.PI / 2).translate(0, -1.4, 0), M.gold));
       const ang = (t) => amp * Math.sin(wv * t + ph);
-      OB.push({ s, th: 3.2, kind: 'cloche', upd: (t) => { pv.rotation.z = ang(t); }, hit: (x, y, t) => { const a = ang(t), cx = bx + Math.sin(a) * Lr, cy = top - Math.cos(a) * Lr; return Math.hypot(x - cx, y - cy) < 2.8 + RK || Math.abs(x - bx - 15) < 0.8 + RK || Math.abs(x - bx + 15) < 0.8 + RK || (y > top - 0.9 - RK && Math.abs(x - bx) < 16); } }); };
+      OB.push({ s, th: 3.2, kind: 'cloche', upd: (t) => { pv.rotation.z = ang(t); }, hit: (x, y, t) => { const a = ang(t), cx = bx + Math.sin(a) * Lr, cy = top - Math.cos(a) * Lr; return Math.hypot(x - cx, y - cy) < 2.8 + RK || ((Math.abs(x - bx - 15) < 0.8 + RK || Math.abs(x - bx + 15) < 0.8 + RK) && y < top + 1.2) || (y > top - 0.9 - RK && y < top + 1.2 + RK && Math.abs(x - bx) < 16); } }); };   /* v452 : le ciel au-dessus du portique ne tue plus (mur invisible) */
     // LA PORTE DU TEMPLE : un grand mur rouge a toit de tuiles, une seule porte ouverte (gx, largeur gw, hauteur gh)
     const gate = (w, gx, gw, gh) => { const s = sAt(w), h = hold(s), G0 = ground(s, 0), base = G0.gy - G0.F.p.y - 1, top = 31, P = [];
       for (const [a, b] of [[-46, gx - gw / 2], [gx + gw / 2, 46]]) P.push({ s: [b - a, top - base, 2.4], c: '#b8442e', p: [(a + b) / 2, (top + base) / 2, 0] });
@@ -515,7 +515,7 @@
       B.hp = capped ? 0 : B.hp - 1; B.hitT = 1.6; L.inv = 1.2; L.v *= 0.6; g.rig.shake = 1.2; g.flash = 0.35; g.flashColor = '#ffffff'; g.effects.explosion(rk.pos.clone(), null, false, 'orange'); burst(rk.pos.clone(), '#ffd04a', 0.9, 'ring'); g.audio.play('reactorHit'); g.audio.play('boom');
       if (EVO.onBossHit) EVO.onBossHit(g, null); rk.fuel = Math.min(rk.fuelMax, rk.fuel + 6);
       if (B.hp <= 0) { B.dead = true; B.deadT = 0; if (CC.L1) CC.L1.msg(g, 'JONQUE CELESTE DETRUITE !', 3, '#ffe9a0'); g.audio.play('victory'); }
-      else { B.sT = Math.min(B.cap, L.s + 300); if (CC.L1) CC.L1.msg(g, B.hp === 2 ? 'TOUCHE !  ENCORE 2 COUPS' : 'ENCORE UN COUP !', 2, '#ff9a5a'); }
+      else { B.sT = Math.min(B.cap, L.s + Math.min(300, Math.max(90, (B.cap - L.s) / B.hp)));   /* v452 : il recule de facon a laisser la place aux coups restants (plus de mort d office au bout de l arene) */ if (CC.L1) CC.L1.msg(g, B.hp === 2 ? 'TOUCHE !  ENCORE 2 COUPS' : 'ENCORE UN COUP !', 2, '#ff9a5a'); }
       (g.killPops = g.killPops || []).push({ p: rk.pos.clone().add(new V(0, 3, 0)), t0: performance.now(), txt: B.hp > 0 ? '-1' : 'BOUM !' }); return; }
     if (L.s > B.s + 30 && !capped) { B.sT = Math.min(B.cap, L.s + 240); B.s = Math.max(B.s, L.s + 110); if (CC.L1) CC.L1.msg(g, 'ELLE REVIENT !  FONCE DEDANS', 1.6, '#ff6a5a'); }
   }
@@ -599,7 +599,7 @@
   CC.CameraRig.prototype.update = function (dt) {
     _rup.call(this, dt); const g = this.game, rk = g.rocket;
     if (L && L.PA && on6(g) && !rk.active && (g.state === 'MENU' || g.state === 'AIM' || g.state === 'LAUNCH')) { menuView(g, this, dt); return; }
-    if (!L || !L.PA || !on6(g) || !rk.active || g.state !== 'FLIGHT' || !L.started || (g.evoFinish && g.evoFinish.hold)) return;
+    if (!L || !L.PA || !on6(g) || !rk.active || g.state !== 'FLIGHT' || !L.started) return;   /* v452 : la camera du niveau reste aussi pendant l arrivee */
     const PA = L.PA, cam = this.cam, F = PA.fr(L.s + 6), Fq = frameQ(F, _q2.clone());
     if (!L.camQ) L.camQ = Fq.clone(); L.camQ.slerp(Fq, 1 - Math.exp(-dt * 3.2));
     const cr = new V(1, 0, 0).applyQuaternion(L.camQ), cu = new V(0, 1, 0).applyQuaternion(L.camQ), cf = new V(0, 0, -1).applyQuaternion(L.camQ);

@@ -380,7 +380,7 @@
       if (kind === 'tuyau') for (const u of [-0.3, 0, 0.3]) { const c = new T3.Mesh(new T3.CylinderGeometry(w * 1.25, w * 1.25, 1.2, 12), M.red); c.rotation.z = a; c.position.set(Math.cos(a) * d - Math.sin(a) * u * len, Math.sin(a) * d + Math.cos(a) * u * len, 0); h.add(c); }
       OB.push({ s, th: w + 0.6, kind, hit: (x, y) => Math.abs(x * Math.cos(a) + y * Math.sin(a) - d) < w * 0.92 + RK }); };
     // VEINE : un mur de roche dure ; seule la veine orange (roche tendre) se fore : on fonce dedans et ca accelere
-    const vein = (s, c, sp, w) => { const h = hold(s), rot = new T3.Group(); h.add(rot); { const tm = M.rock.clone(); tm.transparent = true; tm.opacity = 0.42; tm.depthWrite = false; rot.add(new T3.Mesh(new T3.CircleGeometry(R - 0.3, 48, c + sp / 2, 6.2832 - sp), tm)); } const vm = new T3.Mesh(new T3.CircleGeometry(R - 0.3, 24, c - sp / 2, sp), M.vein); vm.position.z = 0.05; rot.add(vm);
+    const vein = (s, c, sp, w) => { const h = hold(s), rot = new T3.Group(); h.add(rot); { const tm = M.rock.clone(); tm.side = T3.DoubleSide; rot.add(new T3.Mesh(new T3.CircleGeometry(R - 0.3, 48, c + sp / 2, 6.2832 - sp), tm)); } const vmM = M.vein.clone(); vmM.transparent = true; vmM.opacity = 0.5; vmM.depthWrite = false; vmM.side = T3.DoubleSide; const vm = new T3.Mesh(new T3.CircleGeometry(R - 0.3, 24, c - sp / 2, sp), vmM);   /* v452 : la roche dure (qui tue) est PLEINE ; la veine (ou l on passe) est une lueur translucide (c etait l inverse) */ vm.position.z = 0.05; rot.add(vm);
       const gl = glowS(14, '#ff8a2a', 0.8); gl.position.set(Math.cos(c) * R * 0.55, Math.sin(c) * R * 0.55, 0.4); rot.add(gl);
       OB.push({ s, th: 1.4, kind: 'vein', vein: true, vm, rot, hit: (x, y, t) => { const r = Math.hypot(x, y); if (r < 0.8) return false; let d = Math.atan2(y, x) - (c + w * t); d = Math.atan2(Math.sin(d), Math.cos(d)); return Math.abs(d) > sp / 2 - Math.asin(Math.min(1, RK / Math.max(r, RK))); }, upd: (t) => { rot.rotation.z = w * t; } }); };
     // EOLIENNE sur la voie : le rotor tourne DANS la section (moyeu en x0, y0) ; on passe entre les pales, ou a cote
@@ -592,7 +592,7 @@
       B.hp = capped ? 0 : B.hp - 1; B.hitT = 1.6; L.inv = 1.2; L.v *= 0.6; g.rig.shake = 1.2; g.flash = 0.35; g.flashColor = '#ffffff'; g.effects.explosion(rk.pos.clone(), null, false, 'orange'); g.audio.play('reactorHit'); g.audio.play('boom');
       if (EVO.onBossHit) EVO.onBossHit(g, null); rk.fuel = Math.min(rk.fuelMax, rk.fuel + 6);
       if (B.hp <= 0) { B.dead = true; B.deadT = 0; if (CC.L1) CC.L1.msg(g, 'TUNNELIER DETRUIT !', 3, '#ffe9a0'); g.audio.play('victory'); }
-      else { B.sT = Math.min(B.cap, L.s + 300); if (CC.L1) CC.L1.msg(g, B.hp === 2 ? 'TOUCHE !  ENCORE 2 COUPS' : 'ENCORE UN COUP !', 2, '#ff9a5a'); }
+      else { B.sT = Math.min(B.cap, L.s + Math.min(300, Math.max(90, (B.cap - L.s) / B.hp)));   /* v452 : il recule de facon a laisser la place aux coups restants (plus de mort d office au bout de l arene) */ if (CC.L1) CC.L1.msg(g, B.hp === 2 ? 'TOUCHE !  ENCORE 2 COUPS' : 'ENCORE UN COUP !', 2, '#ff9a5a'); }
       (g.killPops = g.killPops || []).push({ p: rk.pos.clone().add(new V(0, 3, 0)), t0: performance.now(), txt: B.hp > 0 ? '-1' : 'BOUM !' }); return; }
     if (L.s > B.s + 30 && !capped) { B.sT = Math.min(B.cap, L.s + 240); B.s = Math.max(B.s, L.s + 110); if (CC.L1) CC.L1.msg(g, 'IL REVIENT !  FONCE DEDANS', 1.6, '#ff6a5a'); }
   }
@@ -680,7 +680,7 @@
   CC.CameraRig.prototype.update = function (dt) {
     _rup.call(this, dt); const g = this.game, rk = g.rocket;
     if (L && L.PA && on5(g) && !rk.active && (g.state === 'MENU' || g.state === 'AIM' || g.state === 'LAUNCH')) { menuView(g, this, dt); return; }
-    if (!L || !L.PA || !on5(g) || !rk.active || g.state !== 'FLIGHT' || !L.started || (g.evoFinish && g.evoFinish.hold)) return;
+    if (!L || !L.PA || !on5(g) || !rk.active || g.state !== 'FLIGHT' || !L.started) return;   /* v452 : la camera du niveau reste aussi pendant l arrivee */
     const PA = L.PA, cam = this.cam, F = PA.fr(L.s + 6), Fq = frameQ(F, _q2.clone());
     if (!L.camQ) L.camQ = Fq.clone(); L.camQ.slerp(Fq, 1 - Math.exp(-dt * 3.2));
     const cr = new V(1, 0, 0).applyQuaternion(L.camQ), cu = new V(0, 1, 0).applyQuaternion(L.camQ), cf = new V(0, 0, -1).applyQuaternion(L.camQ);

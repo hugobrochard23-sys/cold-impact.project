@@ -555,7 +555,7 @@
       B.hp = capped ? 0 : B.hp - 1; B.hitT = 1.6; L.inv = 1.2; L.v *= 0.6; g.rig.shake = 1.2; g.flash = 0.35; g.flashColor = '#ffffff'; g.effects.explosion(rk.pos.clone(), null, false, 'orange'); g.audio.play('reactorHit'); g.audio.play('boom');
       if (EVO.onBossHit) EVO.onBossHit(g, null); rk.fuel = Math.min(rk.fuelMax, rk.fuel + 6);
       if (B.hp <= 0) { B.dead = true; B.deadT = 0; if (CC.L1) CC.L1.msg(g, 'CROISEUR DETRUIT !', 3, '#ffe9a0'); g.audio.play('victory'); }
-      else { B.sT = Math.min(B.cap, L.s + 330); if (CC.L1) CC.L1.msg(g, B.hp === 2 ? 'TOUCHE !  ENCORE 2 COUPS' : 'ENCORE UN COUP !', 2, '#ff9a5a'); }
+      else { B.sT = Math.min(B.cap, L.s + Math.min(330, Math.max(90, (B.cap - L.s) / B.hp)));   /* v452 : il recule de facon a laisser la place aux coups restants (plus de mort d office au bout de l arene) */ if (CC.L1) CC.L1.msg(g, B.hp === 2 ? 'TOUCHE !  ENCORE 2 COUPS' : 'ENCORE UN COUP !', 2, '#ff9a5a'); }
       (g.killPops = g.killPops || []).push({ p: rk.pos.clone().add(new V(0, 3, 0)), t0: performance.now(), txt: B.hp > 0 ? '-1' : 'BOUM !' }); return; }
     // on l'a evite : il repart devant
     if (L.s > B.s + 30 && !capped) { B.sT = Math.min(B.cap, L.s + 260); B.s = Math.max(B.s, L.s + 120); if (CC.L1) CC.L1.msg(g, 'IL REVIENT !  FONCE DEDANS', 1.6, '#ff6a5a'); }
@@ -650,7 +650,7 @@
   CC.CameraRig.prototype.update = function (dt) {
     _rup.call(this, dt); const g = this.game, rk = g.rocket;
     if (L && L.PA && on4(g) && !rk.active && (g.state === 'MENU' || g.state === 'AIM' || g.state === 'LAUNCH')) { menuView(g, this, dt); return; }
-    if (!L || !L.PA || !on4(g) || !rk.active || g.state !== 'FLIGHT' || !L.started || (g.evoFinish && g.evoFinish.hold)) return;
+    if (!L || !L.PA || !on4(g) || !rk.active || g.state !== 'FLIGHT' || !L.started) return;   /* v452 : la camera du niveau reste aussi pendant l arrivee */
     const PA = L.PA, cam = this.cam, F = PA.fr(L.s + 6), Fq = frameQ(F, _q2.clone());
     if (!L.camQ) L.camQ = Fq.clone(); L.camQ.slerp(Fq, 1 - Math.exp(-dt * 3.2));
     const cr = new V(1, 0, 0).applyQuaternion(L.camQ), cu = new V(0, 1, 0).applyQuaternion(L.camQ), cf = new V(0, 0, -1).applyQuaternion(L.camQ);
