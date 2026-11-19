@@ -289,11 +289,21 @@
     for (let w = WCO + 250; w < WF - 100; w += 420) { const gw = glowS(150, '#fffaf0', 0.45); gw.position.set(0, CEIL - 18, -w); HG.add(gw); pC(P, 0, CEIL - 6, -w, 36, 40, 10, '#f8f4e8', 24); }
     // ---------- 6. LE JARDIN : pelouse geante, tournesols, marguerites, arbres immenses, la palissade, l'arrosoir ----------
     for (let k = 0; k < 9000; k++) { const w = rr(WF + 10, WE + 1100), sd = Math.random() < 0.5 ? -1 : 1, d = sd * Math.pow(Math.random(), 1.3) * 760, u = pathU(Math.min(w, WE)) + d, p = atUW(u, w), ad = Math.abs(d); GRASS.push([p.x, p.y, p.z, rr(0.8, 1.6), ad < 64 ? rr(5, 12) : rr(14, 34)]); }
+    // v445 : UNE TETE DE FLEUR face a la fusee : petales longs et pointus disposes en couronne, coeur bombe ; t incline la fleur (t > 0 : vers le bas)
+    const PET = new T3.SphereGeometry(1, 10, 8);
+    const flowerHead = (u, yy, w, t, n, R0, len, wid, col, R1, len1, col1, rc, cc, rc2, cc2) => { const ct = Math.cos(t), st = Math.sin(t);
+      const ring = (m, rr0, ln, c, ph, dz) => { for (let k = 0; k < m; k++) { const a = (k + ph) / m * 6.283, ry = Math.sin(a) * rr0; P.push({ g: PET, c, p: [u + Math.cos(a) * rr0, yy + ry * ct - dz * st, -(w - (ry * st + dz * ct))], s: [wid, ln, wid * 0.22], r: [t, 0, a - Math.PI / 2] }); } };
+      if (R1) ring(n, R1, len1, col1, 0.5, -0.6); ring(n, R0, len, col, 0, 0);
+      P.push({ g: new T3.CylinderGeometry(rc, rc, 3, 24), c: cc, p: [u, yy + 0.8 * st, -(w - 0.8 * ct)], r: [Math.PI / 2 + t, 0, 0] });
+      P.push({ g: new T3.SphereGeometry(rc2, 16, 10), c: cc2, p: [u, yy + 2 * st, -(w - 2 * ct)], s: [1, 1, 0.45], r: [t, 0, 0] }); };
     const sunflower = (u, w, hh) => { const y = H(u, w); pC(P, u, y + hh / 2, -w, 2.2, 3, hh, '#4a8a2c', 8); for (let k = 0; k < 3; k++) P.push({ g: lumpGeo(14, 1.5, 7, k, 1, 0.1), c: '#5a9a34', p: [u + (k % 2 ? 12 : -12), y + hh * (0.3 + k * 0.18), -w], r: [0, k * 2, k % 2 ? -0.4 : 0.4] });
-      const yy = y + hh + 6; pC(P, u, yy, -(w - 1), 16, 16, 5, '#5a3a1e', 24, [Math.PI / 2 - 0.3, 0, 0]); for (let k = 0; k < 16; k++) { const a = k / 16 * 6.283; P.push({ g: new T3.SphereGeometry(5, 8, 6), c: '#f2c41a', p: [u + Math.cos(a) * 22, yy + Math.sin(a) * 22 * 0.95, -(w - 1 + Math.sin(a) * 6)], s: [1.6, 0.5, 0.25], r: [0.3, 0, a] }); } shUW(u, w, 14); };
+      const yy = y + hh + 6; flowerHead(u, yy, w + 3, 0.3, 14, 16, 5, 3, '#4a8a2c', 0, 0, null, 0, '#4a8a2c', 0.01, '#4a8a2c'); flowerHead(u, yy, w, 0.3, 22, 25, 11, 3.6, '#ffc81a', 20, 9, '#ff9a1a', 15, '#6a3e1a', 11, '#3a2410'); shUW(u, w, 14); };
     for (let k = 0; k < 40; k++) { const w = rr(WF + 120, WE + 900), sd = Math.random() < 0.5 ? -1 : 1, u = pathU(Math.min(w, WE)) + sd * rr(100, 600); sunflower(u, w, rr(140, 230)); }
-    { const D = []; for (let k = 0; k < 160; k++) { const w = rr(WF + 30, WE + 900), sd = Math.random() < 0.5 ? -1 : 1, u = pathU(Math.min(w, WE)) + sd * rr(72, 500); D.push([u, w, rr(30, 60)]); }
-      for (const [u, w, hh] of D) { const y = H(u, w); pC(P, u, y + hh / 2, -w, 0.9, 1.1, hh, '#5a9a34', 6); for (let k = 0; k < 10; k++) { const a = k / 10 * 6.283; P.push({ g: new T3.SphereGeometry(3, 6, 4), c: '#fbfaf4', p: [u + Math.cos(a) * 6, y + hh, -w + Math.sin(a) * 6], s: [1.6, 0.3, 0.6], r: [0, -a, 0] }); } pS(P, u, y + hh + 0.6, -w, 3, '#f2c41a', [1, 0.5, 1]); shUW(u, w, 5); } }
+    { const D = []; for (let k = 0; k < 240; k++) { const w = rr(WF + 30, WE + 900), sd = Math.random() < 0.5 ? -1 : 1, u = pathU(Math.min(w, WE)) + sd * rr(72, 520); D.push([u, w, rr(30, 70)]); }
+      const FC = [['#fbfaf4', '#f2c41a'], ['#fbfaf4', '#f2c41a'], ['#ff7ab8', '#ffd84a'], ['#b07ae8', '#ffd84a'], ['#ff8a2a', '#7a3a10'], ['#e8302a', '#2a1a10'], ['#fbfaf4', '#f2c41a'], ['#ffd23a', '#c86a10']];
+      D.forEach(([u, w, hh], i) => { const y = H(u, w), C = FC[i % FC.length], sc = hh / 50; pC(P, u, y + hh / 2, -w, 1.1, 1.4, hh, '#4a8a2c', 6);
+        P.push({ g: lumpGeo(9 * sc, 1, 4 * sc, i, 1, 0.1), c: '#5a9a34', p: [u + 7 * sc, y + hh * 0.35, -w], r: [0, i, -0.5] });
+        flowerHead(u, y + hh + 1, w, -0.55, 14, 9 * sc, 6 * sc, 2.4 * sc, C[0], 0, 0, null, 4 * sc, C[1], 3.4 * sc, C[1]); shUW(u, w, 6 * sc); }); }
     for (const [u, w, s] of [[560, 6500, 1], [-760, 5950, 0.8], [-420, 7300, 1.1]]) { const y = H(u, w); pC(P, u, y + 450 * s, -w, 34 * s, 50 * s, 900 * s, '#6a4a32', 12); for (let k = 0; k < 9; k++) P.push({ g: lumpGeo(rr(150, 230) * s, rr(110, 160) * s, rr(150, 230) * s, k, 2, 0.15), c: ['#3e7a2c', '#4a8a34', '#2e6a26'][k % 3], p: [u + rr(-220, 220) * s, y + rr(760, 1050) * s, -(w + rr(-220, 220) * s)] }); shUW(u, w, 300 * s); }
     for (const sd of [-1, 1]) { for (let w = WF; w < WE + 1100; w += 36) put(sd * 950, 90, w, 8, 180, 30, '#c8a070'); for (const y of [40, 140]) put(sd * 945, y, (WF + WE + 1100) / 2, 6, 10, WE + 1100 - WF, '#a88050'); }
     for (let u = -950; u <= 950; u += 36) put(u, 90, WE + 1100, 30, 180, 8, '#c8a070');
