@@ -41,15 +41,23 @@
   const clr = (w) => 2.2 + 6.8 * ss(10, 160, w) + 4 * ss(1650, 1800, w) + 2 * ss(2850, 2950, w) + 2 * ss(3720, 3850, w) + 330 * ss(WM, WS + 50, w);
   const pathY = (w) => baseP(w) + clr(w);
   const gorgeK = (w) => ss(2860, 2960, w) * (1 - ss(3700, 3722, w));
+  // les marches des rizieres : une colline decoupee en terrasses de 3,2 m (bord net, dessus plat)
+  const terr = (x, st) => { const q = x / st, f = q - Math.floor(q); return (Math.floor(q) + ss(0.82, 1, f)) * st; };
+  const cherK = (w) => ss(1600, 1760, w) * (1 - ss(2780, 2900, w));
+  const streamD = (w) => -62 + 14 * Math.sin(w / 95);   // le ruisseau de la vallee des cerisiers (a gauche de la voie)
   function H(u, w) {
     const d = u - pathU(w), ad = Math.abs(d), b = baseW(w);
-    let h = b + 150 * ss(280, 760, ad) * (0.7 + 0.6 * fbm(u * 0.003, w * 0.003));   // les montagnes au loin
-    h += 22 * ss(70, 230, ad) * (0.5 + fbm(u * 0.012, w * 0.012)) * ss(1600, 1760, w) * (1 - ss(2780, 2900, w));   // les collines des cerisiers
-    h += 6 * ss(40, 160, ad) * fbm(u * 0.02, w * 0.02) * (1 - ss(1600, 1700, w));   // le sous-bois
-    h += 155 * ss(36, 82, ad) * (0.85 + 0.3 * fbm(u * 0.02 + 3, w * 0.02)) * gorgeK(w);   // les parois de la gorge
-    h += 210 * ss(170, 460, ad) * ss(3760, 3950, w) * (0.75 + 0.5 * fbm(u * 0.004 + 7, w * 0.004));   // les sommets autour du temple
-    h += 2.6 * (fbm(u * 0.035, w * 0.035) - 0.5) * ss(22, 60, ad);   // de petites bosses, jamais sous la voie
+    let h = b + 190 * ss(260, 700, ad) * (0.7 + 0.7 * fbm(u * 0.003, w * 0.003));   // les montagnes au loin
+    h += 70 * ss(120, 420, ad) * (0.3 + fbm(u * 0.006 + 2, w * 0.006)) * (1 - ss(WT - 100, WT, w) * (1 - ss(WM - 200, WM, w)));   // les collines de second plan
+    { const k = cherK(w); if (k > 0) { const hill = 58 * ss(48, 260, ad) * (0.45 + fbm(u * 0.01, w * 0.01)); h += k * (ad > 46 ? terr(hill, 3.2) : hill); } }   // les rizieres en terrasses
+    h += 34 * ss(40, 170, ad) * (0.3 + fbm(u * 0.016, w * 0.016)) * (1 - ss(1600, 1700, w)) * ss(-100, 60, w);   // les collines de la foret de bambous
+    h += 28 * ss(70, 200, ad) * (0.4 + fbm(u * 0.012 + 9, w * 0.012)) * (1 - ss(60, 200, w));   // les collines derriere le village
+    { const gk = gorgeK(w); if (gk > 0) { const wall = 160 * ss(34, 80, ad) * (0.82 + 0.35 * fbm(u * 0.02 + 3, w * 0.02)); h += gk * (terr(wall, 14) * 0.6 + wall * 0.4 + 9 * (fbm(u * 0.08, w * 0.08) - 0.5) * ss(36, 60, ad)); } }   // les parois de la gorge, en strates
+    h += 230 * ss(150, 440, ad) * ss(3760, 3950, w) * (0.7 + 0.6 * fbm(u * 0.004 + 7, w * 0.004));   // les sommets autour du temple
+    h += 14 * ss(46, 140, ad) * (fbm(u * 0.02 + 4, w * 0.02) - 0.3) * ss(3760, 3900, w);   // les buttes du plateau
+    h += 3.2 * (fbm(u * 0.035, w * 0.035) - 0.5) * ss(22, 60, ad);   // de petites bosses, jamais sous la voie
     h -= 2.6 * (1 - ss(9, 15, ad)) * gorgeK(w) * (1 - ss(3640, 3690, w));   // le lit de la riviere
+    { const k = cherK(w); if (k > 0) h -= 2.4 * k * (1 - ss(3, 7, Math.abs(d - streamD(w)))); }   // le ruisseau
     return h;
   }
   // la voie en coordonnees locales [u, h, w] : sa longueur ne depend pas de l'orientation du depart, on la calcule une fois (les chapitres en ont besoin)
@@ -124,10 +132,10 @@
 
   // ============================== LE SOL ==============================
   function terrain(PA, grp) {
-    const P0 = PA.O, R0 = PA.R0, F0 = PA.F0, Dn = []; for (let d = 0; d <= 240; d += 12) Dn.push(d); { let d = 240, st = 15; while (d < 1150) { d += st; st *= 1.2; Dn.push(Math.round(d)); } }
-    const D = [...Dn.slice(1).reverse().map((d) => -d), ...Dn], nc = D.length, rows = []; for (let w = -500; w <= WE + 700; w += 15) rows.push(w); const nr = rows.length;
+    const P0 = PA.O, R0 = PA.R0, F0 = PA.F0, Dn = []; for (let d = 0; d <= 120; d += 6) Dn.push(d); for (let d = 130; d <= 240; d += 10) Dn.push(d); { let d = 240, st = 15; while (d < 1150) { d += st; st *= 1.2; Dn.push(Math.round(d)); } }
+    const D = [...Dn.slice(1).reverse().map((d) => -d), ...Dn], nc = D.length, rows = []; for (let w = -500; w <= WE + 700; w += (w > WC - 160 && w < WG + 160) || (w > WG && w < WT + 300) ? 7.5 : 12) rows.push(w); const nr = rows.length;
     const pos = new Float32Array(nr * nc * 3), col = new Float32Array(nr * nc * 3), idx = [], c = new T3.Color();
-    const CC_ = (h) => new T3.Color(h), K = { vil: CC_('#86a64c'), stone: CC_('#b4a68a'), moss: CC_('#527f36'), moss2: CC_('#3f6c2c'), cer: CC_('#93b552'), petal: CC_('#f4c8d4'), rock: CC_('#8c8474'), rock2: CC_('#6e685c'), plat: CC_('#8aa858'), far: CC_('#6c8266'), bed: CC_('#5a6a4c'), sand: CC_('#cbb68c'), trail: CC_('#b4a07a') };
+    const CC_ = (h) => new T3.Color(h), K = { vil: CC_('#86a64c'), stone: CC_('#b4a68a'), moss: CC_('#527f36'), moss2: CC_('#3f6c2c'), cer: CC_('#93b552'), petal: CC_('#f4c8d4'), rock: CC_('#8c8474'), rock2: CC_('#6e685c'), plat: CC_('#8aa858'), far: CC_('#6c8266'), bed: CC_('#5a6a4c'), sand: CC_('#cbb68c'), trail: CC_('#b4a07a'), paddy: CC_('#8ab4b8'), rice: CC_('#9cc85a'), rice2: CC_('#b8d468'), riser: CC_('#7c6a48'), water: CC_('#4a8ab8') };
     for (let j = 0; j < nr; j++) { const w = rows[j], pu = pathU(w);
       for (let i = 0; i < nc; i++) { const d = D[i], u = pu + d, h = H(u, w), k = (j * nc + i) * 3, ad = Math.abs(d);
         pos[k] = P0.x + R0.x * u + F0.x * w; pos[k + 1] = P0.y + h; pos[k + 2] = P0.z + R0.z * u + F0.z * w;
@@ -135,6 +143,9 @@
         if (w < WB) c.copy(K.vil).lerp(K.moss, ss(WB - 120, WB, w)); else if (w < WC) c.copy(nz > 0.55 ? K.moss : K.moss2).lerp(K.cer, ss(WC - 100, WC + 60, w)); else if (w < WG) c.copy(K.cer).lerp(K.petal, ss(0.62, 0.74, nz) * 0.8); else if (w < WT) c.copy(K.moss).lerp(K.plat, ss(WT - 60, WT + 40, w)); else c.copy(K.plat);
         if (w > WC && w < WG && ad < 120) c.lerp(K.petal, 0.25 * (1 - ss(20, 120, ad)));   // les petales tombes pres du chemin
         if (ad < 3.2 && w > 60 && w < WM && gorgeK(w) < 0.5) c.lerp(K.trail, 0.85);   // un sentier de terre sous la voie
+        if (cherK(w) > 0.5 && ad > 47) { const tk = Math.floor((h - baseW(w)) / 3.2); if (sl < 0.2) c.copy(hsh(tk, Math.floor(w / 60)) < 0.45 ? K.paddy : K.rice).lerp(K.rice2, hsh(tk + 3, Math.floor(u / 50)) * 0.5); else c.copy(K.riser); }
+        if (cherK(w) > 0.5 && Math.abs(d - streamD(w)) < 4.5) c.copy(K.water);
+        if (gorgeK(w) > 0.3 && ad > 30) c.lerp(Math.floor(h / 14) % 2 ? K.rock : K.rock2, 0.55 * ss(30, 50, ad));
         if (gorgeK(w) > 0.3 && ad < 15) c.lerp(ad < 10 ? K.bed : K.sand, gorgeK(w));
         c.lerp(sl > 0.55 ? K.rock2 : K.rock, ss(0.45, 0.95, sl));   // la roche dans les pentes
         c.lerp(K.far, ss(300, 700, ad) * 0.6);
@@ -208,7 +219,7 @@
       for (let k = 0; k < 4; k++) P.push({ s: [1.2, 0.9, 0.9], c: k % 2 ? RED : '#c89a3a', p: [-2.4 - (k % 2) * 1.3, -1.75, -1 + Math.floor(k / 2) * 1.1] });
       const r = bakeBox(P); r.position.copy(O); r.quaternion.setFromRotationMatrix(_m.makeBasis(PA.R0, new V(0, 1, 0), _d.copy(PA.F0).negate())); grp.add(r); L.rack = r; shad(new V(O.x, O.y - 2.2, O.z), 3); }
     // 2. LA FORET DE BAMBOUS : tres dense des deux cotes, quelques rochers moussus
-    scatter(BAM, 2600, WB - 40, WC + 60, 26, 240, (p, u, w) => { const h = rr(16, 30); shad(p, 1.4); return { x: p.x, y: p.y, z: p.z, h, r: rr(0.24, 0.4), lx: rr(-0.06, 0.06), lz: rr(-0.06, 0.06) }; });
+    scatter(BAM, 3400, WB - 40, WC + 60, 23, 240, (p, u, w) => { const h = rr(16, 30); shad(p, 1.4); return { x: p.x, y: p.y, z: p.z, h, r: rr(0.24, 0.4), lx: rr(-0.06, 0.06), lz: rr(-0.06, 0.06) }; });
     scatter(ROCKS, 60, WB, WC, 26, 160, (p) => { const k = rr(1.2, 3); shad(p, k * 1.2); return { x: p.x, y: p.y, z: p.z, k }; });
     scatter(BAM, 260, -80, WB, 70, 200, (p) => { shad(p, 1.4); return { x: p.x, y: p.y, z: p.z, h: rr(14, 24), r: rr(0.24, 0.36) }; });
     // 3. LES CERISIERS : des centaines, quelques maisons sur les collines, un petit sanctuaire
@@ -242,6 +253,43 @@
       for (let k = 0; k < 120; k++) { const w = rr(WG + 100, WT + 300), d = rr(-120, 120), p = atUW(pathU(w) + d, w); P.push([p.x, Math.max(p.y, PA.O.y + baseW(w)) + rr(20, 120), p.z, rr(50, 110)]); }
       for (let k = 0; k < 260; k++) { const w = rr(WM, WE + 900), d = rr(-900, 900), p = atUW(pathU(w) + d, w); P.push([p.x, PA.O.y + rr(380, 450), p.z, rr(140, 260)]); }
       const im = new T3.InstancedMesh(new T3.PlaneGeometry(1, 1), M, P.length), o = new T3.Object3D(); P.forEach((q, i) => { o.position.set(q[0], q[1], q[2]); o.scale.setScalar(q[3]); o.updateMatrix(); im.setMatrixAt(i, o.matrix); }); im.frustumCulled = false; im.renderOrder = 4; grp.add(im); L.cloudM = M; }
+    // ---------- v436 : PLUS DE RELIEF ET DE DETAILS ----------
+    // LES PICS KARSTIQUES : de hautes tours de calcaire, sommet vert, quelques pins dessus ; au loin des cerisiers, autour du temple, et qui percent la mer de nuages du ciel de fete
+    { const KS = []; const add = (u, w, hh, r) => { const p = atUW(u, w); KS.push({ p, hh, r }); shad(p, r * 1.3); if (Math.random() < 0.7) for (let k = 0; k < 3; k++) PINES.push({ x: p.x + rr(-r, r) * 0.4, y: p.y + hh - 1.5, z: p.z + rr(-r, r) * 0.4, k: rr(1.2, 2.2), ry: rr(0, 6) }); };
+      for (let k = 0; k < 34; k++) { const w = rr(WC - 100, WG + 200), sd = Math.random() < 0.5 ? -1 : 1; add(pathU(w) + sd * rr(300, 820), w, rr(140, 300), rr(24, 46)); }
+      for (let k = 0; k < 30; k++) { const w = rr(WT, WM + 200), sd = Math.random() < 0.5 ? -1 : 1; add(pathU(w) + sd * rr(260, 700), w, rr(160, 320), rr(26, 50)); }
+      for (let k = 0; k < 46; k++) { const w = rr(WM - 100, WE + 600), sd = Math.random() < 0.5 ? -1 : 1, ad = rr(120, 720); add(pathU(Math.min(w, WE)) + sd * ad, w, rr(260, 460) - (ad < 200 ? 90 : 0), rr(22, 48)); }
+      for (let k = 0; k < 18; k++) { const w = rr(WG + 120, WT - 120), sd = Math.random() < 0.5 ? -1 : 1; add(pathU(w) + sd * rr(92, 170), w, rr(50, 120), rr(8, 16)); }
+      const kg = new T3.CylinderGeometry(0.62, 1, 1, 10, 8).translate(0, 0.5, 0), P = kg.attributes.position, cl = new Float32Array(P.count * 3), q = new V(), ca = new T3.Color('#8e948a'), cb = new T3.Color('#6a7466'), cg = new T3.Color('#4e7a3a');
+      for (let i = 0; i < P.count; i++) { q.fromBufferAttribute(P, i); const a = Math.atan2(q.z, q.x), wv = 1 + 0.16 * Math.sin(a * 3 + q.y * 7) + 0.1 * Math.sin(a * 7 - q.y * 13) + 0.08 * Math.sin(q.y * 23); P.setXYZ(i, q.x * wv, q.y, q.z * wv); const cc = ca.clone().lerp(cb, 0.5 + 0.5 * Math.sin(q.y * 31 + a)).lerp(cg, ss(0.86, 0.97, q.y)); cl[i * 3] = cc.r; cl[i * 3 + 1] = cc.g; cl[i * 3 + 2] = cc.b; }
+      kg.setAttribute('color', new T3.BufferAttribute(cl, 3)); kg.computeVertexNormals();
+      const im = new T3.InstancedMesh(kg, new T3.MeshLambertMaterial({ vertexColors: true, flatShading: true }), KS.length), o = new T3.Object3D();
+      KS.forEach((k, i) => { o.position.copy(k.p).setY(k.p.y - 4); o.rotation.set(rr(-0.04, 0.04), rr(0, 6), rr(-0.04, 0.04)); o.scale.set(k.r, k.hh + 4, k.r * rr(0.8, 1.2)); o.updateMatrix(); im.setMatrixAt(i, o.matrix); });
+      im.frustumCulled = false; grp.add(im); }
+    // DES HERBES ET DES FOUGERES au bord du sentier (foret, cerisiers, plateau, village)
+    { const G = []; for (const [w0, w1, n] of [[-60, WB, 500], [WB, WC, 1800], [WC, WG, 1800], [WT, WM, 1500]]) for (let k = 0; k < n; k++) { const w = rr(w0, w1), sd = Math.random() < 0.5 ? -1 : 1, d = sd * (4 + Math.pow(Math.random(), 1.4) * 70), u = pathU(w) + d; if (w < 175 && Math.abs(d) < 44) continue; G.push([atUW(u, w), w]); }
+      const tg = new T3.ConeGeometry(0.35, 1, 4, 1).translate(0, 0.5, 0), im = new T3.InstancedMesh(tg, new T3.MeshLambertMaterial({ flatShading: true }), G.length * 3), o = new T3.Object3D(), c = new T3.Color();
+      G.forEach(([p, w], i) => { const cher = w > WC && w < WG, cols = cher ? ['#7aa844', '#8ab84c', '#f0b8c8'] : w > WT ? ['#7a9a44', '#8aa84c', '#6a8a3a'] : ['#4a7a2c', '#5a8a34', '#3e6a26'];
+        for (let k = 0; k < 3; k++) { o.position.set(p.x + rr(-0.6, 0.6), p.y - 0.1, p.z + rr(-0.6, 0.6)); o.rotation.set(rr(-0.35, 0.35), rr(0, 6), rr(-0.35, 0.35)); const s = rr(0.7, 1.5); o.scale.set(s, s * rr(1.2, 2.2), s); o.updateMatrix(); im.setMatrixAt(i * 3 + k, o.matrix); im.setColorAt(i * 3 + k, c.set(cols[cher && Math.random() < 0.3 ? 2 : k % 2])); } });
+      im.frustumCulled = false; grp.add(im); }
+    // LE RUISSEAU des cerisiers et ses PONTS ROUGES en arc
+    { const pos = [], uv = [], idx = []; let n = 0; for (let w = WC - 20; w <= WG + 20; w += 6) { const u0 = pathU(w) + streamD(w), y = PA.O.y + H(u0, w) + 0.7; for (const dd of [-4.2, 4.2]) { const p = atUW(u0 + dd, w); pos.push(p.x, y, p.z); uv.push(dd > 0 ? 1 : 0, w / 30); } if (n) { const a = (n - 1) * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); } n++; }
+      const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new T3.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); const sm = new T3.Mesh(geo, new T3.MeshBasicMaterial({ map: L.wTex[0], side: T3.DoubleSide })); sm.frustumCulled = false; grp.add(sm);
+      for (const w of [1880, 2240, 2620]) { const u0 = pathU(w) + streamD(w), p = atUW(u0, w), br = new T3.Group(); br.position.copy(p).setY(p.y + 0.4); br.rotation.y = yawW(w) + Math.PI / 2; grp.add(br);
+        const arc = new T3.Mesh(new T3.TorusGeometry(7, 0.55, 8, 24, Math.PI), lam(RED)); br.add(arc); for (const z of [-1.4, 1.4]) { const r2 = new T3.Mesh(new T3.TorusGeometry(7.9, 0.16, 6, 24, Math.PI), lam(RED)); r2.position.set(0, 0.2, z); br.add(r2); for (let k = 1; k < 8; k++) { const a = k / 8 * Math.PI, pst = new T3.Mesh(new T3.BoxGeometry(0.18, 1.1, 0.18), lam(RED)); pst.position.set(Math.cos(a) * 7.5, Math.sin(a) * 7.5 + 0.4, z); br.add(pst); } }
+        for (let k = 0; k <= 12; k++) { const a = k / 12 * Math.PI, pl = new T3.Mesh(new T3.BoxGeometry(1.5, 0.22, 2.8), lam('#6a4a2c')); pl.position.set(Math.cos(a) * 7.05, Math.sin(a) * 7.05 + 0.5, 0); pl.rotation.z = a - Math.PI / 2; br.add(pl); }
+        shad(p, 6); for (const sd of [-1, 1]) { const t = toro(); t.position.copy(atUW(u0 + sd * 10, w + 4)); grp.add(t); shad(t.position, 1.4); } } }
+    // LE VILLAGE : des grands drapeaux de fete (nobori) autour de la place, des maisons qui montent sur les collines
+    { const FC = ['#c8321e', '#e8b84a', '#2a6ad0', '#2a9a6a', '#f2ead6']; for (let k = 0; k < 14; k++) { const w = -55 + k * 16, sd = k % 2 ? 1 : -1, p = atUW(sd * 40, w), g2 = new T3.Group(); g2.position.copy(p); g2.rotation.y = yawW(w); grp.add(g2);
+        const pole = new T3.Mesh(new T3.CylinderGeometry(0.1, 0.12, 9, 6), lam(WOOD)); pole.position.y = 4.5; g2.add(pole); const fl = new T3.Mesh(new T3.PlaneGeometry(1.4, 5.5), lam(FC[k % FC.length], { side: T3.DoubleSide })); fl.position.set(sd * -0.75, 5.6, 0); fl.rotation.y = Math.PI / 2; g2.add(fl); const bar = new T3.Mesh(new T3.BoxGeometry(0.08, 0.08, 1.6), lam(WOOD)); bar.position.set(0, 8.4, 0); bar.rotation.y = Math.PI / 2; g2.add(bar); shad(p, 0.8); }
+      for (let k = 0; k < 16; k++) { const w = rr(-200, 260), sd = Math.random() < 0.5 ? -1 : 1, u = sd * rr(110, 240), p = atUW(u, w), h = house(rr(8, 12), rr(7, 9), rr(3.4, 4.4)); h.position.copy(p); h.rotation.y = yawW(w) + rr(-0.5, 0.5); grp.add(h); shad(p, 8); } }
+    // LE TEMPLE : un grand escalier de pierre jusqu'a la salle, posee sur un socle ; deux pagodes de plus
+    { const w = 4620, u = pathU(w) - 95, p = atUW(u, w), P2 = []; for (let k = 0; k < 10; k++) P2.push({ s: [22, 0.6 * (k + 1), 2.2], c: STONE, p: [0, 0.3 * (k + 1), 30 - k * 2.2] }); P2.push({ s: [54, 6, 34], c: STONE, p: [0, 3, 0] });
+      const st = bakeBox(P2); st.position.copy(p).setY(p.y - 0.2); st.rotation.y = yawW(w); grp.add(st); shad(p, 30); }
+    for (const [w, du, n] of [[3990, 120, 5], [4820, -130, 5], [4450, -210, 3]]) { const u = pathU(w) + du, p = atUW(u, w), pg = pagoda(n, 10, 5.5); pg.position.copy(p); pg.rotation.y = yawW(w); grp.add(pg); shad(p, 10); }
+    // LA GORGE : de petites cascades qui tombent des parois
+    for (const [w, sd] of [[3020, 1], [3150, -1], [3300, 1], [3470, -1]]) { const u = pathU(w) + sd * 44, top = PA.O.y + H(pathU(w) + sd * 70, w) - 6, bot = PA.O.y + baseW(w), m2 = new T3.Mesh(new T3.PlaneGeometry(6, top - bot), new T3.MeshBasicMaterial({ map: L.wTex[1], transparent: true, opacity: 0.85, side: T3.DoubleSide, depthWrite: false }));
+      m2.position.copy(atUW(u, w)).setY((top + bot) / 2); m2.rotation.y = yawW(w) + Math.PI / 2; grp.add(m2); }
     plants(grp);
   }
   // les nuages (copie de ceux du niveau 5) : des bouffees douces tournees vers la camera
