@@ -25,7 +25,7 @@
   // la fusee de depart s'eteint dans la foret, chaque palier donne un gros bond (le grand bouquet finit le niveau) ; les portes torii et les lanternes rechargent un peu
   EVO.fuel6 = (rk, la) => 28 + 1.6 * rk + 1.2 * la + [0, 16, 48, 115][Math.min(3, Math.floor(rk / 5))];
   { const _ol = EVO.onLaunch; EVO.onLaunch = (g) => { _ol(g); if (!isS6() || (g.evo && g.evo.preview)) return; const S = EVO.save(g), rk = g.rocket, f = EVO.fuel6(S.rk || 0, S.la || 0); rk.fuelMax = f * 1.15; rk.fuel = (g.evoAimLast && g.evoAimLast.zone === 'gold') ? f * 1.15 : f; }; }
-  { const _dp = EVO.distPay; EVO.distPay = (g, dist) => (isS6() ? (0.15 / (8450 / 6910)) * (1 + 2 * Math.min(1, dist / 6400)) : _dp ? _dp(g, dist) : 1); }
+  { const _dp = EVO.distPay; EVO.distPay = (g, dist) => (isS6() ? 0.45 * (0.15 / (8450 / 6910)) * (1 + 2 * Math.min(1, dist / 6400)) : _dp ? _dp(g, dist) : 1); }
   { const _nk = EVO.noKill; EVO.noKill = (g) => on6(g) || (_nk ? _nk(g) : false); }
 
   // ============================== LE RELIEF : un champ de hauteur dans le repere du depart (u a droite, w en avant, h vers le haut) ==============================
@@ -448,7 +448,7 @@
     for (const d of L.sent) { if (!d.alive) continue; const ds = d.s - L.s;
       if (ds > 40 && ds < 200) { d.fT -= dt; if (d.fT <= 0) { d.fT = 2.0; fire(g, d.s, d.x, d.y); } }
       if (d.s >= s0 - 3 && d.s <= L.s + 3 && Math.hypot(L.x - d.x, L.y - d.y) < (d.big ? 6 : 4.6)) { d.alive = false; d.m.visible = false; const p = d.m.position.clone(); killFx(g, rk, p, d.big);
-        const ev = g.evo, S = EVO.save(g), c = Math.round((d.big ? 320 : 200) * EVO.mult(S.cm) * (EVO.COIN_K || 1)); if (ev) { ev.kills++; ev.coins += c; } if (rk.fuel > 0) rk.fuel = Math.min(rk.fuelMax, rk.fuel + (d.big ? 1.2 : 0.7));
+        const ev = g.evo, S = EVO.save(g), c = Math.round((d.big ? 140 : 90) * EVO.mult(S.cm) * (EVO.COIN_K || 1)); if (ev) { ev.kills++; ev.coins += c; } if (rk.fuel > 0) rk.fuel = Math.min(rk.fuelMax, rk.fuel + (d.big ? 1.2 : 0.7));
         (g.killPops = g.killPops || []).push({ p: p.clone(), t0: performance.now(), txt: '+' + c }); } }
     // les consignes, la premiere fois
     { const HINT = { bambou: 'PASSE PAR LE TROU ENTRE LES LANTERNES', couche: 'PASSE AU-DESSUS OU EN DESSOUS', guirlande: 'ATTENTION AUX LANTERNES !', torii: 'PASSE DANS LES PORTES : BOOST !', branche: 'ATTENTION AUX BRANCHES', aiguille: 'PASSE ENTRE LES ROCHERS', pont: 'PASSE AU-DESSUS OU EN DESSOUS', cloche: 'PASSE QUAND LA CLOCHE S ECARTE', porte: 'VISE LA PORTE OUVERTE', bombe: 'PASSE ENTRE LES ECLATS !' }; L.seen = L.seen || {};
