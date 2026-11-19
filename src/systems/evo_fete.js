@@ -500,7 +500,7 @@
     for (const [r, w, c] of [[5.6, 0.5, '#ff3a2a'], [3.0, 0.4, '#ff3a2a']]) { const o = new T3.Mesh(new T3.TorusGeometry(r, w, 8, 48), bas(c, { fog: false })); o.position.z = 0.2; tg.add(o); }
     { const o = new T3.Mesh(new T3.CircleGeometry(1.2, 20), bas('#ff3a2a', { fog: false, side: T3.DoubleSide })); o.position.z = 0.25; tg.add(o); }
     m.visible = false; grp.add(m);
-    L.boss = { m, tg, s: 0, sT: 0, x: 0, y: 0, hp: 3, on: false, dead: false, deadT: 0, hitT: 0, fT: 2, cap: PA.len - 260, boomT: 0, s0: PA.sAtW(5880) };
+    L.boss = { m, tg, s: 0, sT: 0, x: 0, y: 0, hp: 3, on: false, dead: false, deadT: 0, hitT: 0, fT: 2, cap: PA.len - 260, boomT: 0, s0: PA.sAtW(5880) }; if (EVO.milBoss) EVO.milBoss(g, L.boss, 6);   // v451 : vrai engin militaire geant
   }
   function bossPlay(g, rk, dt) {
     const B = L.boss; if (!B || (B.dead && B.deadT > 3.5)) return;
@@ -511,7 +511,7 @@
     B.hitT -= dt; B.s += (B.sT - B.s) * Math.min(1, dt * (B.hitT > 0 ? 2.5 : 1.2)); B.x = 7 * Math.sin(t * 0.4); B.y = 3 + 4 * Math.sin(t * 0.55);
     const capped = B.sT >= B.cap - 1, ds = B.s - L.s, ph = 3 - B.hp;
     if (ds > 45 && ds < 280) { B.fT -= dt; if (B.fT <= 0) { B.fT = [1.5, 1.15, 0.9][ph]; fire(g, B.s - 26, B.x + 7.4, B.y + 1.6); if (ph >= 1) fire(g, B.s - 26, B.x - 7.4, B.y + 1.6); if (ph >= 2) fire(g, B.s - 26, B.x, B.y + 10); } }
-    if (B.hitT <= 0 && L.s > B.s - 27 && L.s < B.s + 30 && (capped || Math.hypot(L.x - B.x, L.y - (B.y + 6)) < 9 + RK)) {
+    if (B.hitT <= 0 && L.s > B.s - 27 && L.s < B.s + 30 && (capped || (B.hw && Math.abs(L.x - B.x) < B.hw && Math.abs(L.y - B.y) < B.hh) || Math.hypot(L.x - B.x, L.y - (B.y + 6)) < 9 + RK)) {
       B.hp = capped ? 0 : B.hp - 1; B.hitT = 1.6; L.inv = 1.2; L.v *= 0.6; g.rig.shake = 1.2; g.flash = 0.35; g.flashColor = '#ffffff'; g.effects.explosion(rk.pos.clone(), null, false, 'orange'); burst(rk.pos.clone(), '#ffd04a', 0.9, 'ring'); g.audio.play('reactorHit'); g.audio.play('boom');
       if (EVO.onBossHit) EVO.onBossHit(g, null); rk.fuel = Math.min(rk.fuelMax, rk.fuel + 6);
       if (B.hp <= 0) { B.dead = true; B.deadT = 0; if (CC.L1) CC.L1.msg(g, 'JONQUE CELESTE DETRUITE !', 3, '#ffe9a0'); g.audio.play('victory'); }
@@ -519,7 +519,7 @@
       (g.killPops = g.killPops || []).push({ p: rk.pos.clone().add(new V(0, 3, 0)), t0: performance.now(), txt: B.hp > 0 ? '-1' : 'BOUM !' }); return; }
     if (L.s > B.s + 30 && !capped) { B.sT = Math.min(B.cap, L.s + 240); B.s = Math.max(B.s, L.s + 110); if (CC.L1) CC.L1.msg(g, 'ELLE REVIENT !  FONCE DEDANS', 1.6, '#ff6a5a'); }
   }
-  function bossAnim(g, dt) { const B = L.boss; if (!B || !B.on || !B.m.visible) return; if (!B.dead) { placeAt(L.PA, B.m, B.s, B.x, B.y); B.m.rotateZ(Math.sin(L.t * 0.7) * 0.06); B.m.rotateX(Math.sin(L.t * 0.5) * 0.04); } else { B.m.position.y -= dt * 6; B.m.rotateZ(dt * 0.3); }
+  function bossAnim(g, dt) { const B = L.boss; if (!B || !B.on || !B.m.visible) return; if (EVO.milAnim) EVO.milAnim(g, B, dt, L.t); if (!B.dead) { placeAt(L.PA, B.m, B.s, B.x, B.y); B.m.rotateZ(Math.sin(L.t * 0.7) * 0.06); B.m.rotateX(Math.sin(L.t * 0.5) * 0.04); } else { B.m.position.y -= dt * 6; B.m.rotateZ(dt * 0.3); }
     B.tg.scale.setScalar(1 + 0.06 * Math.sin(L.t * 5)); for (const l of L.bossLant) l.material.color.setHSL(0.07, 1, 0.55 + 0.08 * Math.sin(L.t * 3)); }
 
   // ============================== LA FICHE DU NIVEAU 6 ==============================

@@ -538,7 +538,7 @@
     { const cv = document.createElement('canvas'); cv.width = 512; cv.height = 192; const x = cv.getContext('2d'); x.fillStyle = 'rgba(20,6,6,0.85)'; x.fillRect(0, 0, 512, 192); x.strokeStyle = '#ff3a2a'; x.lineWidth = 10; x.strokeRect(5, 5, 502, 182); x.fillStyle = '#ff3a2a'; x.font = '900 64px Arial Black, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('BOSS', 256, 56); x.fillStyle = '#ffffff'; x.font = '900 46px Arial Black, Arial, sans-serif'; x.fillText('CROISEUR LUNAIRE', 256, 134);
       const sp = new T3.Sprite(new T3.SpriteMaterial({ map: new T3.CanvasTexture(cv), transparent: true, fog: false, depthTest: false })); sp.scale.set(26, 9.75, 1); sp.position.set(0, 26, 0); sp.renderOrder = 20; }
     m.visible = false; grp.add(m);
-    L.boss = { m, tg, beacon, s: 7800, sT: 7800, x: 0, y: 0, hp: 3, on: false, dead: false, deadT: 0, hitT: 0, fT: 2, cap: PA.len - 420, boomT: 0 };
+    L.boss = { m, tg, beacon, s: 7800, sT: 7800, x: 0, y: 0, hp: 3, on: false, dead: false, deadT: 0, hitT: 0, fT: 2, cap: PA.len - 420, boomT: 0 }; if (EVO.milBoss) EVO.milBoss(g, L.boss, 4);   // v451 : vrai engin militaire geant
   }
   function bossPlay(g, rk, dt) {
     const B = L.boss, PA = L.PA; if (!B || (B.dead && B.deadT > 3)) return;
@@ -551,7 +551,7 @@
     // il tire : une balle visee (phase 1), trois en eventail ensuite
     const ds = B.s - L.s, ph = 3 - B.hp; if (ds > 45 && ds < 280) { B.fT -= dt; if (B.fT <= 0) { B.fT = [1.6, 1.25, 0.95][ph]; fire(g, B.s - 30, B.x, B.y + 4); if (ph >= 1) { fire(g, B.s - 30, B.x - 7, B.y - 3); fire(g, B.s - 30, B.x + 7, B.y - 3); } } }
     // la fusee le percute (n'importe ou sur la coque ; tout le passage quand il est au bout de l'arene)
-    if (B.hitT <= 0 && L.s > B.s - 30 && L.s < B.s + 30 && (capped || (Math.abs(L.x - B.x) < 9 + RK && Math.abs(L.y - B.y) < 6 + RK))) {
+    if (B.hitT <= 0 && L.s > B.s - 30 && L.s < B.s + 30 && (capped || (B.hw && Math.abs(L.x - B.x) < B.hw && Math.abs(L.y - B.y) < B.hh) || (Math.abs(L.x - B.x) < 9 + RK && Math.abs(L.y - B.y) < 6 + RK))) {
       B.hp = capped ? 0 : B.hp - 1; B.hitT = 1.6; L.inv = 1.2; L.v *= 0.6; g.rig.shake = 1.2; g.flash = 0.35; g.flashColor = '#ffffff'; g.effects.explosion(rk.pos.clone(), null, false, 'orange'); g.audio.play('reactorHit'); g.audio.play('boom');
       if (EVO.onBossHit) EVO.onBossHit(g, null); rk.fuel = Math.min(rk.fuelMax, rk.fuel + 6);
       if (B.hp <= 0) { B.dead = true; B.deadT = 0; if (CC.L1) CC.L1.msg(g, 'CROISEUR DETRUIT !', 3, '#ffe9a0'); g.audio.play('victory'); }
@@ -560,7 +560,7 @@
     // on l'a evite : il repart devant
     if (L.s > B.s + 30 && !capped) { B.sT = Math.min(B.cap, L.s + 260); B.s = Math.max(B.s, L.s + 120); if (CC.L1) CC.L1.msg(g, 'IL REVIENT !  FONCE DEDANS', 1.6, '#ff6a5a'); }
   }
-  function bossAnim(g, dt) { const B = L.boss; if (!B || !B.on || !B.m.visible) return; if (!B.dead) { placeAt(L.PA, B.m, B.s, B.x, B.y); B.m.rotateY(Math.PI); } else { B.m.position.y -= dt * 4; B.m.rotateZ(dt * 0.4); } B.tg.scale.setScalar(1 + 0.08 * Math.sin(L.t * 5)); B.tg.visible = !B.dead; B.beacon.visible = Math.sin(L.t * 8) > 0; }
+  function bossAnim(g, dt) { const B = L.boss; if (!B || !B.on || !B.m.visible) return; if (EVO.milAnim) EVO.milAnim(g, B, dt, L.t); if (!B.dead) { placeAt(L.PA, B.m, B.s, B.x, B.y); B.m.rotateY(Math.PI); } else { B.m.position.y -= dt * 4; B.m.rotateZ(dt * 0.4); } B.tg.scale.setScalar(1 + 0.08 * Math.sin(L.t * 5)); B.tg.visible = !B.dead; B.beacon.visible = Math.sin(L.t * 8) > 0; }
   // ============================== LA FICHE DU NIVEAU 4 ==============================
   { const Dc = CC.Zones.defs && CC.Zones.defs.campagne; if (Dc) { Dc.scenes.lpad = { len: [800, 800], noDoor: true, noChaos: true, noDress: true, build() {} }; Dc.scenes.lvide = { len: [1000, 1000], noDoor: true, noChaos: true, noDress: true, grass: false, build() {} }; } }
   const CH4 = ZN.map((z) => [z[3], z[0], z[2]]);

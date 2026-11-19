@@ -561,7 +561,7 @@
     { const o = new T3.Mesh(new T3.CircleGeometry(1.8, 20), bas('#ff3a2a', { fog: false, side: T3.DoubleSide })); o.position.z = 0.25; tg.add(o); }
     { const key = new T3.Group(); key.position.set(0, 0, -7.5); m.add(key); key.add(new T3.Mesh(new T3.CylinderGeometry(1, 1, 5, 8).rotateX(Math.PI / 2), lam(TI2))); for (const sx of [-1, 1]) { const w = new T3.Mesh(new T3.BoxGeometry(7, 4, 0.8), lam(YL)); w.position.set(sx * 4, 0, -3); key.add(w); } L.bossKey = key; }   // la cle de remontage dans le dos
     m.visible = false; grp.add(m);
-    L.boss = { m, tg, s: 0, sT: 0, x: 0, y: 0, hp: 3, on: false, dead: false, deadT: 0, hitT: 0, fT: 2, cap: PA.len - 260, boomT: 0, s0: PA.sAtW(5980) };
+    L.boss = { m, tg, s: 0, sT: 0, x: 0, y: 0, hp: 3, on: false, dead: false, deadT: 0, hitT: 0, fT: 2, cap: PA.len - 260, boomT: 0, s0: PA.sAtW(5980) }; if (EVO.milBoss) EVO.milBoss(g, L.boss, 7);   // v451 : vrai engin militaire geant
   }
   function bossPlay(g, rk, dt) {
     const B = L.boss; if (!B || (B.dead && B.deadT > 3.5)) return;
@@ -572,7 +572,7 @@
     B.hitT -= dt; B.s += (B.sT - B.s) * Math.min(1, dt * (B.hitT > 0 ? 2.5 : 1.2)); B.x = 28 * Math.sin(t * 0.4); B.y = 2 + 18 * Math.sin(t * 0.55);
     const capped = B.sT >= B.cap - 1, ds = B.s - L.s, ph = 3 - B.hp;
     if (ds > 45 && ds < 280) { B.fT -= dt; if (B.fT <= 0) { B.fT = [1.5, 1.15, 0.9][ph]; fire(g, B.s - 10, B.x + 17, B.y - 6); if (ph >= 1) fire(g, B.s - 10, B.x - 17, B.y - 6); if (ph >= 2) fire(g, B.s - 10, B.x, B.y + 20); } }
-    if (B.hitT <= 0 && L.s > B.s - 10 && L.s < B.s + 14 && (capped || Math.hypot(L.x - B.x, L.y - B.y) < 10 + RK)) {
+    if (B.hitT <= 0 && L.s > B.s - 10 && L.s < B.s + 14 && (capped || (B.hw && Math.abs(L.x - B.x) < B.hw && Math.abs(L.y - B.y) < B.hh) || Math.hypot(L.x - B.x, L.y - B.y) < 10 + RK)) {
       B.hp = capped ? 0 : B.hp - 1; B.hitT = 1.6; L.inv = 1.2; rk.vel.multiplyScalar(0.6); g.rig.shake = 1.2; g.flash = 0.35; g.flashColor = '#ffffff'; g.effects.explosion(rk.pos.clone(), null, false, 'orange'); burst(rk.pos.clone(), '#ffd04a', 0.9, 'ring'); g.audio.play('reactorHit'); g.audio.play('boom');
       if (EVO.onBossHit) EVO.onBossHit(g, null); rk.fuel = Math.min(rk.fuelMax, rk.fuel + 6);
       if (B.hp <= 0) { B.dead = true; B.deadT = 0; if (CC.L1) CC.L1.msg(g, 'ROBOT JOUET DETRUIT !', 3, '#ffe9a0'); g.audio.play('victory'); }
@@ -580,7 +580,7 @@
       (g.killPops = g.killPops || []).push({ p: rk.pos.clone().add(new V(0, 3, 0)), t0: performance.now(), txt: B.hp > 0 ? '-1' : 'BOUM !' }); return; }
     if (L.s > B.s + 14 && !capped) { B.sT = Math.min(B.cap, L.s + 240); B.s = Math.max(B.s, L.s + 110); if (CC.L1) CC.L1.msg(g, 'IL REVIENT !  FONCE DEDANS', 1.6, '#ff6a5a'); }
   }
-  function bossAnim(g, dt) { const B = L.boss; if (!B || !B.on || !B.m.visible) return; if (!B.dead) { placeAt(L.PA, B.m, B.s, B.x, B.y); B.m.rotateZ(Math.sin(L.t * 0.9) * 0.08); B.m.rotateX(Math.sin(L.t * 0.6) * 0.05); } else { B.m.position.y -= dt * 8; B.m.rotateZ(dt * 0.6); }
+  function bossAnim(g, dt) { const B = L.boss; if (!B || !B.on || !B.m.visible) return; if (EVO.milAnim) EVO.milAnim(g, B, dt, L.t); if (!B.dead) { placeAt(L.PA, B.m, B.s, B.x, B.y); B.m.rotateZ(Math.sin(L.t * 0.9) * 0.08); B.m.rotateX(Math.sin(L.t * 0.6) * 0.05); } else { B.m.position.y -= dt * 8; B.m.rotateZ(dt * 0.6); }
     B.tg.scale.setScalar(1 + 0.06 * Math.sin(L.t * 5)); if (L.bossKey) L.bossKey.rotation.z = L.t * 2.4; for (const j of L.bossJets) j.scale.setScalar(16 * (0.85 + 0.3 * Math.random()));
     if (!B.dead && Math.random() < dt * 20) for (const sx of [-1, 1]) g.effects.smokePuff(_a.set(sx * 6, -36, 0).applyQuaternion(B.m.quaternion).add(B.m.position).clone(), new V(rr(-1, 1), rr(-6, -3), rr(-1, 1)), 3, 0.8); }
 
