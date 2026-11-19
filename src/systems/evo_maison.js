@@ -620,7 +620,7 @@
     const fu = this.fuel; if (dry) this.fuel = 0;
     _step.call(this, dt, inp); this.fuel = fu; if (!this.active) return;
     // la vitesse : celle du niveau (plus vite dans la fenetre et apres une boucle) ; sans carburant, on ralentit et on tombe
-    const vMax = L.boostT > 0 ? 106 : boostZ ? 92 : 60; L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
+    const vMax = L.boostT > 0 ? 150 : boostZ ? 130 : 90; L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
     { const sp = this.vel.length(); if (sp > 1e-3) { const want = dry ? Math.max(0, sp - 13 * dt) : sp + (vMax - sp) * Math.min(1, dt * (sp < vMax ? 1.4 : 0.9)); this.vel.multiplyScalar(want / sp); } if (dry && this.vel.length() < 14) { g.onRocketCrash('stalled', this.pos.clone(), null); return; } }
     // ou en est-on sur la voie
     for (let k = 0; k < 3; k++) { const F = PA.fr(L.s); L.s = U.clamp(L.s + U.clamp(_st.subVectors(this.pos, F.p).dot(F.t), -40, 40), 0, PA.len); }
