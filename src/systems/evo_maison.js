@@ -687,7 +687,7 @@
     if (g.fogBase) { g.fogBase.near = M.near; g.fogBase.far = M.far; g.fogBase.color.copy(M.fog); }
     g.renderer.setClearColor(M.fog); if (g.stars) g.stars.visible = false; g.nightK = 0; const out0 = w > WF - 40;
     if (g.postParams) { g.postParams.bloomStrength = out0 ? 0.2 : 0.1; g.postParams.bloomThreshold = 0.9; g.postParams.vignette = 0.26; g.postParams.saturation = 1.12; g.postParams.contrast = 1.04; }
-    const out = w > WF - 40; g.ambient.intensity = (out ? 0.36 : 0.3) * M.li + (out ? 0.1 : 0.06); g.sun.intensity = (out ? 0.85 : 0.5) * M.li; g.sun.color.set(out ? '#fffaf0' : w > WJ && w < WCO ? '#ffd8a8' : '#fff0dc');
+    const out = w > WF - 40; g.ambient.intensity = (out ? 0.3 : 0.24) * M.li + (out ? 0.08 : 0.05); g.sun.intensity = (out ? 0.92 : 0.68) * M.li;   /* v453 : plus de relief dans la maison (moins plat) */ g.sun.color.set(out ? '#fffaf0' : w > WJ && w < WCO ? '#ffd8a8' : '#fff0dc');
   };
   const _tk = EVO.tick;
   EVO.tick = (g, dt) => {

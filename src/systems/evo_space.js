@@ -697,7 +697,7 @@
     g.scene.fog.color.copy(fog); g.scene.fog.near = U.lerp(U.lerp(160, 30, inC), 280, K); g.scene.fog.far = U.lerp(U.lerp(1500, 240, inC), 680, K);   // v418 : dans l'espace on voit ~650 m, comme les autres niveaux (plus tout le parcours d'un coup) if (g.fogBase) { g.fogBase.near = g.scene.fog.near; g.fogBase.far = g.scene.fog.far; g.fogBase.color.copy(fog); }
     g.renderer.setClearColor(fog); if (g.stars) g.stars.visible = false;
     g.nightK = K * 0.8; if (g.postParams) { g.postParams.bloomStrength = 0.1 + 0.3 * K; g.postParams.bloomThreshold = 0.95 - 0.25 * K; g.postParams.vignette = 0.2 + 0.2 * K; g.postParams.saturation = 1.05; g.postParams.contrast = 1.06; }
-    g.ambient.intensity = 0.3 + 0.15 * K; g.sun.intensity = 0.85 + 0.4 * K; g.sun.color.set(K > 0.5 ? '#ffffff' : '#ffe2c0');
+    g.ambient.intensity = 0.26 + 0.17 * K; g.sun.intensity = 0.72 + 0.5 * K;   /* v453 : le depart moins surexpose */ g.sun.color.set(K > 0.5 ? '#ffffff' : '#ffe2c0');
   };
   // --- chaque image : decor qui vit (bras, nuages, Terre, poussiere), fumee du decollage ---
   const _tk = EVO.tick;

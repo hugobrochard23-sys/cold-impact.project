@@ -82,7 +82,7 @@
       for (let x = x0; x < x1 - 0.01; x += tile) {
         const q = colFn(d + tile / 2, x + tile / 2); if (!q) continue;
         const key = q[1] || 'foireDalles', o = L[key] || (L[key] = { P: [], N: [], Cc: [], UV: [], I: [], n: 0 });
-        c.set(q[0]).multiplyScalar(0.96 + 0.07 * hsh(Math.round(d * 0.25), Math.round(x * 0.25)));
+        c.set(q[0]).multiplyScalar(0.8 + 0.07 * hsh(Math.round(d * 0.25), Math.round(x * 0.25)));   // v453 : pavages moins clairs (le sol ne brule plus l image)
         for (const [dd, xx] of [[d, x], [d, x + tile], [d2, x], [d2, x + tile]]) { const p = T.at(dd, xx, 0.06); o.P.push(p[0], p[1], p[2]); o.N.push(0, 1, 0); o.Cc.push(c.r, c.g, c.b); o.UV.push(xx / tile, dd / tile); }
         o.I.push(o.n, o.n + 2, o.n + 1, o.n + 1, o.n + 2, o.n + 3); o.n += 4;
       }
