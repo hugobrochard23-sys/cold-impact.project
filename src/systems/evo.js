@@ -49,7 +49,7 @@
     if (EVO.fast() && !S.wingsInit && !S.runs && !(S.rk > 0) && !S.stage) { S.wingsInit = 1; S.rk = 5; }
     if (!EVO._cheat) {
       EVO._cheat = 1; const q = (k) => { const m = new RegExp('[?&]' + k + '=(\\d+)').exec(location.search); return m ? parseInt(m[1], 10) : null; };
-      const T = (/[?&]lv=5/.test(location.search) || (S.stage === 5 && !/[?&]lv=\d/.test(location.search))) ? EVO.stage5(S) : (/[?&]lv=4/.test(location.search) || (S.stage === 4 && !/[?&]lv=\d/.test(location.search))) ? EVO.stage4(S) : (/[?&]lv=3/.test(location.search) || (S.stage === 3 && !/[?&]lv=\d/.test(location.search))) ? EVO.stage3(S) : (/[?&]lv=2/.test(location.search) || S.stage === 2) ? EVO.stage2(S) : S;   // les triches de test visent le niveau en cours
+      const T = (/[?&]lv=6/.test(location.search) || (S.stage === 6 && !/[?&]lv=\d/.test(location.search))) ? EVO.stage6(S) : (/[?&]lv=5/.test(location.search) || (S.stage === 5 && !/[?&]lv=\d/.test(location.search))) ? EVO.stage5(S) : (/[?&]lv=4/.test(location.search) || (S.stage === 4 && !/[?&]lv=\d/.test(location.search))) ? EVO.stage4(S) : (/[?&]lv=3/.test(location.search) || (S.stage === 3 && !/[?&]lv=\d/.test(location.search))) ? EVO.stage3(S) : (/[?&]lv=2/.test(location.search) || S.stage === 2) ? EVO.stage2(S) : S;   // les triches de test visent le niveau en cours
       const a = q('evocoins'); if (a !== null) T.coins = a; const b = q('evork'); if (b !== null) T.rk = b; const c = q('evola'); if (c !== null) T.la = c; const d = q('evocm'); if (d !== null) T.cm = d;
     }
     return S;
@@ -60,10 +60,11 @@
   EVO.stage3 = (B) => (B.s3 = B.s3 || { coins: 0, rk: 0, la: 0, cm: 0, best: 0, runs: 0, kills: 0, cleared: 0, t0: 0, marks: {}, seen: {} });   // v413 : le niveau 3 a aussi sa progression (fusee clown, lancement, revenu, record)
   EVO.stage4 = (B) => (B.s4 = B.s4 || { coins: 0, rk: 0, la: 0, cm: 0, best: 0, runs: 0, kills: 0, cleared: 0, t0: 0, marks: {}, seen: {} });   // v417 : le niveau 4 (l'espace) a sa propre progression (fusee spatiale)
   EVO.stage5 = (B) => (B.s5 = B.s5 || { coins: 0, rk: 0, la: 0, cm: 0, best: 0, runs: 0, kills: 0, cleared: 0, t0: 0, marks: {}, seen: {} });   // v423 : le niveau 5 (plongee vers le noyau) a sa propre progression (ogive foreuse)
+  EVO.stage6 = (B) => (B.s6 = B.s6 || { coins: 0, rk: 0, la: 0, cm: 0, best: 0, runs: 0, kills: 0, cleared: 0, t0: 0, marks: {}, seen: {} });   // v435 : le niveau 6 (la fete des lanternes) a sa propre progression (fusee de feu d artifice)
   EVO.save = (g) => {
     const B = EVO.saveBase(g), m = /[?&]lv=(\d)/.exec(location.search), st = m ? +m[1] : (B.stage || 1);
-    if (st !== 2 && st !== 3 && st !== 4 && st !== 5) return B;
-    const s2 = st === 5 ? EVO.stage5(B) : st === 4 ? EVO.stage4(B) : st === 3 ? EVO.stage3(B) : EVO.stage2(B); if (s2.coins) { B.coins += s2.coins; s2.coins = 0; }   // v286 : une seule bourse pour les deux niveaux (anciennes pieces du niveau 2 reversees)
+    if (st !== 2 && st !== 3 && st !== 4 && st !== 5 && st !== 6) return B;
+    const s2 = st === 6 ? EVO.stage6(B) : st === 5 ? EVO.stage5(B) : st === 4 ? EVO.stage4(B) : st === 3 ? EVO.stage3(B) : EVO.stage2(B); if (s2.coins) { B.coins += s2.coins; s2.coins = 0; }   // v286 : une seule bourse pour les deux niveaux (anciennes pieces du niveau 2 reversees)
     if (EVO._px && EVO._px.B === B && EVO._px.s2 === s2) return EVO._px.p;
     const p = new Proxy({}, { get: (t, k) => (S2K[k] ? s2[k] : B[k]), set: (t, k, v) => { if (S2K[k]) s2[k] = v; else B[k] = v; return true; }, has: (t, k) => (S2K[k] ? k in s2 : k in B) });
     EVO._px = { B, s2, p }; return p;

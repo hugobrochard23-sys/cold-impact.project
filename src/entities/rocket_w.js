@@ -203,6 +203,51 @@
       put(g, fin([[-0.3, 0.12], [-0.62, 0.12], [-0.66, 0.36], [-0.54, 0.36]], 0.018), DK); nozzle(0, 0, -0.65, 0.08);
       return { tail: -0.78, jr: 0.08, noseZ: 1.0, tips };
     },
+    // v435 : NIVEAU 6 « LA FETE DES LANTERNES » : LA FUSEE DE FEU D'ARTIFICE, 4 etats (st 0..3) : 0 fusee de papier (tube rouge, cone de papier, baguette de bambou)
+    //   -> 1 fusee a bouquet (plus grosse, bandes dorees, deux fusees d'appoint) -> 2 comete laquee (laque noire et or, ailerons en eventail)
+    //   -> 3 grand bouquet (quatre tubes lies par des rubans, couronne doree, anneaux de lumiere)
+    feu(g, st) {
+      const RD = '#d42a22', RD2 = '#a81a16', GD = '#e8b84a', GD2 = '#f6d77a', PP = '#f2e6cc', BB = '#c8a85a', DK = '#1e1a1c', JD = '#2a9a6a';
+      const band = (z, r, c, w, basic) => put(g, cylZ(r * 1.02, r * 1.02, w || 0.03, 24), c, { p: [0, 0, z], basic: !!basic });
+      const cone = (z0, len, r, c, x, y) => put(g, cylZ(r, 0.004, len, 24), c, { p: [x || 0, y || 0, z0 + len / 2] });
+      const stick = (z0, len, x, y) => { put(g, box(0.016, 0.016, len), BB, { p: [x || 0, (y === undefined ? -0.075 : y), z0 - len / 2] }); for (let k = 1; k < 4; k++) put(g, box(0.02, 0.02, 0.012), '#8a6a2a', { p: [x || 0, (y === undefined ? -0.075 : y), z0 - k * len / 4] }); };
+      const fuse = (z, r) => { put(g, cylZ(r * 0.7, r * 0.75, 0.05, 16), '#3a2a20', { p: [0, 0, z - 0.025] }); put(g, sph(r * 0.35), '#ffcf6a', { p: [0, 0, z - 0.06], basic: true }); };
+      const fan = (z0, z1, r, h, c, edge, rot) => { for (let k = 0; k < 4; k++) { const f = new T3.Group(); f.rotation.z = k * Math.PI / 2 + (rot || 0); g.add(f);
+        put(g, fin([[z1, r], [z0, r], [z0 - 0.04, r + h * 0.7], [(z0 + z1) / 2, r + h], [z1 - 0.03, r + h * 0.75]], 0.012), c, { parent: f });
+        put(g, fin([[(z0 + z1) / 2 + 0.01, r + h * 0.98], [(z0 + z1) / 2 - 0.01, r + h * 0.98], [(z0 + z1) / 2 - 0.01, r + 0.01], [(z0 + z1) / 2 + 0.01, r + 0.01]], 0.016), edge, { parent: f }); } };
+      const dots = (z, r, n, c) => { for (let k = 0; k < n; k++) { const a = k / n * Math.PI * 2; put(g, sph(r * 0.16), c, { p: [Math.cos(a) * r, Math.sin(a) * r, z], s: [1, 1, 0.4] }); } };
+      const tips = [];
+      if (st === 0) {   // FUSEE DE PAPIER
+        put(g, cylZ(0.07, 0.07, 0.56, 20), RD, { p: [0, 0, -0.02] }); band(-0.22, 0.07, GD); band(0.16, 0.07, GD); band(-0.03, 0.07, PP, 0.1); dots(-0.03, 0.072, 6, RD2);
+        cone(0.26, 0.2, 0.078, GD2); put(g, ringG(0.076, 0.01), RD2, { p: [0, 0, 0.26] }); fuse(-0.3, 0.07); stick(-0.25, 0.85);
+        tips.push([0.08, 0, -0.3], [-0.08, 0, -0.3]); return { tail: -0.36, jr: 0.05, noseZ: 0.47, tips };
+      }
+      if (st === 1) {   // FUSEE A BOUQUET
+        put(g, cylZ(0.095, 0.095, 0.78, 22), RD, { p: [0, 0, -0.06] }); for (const z of [-0.4, -0.14, 0.12]) band(z, 0.095, GD, 0.035); band(0.0, 0.095, PP, 0.12); dots(0.0, 0.097, 8, RD2); band(0.26, 0.095, DK, 0.02);
+        put(g, cylZ(0.1, 0.06, 0.08, 22), GD, { p: [0, 0, 0.37] }); cone(0.41, 0.24, 0.07, RD2); put(g, sph(0.022), GD2, { p: [0, 0, 0.66] });
+        for (const sx of [-1, 1]) { put(g, cylZ(0.035, 0.035, 0.36, 14), JD, { p: [sx * 0.13, -0.02, -0.18] }); cone(0.0, 0.08, 0.035, GD, sx * 0.13, -0.02); band(-0.25, 0.035, GD); put(g, box(0.05, 0.012, 0.03), GD, { p: [sx * 0.11, -0.02, -0.12] }); }
+        fan(-0.32, -0.46, 0.095, 0.1, RD2, GD, Math.PI / 4); fuse(-0.45, 0.09); stick(-0.42, 0.7);
+        tips.push([0.19, 0, -0.42], [-0.19, 0, -0.42]); return { tail: -0.5, jr: 0.07, noseZ: 0.68, tips };
+      }
+      if (st === 2) {   // COMETE LAQUEE
+        put(g, cylZ(0.11, 0.115, 0.92, 24), DK, { p: [0, 0, -0.06] }); for (const z of [-0.44, -0.2, 0.04, 0.26]) band(z, 0.113, GD, 0.025); band(-0.08, 0.113, RD, 0.08);
+        put(g, cylZ(0.116, 0.08, 0.1, 24), GD, { p: [0, 0, 0.45] }); cone(0.5, 0.3, 0.08, RD); put(g, ringG(0.08, 0.012), GD2, { p: [0, 0, 0.5] }); put(g, sph(0.026), '#fff0b0', { p: [0, 0, 0.81], basic: true });
+        for (const sx of [-1, 1]) { put(g, cylZ(0.045, 0.045, 0.5, 14), GD, { p: [sx * 0.16, -0.01, -0.2] }); cone(0.05, 0.1, 0.045, RD, sx * 0.16, -0.01); band(-0.32, 0.045, DK); band(-0.12, 0.045, DK); }
+        fan(-0.36, -0.56, 0.11, 0.17, RD, GD, Math.PI / 4); fuse(-0.53, 0.1);
+        tips.push([0.28, 0, -0.5], [-0.28, 0, -0.5]); return { tail: -0.6, jr: 0.08, noseZ: 0.84, tips };
+      }
+      // GRAND BOUQUET
+      put(g, cylZ(0.12, 0.12, 1.02, 26), RD, { p: [0, 0, -0.06] }); for (const z of [-0.5, -0.22, 0.06, 0.32]) band(z, 0.12, GD, 0.03); band(-0.08, 0.122, PP, 0.1); dots(-0.08, 0.124, 10, RD2);
+      for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2 + Math.PI / 2, x = Math.cos(a) * 0.17, y = Math.sin(a) * 0.17, c = [JD, GD, '#3a5ad0'][k];
+        put(g, cylZ(0.055, 0.055, 0.62, 16), c, { p: [x, y, -0.16] }); cone(0.15, 0.12, 0.055, GD2, x, y); band(-0.38, 0.055, DK); }
+      for (const z of [-0.36, 0.06]) put(g, ringG(0.2, 0.014), RD2, { p: [0, 0, z] });   // rubans qui lient les tubes
+      put(g, cylZ(0.125, 0.09, 0.1, 26), GD, { p: [0, 0, 0.5] }); cone(0.55, 0.32, 0.09, GD2);
+      for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; put(g, cylZ(0.012, 0.0, 0.08, 6), GD, { p: [Math.cos(a) * 0.1, Math.sin(a) * 0.1, 0.58] }); }   // couronne
+      put(g, sph(0.03), '#fff4c0', { p: [0, 0, 0.88], basic: true });
+      for (const z of [0.62, 0.72]) put(g, ringG(0.075 - (z - 0.62) * 0.3, 0.008), '#ffd060', { p: [0, 0, z], basic: true });   // anneaux de lumiere
+      fan(-0.42, -0.64, 0.12, 0.2, RD, GD, Math.PI / 4); fuse(-0.6, 0.11);
+      tips.push([0.32, 0, -0.56], [-0.32, 0, -0.56]); return { tail: -0.68, jr: 0.09, noseZ: 0.9, tips };
+    },
   };
 
   // jet de la tuyere : meme mecanique que M.rocket (allumage / vacillement animes par Rocket.updateMesh)
