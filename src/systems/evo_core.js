@@ -645,7 +645,7 @@
     if (!(boostZ || L.boostT > 0 || Z[5] === 'fall' || Z[5] === 'shaft')) this.fuel = Math.max(0, this.fuel - dt * (L.K || 1));   // en chute libre et en plongeant dans la faille, la gravite travaille : pas de carburant brule
     const dry = this.fuel <= 0;
     if (dry && !L.dry) { L.dry = 1; if (CC.L1) CC.L1.msg(g, 'PLUS DE CARBURANT !', 2, '#ff6a5a'); g.audio.play('warnFuel'); } if (!dry) L.dry = 0;
-    const vMax0 = L.boostT > 0 ? 106 : boostZ ? 92 : Z[5] === 'fall' ? 76 : 60; const vMax = vMax0 * (L.K || 1);   // v449 : la vitesse monte avec la fusee   // en chute libre, on tombe vite
+    const vMax0 = L.boostT > 0 ? 106 : boostZ ? 92 : Z[5] === 'fall' ? 76 : 60; const vMax = Math.max(vMax0, Math.min(vMax0 * (L.K || 1), CC.EVO.curveCap ? CC.EVO.curveCap(L.PA, L.s) : 1e9));   // v449 : la vitesse monte avec la fusee   // en chute libre, on tombe vite
     L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
     if (dry) { L.fall = (L.fall || 0) + 22 * dt; L.v = Math.max(26, L.v - 6 * dt); L.y -= L.fall * dt; L.rp = Math.min(L.rp, -0.3); L.dryT = (L.dryT || 0) + dt; }   // v448 : a sec, la fusee tombe (elle ne s'ecrase plus en plein vol)
     else { L.fall = 0; L.dryT = 0; L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.8) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)); L.v = Math.max(24, L.v); }
