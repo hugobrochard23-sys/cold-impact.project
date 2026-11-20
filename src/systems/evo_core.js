@@ -455,7 +455,7 @@
     // 6. LE MANTEAU : des veines a forer et des jets de magma
     vein(4422, Math.PI, 3.0, 0); bar(4517, 'h', 10, 0.8, 0, M.lava); vein(4612, 0.4, 2.7, 0.12); bar(4707, 'v', 10, 0.9, 1, M.lava); vein(4802, -H, 2.5, -0.15); bar(4897, 'h', 10, 1.0, 2, M.lava); vein(4992, 2.4, 2.3, 0.18);
     for (const A of AV) { const im = new T3.InstancedMesh(A.gm, mats[A.mk], Math.max(1, A.list.length)); im.count = A.list.length; im.frustumCulled = false; (A.mk === 'rock' ? L.deepG : grp).add(im); A.im = im; }
-    L.AV = AV; L.OB = OB;
+    L.AV = AV; L.OB = OB; { const vs = OB.filter((o) => o.vein).map((o) => o.s); if (vs.length) { L.veinA = Math.min(...vs) - 230; L.veinB = Math.max(...vs) + 40; } }   // v454 : la zone des veines qui tournent (on y ralentit)
     // les anneaux d'acceleration (pendant la rentree et la descente)
     L.boostR = []; const RG = new T3.TorusGeometry(4.4, 0.45, 8, 32), RM = bas('#ffc23a', { fog: false });
     for (const [s, x, y] of [[680, 0, 5], [830, 6, -4], [990, -6, 3], [5137, 0, 0], [5287, 4, -3]]) { const h = hold(s), m = new T3.Group(); m.position.set(x, y, 0); h.add(m); m.add(new T3.Mesh(RG, RM)); m.add(glowS(14, '#ffb020', 0.5)); L.boostR.push({ s, x, y, m, done: false }); }
@@ -645,10 +645,10 @@
     if (!(boostZ || L.boostT > 0 || Z[5] === 'fall' || Z[5] === 'shaft')) this.fuel = Math.max(0, this.fuel - dt * (L.K || 1));   // en chute libre et en plongeant dans la faille, la gravite travaille : pas de carburant brule
     const dry = this.fuel <= 0;
     if (dry && !L.dry) { L.dry = 1; if (CC.L1) CC.L1.msg(g, 'PLUS DE CARBURANT !', 2, '#ff6a5a'); g.audio.play('warnFuel'); } if (!dry) L.dry = 0;
-    const vMax0 = L.boostT > 0 ? 106 : boostZ ? 92 : Z[5] === 'fall' ? 76 : 60; const vMax = Math.max(vMax0, Math.min(vMax0 * (L.K || 1), CC.EVO.curveCap ? CC.EVO.curveCap(L.PA, L.s) : 1e9));   // v449 : la vitesse monte avec la fusee   // en chute libre, on tombe vite
+    const vMax0 = L.boostT > 0 ? 106 : boostZ ? 92 : Z[5] === 'fall' ? 76 : 60; let vMax = Math.max(vMax0, Math.min(vMax0 * (L.K || 1), CC.EVO.curveCap ? CC.EVO.curveCap(L.PA, L.s) : 1e9)); if (L.veinA && L.s > L.veinA && L.s < L.veinB) vMax = Math.min(vMax, 56);   /* v454 : dans les veines qui tournent, on ralentit (56 m/s, plus de rafale apres chaque veine forée) */   // v449 : la vitesse monte avec la fusee   // en chute libre, on tombe vite
     L.bk += ((L.boostT > 0 ? 1 : boostZ ? 0.65 : 0) - L.bk) * Math.min(1, dt * 3);
     if (dry) { L.fall = (L.fall || 0) + 22 * dt; L.v = Math.max(26, L.v - 6 * dt); L.y -= L.fall * dt; L.rp = Math.min(L.rp, -0.3); L.dryT = (L.dryT || 0) + dt; }   // v448 : a sec, la fusee tombe (elle ne s'ecrase plus en plein vol)
-    else { L.fall = 0; L.dryT = 0; L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.8) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)); L.v = Math.max(24, L.v); }
+    else { L.fall = 0; L.dryT = 0; L.v += ((this.throttle || this.freeBoost || boostZ || L.boostT > 0 ? vMax : vMax * 0.8) - L.v) * Math.min(1, dt * (L.v < vMax ? 1.4 : 0.9)); L.v = Math.max(24, L.v); } if (L.veinA && L.s > L.veinA && L.s < L.veinB && L.v > vMax) L.v += (vMax - L.v) * Math.min(1, dt * 2.2);   // v454 : on freine franchement en entrant dans les veines
     const vx = -L.v * Math.sin(L.ry) * 0.85, vy = L.v * Math.sin(L.rp) * 0.85, lat = Math.min(1, 52 * (L.K || 1) / L.v); L.x += vx * lat * dt; L.y += vy * lat * dt; L.s += L.v * dt;
     const wr = inWall(L.s), lim = wr ? wr - 2.2 : Z[5] === 'low' ? 22 : ROPEN - 2, rr2 = Math.hypot(L.x, L.y);
     if (dry && this.active && ((rr2 > lim && wr) || L.dryT > 3.2)) { g.onRocketCrash('stalled', this.pos.clone(), null); return; }

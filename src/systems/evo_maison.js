@@ -467,9 +467,10 @@
     // les ANNEAUX A LANCER (montee vers la fenetre, jardin) : un elan et un peu de carburant
     L.boostR = []; const RG = new T3.TorusGeometry(7, 1.2, 10, 32);
     for (const [w, x, y, c] of [[5050, 0, 6, '#e8302a'], [5140, -14, -6, '#2a6ad8'], [5230, 14, 6, '#f2c41a'], [5320, 0, 0, '#2a9a4a'], [5520, 10, -6, '#9a4ad8'], [6100, -20, 10, '#ff7a1a']]) { const s = sAt(w), h = hold(s), m = new T3.Group(); m.position.set(x, y, 0); h.add(m); m.add(new T3.Mesh(RG, lam(c, { emissive: c, emissiveIntensity: 0.35 }))); m.add(glowS(20, '#ffe08a', 0.45)); L.boostR.push({ s, x, y, m, done: false }); }
-    // l'ARRIVEE : une arche a damier de course de jouets
-    { const s = PA.len - 70, h = hold(s), P = []; for (const sd of [-1, 1]) P.push({ g: SB(4, 140, 4), c: '#f4f2ec', p: [sd * 66, -10, 0] }); for (let k = 0; k < 38; k++) for (let j = 0; j < 2; j++) P.push({ g: SB(3.5, 3.5, 1), c: (k + j) % 2 ? '#1e2026' : '#f4f2ec', p: [-64.75 + k * 3.5, 56 + j * 3.5, 0] }); h.add(bake(P));
-      for (const sd of [-1, 1]) { const gw = glowS(50, '#fff0a0', 0.5); gw.position.set(sd * 66, 58, 0); h.add(gw); } }
+    // v454 : l'ARRIVEE : plus de porte : un immense mur a damier transparent (comme les premiers niveaux) qui barre tout le jardin, du sol jusqu'au ciel
+    { const s = PA.len - 70, h = hold(s), cv = document.createElement('canvas'); cv.width = cv.height = 64; const cx2 = cv.getContext('2d'); cx2.fillStyle = '#ffffff'; cx2.fillRect(0, 0, 64, 64); cx2.fillStyle = '#111111'; cx2.fillRect(0, 0, 32, 32); cx2.fillRect(32, 32, 32, 32);
+      const W2 = 4000, H2 = 2400, sq = 18, tx = new T3.CanvasTexture(cv); tx.wrapS = tx.wrapT = T3.RepeatWrapping; tx.repeat.set(W2 / (2 * sq), H2 / (2 * sq)); tx.magFilter = T3.NearestFilter;
+      const pl = new T3.Mesh(new T3.PlaneGeometry(W2, H2), new T3.MeshBasicMaterial({ map: tx, transparent: true, opacity: 0.55, side: T3.DoubleSide, depthWrite: false, fog: false })); pl.position.set(0, H2 / 2 - 500, 0); pl.renderOrder = 2; h.add(pl); L.finWall = pl; }
     // les DOMINOS geants de la salle de jeux, de part et d'autre de la voie : ils tombent en vague quand on passe
     L.dom = []; { const dg = new T3.BoxGeometry(16, 34, 5).translate(0, 17, 0), dm = lam('#1e2026'), lg = new T3.BoxGeometry(14, 1.2, 5.2).translate(0, 17, 0), lm = lam('#f4f2ec');
       for (let w = 2160; w < 2290; w += 9) for (const sd of [-1, 1]) { const u = pathU(w) + sd * 80, p = atUW(u, w), o = new T3.Group(); o.position.copy(p); o.rotation.y = L.HGry; const d = new T3.Mesh(dg, dm); d.add(new T3.Mesh(lg, lm)); o.add(d); grp.add(o); shad(p, 6); L.dom.push({ o, d, s: sAt(w), f: 0 }); } }
@@ -562,6 +563,7 @@
     { const key = new T3.Group(); key.position.set(0, 0, -7.5); m.add(key); key.add(new T3.Mesh(new T3.CylinderGeometry(1, 1, 5, 8).rotateX(Math.PI / 2), lam(TI2))); for (const sx of [-1, 1]) { const w = new T3.Mesh(new T3.BoxGeometry(7, 4, 0.8), lam(YL)); w.position.set(sx * 4, 0, -3); key.add(w); } L.bossKey = key; }   // la cle de remontage dans le dos
     m.visible = false; grp.add(m);
     L.boss = { m, tg, s: 0, sT: 0, x: 0, y: 0, hp: 3, on: false, dead: false, deadT: 0, hitT: 0, fT: 2, cap: PA.len - 260, boomT: 0, s0: PA.sAtW(5980) }; if (EVO.milBoss) EVO.milBoss(g, L.boss, 7);   // v451 : vrai engin militaire geant
+    if (L.boss.fly) { L.boss.s0 = PA.sAtW(5760); L.boss.cap = PA.len - 130; }   // v454 : le drone volant : une arene plus longue dans le jardin (assez de place pour 3 coups)
   }
   function bossPlay(g, rk, dt) {
     const B = L.boss; if (!B || (B.dead && B.deadT > 3.5)) return;
@@ -569,12 +571,16 @@
     if (!B.on) return; const t = L.t;
     if (B.dead) { B.deadT += dt; B.boomT -= dt; if (B.boomT <= 0 && B.deadT < 2.6) { B.boomT = 0.16; const p = B.m.position.clone().add(new V(rr(-12, 12), rr(-20, 20), rr(-8, 8))); g.effects.explosion(p, null, false, 'orange'); burst(p, FWC[Math.floor(Math.random() * FWC.length)], 0.8); g.audio.play('boomSmall', p); }
       if (B.deadT > 2.6 && B.m.visible) { B.m.visible = false; g.flash = 0.6; g.flashColor = '#ffe0b0'; g.audio.play('boom'); g.rig.shake = 1.4; const fx = g.effects, c = B.m.position.clone(); fx.shatter(c, new V(14, 14, 8), new V(0, 10, 0), 'planks'); for (let k = 0; k < 8; k++) burst(c.clone().add(new V(rr(-30, 30), rr(0, 40), rr(-30, 30))), FWC[k % FWC.length], rr(1.2, 1.8), k % 3 === 1 ? 'ring' : null); } return; }
-    B.hitT -= dt; B.s += (B.sT - B.s) * Math.min(1, dt * (B.hitT > 0 ? 2.5 : 1.2)); B.x = 28 * Math.sin(t * 0.4); B.y = 2 + 18 * Math.sin(t * 0.55);
+    B.hitT -= dt; B.s += (B.sT - B.s) * Math.min(1, dt * (B.hitT > 0 ? 2.5 : 1.2));
+    if (B.fly) { // v454 : le drone de combat VOLE et SUIT la fusee (a sa hauteur, avec un temps de retard) : on est haut dans le jardin, il monte avec nous
+      const k = Math.min(1, dt * (0.55 + 0.15 * (3 - B.hp))); B.x += (L.x + 22 * Math.sin(t * 0.45) - B.x) * k; B.y += (L.y + 8 + 10 * Math.sin(t * 0.6) - B.y) * k;
+      const F = L.PA.fr(B.s), q = _c.copy(F.p).addScaledVector(F.r, B.x), gy = F.u.y > 0.3 ? (gH(q.x, q.z) - F.p.y) / F.u.y : -1e9; B.y = Math.max(B.y, gy + 22); }
+    else { B.x = 28 * Math.sin(t * 0.4); B.y = 2 + 18 * Math.sin(t * 0.55); }
     const capped = B.sT >= B.cap - 1, ds = B.s - L.s, ph = 3 - B.hp;
     if (ds > 45 && ds < 280) { B.fT -= dt; if (B.fT <= 0) { B.fT = [1.5, 1.15, 0.9][ph]; fire(g, B.s - 10, B.x + 17, B.y - 6); if (ph >= 1) fire(g, B.s - 10, B.x - 17, B.y - 6); if (ph >= 2) fire(g, B.s - 10, B.x, B.y + 20); } }
     if (B.hitT <= 0 && L.s > B.s - 10 && L.s < B.s + 14 && (capped || (B.hw && Math.abs(L.x - B.x) < B.hw && Math.abs(L.y - B.y) < B.hh) || Math.hypot(L.x - B.x, L.y - B.y) < 10 + RK)) {
       B.hp = capped ? 0 : B.hp - 1; B.hitT = 1.6; L.inv = 1.2; rk.vel.multiplyScalar(0.6); g.rig.shake = 1.2; g.flash = 0.35; g.flashColor = '#ffffff'; g.effects.explosion(rk.pos.clone(), null, false, 'orange'); burst(rk.pos.clone(), '#ffd04a', 0.9, 'ring'); g.audio.play('reactorHit'); g.audio.play('boom');
-      if (EVO.onBossHit) EVO.onBossHit(g, null); rk.fuel = Math.min(rk.fuelMax, rk.fuel + 6);
+      if (EVO.onBossHit) EVO.onBossHit(g, null); rk.fuel = Math.min(rk.fuelMax, rk.fuel + 6); if (EVO.milHit) EVO.milHit(g, B);
       if (B.hp <= 0) { B.dead = true; B.deadT = 0; if (CC.L1) CC.L1.msg(g, 'ROBOT JOUET DETRUIT !', 3, '#ffe9a0'); g.audio.play('victory'); }
       else { B.sT = Math.min(B.cap, L.s + Math.min(300, Math.max(90, (B.cap - L.s) / B.hp)));   /* v452 : il recule de facon a laisser la place aux coups restants (plus de mort d office au bout de l arene) */ if (CC.L1) CC.L1.msg(g, B.hp === 2 ? 'TOUCHE !  ENCORE 2 COUPS' : 'ENCORE UN COUP !', 2, '#ff9a5a'); }
       (g.killPops = g.killPops || []).push({ p: rk.pos.clone().add(new V(0, 3, 0)), t0: performance.now(), txt: B.hp > 0 ? '-1' : 'BOUM !' }); return; }

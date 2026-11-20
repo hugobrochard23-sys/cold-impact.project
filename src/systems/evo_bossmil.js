@@ -3,7 +3,7 @@
  *   4 espace   : CROISEUR DE COMBAT (destroyer gris) qui se met en travers de l'arene, reacteurs allumes
  *   5 noyau    : TUNNELIER BLINDE (obusier chenille blinde + la tete de forage qui tourne)
  *   6 lanternes: FORTERESSE VOLANTE (helicoptere lourd arme, lanternes rouges suspendues)
- *   7 maison   : CHAR D'ASSAUT JOUET (vehicule chenille vert plastique, a l'echelle de la maison geante)
+ *   7 jardin   : DRONE DE COMBAT GEANT (4 rotors) : il VOLE et SUIT la fusee ; chaque coup lui arrache un rotor (v454)
  *   8 Far West : TRAIN BLINDE (locomotive et wagon blindes, tourelles)
  * Ils sont grands et BLOQUENT le passage : toute la section de l'engin compte comme un coup (B.hw / B.hh, demi-largeur / demi-hauteur).
  * La tourelle vise la fusee. Le repere du boss : +z regarde la fusee (comme dans chaque niveau). */
@@ -14,7 +14,7 @@
     4: { k: 'destroyer', tint: 4, sc: 8, em: 0.12, rot: Math.PI / 2, jets: '#7ac8ff' },
     5: { k: 'spg', tint: 4, sc: 5.2, rot: Math.PI, keep: 'head', zf: -1.7 },
     6: { k: 'gunship', tint: 5, sc: 10, em: 0.3, rot: Math.PI, lanterns: true },
-    7: { k: 'ifv', tint: 0, sc: 12, em: 0.12, rot: Math.PI, plastic: true },
+    7: { k: 'quad', tint: 0, sc: 26, em: 0.2, rot: Math.PI, fly: true },
     8: { k: 'train', tint: 0, sc: 7.5, em: 0.12, rot: 0, cars: 2, ground: true },
   };
   const _a = new V(), _q = new T3.Quaternion();
@@ -57,13 +57,22 @@
           cars[0].holder.add(new T3.Line(new T3.BufferGeometry().setFromPoints([new V(x, y0, z), new V(x, y0 - h + 0.3, z)]), cm)); } }
       // le tunnelier : la tete de forage remplit le tunnel, deux tourelles antiaeriennes montees sur l'anneau avant
       if (lv === 5 && B.head) { B.head.scale.setScalar(1.3); if (CC.BossModels.aaturret) for (const sd of [-1, 1]) { const t = CC.BossModels.aaturret(4); t.scale.setScalar(2.4); t.rotation.y = Math.PI; t.position.set(sd * 9, 11.5, 12); t.traverse((o) => { if (o.isMesh && o.material) { o.material = o.material.clone(); o.material.fog = false; if (o.material.emissive) o.material.emissive.copy(o.material.color).multiplyScalar(0.35); } }); B.m.add(t); cars.push({ md: t, holder: t }); } }
+      // le drone : ses 4 rotors (on en arrache un a chaque coup), il vole et suit la fusee
+      if (C.fly) { B.fly = true; B.hw = sz.x * C.sc / 2 + 4; B.hh = 22; const ro = []; cars[0].md.traverse((o) => { if (o !== cars[0].md && !o.isMesh && o.children.length && o.children.every((q) => q.isMesh)) ro.push(o); }); B.rotors = ro; B.lost = []; }
       B.mil = { C, cars, W };
     } catch (e) { /* le boss d'origine reste en place */ }
   };
 
+  // v454 : un coup sur le drone : un rotor saute (explosion, il penche et fume de ce cote)
+  EVO.milHit = (g, B) => { if (!B || !B.rotors || !B.rotors.length) return; const r = B.rotors.find((q) => q.visible); if (!r) return;
+    const p = r.getWorldPosition(new V()); r.visible = false; B.lost.push(r);
+    g.effects.explosion(p.clone(), null, true, 'orange'); g.effects.ring(p.clone(), new V(0, 1, 0), 3, 40, 0.7, '#ffd060', 0.9); g.effects.shatter(p.clone(), new V(10, 3, 10), new V(0, 12, 0), 'planks'); g.audio.play('boom', p); };
+
   // chaque image : la tourelle vise la fusee, les pieces mobiles tournent
   EVO.milAnim = (g, B, dt, t) => {
     const M = B && B.mil; if (!M || !B.m.visible) return;
+    if (B.lost && B.lost.length && !B.dead) { let tx = 0, tz = 0; for (const r of B.lost) { tx += r.position.x; tz += r.position.z; if (Math.random() < dt * 14) g.effects.smokePuff(r.getWorldPosition(_a).clone(), new V((Math.random() - 0.5) * 4, -3, (Math.random() - 0.5) * 4), 7, 1.4); }
+      const W = M.W, n = B.lost.length; W.rotation.z += (Math.sign(tx) * -0.16 * n - W.rotation.z) * Math.min(1, dt * 2); W.rotation.x += (Math.sign(tz) * 0.12 * n - W.rotation.x) * Math.min(1, dt * 2); }
     for (const c of M.cars) { const ud = c.md.userData;
       if (ud.anim) try { ud.anim(dt, t || 0); } catch (e) { /* rien */ }
       if (ud.turret && g.rocket && !B.dead) { c.md.updateWorldMatrix(true, false); _a.copy(g.rocket.pos); ud.turret.parent.worldToLocal(_a); const want = Math.atan2(-(_a.x - ud.turret.position.x), -(_a.z - ud.turret.position.z)); let d = want - ud.turret.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); ud.turret.rotation.y += d * Math.min(1, dt * 2.5); } }
