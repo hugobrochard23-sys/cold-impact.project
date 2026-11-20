@@ -22,12 +22,13 @@
     }
   };
   const _q = new V(), _nrm = new V(), _prev = new V(); let _hasPrev = false;
+  const shown = (o) => { for (let p = o; p; p = p.parent) if (!p.visible) return false; return true; };
   // v209 : test BALAYE (la fusee fait plus d'1 m par image : un point seul traversait les pieces fines) ; la normale de la face touchee sert au ricochet
   EVO.dynHit = (g) => {
     const rk = g.rocket; if (!rk || !rk.active || g.state !== 'FLIGHT') { _hasPrev = false; return; }
     const n0 = _hasPrev ? 4 : 1;
     for (const d of EVO.dyn) {
-      if (!d.obj.visible || d.obj.position.distanceTo(rk.pos) > 260 + (d.span || 0)) continue;
+      if (!shown(d.obj) || d.obj.position.distanceTo(rk.pos) > 260 + (d.span || 0)) continue;   // v455 : un objet dans un decor cache (les niveaux 4 a 8 cachent le decor d origine) ne tue plus : mur invisible a 1700 m au centre du tube du niveau 4
       d.obj.updateWorldMatrix(true, true);
       for (const c of d.cols) {
         c.updateWorldMatrix(true, false); _inv.copy(c.matrixWorld).invert();

@@ -611,6 +611,8 @@
     SHAD.length = GRASS.length = 0;
     const PA = L.PA = buildPath(P0, F0), grp = L.grp = new T3.Group(); g.scene.add(grp); L.HGry = Math.atan2(-PA.F0.x, -PA.F0.z); L.dbg = { ZN, zoneAt, LIMS: () => LIMS, gH, pathU, pathY };
     terrain(PA, grp); obstacles(g, PA, grp); house(PA, grp); sky(g, PA, grp); enemies(g, PA, grp); bossBuild(g, PA, grp); fwPool(grp); batches(grp); colBuild();
+    // v455 (evo_cull.js) : la maison et le jardin sont decoupes par bandes le long du parcours ; le jardin (derriere la fenetre) n est pas dessine tant qu on est loin dans la maison (les murs le cachent)
+    L.cullW = { at: (p) => PA.loc(p)[1], band: 300, hideFrom: WF - 100, until: 1300, now: () => wNow() };   // verifie a l image (banc gardenchk) : des 1450 m on voit deja 3 pixels du jardin par la fenetre
     grp.traverse((o) => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) if (!m.isShaderMaterial && !m.fog && !(m.blending === T3.AdditiveBlending) && !(o.isPoints)) { m.fog = true; m.needsUpdate = true; } });
     // les poussieres dorees dans la lumiere (dedans), les aigrettes qui volent (dehors)
     { const n = 420, pos = new Float32Array(n * 3), geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(pos, 3)); const p = new T3.Points(geo, new T3.PointsMaterial({ color: '#fff0c0', size: 0.35, map: dotTex(), transparent: true, opacity: 0, depthWrite: false, fog: false })); p.frustumCulled = false; p.visible = false; g.scene.add(p); L.dust = p; L.dustInit = false; L.dph = new Float32Array(n); for (let i = 0; i < n; i++) L.dph[i] = rr(0, 6.28); }
