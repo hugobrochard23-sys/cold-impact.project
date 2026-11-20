@@ -553,7 +553,7 @@
     // la fusee le percute (n'importe ou sur la coque ; tout le passage quand il est au bout de l'arene)
     if (B.hitT <= 0 && L.s > B.s - 30 && L.s < B.s + 30 && (capped || (B.hw && Math.abs(L.x - B.x) < B.hw && Math.abs(L.y - B.y) < B.hh) || (Math.abs(L.x - B.x) < 9 + RK && Math.abs(L.y - B.y) < 6 + RK))) {
       B.hp = capped ? 0 : B.hp - 1; B.hitT = 1.6; L.inv = 1.2; L.v *= 0.6; g.rig.shake = 1.2; g.flash = 0.35; g.flashColor = '#ffffff'; g.effects.explosion(rk.pos.clone(), null, false, 'orange'); g.audio.play('reactorHit'); g.audio.play('boom');
-      if (EVO.onBossHit) EVO.onBossHit(g, null); rk.fuel = Math.min(rk.fuelMax, rk.fuel + 6);
+      if (EVO.onBossHit) EVO.onBossHit(g, null); if (rk.fuel > 0) rk.fuel = Math.min(rk.fuelMax, rk.fuel + 6);   // v456 : une fusee a sec ne repart pas en touchant le boss
       if (B.hp <= 0) { B.dead = true; B.deadT = 0; if (CC.L1) CC.L1.msg(g, 'CROISEUR DETRUIT !', 3, '#ffe9a0'); g.audio.play('victory'); }
       else { B.sT = Math.min(B.cap, L.s + Math.min(330, Math.max(90, (B.cap - L.s) / B.hp)));   /* v452 : il recule de facon a laisser la place aux coups restants (plus de mort d office au bout de l arene) */ if (CC.L1) CC.L1.msg(g, B.hp === 2 ? 'TOUCHE !  ENCORE 2 COUPS' : 'ENCORE UN COUP !', 2, '#ff9a5a'); }
       (g.killPops = g.killPops || []).push({ p: rk.pos.clone().add(new V(0, 3, 0)), t0: performance.now(), txt: B.hp > 0 ? '-1' : 'BOUM !' }); return; }
